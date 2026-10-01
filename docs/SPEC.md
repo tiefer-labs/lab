@@ -214,7 +214,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
 | `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
-| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT` and `--export=NONE,TIEFER_CSC_PROJECT=...` (plus `SEED`, `FINAL`, `REASON` when set) to `sbatch`, since `#SBATCH` lines cannot read environment variables; `sbatch` options such as `--test-only` go before the job script |
+| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT`, `--chdir` and the log location to `sbatch`, since `#SBATCH` lines cannot read environment variables; jobs use sbatch's default export, so `TIEFER_CSC_PROJECT`, `SEED`, `FINAL` and `REASON` reach the job as plain environment variables; GPU jobs are refused unless submitted from an `aarch64` host (`roihu-gpu.csc.fi`) and the data job unless from an `x86_64` host (`roihu-cpu.csc.fi`); `sbatch` options such as `--test-only` go before the job script |
 | `usage.sh` | Prints `sacct` usage of a job for the results |
 | `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
 
@@ -278,7 +278,7 @@ lab/
       gpu_shell.sh                interactive GH200 shell on gputest, for setup.sh
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
-      submit.sh                   sbatch wrapper: --account and --export=NONE,TIEFER_CSC_PROJECT
+      submit.sh                   sbatch wrapper: --account, log location, login node check
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
@@ -437,6 +437,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: `submit.sh` uses sbatch's default export again and checks the architecture of the submitting host.
 - 1 October 2026: `hpc/roihu/shell_options.sh` added to the table and the tree.
 - 1 October 2026: the founder guide in section 12 follows the new order of `hpc/roihu/README.md`: before you start, clone and project, setup on both architectures, data, smoke, training with optional seeds, evaluation to collection; the login node cache path is removed.
 - 1 October 2026: `hpc/roihu/job_prelude.sh` and `hpc/roihu/gpu_shell.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.

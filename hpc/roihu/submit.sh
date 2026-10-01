@@ -8,10 +8,12 @@
 #
 #   bash hpc/roihu/submit.sh [sbatch options] hpc/roihu/<job>.sbatch [job arguments]
 #
-# Jobs run with --export=NONE: only TIEFER_CSC_PROJECT and, when set, SEED,
-# FINAL, REASON, TIEFER_PYTORCH_MODULE and TIEFER_CPU_PYTHON_MODULE are
-# passed to the job. sbatch options before the job
-# script are passed on, for example --test-only or --time=24:00:00.
+# Jobs use sbatch's default export, the standard CSC way: the job sees the
+# environment of the submitting shell, including TIEFER_CSC_PROJECT and, when
+# set, SEED, FINAL, REASON, TIEFER_PYTORCH_MODULE and TIEFER_CPU_PYTHON_MODULE.
+# GPU jobs are submitted from roihu-gpu.csc.fi (aarch64) and the data job from
+# roihu-cpu.csc.fi (x86_64). sbatch options before the job script are passed
+# on, for example --test-only or --time=24:00:00.
 #
 # Logs go to $TIEFER_RUNS_DIR/slurm/<job-name>-<job-id>.out.
 set -euo pipefail
@@ -20,8 +22,12 @@ usage="usage: bash hpc/roihu/submit.sh [sbatch options] hpc/roihu/<job>.sbatch [
 options=()
 while [[ $# -gt 0 && "$1" == -* ]]; do
   case "$1" in
-    --account* | -A* | --export* | --output* | -o* | --chdir* | -D*)
+    --account* | -A* | --output* | -o* | --chdir* | -D*)
       echo "error: $1 is set by submit.sh" >&2
+      exit 2
+      ;;
+    --export*)
+      echo "error: $1: jobs need sbatch's default export (hpc/roihu/README.md)" >&2
       exit 2
       ;;
   esac
@@ -40,39 +46,38 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=hpc/roihu/env.sh
 TIEFER_ENV_PATHS_ONLY=1 source "${repo}/hpc/roihu/env.sh"
 
-# --export takes a comma-separated list, so every value is checked first.
-if [[ ! "${TIEFER_CSC_PROJECT}" =~ ^[A-Za-z0-9_]+$ ]]; then
-  echo "error: TIEFER_CSC_PROJECT must be a CSC project name (letters, digits, _), got '${TIEFER_CSC_PROJECT}'" >&2
-  exit 2
-fi
-export_list="NONE,TIEFER_CSC_PROJECT=${TIEFER_CSC_PROJECT}"
-if [[ -n "${SEED:-}" ]]; then
-  [[ "${SEED}" =~ ^[0-9]+$ ]] || { echo "error: SEED must be a whole number, got '${SEED}'" >&2; exit 2; }
-  export_list+=",SEED=${SEED}"
-fi
-if [[ -n "${FINAL:-}" ]]; then
-  [[ "${FINAL}" =~ ^[01]$ ]] || { echo "error: FINAL must be 0 or 1, got '${FINAL}'" >&2; exit 2; }
-  export_list+=",FINAL=${FINAL}"
-fi
-for name in TIEFER_PYTORCH_MODULE TIEFER_CPU_PYTHON_MODULE; do
-  value="${!name:-}"
-  if [[ -n "${value}" ]]; then
-    [[ "${value}" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "error: ${name} must be a module name, got '${value}'" >&2; exit 2; }
-    export_list+=",${name}=${value}"
-  fi
-done
-if [[ -n "${REASON:-}" ]]; then
-  if [[ "${REASON}" == *,* || "${REASON}" == *\'* || "${REASON}" == *\"* ]]; then
-    echo "error: REASON cannot contain commas or quotes (sbatch --export splits on commas)" >&2
+# GPU nodes are ARM and CPU nodes are x86: submit each job from the login node
+# of the same architecture, so the job inherits a matching environment.
+host_arch="$(uname -m)"
+if grep -q '^#SBATCH --gres=gpu' "${script}"; then
+  if [[ "${host_arch}" != "aarch64" ]]; then
+    echo "error: this is a GPU job and this host is ${host_arch}; submit GPU jobs from roihu-gpu.csc.fi" >&2
     exit 2
   fi
-  export_list+=",REASON=${REASON}"
+elif [[ "$(basename "${script}")" == "data.sbatch" ]]; then
+  if [[ "${host_arch}" != "x86_64" ]]; then
+    echo "error: this host is ${host_arch}; submit the data job from roihu-cpu.csc.fi" >&2
+    exit 2
+  fi
 fi
+
+if [[ -n "${SEED:-}" && ! "${SEED}" =~ ^[0-9]+$ ]]; then
+  echo "error: SEED must be a whole number, got '${SEED}'" >&2
+  exit 2
+fi
+if [[ -n "${FINAL:-}" && ! "${FINAL}" =~ ^[01]$ ]]; then
+  echo "error: FINAL must be 0 or 1, got '${FINAL}'" >&2
+  exit 2
+fi
+# Plain environment variables; sbatch's default export passes them to the job.
+export TIEFER_CSC_PROJECT
+[[ -n "${SEED:-}" ]] && export SEED
+[[ -n "${FINAL:-}" ]] && export FINAL
+[[ -n "${REASON:-}" ]] && export REASON
 
 sbatch \
   --account="${TIEFER_CSC_PROJECT}" \
   --chdir="${repo}" \
   --output="${TIEFER_RUNS_DIR}/slurm/%x-%j.out" \
-  --export="${export_list}" \
   "${options[@]}" \
   "${script}" "$@"
