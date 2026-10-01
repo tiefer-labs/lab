@@ -7,11 +7,14 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/data.sbatch [split] [extra build_cache arguments]
 #
-# The build reads the dataset over HTTPS. If compute nodes cannot reach
-# huggingface.co, build the cache on the login node instead (hpc/roihu/README.md,
-# step 4). The build is resumable: submit again after a time limit.
+# The build reads the dataset over HTTPS with SLURM_CPUS_PER_TASK parallel
+# download workers. It is resumable: submit again after a time limit or an
+# error. Login nodes are for light work only, so the cache is never built there
+# (https://docs.csc.fi/computing/usage-policy/). Whether compute nodes reach
+# huggingface.co is TODO(verify): the first run of this job shows it.
 #
-# TODO(verify) the CPU partition name and its time limit with 'sinfo' on Roihu.
+# CPU partition 'small': up to 72 hours on one node.
+# Source: https://docs.csc.fi/computing/running/batch-job-partitions/
 #SBATCH --job-name=tiefer-data
 #SBATCH --partition=small
 #SBATCH --time=24:00:00

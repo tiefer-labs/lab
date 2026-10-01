@@ -13,8 +13,9 @@
 # activates the matching virtual environment.
 #
 # GPU nodes and roihu-gpu.csc.fi are ARM (aarch64) and use the PyTorch module.
-# CPU nodes and roihu-cpu.csc.fi are x86_64; they only run the data cache
+# CPU nodes and roihu-cpu.csc.fi are x86_64 (AMD); they only run the data cache
 # build, which does not need PyTorch.
+# Source: https://docs.csc.fi/computing/systems-roihu/
 #
 # With TIEFER_ENV_PATHS_ONLY=1 only the paths are set (used by submit.sh).
 
@@ -38,10 +39,13 @@ fi
 
 TIEFER_ARCH="$(uname -m)"
 export TIEFER_ARCH
-# TODO(verify) with 'module avail python-pytorch' on roihu-gpu.csc.fi.
+# Observed on Roihu, 1 October 2026: 'module avail python-pytorch' lists 2.10 and
+# 2.13 (default); 2.10 gives Python 3.12.12, torch 2.10.0+cu130, CUDA 13.0 and
+# bf16 on GH200. Source: https://docs.csc.fi/support/tutorials/gpu-ml/
 export TIEFER_PYTORCH_MODULE="${TIEFER_PYTORCH_MODULE:-python-pytorch/2.10}"
-# TODO(verify) with 'module avail python' on roihu-cpu.csc.fi: a Python 3.12 module for x86 nodes.
-export TIEFER_CPU_PYTHON_MODULE="${TIEFER_CPU_PYTHON_MODULE:-python-data}"
+# Observed on Roihu, 1 October 2026: python-data/3.12-31.03 gives Python 3.12.13
+# on x86. Source: https://docs.csc.fi/support/tutorials/python-usage-guide/
+export TIEFER_CPU_PYTHON_MODULE="${TIEFER_CPU_PYTHON_MODULE:-python-data/3.12-31.03}"
 export TIEFER_VENV="${TIEFER_PROJAPPL}/venv-${TIEFER_ARCH}"
 
 module purge
@@ -66,7 +70,8 @@ tiefer_require_venv() {
 
 # Copy a cache folder to the job's local disk ($TMPDIR) when there is room,
 # and point TIEFER_DATA_DIR at the copy. Usage: tiefer_stage_cache <cache-name>
-# TODO(verify) whether local disk in $TMPDIR must be requested in the job script.
+# $TMPDIR is set for every job without a request.
+# Source: https://docs.csc.fi/computing/running/creating-job-scripts-roihu/
 tiefer_stage_cache() {
   local name="$1"
   local src="${TIEFER_DATA_DIR}/${name}"

@@ -13,9 +13,10 @@
 # forwarded to the training process, which saves last.pt and stops. Submit
 # again with the run ID to continue. Default time 12 hours; gpumedium allows
 # up to 36 hours (override with sbatch --time through submit.sh options).
-# 72 cores per reserved GPU are included in GPU billing (TODO(verify):
-# https://docs.csc.fi/computing/hpc-billing/); data loader workers follow
-# SLURM_CPUS_PER_TASK.
+# 200 GPU BU per GPU hour, with up to 72 cores and 212 GiB memory per GPU
+# included (https://docs.csc.fi/computing/hpc-billing/); data loader workers
+# follow SLURM_CPUS_PER_TASK. Slurm adds memory per GPU automatically
+# (https://docs.csc.fi/computing/running/creating-job-scripts-roihu/).
 #SBATCH --job-name=tiefer-train
 #SBATCH --partition=gpumedium
 #SBATCH --gres=gpu:gh200:1

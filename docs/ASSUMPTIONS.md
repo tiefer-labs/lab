@@ -56,12 +56,13 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 | Assumption | Reason | Revisit when |
 | :--- | :---: | :---: |
 | CloudSEN12+ is published in the TACO v1 format that `tacoreader` 0.5 reads | The [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) example uses `tacoreader` 0.5.3; 0.5.6 works on CSC Roihu | the card moves to a newer TACO format |
-| The CSC PyTorch module on Roihu provides Python 3.12 or newer | The package requires Python 3.12 or newer | TODO(verify) with `module load python-pytorch` and `python3 --version` on `roihu-gpu.csc.fi` |
+| The CSC PyTorch module on Roihu provides Python 3.12 or newer | The package requires Python 3.12 or newer; observed on Roihu on 1 October 2026: `python-pytorch/2.10` gives Python 3.12.12 on a GPU node ([GPU and ML guide](https://docs.csc.fi/support/tutorials/gpu-ml/)) | the module is updated or `python-pytorch/2.10` is removed |
 | The legacy TorchScript ONNX exporter (`dynamo=False`) is available in the PyTorch version used | It needs no extra dependency; it works in PyTorch 2.14 with a deprecation warning | PyTorch removes it; then `onnxscript` would be needed, which requires the team's agreement |
 
 ---
 
 ## Changelog
 
+- 1 October 2026: the PyTorch module assumption is checked on Roihu.
 - 1 October 2026: the TACO format assumption is checked against the dataset card, version 1.1.2.
 - 1 October 2026: first version for milestone L1.
