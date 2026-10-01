@@ -203,19 +203,20 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | File | Purpose |
 | :--- | :---: |
 | `README.md` | Founder guide, plain English, step by step (below) |
-| `env.sh` | Sourced by every job: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once on `roihu-gpu.csc.fi`: create the venv, install, run the environment check |
+| `job_prelude.sh` | Sourced first by every job and by `setup.sh`: sets `HOME` and `USER` from `getent passwd` when empty, sources `/etc/profile` when `module` is missing, runs `module purge` |
+| `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
+| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job; if compute nodes have no internet, the guide describes downloading on the login node first) |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
 | `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
-| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT` to `sbatch`, since `#SBATCH` lines cannot read environment variables |
+| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT` and `--export=NONE,TIEFER_CSC_PROJECT=...` (plus `SEED`, `FINAL`, `REASON` when set) to `sbatch`, since `#SBATCH` lines cannot read environment variables; `sbatch` options such as `--test-only` go before the job script |
 | `usage.sh` | Prints `sacct` usage of a job for the results |
 | `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
 
-Slurm output goes to `$TIEFER_RUNS_DIR/slurm/%x-%j.out`. Jobs copy the cache to `$TMPDIR` at start when it is read from disk.
+Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`; GPU jobs stop unless `uname -m` is `aarch64`. Slurm output goes to `$TIEFER_RUNS_DIR/slurm/%x-%j.out`. Jobs copy the cache to `$TMPDIR` at start when it is read from disk.
 
 ### Founder guide (content of `hpc/roihu/README.md`)
 
@@ -269,11 +270,12 @@ lab/
   hpc/
     roihu/
       README.md                   founder guide for CSC Roihu (section 12)
+      job_prelude.sh              HOME, USER, /etc/profile and module purge for every job
       env.sh                      module, venv and TIEFER_* paths for every job
-      setup.sh                    one-time setup on roihu-gpu.csc.fi
+      setup.sh                    one-time setup per architecture (x86 and ARM)
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
-      submit.sh                   sbatch wrapper that adds --account
+      submit.sh                   sbatch wrapper: --account and --export=NONE,TIEFER_CSC_PROJECT
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
@@ -432,5 +434,6 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: `hpc/roihu/job_prelude.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.
 - 1 October 2026: the table of files in `hpc/roihu/` follows the table format of docs/STYLE.md, section 9 (first column left, other columns centred); content unchanged.
 - 1 October 2026: sections 1 to 17 added for milestone L1, Part A.

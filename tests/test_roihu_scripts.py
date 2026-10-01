@@ -23,6 +23,10 @@ def roihu_env(tmp_path: Path) -> dict[str, str]:
     (bin_dir / "sbatch").write_text(
         '#!/bin/sh\necho "$@" > "$STUB_LOG"\necho "Submitted batch job 1"\n'
     )
+    (bin_dir / "srun").write_text('#!/bin/sh\nfor a in "$@"; do echo "$a"; done > "$STUB_LOG"\n')
+    (bin_dir / "module").write_text('#!/bin/sh\necho "module $*" >> "$STUB_LOG.module"\n')
+    # The test machine reports this architecture; STUB_ARCH overrides it.
+    (bin_dir / "uname").write_text('#!/bin/sh\necho "${STUB_ARCH:-x86_64}"\n')
     # Synthetic sacct output in the --parsable2 format, not a real job record.
     (bin_dir / "sacct").write_text(
         "#!/bin/sh\n"
@@ -66,7 +70,42 @@ def test_submit_adds_account_and_log_location(roihu_env: dict[str, str], tmp_pat
     sbatch_args = (tmp_path / "sbatch.log").read_text()
     assert "--account=testproject" in sbatch_args
     assert f"--output={tmp_path}/scratch/runs/slurm/%x-%j.out" in sbatch_args
+    assert "--export=NONE,TIEFER_CSC_PROJECT=testproject " in sbatch_args
     assert sbatch_args.strip().endswith("hpc/roihu/train.sbatch configs/l1_base.toml")
+
+
+def test_submit_forwards_seed_final_reason_and_sbatch_options(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    env = {**roihu_env, "SEED": "1", "FINAL": "1", "REASON": "final L1 check"}
+    args = ["--test-only", "--time=24:00:00", "hpc/roihu/train.sbatch", "configs/l1_base.toml"]
+    result = _run("submit.sh", args, env)
+    assert result.returncode == 0, result.stderr
+    sbatch_args = (tmp_path / "sbatch.log").read_text()
+    assert (
+        "--export=NONE,TIEFER_CSC_PROJECT=testproject,SEED=1,FINAL=1,REASON=final L1 check"
+        in sbatch_args
+    )
+    assert "--test-only --time=24:00:00 hpc/roihu/train.sbatch" in sbatch_args
+
+
+@pytest.mark.parametrize(
+    "extra, args",
+    [
+        ({"REASON": "a,b"}, ["hpc/roihu/train.sbatch", "c.toml"]),
+        ({"SEED": "1;rm"}, ["hpc/roihu/train.sbatch", "c.toml"]),
+        ({"FINAL": "yes"}, ["hpc/roihu/train.sbatch", "c.toml"]),
+        ({"TIEFER_CSC_PROJECT": "<project>"}, ["hpc/roihu/train.sbatch", "c.toml"]),
+        ({}, ["--account=other", "hpc/roihu/train.sbatch", "c.toml"]),
+        ({}, ["--export=ALL", "hpc/roihu/train.sbatch", "c.toml"]),
+    ],
+)
+def test_submit_rejects_unsafe_values(
+    roihu_env: dict[str, str], tmp_path: Path, extra: dict[str, str], args: list[str]
+) -> None:
+    result = _run("submit.sh", args, {**roihu_env, **extra})
+    assert result.returncode == 2
+    assert not (tmp_path / "sbatch.log").exists()
 
 
 def test_usage_writes_compute_report(roihu_env: dict[str, str], tmp_path: Path) -> None:
@@ -110,7 +149,38 @@ def test_job_scripts_request_documented_resources() -> None:
     for script in ROIHU.glob("*.sbatch"):
         text = script.read_text()
         assert "#SBATCH --account" not in text, "the account is passed by submit.sh"
-        assert "source hpc/roihu/env.sh" in text
+        assert text.startswith("#!/bin/bash -l\n"), script.name
+        assert "#SBATCH --export=NONE\n" in text and "--export=ALL" not in text, script.name
+        prelude = text.index("source hpc/roihu/job_prelude.sh")
+        assert prelude < text.index("source hpc/roihu/env.sh"), script.name
+        assert text.index("uname -m") < prelude, "architecture is checked before loading"
+
+
+@pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke"])
+def test_gpu_jobs_stop_on_a_non_arm_node(roihu_env: dict[str, str], name: str) -> None:
+    result = _run(f"{name}.sbatch", ["configs/l1_base.toml"], roihu_env)
+    assert result.returncode == 1
+    assert "needs an aarch64 GH200 node, but runs on x86_64" in result.stderr
+    assert not Path(roihu_env["STUB_LOG"] + ".module").exists(), "nothing loaded"
+
+
+def test_data_job_accepts_both_architectures_only(roihu_env: dict[str, str]) -> None:
+    result = _run("data.sbatch", [], {**roihu_env, "STUB_ARCH": "riscv64"})
+    assert result.returncode == 1 and "expected aarch64 or x86_64" in result.stderr
+    text = (ROIHU / "data.sbatch").read_text()
+    assert "aarch64 | x86_64) ;;" in text and "gh200" not in text
+
+
+def test_prelude_sets_home_and_user_and_purges_modules(roihu_env: dict[str, str]) -> None:
+    import pwd
+
+    env = {k: v for k, v in roihu_env.items() if k not in ("HOME", "USER")}
+    script = f'set -euo pipefail; source {ROIHU / "job_prelude.sh"}; echo "$HOME|$USER"'
+    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    entry = pwd.getpwuid(os.getuid())
+    assert result.stdout.strip() == f"{entry.pw_dir}|{entry.pw_name}"
+    assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
 
 
 def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:

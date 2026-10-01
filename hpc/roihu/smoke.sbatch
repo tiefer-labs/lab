@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -18,10 +18,20 @@
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=72
+#SBATCH --export=NONE
 set -euo pipefail
 
+# GPU jobs run only on the ARM (aarch64) GH200 nodes; stop before loading anything.
+if [[ "$(uname -m)" != "aarch64" ]]; then
+  echo "error: this GPU job needs an aarch64 GH200 node, but runs on $(uname -m); check the partition" >&2
+  exit 1
+fi
+
+# shellcheck source=hpc/roihu/job_prelude.sh
+source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
+tiefer_require_venv
 python3 hpc/roihu/check_env.py
 
 cache_name="cloudsen12-l1c-high"

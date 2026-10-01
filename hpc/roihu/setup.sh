@@ -7,11 +7,13 @@
 # node's architecture, install the pinned dependencies and the package, and
 # run the environment check.
 #
-#   bash hpc/roihu/setup.sh   # on roihu-gpu.csc.fi (required, ARM)
-#   bash hpc/roihu/setup.sh   # on roihu-cpu.csc.fi (only for data.sbatch, x86)
+#   bash hpc/roihu/setup.sh   # x86 side: on roihu-cpu.csc.fi, creates venv-x86_64
+#   bash hpc/roihu/setup.sh   # ARM side: on roihu-gpu.csc.fi, creates venv-aarch64
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=hpc/roihu/job_prelude.sh
+source "${repo}/hpc/roihu/job_prelude.sh"
 # shellcheck source=hpc/roihu/env.sh
 source "${repo}/hpc/roihu/env.sh"
 

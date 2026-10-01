@@ -56,6 +56,14 @@ if [[ -f "${TIEFER_VENV}/bin/activate" ]]; then
   source "${TIEFER_VENV}/bin/activate"
 fi
 
+# Stop with a clear message when setup.sh has not been run for this architecture.
+tiefer_require_venv() {
+  if [[ ! -f "${TIEFER_VENV}/bin/activate" ]]; then
+    echo "error: no virtual environment ${TIEFER_VENV}; run 'bash hpc/roihu/setup.sh' on a ${TIEFER_ARCH} node first (hpc/roihu/README.md, step 2)" >&2
+    return 1
+  fi
+}
+
 # Copy a cache folder to the job's local disk ($TMPDIR) when there is room,
 # and point TIEFER_DATA_DIR at the copy. Usage: tiefer_stage_cache <cache-name>
 # TODO(verify) whether local disk in $TMPDIR must be requested in the job script.
