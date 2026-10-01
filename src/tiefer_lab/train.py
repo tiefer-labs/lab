@@ -76,9 +76,10 @@ def resolve_run_dir(run: str) -> Path:
 
 
 def new_run_id(config: Config, commit: str) -> str:
+    """<config>-seed<seed>-<UTC time>-<commit>: runs with different seeds never share a folder."""
     stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
     short = commit[:7] if commit != "unknown" else "nogit"
-    return f"{config.name}-{stamp}-{short}"
+    return f"{config.name}-seed{config.train.seed}-{stamp}-{short}"
 
 
 def subset(data: cache.SplitData, limit: int | None) -> cache.SplitData:
@@ -166,6 +167,7 @@ def train(
     resume: bool = False,
     allow_synthetic: bool = False,
     timing: bool = False,
+    seed_override: bool = False,
 ) -> str:
     """Train into `run_dir`. Returns the final status: completed, early_stopped or interrupted."""
     device = devices.select_device(device_name)
@@ -193,6 +195,7 @@ def train(
         meta = {
             "run_id": run_dir.name,
             "seed": config.train.seed,
+            "seed_from_command_line": seed_override,
             "config": CONFIG_NAME,
             "provenance": metadata.provenance(device),
             "precision": precision,
@@ -412,6 +415,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--cache-name", help="override data.cache_name (used by the smoke pipeline)"
     )
     parser.add_argument(
+        "--seed", type=int, help="override train.seed; recorded in the metadata and the run ID"
+    )
+    parser.add_argument(
         "--epochs", type=int, help="override train.epochs (timing runs; marked as smoke)"
     )
     parser.add_argument(
@@ -458,6 +464,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                     or config.train.max_steps_per_epoch,
                 )
                 config = dataclasses.replace(config, train=train_cfg)
+            if args.seed is not None:
+                config = dataclasses.replace(
+                    config, train=dataclasses.replace(config.train, seed=args.seed)
+                )
             run_id = args.run_id or new_run_id(config, metadata.git_commit()["commit"])
             run_dir = paths.runs_dir() / run_id
             if run_dir.exists():
@@ -468,6 +478,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 device_name=args.device,
                 allow_synthetic=args.allow_synthetic,
                 timing=timing,
+                seed_override=args.seed is not None,
             )
     except (TrainingError, cache.CacheError) as err:
         print(f"error: {err}", file=sys.stderr)

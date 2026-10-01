@@ -142,3 +142,22 @@ def test_epochs_are_timed_and_timing_runs_are_marked_smoke(
     assert meta["smoke"] is True and meta["timing_run"] is True
     assert meta["data"]["ready_seconds"] >= 0
     assert "full epoch" in train.timing_line(record)
+
+
+def test_seed_override_goes_into_metadata_and_run_id(
+    synthetic_cache: None, tiefer_env: dict[str, Path], tmp_path: Path
+) -> None:
+    from tiefer_lab.config import dump_toml
+
+    config_path = tmp_path / "tiny.toml"
+    config_path.write_text(dump_toml(config_from_dict(TINY)), encoding="utf-8")
+    base = ["--config", str(config_path), "--device", "cpu", "--allow-synthetic"]
+    assert train.main([*base, "--seed", "1"]) == 0
+    assert train.main([*base, "--seed", "2"]) == 0
+    runs = sorted(p for p in tiefer_env["TIEFER_RUNS_DIR"].iterdir() if p.is_dir())
+    assert len(runs) == 2, "two seeds never share a run folder"
+    assert "-seed1-" in runs[0].name and "-seed2-" in runs[1].name
+    for run, seed in zip(runs, (1, 2), strict=True):
+        meta = json.loads((run / train.METADATA_NAME).read_text())
+        assert meta["seed"] == seed and meta["seed_from_command_line"] is True
+        assert f"seed = {seed}" in (run / train.CONFIG_NAME).read_text()

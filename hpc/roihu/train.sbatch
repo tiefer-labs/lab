@@ -7,6 +7,7 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml
 #   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml <run-id>   # resume
+#   SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml      # other seed
 #
 # Slurm sends SIGUSR1 to this script 300 s before the time limit; it is
 # forwarded to the training process, which saves last.pt and stops. Submit
@@ -32,10 +33,14 @@ source hpc/roihu/env.sh
 cache_name="$(python3 -c 'import sys; from pathlib import Path; from tiefer_lab.config import load_config; print(load_config(Path(sys.argv[1])).data.cache_name)' "${config}")"
 tiefer_stage_cache "${cache_name}"
 
+seed_args=()
+if [[ -n "${SEED:-}" ]]; then
+  seed_args=(--seed "${SEED}")
+fi
 if [[ -n "${resume}" ]]; then
   python3 -m tiefer_lab.train --resume "${resume}" &
 else
-  python3 -m tiefer_lab.train --config "${config}" &
+  python3 -m tiefer_lab.train --config "${config}" "${seed_args[@]}" &
 fi
 pid=$!
 trap 'echo "forwarding SIGUSR1 to training"; kill -USR1 "${pid}"' USR1
