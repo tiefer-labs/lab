@@ -6,7 +6,7 @@
 # an already activated environment, for example: make RUN= test
 RUN ?= uv run --frozen
 
-.PHONY: setup lint typecheck test check requirements
+.PHONY: setup lint typecheck test check requirements results
 
 # Packages that only torch needs. On CSC Roihu they come with the PyTorch
 # module, so hpc/roihu/requirements.txt leaves them out.
@@ -35,3 +35,6 @@ check: lint typecheck test
 
 requirements:
 	uv export $(REQUIREMENTS_ARGS) --output-file hpc/roihu/requirements.txt
+
+results:
+	$(RUN) python -m tiefer_lab.results
