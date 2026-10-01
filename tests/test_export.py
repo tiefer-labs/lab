@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,10 @@ import pytest
 import torch
 
 from tests.test_model_budget import ALLOWED_OPS
+from tiefer_lab import train
+from tiefer_lab.config import config_from_dict
+from tiefer_lab.data import build_cache, cache
+from tiefer_lab.export import __main__ as export_cli
 from tiefer_lab.export import onnx_export, verify
 from tiefer_lab.models.cloud_filter import build_model
 
@@ -59,3 +64,32 @@ def test_verification_fails_loudly_on_mismatch(tmp_path: Path) -> None:
     agreement = verify.compare(path, other, [(x, (64, 64), 0)])
     with pytest.raises(verify.VerificationError):
         verify.check(agreement, max_difference=1e-3, min_agreement=0.999)
+
+
+def test_export_command_writes_files_and_report(tiefer_env: dict[str, Path]) -> None:
+    build_cache.main(["--split", "all", "--synthetic", "--limit", "6", "--patch-size", "64"])
+    config = config_from_dict(
+        {
+            "name": "tiny",
+            "data": {"cache_name": "synthetic", "crop_size": 32, "batch_size": 4, "num_workers": 0},
+            "model": {"widths": [8, 16]},
+            "train": {"epochs": 1, "max_steps_per_epoch": 2},
+            "evaluation": {"bootstrap_resamples": 100},
+            "export": {"input_size": 64, "calibration_patches": 4},
+        }
+    )
+    run = tiefer_env["TIEFER_RUNS_DIR"] / "tiny-export"
+    train.train(config, run, device_name="cpu", allow_synthetic=True)
+    assert export_cli.main(["--run", str(run), "--allow-synthetic"]) == 0
+    for name in export_cli.FILES.values():
+        assert (run / "export" / name).is_file()
+    text = (tiefer_env["TIEFER_REPORTS_DIR"] / "export" / "tiny-export.json").read_text()
+    report = json.loads(text)
+    assert report["smoke"] is True
+    assert report["verification"]["fp32"]["argmax_agreement"] >= 0.999
+    assert len(report["files"]["fp32"]["sha256"]) == 64
+    assert report["files"]["int8"]["path"].startswith("$TIEFER_RUNS_DIR/")
+    assert "change" in report["quantisation"]["val"]
+    assert "test" not in report["quantisation"]
+    assert str(tiefer_env["TIEFER_RUNS_DIR"]) not in text
+    assert not cache.is_synthetic({"source": "cloudsen12"})
