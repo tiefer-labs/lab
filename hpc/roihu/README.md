@@ -218,7 +218,7 @@ Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`, so no
 
 ## 6. Facts the scripts depend on
 
-Facts from the CSC documentation were checked on 1 October 2026; each row links its page. Facts marked as observed were seen on Roihu on 1 October 2026. Rows marked `TODO(verify)` are still open. The [Roihu FAQ](https://docs.csc.fi/support/faq/roihu/) was also read for this guide.
+Facts from the CSC documentation were checked on 1 October 2026; each row links its page. Facts marked as observed were seen on Roihu on 1 October 2026. Rows marked `TODO(verify)` are still open.
 
 | Fact | Used in | Source |
 | :--- | :---: | :---: |
@@ -232,20 +232,23 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | CPU partition `small`: 72 hours, 1 node | `data.sbatch` | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | `--account` is mandatory; GPUs are requested with `--gres=gpu:gh200:<n>`; Slurm adds memory per GPU automatically | `submit.sh`, job scripts | [job scripts on Roihu](https://docs.csc.fi/computing/running/creating-job-scripts-roihu/) |
 | 200 GPU BU per GPU hour; up to 72 cores and 212 GiB memory per GPU included, so GPU jobs request `--cpus-per-task=72` | GPU job scripts | [billing](https://docs.csc.fi/computing/hpc-billing/) |
-| `$TMPDIR` is set for every job without a request | `env.sh` (`tiefer_stage_cache`) | [job scripts on Roihu](https://docs.csc.fi/computing/running/creating-job-scripts-roihu/) |
+| `$TMPDIR` is set for every job without a request; its sizes are listed on the partitions page | `env.sh` (`tiefer_stage_cache`) | [Roihu FAQ](https://docs.csc.fi/support/faq/roihu/); sizes: [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | **Software** | | |
-| `module avail python-pytorch` lists `python-pytorch/2.10` and `python-pytorch/2.13` (default) | `env.sh` (`TIEFER_PYTORCH_MODULE`) | observed; [GPU and ML guide](https://docs.csc.fi/support/tutorials/gpu-ml/) |
+| The PyTorch module `python-pytorch/2.10` | `env.sh` (`TIEFER_PYTORCH_MODULE`) | [GPU and ML guide](https://docs.csc.fi/support/tutorials/gpu-ml/) |
+| `module avail python-pytorch` lists `python-pytorch/2.10` and `python-pytorch/2.13` (default) | `env.sh` (`TIEFER_PYTORCH_MODULE`) | observed on Roihu, 1 October 2026 |
 | On a GPU node, `python-pytorch/2.10` gives Python 3.12.12, torch 2.10.0+cu130, CUDA runtime 13.0, GH200 visible, bf16 supported | `setup.sh`, `check_env.py` | observed |
-| On x86, `python-data/3.12-31.03` gives Python 3.12.13 | `env.sh` (`TIEFER_CPU_PYTHON_MODULE`) | observed; [Python guide](https://docs.csc.fi/support/tutorials/python-usage-guide/) |
+| On x86, `python-data/3.12-31.03` gives Python 3.12.13 | `env.sh` (`TIEFER_CPU_PYTHON_MODULE`) | observed on Roihu, 1 October 2026 |
+| Extra packages go into a venv made with `python3 -m venv --system-site-packages` on top of the loaded module | `setup.sh` | [Python guide](https://docs.csc.fi/support/tutorials/python-usage-guide/) |
 | GPU compute nodes reach PyPI, so `setup.sh` installs from a `gpu_shell.sh` session | `setup.sh`, `gpu_shell.sh` | observed |
 | **Storage and network** | | |
-| Files in `/scratch` unused for 180 days are deleted | `env.sh` | [usage policy](https://docs.csc.fi/computing/usage-policy/) |
+| Files in `/scratch` unused for 180 days are deleted | `env.sh` | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
 | Whether compute nodes can reach `huggingface.co` | `data.sbatch`, `smoke.sbatch` | TODO(verify): the first data job shows it |
 
 ---
 
 ## Changelog
 
+- 1 October 2026: source links corrected for `$TMPDIR`, the `/scratch` cleanup, the PyTorch module and the venv rule; `python-data/3.12-31.03` is marked as observed only.
 - 1 October 2026: steps reordered (clone and project, setup on both architectures, data job, smoke job, training with optional seeds, evaluation to collection); "Before you start" added; the login node cache path removed; facts checked against the CSC documentation and on Roihu; new troubleshooting cases from a real job failure.
 - 1 October 2026: the smoke job measures the time per epoch of `configs/l1_base.toml`.
 - 1 October 2026: GPU jobs request 72 cores; data loader workers follow `SLURM_CPUS_PER_TASK`.

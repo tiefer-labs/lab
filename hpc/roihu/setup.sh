@@ -21,6 +21,8 @@ source "${repo}/hpc/roihu/env.sh"
 echo "architecture: ${TIEFER_ARCH}"
 echo "python: $(command -v python3) ($(python3 --version))"
 
+# A venv on top of the loaded module, keeping the module's packages:
+# https://docs.csc.fi/support/tutorials/python-usage-guide/
 if [[ ! -d "${TIEFER_VENV}" ]]; then
   python3 -m venv --system-site-packages "${TIEFER_VENV}"
 fi

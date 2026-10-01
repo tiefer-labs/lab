@@ -43,12 +43,13 @@ fi
 
 TIEFER_ARCH="$(uname -m)"
 export TIEFER_ARCH
+# python-pytorch/2.10: https://docs.csc.fi/support/tutorials/gpu-ml/
 # Observed on Roihu, 1 October 2026: 'module avail python-pytorch' lists 2.10 and
 # 2.13 (default); 2.10 gives Python 3.12.12, torch 2.10.0+cu130, CUDA 13.0 and
-# bf16 on GH200. Source: https://docs.csc.fi/support/tutorials/gpu-ml/
+# bf16 on GH200.
 export TIEFER_PYTORCH_MODULE="${TIEFER_PYTORCH_MODULE:-python-pytorch/2.10}"
 # Observed on Roihu, 1 October 2026: python-data/3.12-31.03 gives Python 3.12.13
-# on x86. Source: https://docs.csc.fi/support/tutorials/python-usage-guide/
+# on x86.
 export TIEFER_CPU_PYTHON_MODULE="${TIEFER_CPU_PYTHON_MODULE:-python-data/3.12-31.03}"
 export TIEFER_VENV="${TIEFER_PROJAPPL}/venv-${TIEFER_ARCH}"
 
@@ -74,8 +75,8 @@ tiefer_require_venv() {
 
 # Copy a cache folder to the job's local disk ($TMPDIR) when there is room,
 # and point TIEFER_DATA_DIR at the copy. Usage: tiefer_stage_cache <cache-name>
-# $TMPDIR is set for every job without a request.
-# Source: https://docs.csc.fi/computing/running/creating-job-scripts-roihu/
+# $TMPDIR is set for every job without a request: https://docs.csc.fi/support/faq/roihu/
+# Its size per partition: https://docs.csc.fi/computing/running/batch-job-partitions/
 tiefer_stage_cache() {
   local name="$1"
   local src="${TIEFER_DATA_DIR}/${name}"
