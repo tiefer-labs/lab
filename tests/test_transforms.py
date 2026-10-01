@@ -88,3 +88,22 @@ def test_reflect_padding_to_multiple_of_32_and_crop_back() -> None:
 def test_pad_to_shape_rejects_larger_image() -> None:
     with pytest.raises(ValueError):
         tf.pad_to_shape(np.zeros((4, 600, 600), dtype=np.float32), (512, 512))
+
+
+def test_datasets_return_normalised_crops_and_padded_patches(tiefer_env: dict) -> None:
+    import torch
+
+    from tiefer_lab.data import build_cache, cache
+    from tiefer_lab.data.dataset import EvalPatches, TrainPatches
+
+    build_cache.main(["--split", "all", "--synthetic", "--limit", "4", "--patch-size", "40"])
+    directory = cache.cache_dir(build_cache.SYNTHETIC_NAME)
+    mean, std = cache.normalisation(cache.read_index(directory))
+    train = TrainPatches(cache.load_split(directory, "train"), mean, std, 32, tf.Photometric())
+    torch.manual_seed(0)
+    image, label = train[0]
+    assert image.shape == (4, 32, 32) and image.dtype == torch.float32
+    assert label.shape == (32, 32) and label.dtype == torch.int64
+    evaluation = EvalPatches(cache.load_split(directory, "val"), mean, std, multiple=32)
+    image, label, index = evaluation[1]
+    assert image.shape == (4, 64, 64) and label.shape == (40, 40) and index == 1

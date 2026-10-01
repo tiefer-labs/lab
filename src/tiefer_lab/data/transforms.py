@@ -73,9 +73,9 @@ def normalise(
     return ((reflectance - m) / s).astype(np.float32)
 
 
-def random_crop(
-    image: FloatArray, label: LabelArray, size: int, rng: np.random.Generator
-) -> tuple[FloatArray, LabelArray]:
+def random_crop[ImageT: np.generic, LabelT: np.generic](
+    image: NDArray[ImageT], label: NDArray[LabelT], size: int, rng: np.random.Generator
+) -> tuple[NDArray[ImageT], NDArray[LabelT]]:
     """A random square crop of `size` pixels; the full patch if it is not larger."""
     height, width = label.shape
     if size >= height and size >= width:
@@ -89,9 +89,9 @@ def random_crop(
     )
 
 
-def random_flip_rotate(
-    image: FloatArray, label: LabelArray, rng: np.random.Generator
-) -> tuple[FloatArray, LabelArray]:
+def random_flip_rotate[ImageT: np.generic, LabelT: np.generic](
+    image: NDArray[ImageT], label: NDArray[LabelT], rng: np.random.Generator
+) -> tuple[NDArray[ImageT], NDArray[LabelT]]:
     """Random horizontal and vertical flips and a rotation by a multiple of 90 degrees."""
     if rng.random() < 0.5:
         image, label = image[:, :, ::-1], label[:, ::-1]
