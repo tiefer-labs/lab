@@ -356,6 +356,7 @@ lab/
     test_quantise.py
     test_jetson_dry_run.py
     test_results.py
+    test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch and sacct
     test_tables.py                house table style helper
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
