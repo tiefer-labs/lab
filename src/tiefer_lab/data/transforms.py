@@ -155,6 +155,6 @@ def pad_to_shape(image: FloatArray, shape: tuple[int, int]) -> FloatArray:
     return np.pad(image, widths, mode="reflect")
 
 
-def crop_back(array: NDArray[np.generic], size: tuple[int, int]) -> NDArray[np.generic]:
+def crop_back[T: np.generic](array: NDArray[T], size: tuple[int, int]) -> NDArray[T]:
     """Undo `pad_to_multiple` on the last two axes."""
     return array[..., : size[0], : size[1]]
