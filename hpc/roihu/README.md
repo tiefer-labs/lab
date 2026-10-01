@@ -81,7 +81,7 @@ CPU side (`venv-x86_64`), on `roihu-cpu.csc.fi`:
 bash hpc/roihu/setup.sh
 ```
 
-GPU side (`venv-aarch64`), on `roihu-gpu.csc.fi`, by SSH from your own computer or in a Roihu-GPU shell at [www.roihu.csc.fi](https://www.roihu.csc.fi). The login node has no GPU, so `check_env.py` reports none there; the smoke job checks the GPU:
+GPU side (`venv-aarch64`), on `roihu-gpu.csc.fi`, by SSH from your own computer or in a Roihu-GPU shell at [www.roihu.csc.fi](https://www.roihu.csc.fi). If `check_env.py` sees no GPU on the login node, it says so and still passes; the smoke job checks the GPU:
 
 ```bash
 ssh <user>@roihu-gpu.csc.fi
