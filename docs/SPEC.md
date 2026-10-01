@@ -308,6 +308,7 @@ lab/
       evaluate.py                 python -m tiefer_lab.evaluate, with the test guard
       results.py                  python -m tiefer_lab.results, builds docs/RESULTS.md
       smoke.py                    python -m tiefer_lab.smoke, the full local smoke pipeline
+      tables.py                   house table style helper for every generated table
       data/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
@@ -355,6 +356,7 @@ lab/
     test_quantise.py
     test_jetson_dry_run.py
     test_results.py
+    test_tables.py                house table style helper
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
   .gitattributes                  line endings, *.sh and *.sbatch as LF
