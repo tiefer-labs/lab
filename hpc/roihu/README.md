@@ -200,6 +200,7 @@ Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`, so no
 | :--- | :---: | :---: |
 | `TIEFER_CSC_PROJECT is not set` | the project is not exported in this shell | add the line of step 1 to `~/.bashrc` and run `source ~/.bashrc` |
 | `is not a CSC project name` | `~/.bashrc` holds the literal placeholder `<project>` | remove the line as shown in step 1 and add it again with your project name |
+| A job ends within seconds with an empty log | a system profile script returned non-zero under `set -e` (seen on Roihu, 1 October 2026: `/etc/profile.d/colorls.sh`) | fixed in `job_prelude.sh` and `env.sh`; run `git pull`. To see where a job stops, run its script with `bash -x` in `gpu_shell.sh` |
 | `the 'module' command is not available` | the job or shell started without the system profile, even after `/etc/profile` | start from a login shell on `roihu-cpu.csc.fi` or `roihu-gpu.csc.fi`; if it persists, contact the CSC Service Desk |
 | `needs an aarch64 GH200 node, but runs on x86_64` | a GPU job ran on an x86 node, for example after a partition override | submit without overriding `--partition`; GPU jobs need a GPU partition |
 | `no virtual environment .../venv-aarch64` | `setup.sh` has not been run on the GPU side | run step 2, GPU side, with `gpu_shell.sh` |
@@ -249,6 +250,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 1 October 2026: troubleshooting row for jobs that end within seconds with an empty log.
 - 1 October 2026: source links corrected for `$TMPDIR`, the `/scratch` cleanup, the PyTorch module and the venv rule; `python-data/3.12-31.03` is marked as observed only.
 - 1 October 2026: steps reordered (clone and project, setup on both architectures, data job, smoke job, training with optional seeds, evaluation to collection); "Before you start" added; the login node cache path removed; facts checked against the CSC documentation and on Roihu; new troubleshooting cases from a real job failure.
 - 1 October 2026: the smoke job measures the time per epoch of `configs/l1_base.toml`.
