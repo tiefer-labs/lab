@@ -83,6 +83,7 @@ def test_read_patch_selects_used_bands_from_synthetic_file(tmp_path: Path) -> No
     frame = pd.DataFrame(
         {
             source.ID_FIELD: ["synthetic-0"],
+            source.PATCH_ID_FIELD: ["ROI_00001"],
             source.SPLIT_FIELD: [source.SPLIT_VALUES["train"]],
             source.QUALITY_FIELD: [source.QUALITY_HIGH],
             "internal:subfile": ["ignored"],
@@ -90,7 +91,7 @@ def test_read_patch_selects_used_bands_from_synthetic_file(tmp_path: Path) -> No
     )
     table = _FakeTable(frame, [_Sample([str(tmp_path / "image.tif"), str(tmp_path / "label.tif")])])
     patch = source.read_patch(table, 0)
-    assert patch.patch_id == "synthetic-0"
+    assert patch.patch_id == "ROI_00001", "reports identify patches by roi_id"
     assert patch.image.shape == (4, height, width)
     assert [int(patch.image[i, 0, 0]) for i in range(4)] == [
         100 * i for i in source.USED_BAND_INDEXES
@@ -103,22 +104,46 @@ def test_read_patch_selects_used_bands_from_synthetic_file(tmp_path: Path) -> No
 def test_read_patch_rejects_wrong_band_count(tmp_path: Path) -> None:
     _write_tif(tmp_path / "image.tif", np.zeros((4, 4, 4), dtype=np.uint16))
     _write_tif(tmp_path / "label.tif", np.zeros((1, 4, 4), dtype=np.uint8))
-    frame = pd.DataFrame({source.ID_FIELD: ["x"]})
+    frame = pd.DataFrame({source.ID_FIELD: ["x"], source.PATCH_ID_FIELD: ["ROI_x"]})
     table = _FakeTable(frame, [_Sample([str(tmp_path / "image.tif"), str(tmp_path / "label.tif")])])
     with pytest.raises(source.DataSourceError, match="expected 13 bands"):
         source.read_patch(table, 0)
 
 
-def test_select_rows_filters_split_and_quality() -> None:
-    frame = pd.DataFrame(
+def _frame() -> pd.DataFrame:
+    return pd.DataFrame(
         {
-            source.ID_FIELD: ["c", "a", "b", "d", "e"],
-            source.SPLIT_FIELD: ["train", "train", "validation", "train", "test"],
-            source.QUALITY_FIELD: ["high", "high", "high", "scribble", "high"],
+            source.ID_FIELD: ["c", "a", "b", "d", "e", "f"],
+            source.PATCH_ID_FIELD: ["r3", "r1", "r2", "r4", "r5", "r6"],
+            source.SPLIT_FIELD: ["train", "train", "validation", "train", "test", "train"],
+            source.QUALITY_FIELD: ["high", "high", "high", "scribble", "high", "high"],
+            source.SHAPE_FIELD: [509, 509, 509, 509, 509, 2000],
         }
     )
+
+
+def test_select_keeps_high_quality_509_patches_and_counts_dropped() -> None:
+    frame = _frame()
     assert source.select_rows(frame, "train") == [1, 0]
     assert source.select_rows(frame, "val") == [2]
     assert len(source.select_rows(frame, "train", limit=1)) == 1
+    counts = source.select(frame, "train").counts()
+    assert counts == {
+        "high_quality": 3,
+        "kept_509": 2,
+        "dropped_other_shape": 1,
+        "limit": None,
+        "selected": 2,
+    }
     with pytest.raises(ValueError):
         source.select_rows(frame, "holdout")
+
+
+def test_missing_split_field_stops_with_a_clear_message() -> None:
+    frame = _frame().drop(columns=[source.SPLIT_FIELD])
+    with pytest.raises(source.DataSourceError, match="does not name the split field"):
+        source.select(frame, "train")
+    with pytest.raises(source.DataSourceError, match="real_proj_shape"):
+        source.check_columns(
+            [source.SPLIT_FIELD, source.QUALITY_FIELD, source.PATCH_ID_FIELD, source.ID_FIELD]
+        )

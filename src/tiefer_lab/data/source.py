@@ -4,15 +4,17 @@
 """CloudSEN12+ access with tacoreader.
 
 Every dataset fact the code depends on is defined in this module, once, and
-documented with its source in docs/DATA.md. Facts marked TODO(verify) could
-not be checked against the dataset card when this module was written; the
-reader checks them against the data at run time and stops with a clear
-message when they do not hold.
+documented with its source in docs/DATA.md. The facts come from the dataset
+card (https://huggingface.co/datasets/tacofoundation/cloudsen12, version
+1.1.2). The one fact the card does not state, the name of the split field,
+is checked against the data on the first real build: the reader prints the
+metadata columns and stops with a clear message when the field is missing.
 
 The reader uses the tacoreader 0.5 API (`tacoreader.load`, `TortillaDataFrame.read`),
 which reads the dataset's `.taco` files over HTTPS and returns GDAL virtual
-file paths that rasterio opens. Only the requested bands and the label are
-read; nothing else is downloaded.
+file paths that rasterio opens. The card example uses tacoreader 0.5.3; this
+repository pins 0.5.6, which works on CSC Roihu. Only the requested bands and
+the label are read; nothing else is downloaded.
 """
 
 from __future__ import annotations
@@ -30,14 +32,15 @@ from numpy.typing import NDArray
 DATASET_REPO = "tacofoundation/cloudsen12"
 DATASET_CARD_URL = "https://huggingface.co/datasets/tacofoundation/cloudsen12"
 DATASET_API_URL = "https://huggingface.co/api/datasets/tacofoundation/cloudsen12"
+DATASET_CARD_VERSION = "1.1.2"
 DATASET_LICENCE = "CC0-1.0"
 
-# TODO(verify): name of the Level-1C variant in the TACO Foundation catalogue
-# (https://huggingface.co/datasets/tacofoundation/cloudsen12).
+# Level-1C variant in the TACO Foundation catalogue (card). The reference masks
+# of established algorithms are in a separate variant (card).
 TACO_NAME_L1C = "tacofoundation:cloudsen12-l1c"
+TACO_NAME_EXTRA = "tacofoundation:cloudsen12-extra"
 
-# TODO(verify): band order of the Level-1C image item. Sentinel-2 Level-1C has
-# these 13 bands; the card states the order in which the dataset stores them.
+# Band order of the Level-1C image item (card).
 L1C_BAND_NAMES: tuple[str, ...] = (
     "B01",
     "B02",
@@ -60,7 +63,7 @@ USED_BAND_LABELS: tuple[str, ...] = ("blue", "green", "red", "near infrared")
 # 1-based band indexes for rasterio, derived from the order above.
 USED_BAND_INDEXES: tuple[int, ...] = tuple(L1C_BAND_NAMES.index(b) + 1 for b in USED_BANDS)
 
-# TODO(verify): digital number to top-of-atmosphere reflectance,
+# Digital number to top-of-atmosphere reflectance (card: scale 0.0001, no offset),
 # reflectance = DN * REFLECTANCE_SCALE + REFLECTANCE_OFFSET.
 REFLECTANCE_SCALE = 1.0e-4
 REFLECTANCE_OFFSET = 0.0
@@ -70,24 +73,43 @@ CLASS_NAMES: tuple[str, ...] = ("clear", "thick cloud", "thin cloud", "cloud sha
 CLEAR, THICK_CLOUD, THIN_CLOUD, CLOUD_SHADOW = 0, 1, 2, 3
 NUM_CLASSES = len(CLASS_NAMES)
 
-# TODO(verify): label codes in the dataset's label item, mapped to the class
-# indexes above.
+# Label codes of the label item (card: 0 clear, 1 thick cloud, 2 thin cloud,
+# 3 cloud shadow), mapped to the class indexes above.
 LABEL_CODES: Mapping[int, int] = {0: CLEAR, 1: THICK_CLOUD, 2: THIN_CLOUD, 3: CLOUD_SHADOW}
 
-# TODO(verify): metadata fields for the split, the label quality and the patch ID,
-# and their values.
+# Metadata fields. From the card: label quality `label_type` (high, scribble,
+# nolabel), patch identifier `roi_id` (also `old_roi_id`) and patch size
+# `real_proj_shape` (509 or 2000). The split field is not named on the card;
+# TODO(verify) on the first real build (the reader stops if it is missing).
 SPLIT_FIELD = "tortilla:data_split"
 SPLIT_VALUES: Mapping[str, str] = {"train": "train", "val": "validation", "test": "test"}
 QUALITY_FIELD = "label_type"
 QUALITY_HIGH = "high"
+PATCH_ID_FIELD = "roi_id"
+SHAPE_FIELD = "real_proj_shape"
+# Only 509 x 509 patches are kept: 2000 x 2000 patches would bloat the cache
+# and do not fit the fixed 512 x 512 export input.
+KEPT_SHAPE = 509
+# Row key of the TACO table; patches are sorted by it, reports use PATCH_ID_FIELD.
 ID_FIELD = "tortilla:id"
 
-# TODO(verify): position of the image and label items inside one sample.
+# Position of the image and label items inside one sample (card: read(0), read(1)).
 IMAGE_ITEM = 0
 LABEL_ITEM = 1
 
-# TODO(verify): reference masks from established algorithms shipped with the
-# dataset, as {name: item position}. Empty until the card confirms which exist.
+# Reference masks of established algorithms (card). They are in TACO_NAME_EXTRA,
+# not in the Level-1C samples, and are not read yet; reading them needs the item
+# layout of that variant. As {name: item position}.
+REFERENCE_MASK_NAMES: tuple[str, ...] = (
+    "cloudmask_qa60",
+    "cloudmask_sen2cor",
+    "cloudmask_s2cloudless",
+    "cloudmask_cloudscore_cs_v1",
+    "cloudmask_cloudscore_cs_cdf_v1",
+    "cloudmask_unetmobv2_v1",
+    "cloudmask_unetmobv2_v2",
+    "cloudmask_sensei_v2",
+)
 REFERENCE_MASK_ITEMS: Mapping[str, int] = {}
 
 # Metadata columns that describe file layout rather than the scene.
@@ -125,27 +147,67 @@ def map_labels(raw: NDArray[np.integer[Any]]) -> NDArray[np.uint8]:
 
 
 def open_table(taco: str | Sequence[str] = TACO_NAME_L1C) -> Any:
-    """Load the dataset's metadata table (a pandas data frame) with tacoreader."""
+    """Load the dataset's metadata table (a pandas data frame) with tacoreader.
+
+    Prints the metadata columns once, and stops with a clear message when a
+    field the reader depends on is missing.
+    """
     import tacoreader
 
     table = tacoreader.load(taco if isinstance(taco, str) else list(taco))
-    missing = [c for c in (SPLIT_FIELD, QUALITY_FIELD, ID_FIELD) if c not in table.columns]
-    if missing:
-        raise DataSourceError(
-            f"metadata columns {missing} not found; available columns: "
-            f"{sorted(map(str, table.columns))}. Check the dataset card ({DATASET_CARD_URL})"
-        )
+    columns = sorted(map(str, table.columns))
+    print(f"metadata columns ({len(columns)}): {', '.join(columns)}", flush=True)
+    check_columns(columns)
     return table
 
 
-def select_rows(table: Any, split: str, limit: int | None = None, seed: int = 0) -> list[int]:
-    """Row positions of high quality patches in one split, sorted by patch ID.
+def check_columns(columns: Sequence[str]) -> None:
+    if SPLIT_FIELD not in columns:
+        raise DataSourceError(
+            f"the split field {SPLIT_FIELD!r} is not in the metadata. The dataset card does "
+            "not name the split field; find it in the columns printed above and set "
+            "SPLIT_FIELD and SPLIT_VALUES in src/tiefer_lab/data/source.py"
+        )
+    missing = [
+        c for c in (QUALITY_FIELD, PATCH_ID_FIELD, SHAPE_FIELD, ID_FIELD) if c not in columns
+    ]
+    if missing:
+        raise DataSourceError(
+            f"metadata columns {missing} not found; available columns: {list(columns)}. "
+            f"Check the dataset card ({DATASET_CARD_URL})"
+        )
 
-    With `limit`, a fixed-seed random subset of that size is taken, so a small
-    cache is spread over the split rather than taken from its start.
+
+@dataclass(frozen=True)
+class Selection:
+    """Row positions of one split and how many patches were kept and dropped."""
+
+    positions: list[int]
+    high_quality: int
+    kept: int
+    dropped_other_shape: int
+    limit: int | None
+
+    def counts(self) -> dict[str, int | None]:
+        return {
+            "high_quality": self.high_quality,
+            "kept_509": self.kept,
+            "dropped_other_shape": self.dropped_other_shape,
+            "limit": self.limit,
+            "selected": len(self.positions),
+        }
+
+
+def select(table: Any, split: str, limit: int | None = None, seed: int = 0) -> Selection:
+    """High quality 509 x 509 patches of one split, sorted by the row key.
+
+    Patches of any other size are dropped and counted. With `limit`, a
+    fixed-seed random subset of that size is taken, so a small cache is
+    spread over the split rather than taken from its start.
     """
     if split not in SPLIT_VALUES:
         raise ValueError(f"split must be one of {sorted(SPLIT_VALUES)}, got {split!r}")
+    check_columns([str(c) for c in table.columns])
     split_values = set(map(str, table[SPLIT_FIELD].unique()))
     if SPLIT_VALUES[split] not in split_values:
         raise DataSourceError(
@@ -158,14 +220,37 @@ def select_rows(table: Any, split: str, limit: int | None = None, seed: int = 0)
             f"quality value {QUALITY_HIGH!r} not found in {QUALITY_FIELD}; "
             f"values present: {sorted(quality_values)}"
         )
-    mask = (table[SPLIT_FIELD] == SPLIT_VALUES[split]) & (table[QUALITY_FIELD] == QUALITY_HIGH)
-    positions = [int(i) for i in np.flatnonzero(np.asarray(mask))]
+    in_split = np.asarray(
+        (table[SPLIT_FIELD] == SPLIT_VALUES[split]) & (table[QUALITY_FIELD] == QUALITY_HIGH)
+    )
+    shapes = np.asarray([_as_number(v) for v in table[SHAPE_FIELD]])
+    kept_mask = in_split & (shapes == KEPT_SHAPE)
+    positions = [int(i) for i in np.flatnonzero(kept_mask)]
     positions.sort(key=lambda i: str(table.iloc[i][ID_FIELD]))
+    kept = len(positions)
     if limit is not None and limit < len(positions):
         rng = np.random.default_rng(seed)
         chosen = rng.choice(len(positions), size=limit, replace=False)
         positions = [positions[i] for i in sorted(int(c) for c in chosen)]
-    return positions
+    return Selection(
+        positions=positions,
+        high_quality=int(in_split.sum()),
+        kept=kept,
+        dropped_other_shape=int(in_split.sum()) - kept,
+        limit=limit,
+    )
+
+
+def select_rows(table: Any, split: str, limit: int | None = None, seed: int = 0) -> list[int]:
+    """Row positions of `select`."""
+    return select(table, split, limit, seed).positions
+
+
+def _as_number(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float("nan")
 
 
 def row_metadata(row: Mapping[str, Any]) -> dict[str, str | int | float | bool]:
@@ -218,7 +303,7 @@ def read_patch(table: Any, position: int) -> Patch:
         for name, item in REFERENCE_MASK_ITEMS.items()
     }
     return Patch(
-        patch_id=str(row[ID_FIELD]),
+        patch_id=str(row[PATCH_ID_FIELD]),
         image=image.astype(np.uint16),
         label=label,
         metadata=row_metadata(row),
@@ -227,10 +312,7 @@ def read_patch(table: Any, position: int) -> Patch:
 
 
 def dataset_revision(timeout: float = 20.0) -> str | None:
-    """Current commit of the dataset repository on Hugging Face, or None.
-
-    TODO(verify): the response field (`sha`) of the Hugging Face dataset API.
-    """
+    """Current commit of the dataset repository on Hugging Face (`sha` field), or None."""
     try:
         with urllib.request.urlopen(DATASET_API_URL, timeout=timeout) as response:
             payload = json.load(response)

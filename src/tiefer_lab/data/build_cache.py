@@ -98,6 +98,8 @@ def _finish_split(
     metadata: list[dict[str, Any]],
     limit: int | None,
     reference_names: Sequence[str],
+    selection: dict[str, Any] | None = None,
+    row_keys: list[str] | None = None,
 ) -> None:
     images = np.load(cache.images_path(directory, split), mmap_mode="r", allow_pickle=False)
     labels = np.load(cache.labels_path(directory, split), mmap_mode="r", allow_pickle=False)
@@ -114,6 +116,8 @@ def _finish_split(
         "limit": limit,
         "build_date": _now(),
         "patch_ids": patch_ids,
+        "row_keys": row_keys or [],
+        "selection": selection or {},
         "metadata": metadata,
         "reference_masks": list(reference_names),
         "class_pixels": [int(c) for c in np.bincount(np.asarray(labels).ravel(), minlength=4)],
@@ -154,10 +158,23 @@ def build_real_split(
     if revision:
         index["dataset"]["revision"] = revision
     table = source.open_table(taco[0] if len(taco) == 1 else list(taco))
-    rows = source.select_rows(table, split, limit)
+    chosen = source.select(table, split, limit)
+    rows = chosen.positions
+    counts = chosen.counts()
+    print(
+        f"{split}: {counts['high_quality']} high quality patches, "
+        f"{counts['kept_509']} kept ({source.KEPT_SHAPE} x {source.KEPT_SHAPE}), "
+        f"{counts['dropped_other_shape']} dropped (other sizes), {counts['selected']} selected",
+        flush=True,
+    )
     if not rows:
-        raise cache.CacheError(f"no high quality patches found for split {split!r}")
+        raise cache.CacheError(
+            f"no high quality {source.KEPT_SHAPE} x {source.KEPT_SHAPE} patches for {split!r}"
+        )
+    # The row key identifies a row of the TACO table (resume); roi_id identifies
+    # the patch in reports.
     ids = [str(table.iloc[r][source.ID_FIELD]) for r in rows]
+    roi_ids = [str(table.iloc[r][source.PATCH_ID_FIELD]) for r in rows]
 
     progress_file = _progress_path(directory, split)
     progress: dict[str, Any] = {}
@@ -240,7 +257,9 @@ def build_real_split(
     for name in ref_names:
         p = cache.reference_path(directory, split, name)
         os.replace(_partial(p), p)
-    _finish_split(directory, index, split, ids, metadata, limit, ref_names)
+    _finish_split(
+        directory, index, split, roi_ids, metadata, limit, ref_names, counts, row_keys=ids
+    )
     progress_file.unlink()
 
 

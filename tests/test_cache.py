@@ -53,16 +53,20 @@ def test_missing_or_incomplete_split_is_an_error(tiefer_env: dict[str, Path]) ->
 
 
 class _FakeTable:
-    def __init__(self, n: int) -> None:
+    def __init__(self, n: int, large: int = 0) -> None:
+        total = n + large
         self.frame = pd.DataFrame(
             {
-                source.ID_FIELD: [f"p{i:03d}" for i in range(n)],
-                source.SPLIT_FIELD: [source.SPLIT_VALUES["train"]] * n,
-                source.QUALITY_FIELD: [source.QUALITY_HIGH] * n,
-                "region": ["north" if i % 2 else "south" for i in range(n)],
+                source.ID_FIELD: [f"p{i:03d}" for i in range(total)],
+                source.PATCH_ID_FIELD: [f"ROI_{i:05d}" for i in range(total)],
+                source.SPLIT_FIELD: [source.SPLIT_VALUES["train"]] * total,
+                source.QUALITY_FIELD: [source.QUALITY_HIGH] * total,
+                source.SHAPE_FIELD: [509] * n + [2000] * large,
+                "region": ["north" if i % 2 else "south" for i in range(total)],
             }
         )
         self.iloc = self.frame.iloc
+        self.columns = self.frame.columns
 
     def __getitem__(self, key: Any) -> Any:
         return self.frame[key]
@@ -71,7 +75,7 @@ class _FakeTable:
 def test_real_builder_resumes_after_interruption(
     tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    table = _FakeTable(60)
+    table = _FakeTable(60, large=5)
     reads: list[int] = []
     fail_at = {"position": 30}
 
@@ -81,7 +85,7 @@ def test_real_builder_resumes_after_interruption(
         reads.append(position)
         rng = np.random.default_rng(position)
         return source.Patch(
-            patch_id=f"p{position:03d}",
+            patch_id=f"ROI_{position:05d}",
             image=rng.integers(0, 5000, size=(4, 16, 16), dtype=np.uint16),
             label=np.full((16, 16), position % 4, dtype=np.uint8),
             metadata=source.row_metadata(table.iloc[position]),
@@ -102,10 +106,14 @@ def test_real_builder_resumes_after_interruption(
     assert reads[0] == saved, "the second run continues from the last saved patch"
     data = cache.load_split(directory, "train")
     assert len(data) == 60
-    assert data.patch_ids == [f"p{i:03d}" for i in range(60)]
+    assert data.patch_ids == [f"ROI_{i:05d}" for i in range(60)]
     np.testing.assert_array_equal(data.labels[:, 0, 0], np.arange(60) % 4)
     assert data.metadata[1]["region"] == "north"
     index = cache.read_index(directory)
     assert index["dataset"]["revision"] == "test-revision"
+    entry = index["splits"]["train"]
+    assert entry["row_keys"] == [f"p{i:03d}" for i in range(60)]
+    assert entry["selection"]["kept_509"] == 60
+    assert entry["selection"]["dropped_other_shape"] == 5
     assert not list(directory.glob("*.partial.npy"))
     assert not (directory / "train.progress.json").exists()
