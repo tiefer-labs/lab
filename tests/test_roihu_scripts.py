@@ -92,6 +92,13 @@ def test_submit_forwards_seed_final_reason_and_sbatch_options(
         in sbatch_args
     )
     assert "--test-only --time=24:00:00 hpc/roihu/train.sbatch" in sbatch_args
+    env = {**roihu_env, "TIEFER_PYTORCH_MODULE": "python-pytorch/2.13"}
+    assert _run("submit.sh", ["hpc/roihu/smoke.sbatch"], env).returncode == 0
+    sbatch_args = (tmp_path / "sbatch.log").read_text()
+    assert (
+        "--export=NONE,TIEFER_CSC_PROJECT=testproject,TIEFER_PYTORCH_MODULE=python-pytorch/2.13 "
+        in sbatch_args
+    )
 
 
 @pytest.mark.parametrize(
@@ -100,6 +107,7 @@ def test_submit_forwards_seed_final_reason_and_sbatch_options(
         ({"REASON": "a,b"}, ["hpc/roihu/train.sbatch", "c.toml"]),
         ({"SEED": "1;rm"}, ["hpc/roihu/train.sbatch", "c.toml"]),
         ({"FINAL": "yes"}, ["hpc/roihu/train.sbatch", "c.toml"]),
+        ({"TIEFER_PYTORCH_MODULE": "a,b"}, ["hpc/roihu/train.sbatch", "c.toml"]),
         ({"TIEFER_CSC_PROJECT": "<project>"}, ["hpc/roihu/train.sbatch", "c.toml"]),
         ({}, ["--account=other", "hpc/roihu/train.sbatch", "c.toml"]),
         ({}, ["--export=ALL", "hpc/roihu/train.sbatch", "c.toml"]),

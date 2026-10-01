@@ -9,7 +9,8 @@
 #   bash hpc/roihu/submit.sh [sbatch options] hpc/roihu/<job>.sbatch [job arguments]
 #
 # Jobs run with --export=NONE: only TIEFER_CSC_PROJECT and, when set, SEED,
-# FINAL and REASON are passed to the job. sbatch options before the job
+# FINAL, REASON, TIEFER_PYTORCH_MODULE and TIEFER_CPU_PYTHON_MODULE are
+# passed to the job. sbatch options before the job
 # script are passed on, for example --test-only or --time=24:00:00.
 #
 # Logs go to $TIEFER_RUNS_DIR/slurm/<job-name>-<job-id>.out.
@@ -53,6 +54,13 @@ if [[ -n "${FINAL:-}" ]]; then
   [[ "${FINAL}" =~ ^[01]$ ]] || { echo "error: FINAL must be 0 or 1, got '${FINAL}'" >&2; exit 2; }
   export_list+=",FINAL=${FINAL}"
 fi
+for name in TIEFER_PYTORCH_MODULE TIEFER_CPU_PYTHON_MODULE; do
+  value="${!name:-}"
+  if [[ -n "${value}" ]]; then
+    [[ "${value}" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "error: ${name} must be a module name, got '${value}'" >&2; exit 2; }
+    export_list+=",${name}=${value}"
+  fi
+done
 if [[ -n "${REASON:-}" ]]; then
   if [[ "${REASON}" == *,* || "${REASON}" == *\'* || "${REASON}" == *\"* ]]; then
     echo "error: REASON cannot contain commas or quotes (sbatch --export splits on commas)" >&2
