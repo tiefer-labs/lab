@@ -24,6 +24,7 @@ import json
 import os
 import sys
 from collections.abc import Iterator, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,15 @@ from tiefer_lab.utils import paths
 DEFAULT_NAME = "cloudsen12-l1c-high"
 SYNTHETIC_NAME = "synthetic"
 SAVE_EVERY = 25
+DEFAULT_WORKERS = 4
+
+
+def download_workers(requested: int | None = None) -> int:
+    """Parallel readers: --workers, else SLURM_CPUS_PER_TASK, else 4."""
+    if requested:
+        return requested
+    value = os.environ.get("SLURM_CPUS_PER_TASK", "").strip()
+    return int(value) if value.isdigit() and int(value) > 0 else DEFAULT_WORKERS
 
 
 def _now() -> str:
@@ -145,6 +155,7 @@ def build_real_split(
     limit: int | None,
     taco: Sequence[str],
     revision: str | None,
+    workers: int = 4,
 ) -> None:
     dataset = {
         "repo": source.DATASET_REPO,
@@ -236,21 +247,43 @@ def build_real_split(
 
     if done:
         print(f"{split}: resuming at patch {done} of {n}", flush=True)
-    for i in range(done, n):
-        patch = first if (i == 0 and first is not None) else source.read_patch(table, rows[i])
-        if patch.label.shape != (height, width):
-            raise cache.CacheError(
-                f"patch {patch.patch_id} is {patch.label.shape}, expected {(height, width)}"
-            )
-        images[i] = patch.image
-        labels[i] = patch.label
-        for name, arr in refs.items():
-            arr[i] = patch.reference[name]
-        metadata.append(patch.metadata)
-        done = i + 1
-        if done % SAVE_EVERY == 0 or done == n:
-            save_progress()
-            print(f"{split}: {done}/{n}", flush=True)
+    print(f"{split}: reading with {workers} parallel workers", flush=True)
+    # Patches are read in parallel but written in order, so `done` always means
+    # "patches 0 to done - 1 are in the arrays" and a restart continues there.
+    window = max(1, workers) * 4
+    pool = ThreadPoolExecutor(max_workers=max(1, workers))
+    pending: dict[int, Future[source.Patch]] = {}
+    submitted = done
+    try:
+        for i in range(done, n):
+            while submitted < min(i + window, n):
+                if submitted == 0 and first is not None:
+                    ready: Future[source.Patch] = Future()
+                    ready.set_result(first)
+                    pending[submitted] = ready
+                else:
+                    pending[submitted] = pool.submit(source.read_patch, table, rows[submitted])
+                submitted += 1
+            patch = pending.pop(i).result()
+            if patch.label.shape != (height, width):
+                raise cache.CacheError(
+                    f"patch {patch.patch_id} is {patch.label.shape}, expected {(height, width)}"
+                )
+            images[i] = patch.image
+            labels[i] = patch.label
+            for name, arr in refs.items():
+                arr[i] = patch.reference[name]
+            metadata.append(patch.metadata)
+            done = i + 1
+            if done % SAVE_EVERY == 0 or done == n:
+                save_progress()
+                print(f"{split}: {done}/{n}", flush=True)
+    except BaseException:
+        save_progress()
+        print(f"{split}: stopped after {done} of {n}; run the same command to continue", flush=True)
+        raise
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
     save_progress()
     os.replace(_partial(cache.images_path(directory, split)), cache.images_path(directory, split))
     os.replace(_partial(cache.labels_path(directory, split)), cache.labels_path(directory, split))
@@ -348,6 +381,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=f"dataset file, URL or catalogue name (default {source.TACO_NAME_L1C}); repeatable",
     )
     parser.add_argument("--revision", default=None, help="record this dataset revision")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="parallel readers (default: SLURM_CPUS_PER_TASK, else 4)",
+    )
     parser.add_argument("--synthetic", action="store_true", help="write synthetic scenes")
     parser.add_argument("--patch-size", type=int, default=128, help="synthetic patch size")
     parser.add_argument("--seed", type=int, default=0, help="synthetic data seed")
@@ -372,8 +411,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if revision is None:
             print("warning: dataset revision could not be read; recorded as unknown", flush=True)
         taco = args.taco or [source.TACO_NAME_L1C]
+        workers = download_workers(args.workers)
         for split in splits:
-            build_real_split(directory, split, args.limit, taco, revision)
+            build_real_split(directory, split, args.limit, taco, revision, workers)
     print(f"cache: {paths.portable(directory)}", flush=True)
     return 0
 

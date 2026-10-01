@@ -98,12 +98,13 @@ def test_real_builder_resumes_after_interruption(
         build_cache.main(args)
     directory = cache.cache_dir(build_cache.DEFAULT_NAME)
     assert (directory / "train.progress.json").is_file()
-    saved = (30 // build_cache.SAVE_EVERY) * build_cache.SAVE_EVERY
+    # Progress is saved when a read fails, so nothing before the failure is read again.
+    saved = 30
 
     fail_at["position"] = -1
     reads.clear()
     assert build_cache.main(args) == 0
-    assert reads[0] == saved, "the second run continues from the last saved patch"
+    assert min(reads) == saved, "the second run continues where the first one stopped"
     data = cache.load_split(directory, "train")
     assert len(data) == 60
     assert data.patch_ids == [f"ROI_{i:05d}" for i in range(60)]
@@ -117,3 +118,11 @@ def test_real_builder_resumes_after_interruption(
     assert entry["selection"]["dropped_other_shape"] == 5
     assert not list(directory.glob("*.partial.npy"))
     assert not (directory / "train.progress.json").exists()
+
+
+def test_download_workers(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SLURM_CPUS_PER_TASK", raising=False)
+    assert build_cache.download_workers() == 4
+    monkeypatch.setenv("SLURM_CPUS_PER_TASK", "16")
+    assert build_cache.download_workers() == 16
+    assert build_cache.download_workers(2) == 2
