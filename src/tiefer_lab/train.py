@@ -302,7 +302,9 @@ def train(
             scheduler.step()
             val = validate(model, val_loader, device, precision)
             val_miou = val["mean_iou"] if val["mean_iou"] is not None else -1.0
-            improved = val_miou > best_metric
+            # Early stopping on validation mean IoU: only a gain of at least
+            # min_improvement counts, so noise does not keep training alive.
+            improved = val_miou > best_metric + config.train.min_improvement
             if improved:
                 best_metric, best_epoch, stale = val_miou, epoch + 1, 0
                 checkpoint.save_checkpoint(

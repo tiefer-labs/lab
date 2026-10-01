@@ -73,3 +73,14 @@ def test_data_workers_follow_slurm(monkeypatch: pytest.MonkeyPatch) -> None:
     assert data_workers(4) == 71
     monkeypatch.setenv("SLURM_CPUS_PER_TASK", "1")
     assert data_workers(4) == 4
+
+
+def test_l1_base_scales_learning_rate_with_batch_size(repo_root: Path) -> None:
+    config = load_config(repo_root / "configs" / "l1_base.toml")
+    assert config.data.batch_size == 128
+    # Linear scaling from 0.002 at a batch size of 32.
+    assert config.train.learning_rate == pytest.approx(0.002 * 128 / 32)
+    assert config.train.min_improvement == pytest.approx(0.001)
+    assert config.train.patience == 15
+    with pytest.raises(ConfigError):
+        config_from_dict({"name": "x", "train": {"min_improvement": -0.1}})

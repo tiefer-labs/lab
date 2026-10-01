@@ -70,6 +70,7 @@ class TrainConfig:
     weight_decay: float = 1e-4
     dice_weight: float = 1.0
     patience: int = 15
+    min_improvement: float = 0.0
     max_steps_per_epoch: int | None = None
     log_every: int = 50
 
@@ -78,6 +79,7 @@ class TrainConfig:
         _check(self.learning_rate > 0 and self.weight_decay >= 0, "learning rate and decay")
         _check(self.dice_weight >= 0, "dice_weight must be >= 0")
         _check(self.patience >= 1, "patience must be >= 1")
+        _check(0.0 <= self.min_improvement < 0.1, "min_improvement in [0, 0.1)")
         _check(self.max_steps_per_epoch is None or self.max_steps_per_epoch >= 1, "max_steps")
         _check(self.log_every >= 1, "log_every must be >= 1")
 
