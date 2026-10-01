@@ -8,7 +8,8 @@
 # run the environment check.
 #
 #   bash hpc/roihu/setup.sh   # x86 side: on roihu-cpu.csc.fi, creates venv-x86_64
-#   bash hpc/roihu/setup.sh   # ARM side: on roihu-gpu.csc.fi, creates venv-aarch64
+#   bash hpc/roihu/setup.sh   # ARM side: inside hpc/roihu/gpu_shell.sh or on
+#                             # roihu-gpu.csc.fi, creates venv-aarch64
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

@@ -205,7 +205,8 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `README.md` | Founder guide, plain English, step by step (below) |
 | `job_prelude.sh` | Sourced first by every job and by `setup.sh`: sets `HOME` and `USER` from `getent passwd` when empty, sources `/etc/profile` when `module` is missing, runs `module purge` |
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
+| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and in `gpu_shell.sh` or on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
+| `gpu_shell.sh` | Interactive shell on one GH200 GPU in `gputest` for 15 minutes, with the `job_prelude.sh` steps; used to run `setup.sh` for the GPU side from a CPU login shell |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job; if compute nodes have no internet, the guide describes downloading on the login node first) |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml` |
@@ -273,6 +274,7 @@ lab/
       job_prelude.sh              HOME, USER, /etc/profile and module purge for every job
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
+      gpu_shell.sh                interactive GH200 shell on gputest, for setup.sh
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
       submit.sh                   sbatch wrapper: --account and --export=NONE,TIEFER_CSC_PROJECT
@@ -434,6 +436,6 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
-- 1 October 2026: `hpc/roihu/job_prelude.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.
+- 1 October 2026: `hpc/roihu/job_prelude.sh` and `hpc/roihu/gpu_shell.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.
 - 1 October 2026: the table of files in `hpc/roihu/` follows the table format of docs/STYLE.md, section 9 (first column left, other columns centred); content unchanged.
 - 1 October 2026: sections 1 to 17 added for milestone L1, Part A.

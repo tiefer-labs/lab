@@ -183,6 +183,27 @@ def test_prelude_sets_home_and_user_and_purges_modules(roihu_env: dict[str, str]
     assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
 
 
+def test_gpu_shell_requests_one_gh200_on_gputest(roihu_env: dict[str, str]) -> None:
+    result = _run("gpu_shell.sh", [], roihu_env)
+    assert result.returncode == 0, result.stderr
+    args = Path(roihu_env["STUB_LOG"]).read_text().splitlines()
+    assert args[:9] == [
+        "--account=testproject",
+        "--partition=gputest",
+        "--gres=gpu:gh200:1",
+        "--cpus-per-task=16",
+        "--time=00:15:00",
+        "--export=NONE",
+        "--pty",
+        "/bin/bash",
+        "-l",
+    ]
+    assert args[9] == "-c" and "source hpc/roihu/job_prelude.sh" in args[10]
+    assert "export TIEFER_CSC_PROJECT=testproject" in args[10]
+    bad = {**roihu_env, "TIEFER_CSC_PROJECT": "x; rm"}
+    assert _run("gpu_shell.sh", [], bad).returncode == 2
+
+
 def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:
     smoke = (ROIHU / "smoke.sbatch").read_text()
     assert 'if [[ ! -f "${TIEFER_DATA_DIR}/${cache_name}/index.json" ]]' in smoke
