@@ -224,3 +224,38 @@ def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:
     assert "--split train --limit 32" in smoke and "--split val --limit 16" in smoke
     # The tiny cache must be built before the first training command.
     assert smoke.index("--limit 32") < smoke.index("tiefer_lab.train")
+
+
+# A stand-in for /etc/profile on Roihu: like /etc/profile.d/colorls.sh it ends
+# a non-interactive shell with a non-zero return, after code that would also
+# fail under nounset and pipefail. It defines 'module' as Lmod does.
+STUB_PROFILE = """\
+module() {
+  local unset_inside="${TIEFER_TEST_NOT_SET}"
+  false | true
+  echo "module $*" >> "$STUB_LOG.module"
+}
+echo "${TIEFER_TEST_NOT_SET}" | false
+[ -n "${PS1}" ]
+return
+"""
+
+
+@pytest.mark.parametrize("options", ["-euo pipefail", "+euo pipefail", "-e +u -o pipefail"])
+def test_prelude_survives_a_system_profile_that_returns_non_zero(
+    roihu_env: dict[str, str], tmp_path: Path, options: str
+) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    profile = tmp_path / "profile"
+    profile.write_text(STUB_PROFILE)
+    env = {**roihu_env, "TIEFER_SYSTEM_PROFILE": str(profile)}
+    env.pop("PS1", None)
+    script = (
+        f"set {options}; before=$(set +o; echo $-); "
+        f"source {ROIHU / 'job_prelude.sh'}; "
+        'after=$(set +o; echo $-); echo continued; [[ "$before" == "$after" ]] && echo same'
+    )
+    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["continued", "same"], "options restored exactly"
+    assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"

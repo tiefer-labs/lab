@@ -204,6 +204,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | :--- | :---: |
 | `README.md` | Founder guide, plain English, step by step (below) |
 | `job_prelude.sh` | Sourced first by every job and by `setup.sh`: sets `HOME` and `USER` from `getent passwd` when empty, sources `/etc/profile` when `module` is missing, runs `module purge` |
+| `shell_options.sh` | Turns off `errexit`, `nounset` and `pipefail` around `/etc/profile` and every `module` command, then restores exactly the saved options |
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
 | `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and in `gpu_shell.sh` or on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `gpu_shell.sh` | Interactive shell on one GH200 GPU in `gputest` for 15 minutes, with the `job_prelude.sh` steps; used to run `setup.sh` for the GPU side from a CPU login shell |
@@ -271,6 +272,7 @@ lab/
     roihu/
       README.md                   founder guide for CSC Roihu (section 12)
       job_prelude.sh              HOME, USER, /etc/profile and module purge for every job
+      shell_options.sh            relax and restore set -euo pipefail around system code
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
       gpu_shell.sh                interactive GH200 shell on gputest, for setup.sh
@@ -435,6 +437,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: `hpc/roihu/shell_options.sh` added to the table and the tree.
 - 1 October 2026: the founder guide in section 12 follows the new order of `hpc/roihu/README.md`: before you start, clone and project, setup on both architectures, data, smoke, training with optional seeds, evaluation to collection; the login node cache path is removed.
 - 1 October 2026: `hpc/roihu/job_prelude.sh` and `hpc/roihu/gpu_shell.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.
 - 1 October 2026: the table of files in `hpc/roihu/` follows the table format of docs/STYLE.md, section 9 (first column left, other columns centred); content unchanged.

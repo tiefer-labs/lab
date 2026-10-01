@@ -175,6 +175,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | File | Purpose |
 | :--- | :---: |
 | `job_prelude.sh` | sourced first by every job and by `setup.sh`: `HOME` and `USER` from `getent passwd` when empty, `/etc/profile` when `module` is missing, `module purge` |
+| `shell_options.sh` | turns off `errexit`, `nounset` and `pipefail` around `/etc/profile` and every `module` command, then restores the saved options |
 | `env.sh` | sourced after the prelude: module, venv, `PIP_CACHE_DIR` and `TIEFER_*` paths; stops when `TIEFER_CSC_PROJECT` is unset or not a project name |
 | `setup.sh` | one-time setup per architecture: venv, `requirements.txt`, the package, environment check |
 | `gpu_shell.sh` | interactive shell on one GH200 GPU in `gputest` for 15 minutes, to run `setup.sh` for the GPU side |
