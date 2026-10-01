@@ -208,9 +208,9 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and in `gpu_shell.sh` or on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `gpu_shell.sh` | Interactive shell on one GH200 GPU in `gputest` for 15 minutes, with the `job_prelude.sh` steps; used to run `setup.sh` for the GPU side from a CPU login shell |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
-| `data.sbatch` | Builds the full cache in `/scratch` (CPU job; if compute nodes have no internet, the guide describes downloading on the login node first) |
-| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml` |
-| `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path |
+| `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
+| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache first when the full cache is missing |
+| `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
 | `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
 | `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT` and `--export=NONE,TIEFER_CSC_PROJECT=...` (plus `SEED`, `FINAL`, `REASON` when set) to `sbatch`, since `#SBATCH` lines cannot read environment variables; `sbatch` options such as `--test-only` go before the job script |
@@ -221,15 +221,14 @@ Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`; GPU j
 
 ### Founder guide (content of `hpc/roihu/README.md`)
 
-1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-gpu.csc.fi` with a MyCSC-signed certificate.
-2. The repository is public, so cloning needs no key: `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src`.
-3. `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, then `bash hpc/roihu/setup.sh`.
-4. Build the data cache (`data.sbatch`, or the login node download path).
-5. `bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch`, check the log.
-6. `bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml`; follow with `squeue --me`; resubmit with the resume option if the time limit is reached.
-7. `evaluate.sbatch`, then `export.sbatch`.
-8. `bash hpc/roihu/collect.sh <run-id>` and copy the archive to the founder's computer (for example with `scp` from the computer). Unpack into the repository on the computer; the results are then processed there.
-9. A note on CSC terms of use: free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
+1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` and `roihu-gpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
+2. Before you start: `csc-projects` for the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; login nodes are for light work only, so the cache is never built there.
+3. Clone with `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` (public, no key) and set `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>` and how to remove such a line.
+4. `bash hpc/roihu/setup.sh` on the CPU side (`venv-x86_64`, on `roihu-cpu.csc.fi`) and on the GPU side (`venv-aarch64`, inside `gpu_shell.sh` or on `roihu-gpu.csc.fi`).
+5. Build the data cache with `data.sbatch`.
+6. `bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch` on `gputest`, check the log; it builds a tiny cache first when the full cache is missing.
+7. `bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml` on `gpumedium`, one GPU per job, optionally two seeds as two jobs with `SEED`; follow with `squeue --me`; resubmit with the run ID if the time limit is reached.
+8. `evaluate.sbatch`, then `export.sbatch`, the final test with `FINAL=1` and `REASON`, `usage.sh` per job, and `bash hpc/roihu/collect.sh <run-id>`; copy the archive to the founder's computer (for example with `scp` from the computer) and unpack it into the repository, where the results are processed.
 
 ---
 
@@ -436,6 +435,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: the founder guide in section 12 follows the new order of `hpc/roihu/README.md`: before you start, clone and project, setup on both architectures, data, smoke, training with optional seeds, evaluation to collection; the login node cache path is removed.
 - 1 October 2026: `hpc/roihu/job_prelude.sh` and `hpc/roihu/gpu_shell.sh` added to the table and the tree; job scripts use a login shell and `--export=NONE`.
 - 1 October 2026: the table of files in `hpc/roihu/` follows the table format of docs/STYLE.md, section 9 (first column left, other columns centred); content unchanged.
 - 1 October 2026: sections 1 to 17 added for milestone L1, Part A.
