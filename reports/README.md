@@ -30,7 +30,7 @@ What each report file is and which script writes it. Every number in [docs/RESUL
 
 | File | Written by | Contents |
 | :--- | :---: | :---: |
-| `evaluation/<run-id>_val.json` | `python -m tiefer_lab.evaluate --split val` | pixel and frame metrics, false discard rate, bootstrap intervals, breakdown by metadata, baselines, provenance |
+| `evaluation/<run-id>_val.json` | `python -m tiefer_lab.evaluate --split val` | pixel and frame metrics, false discard rate, bootstrap intervals, breakdown by metadata, per-frame cloud fraction, shadow fraction and send or keep decision, baselines, provenance |
 | `evaluation/<run-id>_test.json` | `python -m tiefer_lab.evaluate --split test --final` | the same on the test split, final evaluation only |
 | `export/<run-id>.json` | `python -m tiefer_lab.export` | SHA-256 of the ONNX files, parameters, operations, operators, ONNX Runtime check, INT8 change |
 | `jetson/<label>_<UTC time>.json` | `jetson/bench.py` on a Jetson Orin | latency, throughput, power, energy per tile, temperatures |

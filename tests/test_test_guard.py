@@ -70,6 +70,10 @@ def test_validation_report_with_baselines(trained_run: Path, tiefer_env: dict[st
     assert {"always_send", "threshold_rule"} <= set(report["baselines"])
     assert report["baselines"]["always_send"]["false_discard_rate"] in (0.0, None)
     assert "synthetic_group" in report["breakdown"]
+    frames = report["frames"]
+    assert len(frames) == 6 and frames[0]["patch_id"] == "synthetic-val-00000"
+    assert {f["decision"] for f in frames} <= {"send", "keep"}
+    assert all(0.0 <= f["predicted_shadow_fraction"] <= 1.0 for f in frames)
     assert report["provenance"]["git"]["commit"]
     assert str(tiefer_env["TIEFER_DATA_DIR"]) not in text
     assert not (tiefer_env["TIEFER_REPORTS_DIR"] / evaluate.TEST_LOG).exists()

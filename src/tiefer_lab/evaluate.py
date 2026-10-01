@@ -162,6 +162,25 @@ def breakdown(
     return out
 
 
+def frame_decisions(
+    scores: Scores, positions: Sequence[int], patch_ids: Sequence[str], settings: EvaluationConfig
+) -> list[dict[str, Any]]:
+    """Per frame: true and predicted cloud fraction, predicted shadow fraction, decision."""
+    threshold = settings.decision_threshold
+    return [
+        {
+            "patch_id": patch_ids[position],
+            "true_cloud_fraction": scores.true_fraction[i],
+            "predicted_cloud_fraction": scores.pred_fraction[i],
+            "predicted_shadow_fraction": scores.pred_shadow[i],
+            "threshold": threshold,
+            "decision": decisions.decide(scores.pred_fraction[i], threshold),
+            "decision_from_reference": decisions.decide(scores.true_fraction[i], threshold),
+        }
+        for i, position in enumerate(positions)
+    ]
+
+
 # Test guard ----------------------------------------------------------------
 
 
@@ -306,8 +325,10 @@ def evaluate_run(
         num_workers=config.data.num_workers,
     )
     scores = Scores()
-    for _, pred, label in predict_masks(model, loader, device, precision):
+    positions: list[int] = []
+    for position, pred, label in predict_masks(model, loader, device, precision):
         scores.add(pred, label)
+        positions.append(position)
 
     report: dict[str, Any] = {
         "kind": "evaluation",
@@ -334,6 +355,7 @@ def evaluate_run(
         },
         "model": scores.report(config.evaluation),
         "breakdown": breakdown(scores, data.metadata, config.evaluation),
+        "frames": frame_decisions(scores, positions, data.patch_ids, config.evaluation),
     }
     if with_baselines:
         val = data if split == "val" else cache.load_split(directory, "val")
