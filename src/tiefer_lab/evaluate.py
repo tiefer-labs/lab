@@ -37,7 +37,7 @@ from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_con
 from tiefer_lab.data import cache
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.transforms import to_reflectance
-from tiefer_lab.models.cloud_filter import build_model, predict_masks
+from tiefer_lab.models.cloud_filter import CloudFilterNet, build_model, predict_masks
 from tiefer_lab.tables import header_block
 from tiefer_lab.train import CONFIG_NAME, METADATA_NAME, TrainingError, resolve_run_dir
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
@@ -215,7 +215,7 @@ def check_test_guard(split: str, final: bool, reason: str | None) -> None:
 # Evaluation ----------------------------------------------------------------
 
 
-def load_model(run_dir: Path, config: Config, which: str, device: torch.device) -> torch.nn.Module:
+def load_model(run_dir: Path, config: Config, which: str, device: torch.device) -> CloudFilterNet:
     name = checkpoint.BEST if which == "best" else checkpoint.LAST
     state = checkpoint.load_checkpoint(run_dir / name, map_location=device)
     model = build_model(config.model.widths).to(device)
