@@ -1,0 +1,25 @@
+# Runtime outputs, never committed
+data/
+runs/
+*.onnx
+*.pt
+*.engine
+*.calib
+*.npy
+*.tar.gz
+
+# Environment
+.venv/
+.env
+
+# Caches and build output
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/

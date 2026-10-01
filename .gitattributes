@@ -1,0 +1,10 @@
+# Text files use LF in the repository and in working copies.
+* text=auto eol=lf
+*.sh text eol=lf
+*.sbatch text eol=lf
+*.py text eol=lf
+Makefile text eol=lf
+
+# Brand assets are stored exactly as provided.
+docs/assets/** -text
+*.png binary
