@@ -11,7 +11,7 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
 ## 1. Requirements
 
 - A CSC project with Roihu GPU access and GPU billing units.
-- SSH access to `roihu-cpu.csc.fi` (x86) and `roihu-gpu.csc.fi` (ARM) with a MyCSC-signed certificate.
+- Access to both login nodes: `roihu-cpu.csc.fi` (x86) and `roihu-gpu.csc.fi` (ARM), by SSH from your own computer with a MyCSC-signed certificate, or as a Roihu-CPU or Roihu-GPU shell in the web interface at [www.roihu.csc.fi](https://www.roihu.csc.fi).
 - The project name, written below as `<project>`, and your CSC user name, written as `<user>`. Replace both with your own values in every command.
 - CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. **Confirm with the project PI or the CSC Service Desk before the first job.** This is the founder's decision.
 
@@ -25,14 +25,23 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
    csc-projects
    ```
 
-2. Before each new kind of job, check its request without submitting it (from the repository folder, after step 1). `submit.sh` passes options written before the job script on to `sbatch`; `--test-only` validates the request and prints when it would start:
+2. Before each new kind of job, check its request without submitting it (from the repository folder, after step 1, on the login node of section 2.3). `submit.sh` passes options written before the job script on to `sbatch`; `--test-only` validates the request and prints when it would start:
 
    ```bash
    bash hpc/roihu/submit.sh --test-only hpc/roihu/smoke.sbatch
    bash hpc/roihu/submit.sh --test-only hpc/roihu/train.sbatch configs/l1_base.toml
    ```
 
-3. Know where things run. Login nodes are for light work only: "one-core jobs that finish in minutes and require less than 1 GiB of memory" ([usage policy](https://docs.csc.fi/computing/usage-policy/)). The data cache is therefore built in a CPU job, never on a login node.
+3. Know where things run. Jobs use sbatch's default export, the standard CSC way: a job inherits the environment of the shell that submitted it, including the `module` command. So each job is submitted from the login node of its own architecture, and `submit.sh` refuses it otherwise:
+
+   | Work | Login node |
+   | :--- | :---: |
+   | CPU setup (`venv-x86_64`) and the data job | `roihu-cpu.csc.fi` |
+   | GPU setup (`venv-aarch64`), smoke, training, evaluation and export jobs | `roihu-gpu.csc.fi` |
+
+   Reach each one by SSH from your own computer, or open a Roihu-CPU or Roihu-GPU shell in the web interface at [www.roihu.csc.fi](https://www.roihu.csc.fi).
+
+4. Login nodes are for light work only: "one-core jobs that finish in minutes and require less than 1 GiB of memory" ([usage policy](https://docs.csc.fi/computing/usage-policy/)). The data cache is therefore built in a CPU job, never on a login node.
 
 ---
 
@@ -72,15 +81,7 @@ CPU side (`venv-x86_64`), on `roihu-cpu.csc.fi`:
 bash hpc/roihu/setup.sh
 ```
 
-GPU side (`venv-aarch64`). From the x86 login shell, open a 15 minute shell on one GH200 GPU with `gpu_shell.sh` and run setup there; the environment check then also sees the GPU:
-
-```bash
-bash hpc/roihu/gpu_shell.sh
-bash hpc/roihu/setup.sh
-exit
-```
-
-Or log in to the ARM login node and run setup there:
+GPU side (`venv-aarch64`), on `roihu-gpu.csc.fi`, by SSH from your own computer or in a Roihu-GPU shell at [www.roihu.csc.fi](https://www.roihu.csc.fi). The login node has no GPU, so `check_env.py` reports none there; the smoke job checks the GPU:
 
 ```bash
 ssh <user>@roihu-gpu.csc.fi
@@ -90,7 +91,11 @@ bash hpc/roihu/setup.sh
 
 ### Step 3: build the data cache
 
+From `roihu-cpu.csc.fi`:
+
 ```bash
+ssh <user>@roihu-cpu.csc.fi
+cd /projappl/<project>/tiefer-lab/src
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch all
 squeue --me
 ```
@@ -101,7 +106,11 @@ Its log starts with the metadata columns of the dataset. If it stops because the
 
 ### Step 4: smoke job on `gputest`
 
+This and every later job is submitted from `roihu-gpu.csc.fi`:
+
 ```bash
+ssh <user>@roihu-gpu.csc.fi
+cd /projappl/<project>/tiefer-lab/src
 bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch
 squeue --me
 ls /scratch/<project>/tiefer-lab/runs/slurm/
@@ -148,7 +157,7 @@ bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
 bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <run-id>
 ```
 
-The test split is only for the final evaluation. It needs `FINAL=1` and a reason without commas or quotes, and every such run is logged in `test_log.md`:
+The test split is only for the final evaluation. It needs `FINAL=1` and a reason, and every such run is logged in `test_log.md`:
 
 ```bash
 FINAL=1 REASON="<why>" bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
@@ -174,15 +183,14 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 
 | File | Purpose |
 | :--- | :---: |
-| `job_prelude.sh` | sourced first by every job and by `setup.sh`: `HOME` and `USER` from `getent passwd` when empty, `/etc/profile` when `module` is missing, `module purge` |
-| `shell_options.sh` | turns off `errexit`, `nounset` and `pipefail` around `/etc/profile` and every `module` command, then restores the saved options |
+| `job_prelude.sh` | sourced first by every job and by `setup.sh`: stops when `module` is missing, runs `module purge` |
+| `shell_options.sh` | turns off `errexit`, `nounset` and `pipefail` around every `module` command, then restores the saved options |
 | `env.sh` | sourced after the prelude: module, venv, `PIP_CACHE_DIR` and `TIEFER_*` paths; stops when `TIEFER_CSC_PROJECT` is unset or not a project name |
 | `setup.sh` | one-time setup per architecture: venv, `requirements.txt`, the package, environment check |
-| `gpu_shell.sh` | interactive shell on one GH200 GPU in `gputest` for 15 minutes, to run `setup.sh` for the GPU side |
 | `check_env.py` | imports every dependency, prints versions, architecture, GPU, CUDA and bf16 support |
 | `requirements.txt` | generated from `uv.lock` with `make requirements`, without `torch` and its own dependencies |
-| `submit.sh` | `sbatch` with `--account`, `--export=NONE,TIEFER_CSC_PROJECT=...` and the log location; passes `SEED`, `FINAL`, `REASON` and module overrides when set |
-| `data.sbatch` | builds the cache in `/scratch` on a CPU node, on either architecture |
+| `submit.sh` | `sbatch` with `--account`, `--chdir` and the log location; refuses GPU jobs unless run on `roihu-gpu.csc.fi` and the data job unless run on `roihu-cpu.csc.fi`; `SEED`, `FINAL` and `REASON` reach the job as plain environment variables |
+| `data.sbatch` | builds the cache in `/scratch` on a CPU node; submitted from `roihu-cpu.csc.fi` |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/l1_base.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable, optional `SEED` |
 | `evaluate.sbatch` | validation with baselines; test only with `FINAL=1` and `REASON` |
@@ -190,7 +198,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `usage.sh` | `sacct` record of a job, written to `reports/compute/<job-id>.json` |
 | `collect.sh` | packs reports, run metadata, best checkpoint and ONNX files, with relative paths only |
 
-Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`, so nothing leaks in from the submitting shell. GPU jobs stop unless they run on an `aarch64` node. Slurm logs go to `$TIEFER_RUNS_DIR/slurm/<job-name>-<job-id>.out`. GPU jobs copy the cache to the job's local disk (`$TMPDIR`) at start when there is room.
+Every job script starts with `#!/bin/bash -l` and uses sbatch's default export, so it inherits the submitting shell's environment; `job_prelude.sh` and `env.sh` then run `module purge` and load the module for the node's architecture. GPU jobs stop unless they run on an `aarch64` node. Slurm logs go to `$TIEFER_RUNS_DIR/slurm/<job-name>-<job-id>.out`. GPU jobs copy the cache to the job's local disk (`$TMPDIR`) at start when there is room.
 
 ---
 
@@ -200,10 +208,13 @@ Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`, so no
 | :--- | :---: | :---: |
 | `TIEFER_CSC_PROJECT is not set` | the project is not exported in this shell | add the line of step 1 to `~/.bashrc` and run `source ~/.bashrc` |
 | `is not a CSC project name` | `~/.bashrc` holds the literal placeholder `<project>` | remove the line as shown in step 1 and add it again with your project name |
-| A job ends within seconds with an empty log | a system profile script returned non-zero under `set -e` (seen on Roihu, 1 October 2026: `/etc/profile.d/colorls.sh`) | fixed in `job_prelude.sh` and `env.sh`; run `git pull`. To see where a job stops, run its script with `bash -x` in `gpu_shell.sh` |
-| `the 'module' command is not available` | the job or shell started without the system profile, even after `/etc/profile` | start from a login shell on `roihu-cpu.csc.fi` or `roihu-gpu.csc.fi`; if it persists, contact the CSC Service Desk |
+| `submit GPU jobs from roihu-gpu.csc.fi` | a GPU job was submitted from the x86 login node | log in to `roihu-gpu.csc.fi` (SSH, or a Roihu-GPU shell at [www.roihu.csc.fi](https://www.roihu.csc.fi)) and submit it there |
+| `submit the data job from roihu-cpu.csc.fi` | the data job was submitted from the ARM login node | log in to `roihu-cpu.csc.fi` and submit it there |
+| `jobs need sbatch's default export` | `--export` was passed to `submit.sh` | leave `--export` out; with `--export=NONE` the `module` command and `MODULEPATH` cannot be restored inside a job |
+| A job ends within seconds with an empty log | an older version of the scripts, with `--export=NONE` and its profile workarounds | run `git pull` on both login nodes and submit again with `submit.sh`; never run a job script directly on a login node |
+| `the 'module' command is not available in this job` | the job was not submitted from a Roihu login shell | submit it with `hpc/roihu/submit.sh` from `roihu-cpu.csc.fi` or `roihu-gpu.csc.fi`; if it persists, contact the CSC Service Desk |
 | `needs an aarch64 GH200 node, but runs on x86_64` | a GPU job ran on an x86 node, for example after a partition override | submit without overriding `--partition`; GPU jobs need a GPU partition |
-| `no virtual environment .../venv-aarch64` | `setup.sh` has not been run on the GPU side | run step 2, GPU side, with `gpu_shell.sh` |
+| `no virtual environment .../venv-aarch64` | `setup.sh` has not been run on the GPU side | run step 2, GPU side, on `roihu-gpu.csc.fi` |
 | `no virtual environment .../venv-x86_64` | `setup.sh` has not been run on the CPU side | run step 2, CPU side, on `roihu-cpu.csc.fi` |
 | `missing modules` in `check_env.py` | the venv was built with another module or is incomplete | run `setup.sh` again on the same architecture |
 | `cannot load python-pytorch/2.10` | the module was removed or renamed | find it with `module avail python-pytorch`, add `export TIEFER_PYTORCH_MODULE=<name>` to `~/.bashrc`, run `setup.sh` again on the GPU side; `submit.sh` passes it to jobs |
@@ -211,7 +222,6 @@ Every job script starts with `#!/bin/bash -l` and `#SBATCH --export=NONE`, so no
 | `the split field 'tortilla:data_split' is not in the metadata` | the dataset uses another name for the split field | find it in the `metadata columns` line of the log, set `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`, commit, and submit the data job again |
 | The data job fails with a network error | compute nodes cannot reach `huggingface.co` | stop and ask the CSC Service Desk; do not build the cache on a login node |
 | `stopped after ... of ...` in the data log | the job hit its time limit or a read failed | submit the same data job again; it continues |
-| `REASON cannot contain commas or quotes` | `sbatch --export` splits its list on commas | write the reason without commas or quotes |
 | `invalid partition` from `sbatch` | a partition name differs on Roihu | check `sinfo` and the [partitions page](https://docs.csc.fi/computing/running/batch-job-partitions/), then edit the `#SBATCH --partition` line |
 | The training log ends with `interrupted` | the time limit was reached | submit `train.sbatch` again with the run ID |
 | `the test split is only for final evaluation` | test was requested without `FINAL=1` and `REASON` | evaluate on validation; use test once, for the final result |
@@ -230,7 +240,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | Login nodes `roihu-gpu.csc.fi` (ARM) and `roihu-cpu.csc.fi` (x86) | `setup.sh`, this guide | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
 | Login nodes are for light work only: "one-core jobs that finish in minutes and require less than 1 GiB of memory" | `data.sbatch`, this guide | [usage policy](https://docs.csc.fi/computing/usage-policy/) |
 | **Slurm** | | |
-| `gputest` 15 minutes; `gpumedium` 36 hours, up to 4 GPUs on one node; `gpularge` 36 hours, several nodes; `gpuinteractive` 12 hours | GPU job scripts, `gpu_shell.sh` | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
+| `gputest` 15 minutes; `gpumedium` 36 hours, up to 4 GPUs on one node; `gpularge` 36 hours, several nodes; `gpuinteractive` 12 hours | GPU job scripts | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | CPU partition `small`: 72 hours, 1 node | `data.sbatch` | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | `--account` is mandatory; GPUs are requested with `--gres=gpu:gh200:<n>`; Slurm adds memory per GPU automatically | `submit.sh`, job scripts | [job scripts on Roihu](https://docs.csc.fi/computing/running/creating-job-scripts-roihu/) |
 | 200 GPU BU per GPU hour; up to 72 cores and 212 GiB memory per GPU included, so GPU jobs request `--cpus-per-task=72` | GPU job scripts | [billing](https://docs.csc.fi/computing/hpc-billing/) |
@@ -241,7 +251,9 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | On a GPU node, `python-pytorch/2.10` gives Python 3.12.12, torch 2.10.0+cu130, CUDA runtime 13.0, GH200 visible, bf16 supported | `setup.sh`, `check_env.py` | observed |
 | On x86, `python-data/3.12-31.03` gives Python 3.12.13 | `env.sh` (`TIEFER_CPU_PYTHON_MODULE`) | observed on Roihu, 1 October 2026 |
 | Extra packages go into a venv made with `python3 -m venv --system-site-packages` on top of the loaded module | `setup.sh` | [Python guide](https://docs.csc.fi/support/tutorials/python-usage-guide/) |
-| GPU compute nodes reach PyPI, so `setup.sh` installs from a `gpu_shell.sh` session | `setup.sh`, `gpu_shell.sh` | observed |
+| GPU compute nodes reached PyPI during `setup.sh` | `setup.sh` | observed |
+| With `--export=NONE`, sourcing `/usr/share/lmod/lmod/init/bash` and `/etc/profile.d/zz-csc-env.sh` in a job still left `MODULEPATH` empty on CPU and GPU nodes, so jobs use sbatch's default export | `submit.sh`, job scripts | observed on Roihu, 1 October 2026 |
+| A Roihu-CPU or Roihu-GPU shell is available in the web interface | this guide | [www.roihu.csc.fi](https://www.roihu.csc.fi) |
 | **Storage and network** | | |
 | Files in `/scratch` unused for 180 days are deleted | `env.sh` | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
 | Whether compute nodes can reach `huggingface.co` | `data.sbatch`, `smoke.sbatch` | TODO(verify): the first data job shows it |
@@ -250,6 +262,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 1 October 2026: back to the standard CSC way of submitting jobs: sbatch's default export, CPU work and the data job from `roihu-cpu.csc.fi`, GPU setup and GPU jobs from `roihu-gpu.csc.fi` (SSH or the web interface); `gpu_shell.sh` and the `--export=NONE` workarounds removed.
 - 1 October 2026: troubleshooting row for jobs that end within seconds with an empty log.
 - 1 October 2026: source links corrected for `$TMPDIR`, the `/scratch` cleanup, the PyTorch module and the venv rule; `python-data/3.12-31.03` is marked as observed only.
 - 1 October 2026: steps reordered (clone and project, setup on both architectures, data job, smoke job, training with optional seeds, evaluation to collection); "Before you start" added; the login node cache path removed; facts checked against the CSC documentation and on Roihu; new troubleshooting cases from a real job failure.
