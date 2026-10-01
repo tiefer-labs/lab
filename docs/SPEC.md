@@ -200,20 +200,64 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 
 ### Files in `hpc/roihu/`
 
-| File | Purpose |
-|---|---|
-| `README.md` | Founder guide, plain English, step by step (below) |
-| `env.sh` | Sourced by every job: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once on `roihu-gpu.csc.fi`: create the venv, install, run the environment check |
-| `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
-| `data.sbatch` | Builds the full cache in `/scratch` (CPU job; if compute nodes have no internet, the guide describes downloading on the login node first) |
-| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml` |
-| `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path |
-| `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
-| `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
-| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT` to `sbatch`, since `#SBATCH` lines cannot read environment variables |
-| `usage.sh` | Prints `sacct` usage of a job for the results |
-| `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
+<table style="width:100%;border-collapse:collapse;font-size:13px">
+<thead><tr>
+<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">File</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>README.md</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Founder guide, plain English, step by step (below)</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>env.sh</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Sourced by every job: loads the module, activates the venv, sets <code>PIP_CACHE_DIR</code> and the <code>TIEFER_*</code> paths under <code>/projappl/$TIEFER_CSC_PROJECT</code> and <code>/scratch/$TIEFER_CSC_PROJECT</code>; fails clearly if <code>TIEFER_CSC_PROJECT</code> is unset</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>setup.sh</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Run once on <code>roihu-gpu.csc.fi</code>: create the venv, install, run the environment check</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>check_env.py</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>data.sbatch</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Builds the full cache in <code>/scratch</code> (CPU job; if compute nodes have no internet, the guide describes downloading on the login node first)</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>smoke.sbatch</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>gputest</code>, 1 GPU, 15 minutes: environment check plus <code>configs/smoke.toml</code></td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>train.sbatch</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>gpumedium</code>, 1 GPU, default 12 hours (maximum 36), <code>--signal=B:USR1@300</code>, resumable, takes a config path</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>evaluate.sbatch</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Validation evaluation with baselines; test only when <code>FINAL=1</code> is set</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>export.sbatch</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Export and quantisation on Roihu (calibration needs the cached training data)</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>submit.sh</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Wrapper that passes <code>--account=$TIEFER_CSC_PROJECT</code> to <code>sbatch</code>, since <code>#SBATCH</code> lines cannot read environment variables</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>usage.sh</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Prints <code>sacct</code> usage of a job for the results</td>
+</tr>
+<tr>
+<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>collect.sh</code></td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in <code>/scratch</code> for copying back, with no absolute paths inside</td>
+</tr>
+</tbody>
+</table>
+</div>
 
 Slurm output goes to `$TIEFER_RUNS_DIR/slurm/%x-%j.out`. Jobs copy the cache to `$TMPDIR` at start when it is read from disk.
 
@@ -245,7 +289,7 @@ In Part A, `docs/RESULTS.md` exists with every value "not yet measured". Smoke o
 
 This is the complete list of committed files at the end of Part A. Create every one of them. A file that turns out to be needed but is not listed is added to the repository and to this tree in the same commit. Directories end with `/`.
 
-```
+```text
 lab/
   .github/
     dependabot.yml                weekly updates: pip (uv) and github-actions
@@ -355,6 +399,7 @@ lab/
     test_export.py
     test_quantise.py
     test_jetson_dry_run.py
+    test_markdown_style.py        every Markdown file follows docs/STYLE.md
     test_results.py
     test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch and sacct
     test_tables.py                house table style helper
@@ -406,7 +451,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 - Trained models are not part of the repository and are not covered by any licence here (section 10). `LICENSE` is added by the founder from GitHub's licence template ("Mozilla Public License 2.0") and contains the official, unmodified text. Never edit it. If it is missing, stop and ask the founder to add it; never type the licence from memory.
 - Every source file (`.py`, `.sh`, `.sbatch`, `.toml` configs) starts with the MPL 2.0 notice in a comment:
 
-  ```
+  ```text
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -431,4 +476,5 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: the table of files in `hpc/roihu/` written in the house table style (docs/STYLE.md, section 9); content unchanged.
 - 1 October 2026: sections 1 to 17 added for milestone L1, Part A.
