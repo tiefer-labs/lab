@@ -1,6 +1,6 @@
 # Runtime outputs, never committed
-data/
-runs/
+/data/
+/runs/
 *.onnx
 *.pt
 *.engine
