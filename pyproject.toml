@@ -82,4 +82,7 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = ["slow: tests that train or export a small model (seconds, not minutes)"]
-filterwarnings = ["ignore::DeprecationWarning:torch.*"]
+filterwarnings = [
+    "ignore::DeprecationWarning:torch.*",
+    "ignore::rasterio.errors.NotGeoreferencedWarning",
+]
