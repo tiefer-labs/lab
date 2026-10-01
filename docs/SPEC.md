@@ -206,8 +206,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `job_prelude.sh` | Sourced first by every job and by `setup.sh`: stops with a clear message when `module` is missing, runs `module purge` |
 | `shell_options.sh` | Turns off `errexit`, `nounset` and `pipefail` around every `module` command, then restores exactly the saved options |
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and in `gpu_shell.sh` or on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
-| `gpu_shell.sh` | Interactive shell on one GH200 GPU in `gputest` for 15 minutes, with the `job_prelude.sh` steps; used to run `setup.sh` for the GPU side from a CPU login shell |
+| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache first when the full cache is missing |
@@ -225,7 +224,7 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export; 
 1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` and `roihu-gpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
 2. Before you start: `csc-projects` for the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; login nodes are for light work only, so the cache is never built there.
 3. Clone with `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` (public, no key) and set `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>` and how to remove such a line.
-4. `bash hpc/roihu/setup.sh` on the CPU side (`venv-x86_64`, on `roihu-cpu.csc.fi`) and on the GPU side (`venv-aarch64`, inside `gpu_shell.sh` or on `roihu-gpu.csc.fi`).
+4. `bash hpc/roihu/setup.sh` on the CPU side (`venv-x86_64`, on `roihu-cpu.csc.fi`) and on the GPU side (`venv-aarch64`, on `roihu-gpu.csc.fi`).
 5. Build the data cache with `data.sbatch`.
 6. `bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch` on `gputest`, check the log; it builds a tiny cache first when the full cache is missing.
 7. `bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml` on `gpumedium`, one GPU per job, optionally two seeds as two jobs with `SEED`; follow with `squeue --me`; resubmit with the run ID if the time limit is reached.
@@ -275,7 +274,6 @@ lab/
       shell_options.sh            relax and restore set -euo pipefail around module commands
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
-      gpu_shell.sh                interactive GH200 shell on gputest, for setup.sh
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
       submit.sh                   sbatch wrapper: --account, log location, login node check
@@ -437,6 +435,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 1 October 2026: `hpc/roihu/gpu_shell.sh` removed; GPU setup and GPU jobs run from `roihu-gpu.csc.fi`.
 - 1 October 2026: job scripts no longer use `--export=NONE`; `job_prelude.sh` keeps only the module check and `module purge`.
 - 1 October 2026: `submit.sh` uses sbatch's default export again and checks the architecture of the submitting host.
 - 1 October 2026: `hpc/roihu/shell_options.sh` added to the table and the tree.
