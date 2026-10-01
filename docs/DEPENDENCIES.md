@@ -12,91 +12,26 @@ Every dependency of Tiefer Lab, why it is needed, and its licence. New dependenc
 
 Versions are ranges in `pyproject.toml` and exact in `uv.lock`. Licences are as declared in each package's metadata for the locked version.
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Package</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Why it is needed</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Licence</th>
-</tr></thead>
-<tbody>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Runtime</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>torch</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">model, training, evaluation; on Roihu it comes from the CSC module, so the range is wide (<code>&gt;=2.5</code>)</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>numpy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">arrays and the <code>.npy</code> cache files</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tacoreader</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">reads the CloudSEN12+ metadata and patch locations; pinned below 0.6 because later versions do not read the <code>tacofoundation:</code> dataset names (docs/DATA.md)</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>fsspec[http]</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tacoreader</code> 0.5 reads <code>.taco</code> files over HTTPS through <code>fsspec</code>, which needs <code>aiohttp</code> for that; the extra installs it</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause (<code>fsspec</code>); Apache-2.0 AND MIT (<code>aiohttp</code>)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>rasterio</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">reads the four bands and the label of a patch through GDAL virtual files</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>onnx</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the export format, graph checks and FP16 conversion</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>onnxruntime</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">checks the exported model against PyTorch; INT8 static quantisation</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Development</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pytest</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">tests</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>ruff</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">lint and format</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>mypy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">strict type check of <code>src/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>regex</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the text rule test (<code>\p{Extended_Pictographic}</code>)</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 AND CNRI-Python</td>
-</tr>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Build</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>hatchling</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">builds the package for <code>pip install -e .</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Standard library and system</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tomllib</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">configuration files</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Python Software Foundation License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>trtexec</code>, <code>tegrastats</code>, <code>nvpmodel</code>, <code>jetson_clocks</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Jetson benchmark, part of JetPack on the board; not installed by this repository</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">NVIDIA licence terms of JetPack</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Package | Why it is needed | Licence |
+| :--- | :---: | :---: |
+| **Runtime** | | |
+| `torch` | model, training, evaluation; on Roihu it comes from the CSC module, so the range is wide (`>=2.5`) | Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT |
+| `numpy` | arrays and the `.npy` cache files | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| `tacoreader` | reads the CloudSEN12+ metadata and patch locations; pinned below 0.6 because later versions do not read the `tacofoundation:` dataset names (docs/DATA.md) | MIT |
+| `fsspec[http]` | `tacoreader` 0.5 reads `.taco` files over HTTPS through `fsspec`, which needs `aiohttp` for that; the extra installs it | BSD-3-Clause (`fsspec`); Apache-2.0 AND MIT (`aiohttp`) |
+| `rasterio` | reads the four bands and the label of a patch through GDAL virtual files | BSD-3-Clause |
+| `onnx` | the export format, graph checks and FP16 conversion | Apache-2.0 |
+| `onnxruntime` | checks the exported model against PyTorch; INT8 static quantisation | MIT |
+| **Development** | | |
+| `pytest` | tests | MIT |
+| `ruff` | lint and format | MIT |
+| `mypy` | strict type check of `src/` | MIT |
+| `regex` | the text rule test (`\p{Extended_Pictographic}`) | Apache-2.0 AND CNRI-Python |
+| **Build** | | |
+| `hatchling` | builds the package for `pip install -e .` | MIT |
+| **Standard library and system** | | |
+| `tomllib` | configuration files | Python Software Foundation License |
+| `trtexec`, `tegrastats`, `nvpmodel`, `jetson_clocks` | Jetson benchmark, part of JetPack on the board; not installed by this repository | NVIDIA licence terms of JetPack |
 
 ---
 
@@ -112,377 +47,80 @@ Versions are ranges in `pyproject.toml` and exact in `uv.lock`. Licences are as 
 
 Every package in `uv.lock`, including indirect dependencies, with the licence its metadata declares.
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Package</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Locked version</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Licence (package metadata)</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>affine</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.0.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>aiohappyeyeballs</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.7.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Python Software Foundation License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>aiohttp</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.14.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 AND MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>aiosignal</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.4.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache Software License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>ast-serialize</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.11.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>attrs</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">26.1.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>certifi</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2026.7.22</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Mozilla Public License 2.0 (MPL 2.0)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>charset-normalizer</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.5.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>click</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">8.5.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>colorama</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.4.6</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License (PyPI classifier)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>cuda-bindings</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.4.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>cuda-pathfinder</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.8.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>cuda-toolkit</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.0.3.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not declared in package metadata; NVIDIA CUDA package</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>filelock</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">4.0.8</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>flatbuffers</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">25.12.19</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache Software License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>frozenlist</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.8.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>fsspec</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2026.9.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>idna</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.20</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>iniconfig</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.3.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>jinja2</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.1.6</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>librt</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.16.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>markupsafe</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.0.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>ml-dtypes</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.6.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>mpmath</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.3.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>multidict</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">6.9.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache License 2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>mypy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.3.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>mypy-extensions</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.1.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>networkx</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.7</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>numpy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.5.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cublas</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.1.1.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cuda-cupti</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.0.85</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cuda-nvrtc</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.0.88</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cuda-runtime</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.0.96</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cudnn-cu13</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">9.24.0.43</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cufft</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">12.0.0.61</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cufile</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.15.1.6</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-curand</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">10.4.0.35</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cusolver</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">12.0.4.66</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cusparse</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">12.6.3.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-cusparselt-cu13</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.8.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">NVIDIA Proprietary Software</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-nccl-cu13</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.30.7</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-nvjitlink</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.4.92</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-nvshmem-cu13</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.4.5</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">LicenseRef-NVIDIA-Proprietary</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvidia-nvtx</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">13.0.85</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Other/Proprietary License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>onnx</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.23.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>onnxruntime</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.30.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>packaging</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">26.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 OR BSD-2-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pandas</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.0.6</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pathspec</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.1.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Mozilla Public License 2.0 (MPL 2.0)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pluggy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.6.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>propcache</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.5.4</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>protobuf</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">7.36.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3-Clause BSD License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pyarrow</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">25.0.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pygments</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.21.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-2-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pyparsing</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.3.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>pytest</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">9.1.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>python-dateutil</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.9.0.post0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License; Apache Software License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>rasterio</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.5.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD-3-Clause</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>regex</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2026.9.29</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 AND CNRI-Python</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>requests</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.34.2</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache Software License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>ruff</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.16.9</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>setuptools</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">84.0.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>six</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.17.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>sympy</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.14.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">BSD License</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tacoreader</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">0.5.6</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT (LICENSE file in the package)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>torch</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.14.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tqdm</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">4.70.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MPL-2.0 AND MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>triton</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">3.8.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>typing-extensions</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">4.16.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">PSF-2.0</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tzdata</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2026.4</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0 (PyPI metadata)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>urllib3</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">2.8.0</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">MIT</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>yarl</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">1.25.1</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Apache-2.0</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Package | Locked version | Licence (package metadata) |
+| :--- | :---: | :---: |
+| `affine` | 3.0.1 | BSD-3-Clause |
+| `aiohappyeyeballs` | 2.7.1 | Python Software Foundation License |
+| `aiohttp` | 3.14.3 | Apache-2.0 AND MIT |
+| `aiosignal` | 1.4.0 | Apache Software License |
+| `ast-serialize` | 0.11.2 | MIT |
+| `attrs` | 26.1.0 | MIT |
+| `certifi` | 2026.7.22 | Mozilla Public License 2.0 (MPL 2.0) |
+| `charset-normalizer` | 3.5.2 | MIT |
+| `click` | 8.5.0 | BSD-3-Clause |
+| `colorama` | 0.4.6 | BSD License (PyPI classifier) |
+| `cuda-bindings` | 13.4.3 | Apache-2.0 |
+| `cuda-pathfinder` | 1.8.2 | Apache-2.0 |
+| `cuda-toolkit` | 13.0.3.0 | not declared in package metadata; NVIDIA CUDA package |
+| `filelock` | 4.0.8 | MIT |
+| `flatbuffers` | 25.12.19 | Apache Software License |
+| `frozenlist` | 1.8.0 | Apache-2.0 |
+| `fsspec` | 2026.9.0 | BSD-3-Clause |
+| `idna` | 3.20 | BSD-3-Clause |
+| `iniconfig` | 2.3.0 | MIT |
+| `jinja2` | 3.1.6 | BSD License |
+| `librt` | 0.16.0 | MIT |
+| `markupsafe` | 3.0.3 | BSD-3-Clause |
+| `ml-dtypes` | 0.6.0 | Apache-2.0 |
+| `mpmath` | 1.3.0 | BSD License |
+| `multidict` | 6.9.1 | Apache License 2.0 |
+| `mypy` | 2.3.1 | MIT |
+| `mypy-extensions` | 1.1.0 | MIT |
+| `networkx` | 3.7 | BSD-3-Clause |
+| `numpy` | 2.5.3 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| `nvidia-cublas` | 13.1.1.3 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-cuda-cupti` | 13.0.85 | Other/Proprietary License |
+| `nvidia-cuda-nvrtc` | 13.0.88 | Other/Proprietary License |
+| `nvidia-cuda-runtime` | 13.0.96 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-cudnn-cu13` | 9.24.0.43 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-cufft` | 12.0.0.61 | Other/Proprietary License |
+| `nvidia-cufile` | 1.15.1.6 | Other/Proprietary License |
+| `nvidia-curand` | 10.4.0.35 | Other/Proprietary License |
+| `nvidia-cusolver` | 12.0.4.66 | Other/Proprietary License |
+| `nvidia-cusparse` | 12.6.3.3 | Other/Proprietary License |
+| `nvidia-cusparselt-cu13` | 0.8.1 | NVIDIA Proprietary Software |
+| `nvidia-nccl-cu13` | 2.30.7 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-nvjitlink` | 13.4.92 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-nvshmem-cu13` | 3.4.5 | LicenseRef-NVIDIA-Proprietary |
+| `nvidia-nvtx` | 13.0.85 | Other/Proprietary License |
+| `onnx` | 1.23.1 | Apache-2.0 |
+| `onnxruntime` | 1.30.0 | MIT License |
+| `packaging` | 26.3 | Apache-2.0 OR BSD-2-Clause |
+| `pandas` | 3.0.6 | BSD License |
+| `pathspec` | 1.1.1 | Mozilla Public License 2.0 (MPL 2.0) |
+| `pluggy` | 1.6.0 | MIT License |
+| `propcache` | 0.5.4 | Apache-2.0 |
+| `protobuf` | 7.36.2 | 3-Clause BSD License |
+| `pyarrow` | 25.0.1 | Apache-2.0 |
+| `pygments` | 2.21.0 | BSD-2-Clause |
+| `pyparsing` | 3.3.3 | MIT |
+| `pytest` | 9.1.1 | MIT |
+| `python-dateutil` | 2.9.0.post0 | BSD License; Apache Software License |
+| `rasterio` | 1.5.2 | BSD-3-Clause |
+| `regex` | 2026.9.29 | Apache-2.0 AND CNRI-Python |
+| `requests` | 2.34.2 | Apache Software License |
+| `ruff` | 0.16.9 | MIT |
+| `setuptools` | 84.0.0 | MIT |
+| `six` | 1.17.0 | MIT License |
+| `sympy` | 1.14.0 | BSD License |
+| `tacoreader` | 0.5.6 | MIT (LICENSE file in the package) |
+| `torch` | 2.14.1 | Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT |
+| `tqdm` | 4.70.1 | MPL-2.0 AND MIT |
+| `triton` | 3.8.0 | MIT |
+| `typing-extensions` | 4.16.0 | PSF-2.0 |
+| `tzdata` | 2026.4 | Apache-2.0 (PyPI metadata) |
+| `urllib3` | 2.8.0 | MIT |
+| `yarl` | 1.25.1 | Apache-2.0 |
 
 ---
 

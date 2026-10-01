@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from tiefer_lab.data.source import CLASS_NAMES
-from tiefer_lab.tables import Group, header_block, house_table
+from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 
 NOT_YET = "not yet measured"
@@ -153,7 +153,7 @@ def environment_section(reports: Reports) -> str:
         )
     if not rows:
         rows = [[NOT_YET] * 7]
-    return house_table(
+    return markdown_table(
         ["Training run", "Device", "CPU architecture", "PyTorch", "Partition", "Source", "Commit"],
         [Group("", rows)],
     )
@@ -175,7 +175,7 @@ def data_section(reports: Reports) -> str:
         )
     if not rows:
         rows = [["validation"] + [NOT_YET] * 4, ["test"] + [NOT_YET] * 4]
-    return house_table(
+    return markdown_table(
         ["Split", "Patches", "Dataset revision", "Source", "Commit"], [Group("", rows)]
     )
 
@@ -198,7 +198,7 @@ def model_section(reports: Reports) -> str:
             ["Parameters", NOT_YET, NOT_YET, NOT_YET],
             ["Multiply-accumulates, 1 x 4 x 512 x 512", NOT_YET, NOT_YET, NOT_YET],
         ]
-    return house_table(["", "Value", "Source", "Commit"], [Group("", rows)])
+    return markdown_table(["", "Value", "Source", "Commit"], [Group("", rows)])
 
 
 def _method_rows(r: Report) -> list[list[str]]:
@@ -250,7 +250,7 @@ def comparison_section(reports: Reports) -> str:
                 [[n, NOT_YET, NOT_YET, NOT_YET, NOT_YET, NOT_YET] for n in names],
             )
         ]
-    return house_table(headers, groups)
+    return markdown_table(headers, groups)
 
 
 def pixel_frame_section(reports: Reports) -> str:
@@ -301,7 +301,7 @@ def pixel_frame_section(reports: Reports) -> str:
         names += [f"False discard rate at {p} percent" for p in (30, 50, 70)]
         names += [f"Decision accuracy at {p} percent" for p in (30, 50, 70)]
         groups = [Group("Validation split", [[n, NOT_YET, NOT_YET, NOT_YET] for n in names])]
-    return house_table(["", "Value [95 percent interval]", "Source", "Commit"], groups)
+    return markdown_table(["", "Value [95 percent interval]", "Source", "Commit"], groups)
 
 
 def quantisation_section(reports: Reports) -> str:
@@ -331,7 +331,7 @@ def quantisation_section(reports: Reports) -> str:
         "Source",
         "Commit",
     ]
-    return house_table(headers, [Group("", rows)])
+    return markdown_table(headers, [Group("", rows)])
 
 
 def hardware_section(reports: Reports) -> str:
@@ -363,7 +363,7 @@ def hardware_section(reports: Reports) -> str:
         "Source",
         "Commit",
     ]
-    return house_table(headers, [Group("", rows)])
+    return markdown_table(headers, [Group("", rows)])
 
 
 def compute_section(reports: Reports) -> str:
@@ -383,7 +383,7 @@ def compute_section(reports: Reports) -> str:
     if not rows:
         rows = [[NOT_YET] * 6]
     headers = ["Job", "Partition", "Elapsed", "Allocated resources", "Source", "Commit"]
-    return house_table(headers, [Group("", rows)])
+    return markdown_table(headers, [Group("", rows)])
 
 
 LIMITATIONS = [

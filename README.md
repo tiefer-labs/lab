@@ -22,64 +22,19 @@ The repository is public because results are published with their method: measur
 
 Milestone L1 is the first stage, the onboard cloud filter: a small network that labels every pixel of a four-band frame as clear, thick cloud, thin cloud or cloud shadow, and decides per frame whether it is worth sending to the ground. Part A (the code, tests and guides) is done; Part B (training and measurement on CSC Roihu and a Jetson Orin) has not started.
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Milestone L1 component</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Code</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Measured</th>
-</tr></thead>
-<tbody>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Part A: repository</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Data cache (CloudSEN12+, Level-1C, four bands)</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">n/a</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Metrics and baselines</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Model and training</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Evaluation with test split guard</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">ONNX export and INT8 quantisation</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Jetson Orin benchmark scripts</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">CSC Roihu job scripts and guide</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">done</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">n/a</td>
-</tr>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Part B: results</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Training and evaluation on CSC Roihu</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">n/a</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Model card and checksums</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">n/a</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Milestone L1 component | Code | Measured |
+| :--- | :---: | :---: |
+| **Part A: repository** | | |
+| Data cache (CloudSEN12+, Level-1C, four bands) | done | n/a |
+| Metrics and baselines | done | not yet measured |
+| Model and training | done | not yet measured |
+| Evaluation with test split guard | done | not yet measured |
+| ONNX export and INT8 quantisation | done | not yet measured |
+| Jetson Orin benchmark scripts | done | not yet measured |
+| CSC Roihu job scripts and guide | done | n/a |
+| **Part B: results** | | |
+| Training and evaluation on CSC Roihu | n/a | not yet measured |
+| Model card and checksums | n/a | not yet measured |
 
 Results: [docs/RESULTS.md](docs/RESULTS.md). Every value there is "not yet measured" until the runs of Part B.
 
@@ -115,32 +70,11 @@ uv run python -m tiefer_lab.results
 
 Locations come from three environment variables, documented in [.env.example](.env.example):
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Variable</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Default</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Contents</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>TIEFER_DATA_DIR</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>./data</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the data cache</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>TIEFER_RUNS_DIR</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>./runs</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">training runs: configuration, metadata, metrics, checkpoints, ONNX files</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>TIEFER_REPORTS_DIR</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>./reports</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">evaluation, export, Jetson and compute reports</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Variable | Default | Contents |
+| :--- | :---: | :---: |
+| `TIEFER_DATA_DIR` | `./data` | the data cache |
+| `TIEFER_RUNS_DIR` | `./runs` | training runs: configuration, metadata, metrics, checkpoints, ONNX files |
+| `TIEFER_REPORTS_DIR` | `./reports` | evaluation, export, Jetson and compute reports |
 
 ### Run on CSC Roihu
 
@@ -150,48 +84,16 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 
 ## Repository layout
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Path</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Contents</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>src/tiefer_lab/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">data access, model, training, evaluation, export and results code</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>configs/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">training configurations in TOML: <code>smoke.toml</code> and <code>l1_base.toml</code></td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tests/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">unit tests on synthetic data, text rules and public hygiene</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>hpc/roihu/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Slurm jobs, setup and guide for CSC Roihu</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>jetson/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">benchmark scripts for an NVIDIA Jetson Orin</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>reports/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">report files written by the scripts, and the test split log</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>models/cloud-filter/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">model cards and checksums; model files are not distributed here</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>docs/</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">specification, style, data card, assumptions, dependencies and results</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Path | Contents |
+| :--- | :---: |
+| `src/tiefer_lab/` | data access, model, training, evaluation, export and results code |
+| `configs/` | training configurations in TOML: `smoke.toml` and `l1_base.toml` |
+| `tests/` | unit tests on synthetic data, text rules and public hygiene |
+| `hpc/roihu/` | Slurm jobs, setup and guide for CSC Roihu |
+| `jetson/` | benchmark scripts for an NVIDIA Jetson Orin |
+| `reports/` | report files written by the scripts, and the test split log |
+| `models/cloud-filter/` | model cards and checksums; model files are not distributed here |
+| `docs/` | specification, style, data card, assumptions, dependencies and results |
 
 ---
 

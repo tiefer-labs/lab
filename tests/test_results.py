@@ -80,7 +80,7 @@ def test_placeholder_has_every_section_and_no_numbers(tmp_path: Path) -> None:
     assert "not yet measured" in text
     for phrase in ("10 m", "four bands", "Level-1C", "space environment"):
         assert phrase in text
-    assert not re.search(r">\s*0\.\d+", text), "no measured values in the placeholder"
+    assert not re.search(r"\| 0\.\d+", text), "no measured values in the placeholder"
 
 
 def test_real_report_values_appear_with_source(tiefer_env: dict[str, Path], tmp_path: Path) -> None:
@@ -94,9 +94,11 @@ def test_real_report_values_appear_with_source(tiefer_env: dict[str, Path], tmp_
     assert "smoke_val.json" not in text
     assert "0123456789ab" in text
     # Every result table names its source and commit (docs/STYLE.md, section 6).
-    for table in text.split("<table")[1:]:
-        header = table.split("</thead>")[0]
-        assert "Source" in header and "Commit" in header
+    lines = text.split("\n")
+    headers = [lines[i - 1] for i, line in enumerate(lines) if line.startswith("| :---")]
+    assert len(headers) >= 8
+    for header in headers:
+        assert "| Source |" in header and "| Commit |" in header
     assert "2 October 2026" in text
 
 

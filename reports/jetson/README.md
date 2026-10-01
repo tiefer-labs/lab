@@ -28,20 +28,9 @@ Where the Jetson Orin benchmark results land. Each file is written by `jetson/be
 
 ## Files
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">File</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Contents</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>&lt;label&gt;_&lt;UTC time&gt;.json</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">device, latency percentiles, throughput, power, energy per tile, temperatures, out of scope note</td>
-</tr>
-</tbody>
-</table>
-</div>
+| File | Contents |
+| :--- | :---: |
+| `<label>_<UTC time>.json` | device, latency percentiles, throughput, power, energy per tile, temperatures, out of scope note |
 
 No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../../docs/RESULTS.md) is "not yet measured".
 
@@ -49,24 +38,7 @@ No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../.
 
 ## Troubleshooting
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Symptom</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Cause</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Fix</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">A Jetson report is missing from <code>docs/RESULTS.md</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the file is not in <code>reports/jetson/</code> of the repository</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">copy it from the board unchanged and run <code>make results</code></td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">The commit in a report is <code>unknown</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the scripts ran from a copy without git history</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">run them from a <code>git clone</code> of the repository on the board</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Symptom | Cause | Fix |
+| :--- | :---: | :---: |
+| A Jetson report is missing from `docs/RESULTS.md` | the file is not in `reports/jetson/` of the repository | copy it from the board unchanged and run `make results` |
+| The commit in a report is `unknown` | the scripts ran from a copy without git history | run them from a `git clone` of the repository on the board |

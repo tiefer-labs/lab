@@ -1,39 +1,42 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""The house table style helper (docs/STYLE.md, section 9)."""
+"""The shared Markdown table helper (docs/STYLE.md, section 9)."""
 
 from __future__ import annotations
 
 import pytest
 
-from tiefer_lab.tables import Group, header_block, house_table
+from tiefer_lab.tables import Group, header_block, markdown_table
 
 
-def test_table_structure_alignment_and_colours() -> None:
-    html = house_table(
+def test_table_layout_alignment_and_category_rows() -> None:
+    table = markdown_table(
         ["", "Column A", "Column B"], [Group("Category", [["Row name", "82.3", ""]])]
     )
-    lines = html.split("\n")
-    assert "" not in lines, "no empty lines inside the HTML block"
-    assert 'colspan="3"' in html
-    assert html.count('align="left"') == 3  # top-left header, category, first cell
-    assert html.count('align="center"') == 4
-    assert "#0C003D" in html and "rgba(12, 0, 61, 0.1)" in html
-    assert "rgba(128, 128, 128, 0.15)" in html
-    assert ">not measured</td>" in html, "empty values are written as not measured"
+    assert table.split("\n") == [
+        "|  | Column A | Column B |",
+        "| :--- | :---: | :---: |",
+        "| **Category** | | |",
+        "| Row name | 82.3 | not measured |",
+    ]
 
 
-def test_code_and_links_become_html() -> None:
-    html = house_table(["Path", "Link"], [Group("", [["`src/`", "[card](https://example.org/x)"]])])
-    assert "<code>src/</code>" in html
-    assert '<a href="https://example.org/x">card</a>' in html
-    assert "colspan" not in html, "no category row when the group has no title"
+def test_code_links_and_pipes_are_kept() -> None:
+    table = markdown_table(
+        ["Path", "Link"], [Group("", [["`src/`", "[card](https://example.org/x) a|b"]])]
+    )
+    assert "| `src/` | [card](https://example.org/x) a\\|b |" in table
+    assert "**" not in table, "no category row when the group has no title"
 
 
-def test_rows_must_match_header_width() -> None:
+def test_invalid_tables_are_rejected() -> None:
     with pytest.raises(ValueError):
-        house_table(["A", "B"], [Group("", [["only one"]])])
+        markdown_table(["A", "B"], [Group("", [["only one"]])])
+    with pytest.raises(ValueError):
+        markdown_table(["A"], [])
+    with pytest.raises(ValueError):
+        markdown_table(["A", "B"], [Group("", [["x", "two\nlines"]])])
 
 
 def test_header_block() -> None:

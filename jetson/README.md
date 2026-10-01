@@ -61,65 +61,20 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 
 ## Files
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">File</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Purpose</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>device_info.sh</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">board model, L4T, JetPack, TensorRT, power mode, clocks</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>build_engines.sh</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>trtexec</code> FP16 and INT8 engines</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>bench.py</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">latency, throughput, power, energy and temperature; JSON report to <code>reports/jetson/</code></td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>power.py</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>tegrastats</code> sampler and parser</td>
-</tr>
-</tbody>
-</table>
-</div>
+| File | Purpose |
+| :--- | :---: |
+| `device_info.sh` | board model, L4T, JetPack, TensorRT, power mode, clocks |
+| `build_engines.sh` | `trtexec` FP16 and INT8 engines |
+| `bench.py` | latency, throughput, power, energy and temperature; JSON report to `reports/jetson/` |
+| `power.py` | `tegrastats` sampler and parser |
 
 ---
 
 ## Troubleshooting
 
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D">Symptom</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Cause</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Fix</th>
-</tr></thead>
-<tbody>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">The scripts only print a plan</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not a Jetson board, or <code>trtexec</code> not found</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">run on the board; pass <code>--trtexec &lt;path&gt;</code> or set <code>TRTEXEC</code> for <code>build_engines.sh</code></td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>no known input rail</code></td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the module names its input rail differently</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">check <code>tegrastats --interval 1000</code> and pass <code>--rail &lt;name&gt;</code></td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>no latency field</code> in trtexec times</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">the TensorRT version writes other field names</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">check the times file and extend <code>LATENCY_FIELDS</code> in <code>bench.py</code> (TODO(verify) on the board)</td>
-</tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)"><code>nvpmodel</code> or <code>jetson_clocks</code> show permission errors</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">they need root on some JetPack versions</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">run <code>device_info.sh</code> with <code>sudo</code> (TODO(verify) on the board)</td>
-</tr>
-</tbody>
-</table>
-</div>
+| Symptom | Cause | Fix |
+| :--- | :---: | :---: |
+| The scripts only print a plan | not a Jetson board, or `trtexec` not found | run on the board; pass `--trtexec <path>` or set `TRTEXEC` for `build_engines.sh` |
+| `no known input rail` | the module names its input rail differently | check `tegrastats --interval 1000` and pass `--rail <name>` |
+| `no latency field` in trtexec times | the TensorRT version writes other field names | check the times file and extend `LATENCY_FIELDS` in `bench.py` (TODO(verify) on the board) |
+| `nvpmodel` or `jetson_clocks` show permission errors | they need root on some JetPack versions | run `device_info.sh` with `sudo` (TODO(verify) on the board) |
