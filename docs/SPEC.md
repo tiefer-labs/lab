@@ -343,6 +343,7 @@ lab/
     test_requirements_sync.py
     test_transforms.py
     test_bands_and_labels.py
+    test_cache.py                 cache build, resume and reading on synthetic data
     test_metrics.py
     test_bootstrap.py
     test_decisions.py
