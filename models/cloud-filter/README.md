@@ -14,6 +14,8 @@ What a release folder of the cloud filter contains. The model files themselves a
 - Its export report from `python -m tiefer_lab.export --run <run-id>`, in `reports/export/<run-id>.json`.
 - Its evaluation reports in `reports/evaluation/`.
 
+---
+
 ## Steps
 
 Release folders are written in Part B of milestone L1, after the runs on CSC Roihu.
@@ -32,6 +34,8 @@ Release folders are written in Part B of milestone L1, after the runs on CSC Roi
    ```
 
 4. Write `MODEL_CARD.md` following `docs/STYLE.md`, section 7, with every number taken from a report file.
+
+---
 
 ## Files
 
@@ -88,6 +92,8 @@ Release folders are written in Part B of milestone L1, after the runs on CSC Roi
 </tbody>
 </table>
 </div>
+
+---
 
 ## Troubleshooting
 

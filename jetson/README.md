@@ -14,6 +14,8 @@ How to measure latency, throughput, power and energy of the cloud filter on an N
 - The exported files of a run, from `python -m tiefer_lab.export --run <run-id>`: `cloud_filter_fp32.onnx` and `cloud_filter_int8.onnx`.
 - A copy of this repository on the board. The scripts use the system Python 3 and its standard library only.
 
+---
+
 ## Steps
 
 1. Record the device and set the power mode you want to measure. Note the mode in the label of each run.
@@ -45,6 +47,8 @@ Every script has a dry run that validates the inputs and prints the plan without
 python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 --dry-run
 ```
 
+---
+
 ## What is measured
 
 - Latency per tile with batch 1: p50, p95, p99, mean, minimum and maximum, from the per-inference times that `trtexec --exportTimes` writes.
@@ -52,6 +56,8 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 - Power: the input rail from `tegrastats`, sampled every 100 ms during the run and for 10 s at idle before it.
 - Energy per tile in millijoules = mean input power (W) x mean latency (s) x 1000, for the total board power and for the power above idle.
 - Board temperatures at the start and the end of the run.
+
+---
 
 ## Files
 
@@ -81,6 +87,8 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 </tbody>
 </table>
 </div>
+
+---
 
 ## Troubleshooting
 

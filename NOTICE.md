@@ -12,17 +12,25 @@ What is licensed in this repository, under which terms, and what is not.
 
 Everything in this repository (code, scripts, configurations, documentation and reports) is licensed under the Mozilla Public License 2.0. The full text is in [LICENSE](LICENSE). Every source file starts with the MPL 2.0 notice.
 
+---
+
 ## Trained models
 
 Trained models are not part of this repository and are not covered by any licence here. Checkpoints and ONNX files are excluded from git, are not attached to GitHub Releases and stay with Tiefer. Release folders under `models/cloud-filter/` hold only a model card, a configuration and SHA-256 checksums, so that Tiefer can show which model produced which result.
+
+---
 
 ## Trademarks
 
 The Tiefer name and logo (`docs/assets/`) are trademarks of Tiefer and are not licensed. MPL 2.0 section 2.3 grants no rights to trademarks, service marks or logos.
 
+---
+
 ## Data
 
 CloudSEN12+ is a third-party dataset published on Hugging Face as [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) under CC0 1.0. It is not included in this repository; the scripts read the needed patches at run time. Citations are in [docs/DATA.md](docs/DATA.md).
+
+---
 
 ## Dependencies
 

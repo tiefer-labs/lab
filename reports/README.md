@@ -12,6 +12,8 @@ What each report file is and which script writes it. Every number in [docs/RESUL
 
 - Reports from real runs only. Smoke runs write their reports elsewhere (`$TIEFER_RUNS_DIR/smoke/reports/`), are marked `"smoke": true`, and are ignored by the results generator.
 
+---
+
 ## Steps
 
 1. Run the scripts below, on CSC Roihu or locally; they write into `$TIEFER_REPORTS_DIR` (default `./reports`).
@@ -21,6 +23,8 @@ What each report file is and which script writes it. Every number in [docs/RESUL
    ```bash
    make results
    ```
+
+---
 
 ## Files
 
@@ -65,6 +69,8 @@ What each report file is and which script writes it. Every number in [docs/RESUL
 </tbody>
 </table>
 </div>
+
+---
 
 ## Troubleshooting
 
