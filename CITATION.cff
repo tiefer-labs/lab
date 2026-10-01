@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Tiefer Lab, please cite it as below."
+title: "Tiefer Lab"
+abstract: "Training, compression and measurement of Tiefer's onboard Earth observation models."
+type: software
+authors:
+  - name: "Tiefer"
+    email: "hello@tiefer.space"
+    website: "https://tiefer.space"
+license: MPL-2.0
+repository-code: "https://github.com/tiefer-labs/lab"
+url: "https://tiefer.space"
+version: "0.1.0"
+keywords:
+  - earth observation
+  - onboard processing
+  - cloud detection
+  - sentinel-2
