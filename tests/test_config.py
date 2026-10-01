@@ -62,3 +62,14 @@ def test_dump_round_trip(tmp_path: Path) -> None:
     again = load_config(path)
     assert again == config
     assert isinstance(again, Config)
+
+
+def test_data_workers_follow_slurm(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tiefer_lab.utils.devices import data_workers
+
+    monkeypatch.delenv("SLURM_CPUS_PER_TASK", raising=False)
+    assert data_workers(4) == 4
+    monkeypatch.setenv("SLURM_CPUS_PER_TASK", "72")
+    assert data_workers(4) == 71
+    monkeypatch.setenv("SLURM_CPUS_PER_TASK", "1")
+    assert data_workers(4) == 4

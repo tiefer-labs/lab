@@ -152,6 +152,7 @@ These facts come from the CSC documentation at [docs.csc.fi](https://docs.csc.fi
 | **Slurm** | | |
 | Partitions `gputest` (15 minutes), `gpumedium` (up to 36 hours, up to 4 GPUs on one node), `gpuinteractive` (up to 12 hours) | all GPU job scripts | TODO(verify) with `sinfo` and on [docs.csc.fi](https://docs.csc.fi/) |
 | `#SBATCH --account=<project>` is mandatory; GPUs are requested with `--gres=gpu:gh200:1` | `submit.sh`, job scripts | TODO(verify) on [docs.csc.fi](https://docs.csc.fi/) |
+| GPU jobs are billed in GPU hours, and up to 72 cores per reserved GPU are included, so GPU jobs request `--cpus-per-task=72`; data loader workers are set from `SLURM_CPUS_PER_TASK` | `train.sbatch`, `evaluate.sbatch`, `export.sbatch`, `smoke.sbatch` | TODO(verify) on [docs.csc.fi](https://docs.csc.fi/computing/hpc-billing/) |
 | CPU partition name `small` for the data job | `data.sbatch` | TODO(verify) with `sinfo`: a guess, not taken from the documentation |
 | Local disk of a job is in `$TMPDIR`, and whether it must be requested | `env.sh` (`tiefer_stage_cache`) | TODO(verify) on [docs.csc.fi](https://docs.csc.fi/) |
 | **Software** | | |
@@ -167,5 +168,6 @@ These facts come from the CSC documentation at [docs.csc.fi](https://docs.csc.fi
 
 ## Changelog
 
+- 1 October 2026: GPU jobs request 72 cores; data loader workers follow `SLURM_CPUS_PER_TASK`.
 - 1 October 2026: sections ordered as Requirements, Steps, Files, Troubleshooting, then the facts to verify.
 - 1 October 2026: first version for milestone L1; CSC facts marked `TODO(verify)`.

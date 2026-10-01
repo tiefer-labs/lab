@@ -105,6 +105,8 @@ def test_job_scripts_request_documented_resources() -> None:
     assert "#SBATCH --signal=B:USR1@300" in train
     assert "#SBATCH --time=12:00:00" in train
     assert "#SBATCH --partition=gputest" in (ROIHU / "smoke.sbatch").read_text()
+    for name in ("train", "evaluate", "export", "smoke"):
+        assert "#SBATCH --cpus-per-task=72" in (ROIHU / f"{name}.sbatch").read_text()
     for script in ROIHU.glob("*.sbatch"):
         text = script.read_text()
         assert "#SBATCH --account" not in text, "the account is passed by submit.sh"

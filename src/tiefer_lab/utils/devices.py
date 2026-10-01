@@ -11,6 +11,7 @@ and MPS.
 from __future__ import annotations
 
 import contextlib
+import os
 from collections.abc import Iterator
 from typing import Literal
 
@@ -60,3 +61,12 @@ def device_name(device: torch.device) -> str:
     if device.type == "mps":
         return "Apple MPS"
     return "CPU"
+
+
+def data_workers(configured: int) -> int:
+    """Data loader workers: inside a Slurm job, SLURM_CPUS_PER_TASK minus one core
+    for the main process; elsewhere the configured value."""
+    value = os.environ.get("SLURM_CPUS_PER_TASK", "").strip()
+    if value.isdigit() and int(value) > 1:
+        return int(value) - 1
+    return configured

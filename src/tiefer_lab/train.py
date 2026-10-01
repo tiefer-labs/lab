@@ -143,6 +143,7 @@ def train(
     val_data = subset(
         cache.load_split(directory, "val", config.data.load_mode), config.data.max_val_patches
     )
+    workers = devices.data_workers(config.data.num_workers)
 
     meta_path = run_dir / METADATA_NAME
     if resume:
@@ -165,6 +166,7 @@ def train(
                 "train_patches": len(train_data),
                 "val_patches": len(val_data),
                 "train_in_memory": train_data.in_memory,
+                "data_workers": workers,
             },
             "model": {
                 "widths": list(config.model.widths),
@@ -210,7 +212,7 @@ def train(
         train_set,
         batch_size=config.data.batch_size,
         shuffle=True,
-        num_workers=config.data.num_workers,
+        num_workers=workers,
         generator=generator,
         drop_last=len(train_set) >= config.data.batch_size,
         pin_memory=pin,
@@ -218,7 +220,7 @@ def train(
     val_loader = DataLoader(
         EvalPatches(val_data, mean, std, multiple=max(32, model.downsampling)),
         batch_size=config.data.eval_batch_size,
-        num_workers=config.data.num_workers,
+        num_workers=workers,
         pin_memory=pin,
     )
 

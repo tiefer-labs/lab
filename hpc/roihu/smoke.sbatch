@@ -13,7 +13,7 @@
 #SBATCH --gres=gpu:gh200:1
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=72
 set -euo pipefail
 
 # shellcheck source=hpc/roihu/env.sh

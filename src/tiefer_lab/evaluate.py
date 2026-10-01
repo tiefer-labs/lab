@@ -322,7 +322,7 @@ def evaluate_run(
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]] = DataLoader(
         EvalPatches(data, mean, std, multiple=32),
         batch_size=config.data.eval_batch_size,
-        num_workers=config.data.num_workers,
+        num_workers=devices.data_workers(config.data.num_workers),
     )
     scores = Scores()
     positions: list[int] = []
