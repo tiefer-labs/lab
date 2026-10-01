@@ -1,0 +1,41 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Smoke run: minutes on CPU or MPS, or on the gputest partition on Roihu.
+# It checks that the pipeline runs end to end. Its outputs are never results.
+name = "smoke"
+
+[data]
+cache_name = "cloudsen12-l1c-high"
+crop_size = 64
+batch_size = 8
+eval_batch_size = 2
+num_workers = 0
+max_train_patches = 32
+max_val_patches = 8
+
+[model]
+widths = [16, 32, 64, 128, 256]
+
+[train]
+seed = 0
+epochs = 2
+learning_rate = 0.002
+weight_decay = 0.0001
+dice_weight = 1.0
+patience = 5
+max_steps_per_epoch = 15
+log_every = 5
+
+[evaluation]
+thresholds = [0.3, 0.5, 0.7]
+decision_threshold = 0.5
+bootstrap_resamples = 200
+bootstrap_seed = 0
+
+[export]
+opset = 17
+input_size = 512
+calibration_patches = 8
+max_verify_patches = 4
