@@ -93,6 +93,10 @@ def test_real_report_values_appear_with_source(tiefer_env: dict[str, Path], tmp_
     assert "reports/evaluation/l1_base-test_val.json" in text
     assert "smoke_val.json" not in text
     assert "0123456789ab" in text
+    # Every result table names its source and commit (docs/STYLE.md, section 6).
+    for table in text.split("<table")[1:]:
+        header = table.split("</thead>")[0]
+        assert "Source" in header and "Commit" in header
     assert "2 October 2026" in text
 
 

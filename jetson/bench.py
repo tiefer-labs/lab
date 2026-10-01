@@ -125,6 +125,18 @@ def read_latencies(times_file: Path) -> list[float]:
     raise ValueError(f"no latency field {LATENCY_FIELDS} in trtexec times; found {keys}")
 
 
+def git_commit() -> str:
+    """Commit of the repository checkout on the board, recorded in the report."""
+    root = Path(__file__).resolve().parent.parent
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip()
+
+
 def device_info() -> dict[str, str]:
     script = Path(__file__).resolve().parent / "device_info.sh"
     result = subprocess.run(["bash", str(script)], capture_output=True, text=True, check=True)
@@ -191,6 +203,7 @@ def run(args: argparse.Namespace, trtexec: str) -> dict[str, Any]:
         "kind": "jetson",
         "label": args.label,
         "engine": args.engine.name,
+        "git_commit": git_commit(),
         "time": dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat(),
         "device": info,
         "latency": lat,

@@ -135,3 +135,8 @@ def test_latency_throughput_and_energy_formulas(tmp_path: Path) -> None:
     times.write_text(json.dumps([{"other": 1.0}]))
     with pytest.raises(ValueError):
         bench.read_latencies(times)
+
+
+def test_bench_records_the_repository_commit() -> None:
+    commit = bench.git_commit()
+    assert commit == "unknown" or len(commit) == 40

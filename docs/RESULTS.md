@@ -14,6 +14,8 @@ No results have been measured yet. Training and evaluation run on CSC Roihu in P
 
 Numbers are rounded to 3 decimals unless a unit says otherwise. Intervals are 95 percent bootstrap intervals over patches. A value is written `n/a` where it is undefined and `not yet measured` where no report exists.
 
+---
+
 ## 2. Environment
 
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
@@ -25,6 +27,7 @@ Numbers are rounded to 3 decimals unless a unit says otherwise. Intervals are 95
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">PyTorch</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Partition</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -34,10 +37,13 @@ Numbers are rounded to 3 decimals unless a unit says otherwise. Intervals are 95
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 3. Data
 
@@ -50,10 +56,12 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Patches</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Dataset revision</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">validation</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
@@ -63,10 +71,13 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 4. Model
 
@@ -76,10 +87,12 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 <th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D"></th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Value</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Parameters</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -87,10 +100,13 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Multiply-accumulates, 1 x 4 x 512 x 512</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 5. Baselines and model
 
@@ -136,6 +152,8 @@ Reference masks, when shipped with the dataset, use more spectral bands than the
 </table>
 </div>
 
+---
+
 ## 6. Pixel and frame metrics
 
 The false discard rate is the share of useful frames (true cloud fraction below the threshold) that would be kept on board.
@@ -146,11 +164,13 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D"></th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Value [95 percent interval]</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Validation split</td></tr>
+<tr><td colspan="4" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Validation split</td></tr>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">IoU, clear</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -158,9 +178,11 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">IoU, thick cloud</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">IoU, thin cloud</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -168,9 +190,11 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">IoU, cloud shadow</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">False discard rate at 30 percent</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -178,9 +202,11 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">False discard rate at 50 percent</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">False discard rate at 70 percent</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -188,9 +214,11 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Decision accuracy at 30 percent</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Decision accuracy at 50 percent</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
@@ -198,10 +226,13 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Decision accuracy at 70 percent</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 7. Quantisation
 
@@ -214,6 +245,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">False discard rate FP32</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">False discard rate INT8</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -223,10 +255,13 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 8. Hardware
 
@@ -239,10 +274,12 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Tiles per second</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Energy per tile</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Jetson Orin, FP16</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
@@ -256,10 +293,13 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 </tr>
 </tbody>
 </table>
 </div>
+
+---
 
 ## 9. Compute used
 
@@ -271,10 +311,12 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Elapsed</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Allocated resources</th>
 <th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Source</th>
+<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Commit</th>
 </tr></thead>
 <tbody>
 <tr>
 <td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
+<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
 <td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">not yet measured</td>
@@ -284,6 +326,8 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 </table>
 </div>
 
+---
+
 ## 10. Limitations
 
 - Training data is Sentinel-2 at 10 m ground sampling; Tiefer's target sensors are very high resolution, where clouds and shadows look different.
@@ -291,6 +335,8 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 - The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with its own calibration, noise and compression.
 - No space environment effects are covered: radiation, vacuum and thermal behaviour of the onboard computer are not tested.
 - Hardware measurements, when present, come from an NVIDIA Jetson Orin, which is flight-like reference hardware, not flight hardware.
+
+---
 
 ## 11. How to reproduce
 
@@ -304,6 +350,8 @@ python -m tiefer_lab.results
 
 On CSC Roihu, the same steps run as Slurm jobs; see
 [hpc/roihu/README.md](../hpc/roihu/README.md).
+
+---
 
 ## Changelog
 

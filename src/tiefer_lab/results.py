@@ -47,7 +47,8 @@ class Report:
     @property
     def commit(self) -> str:
         git = self.data.get("provenance", {}).get("git", {})
-        return f"`{str(git.get('commit', 'unknown'))[:12]}`"
+        commit = git.get("commit") or self.data.get("git_commit") or "unknown"
+        return f"`{str(commit)[:12]}`"
 
     @property
     def time(self) -> str:
@@ -147,12 +148,13 @@ def environment_section(reports: Reports) -> str:
                 str(plat.get("libraries", {}).get("torch", "n/a")),
                 str(slurm.get("partition", "n/a")),
                 r.source,
+                r.commit,
             ]
         )
     if not rows:
-        rows = [[NOT_YET] * 6]
+        rows = [[NOT_YET] * 7]
     return house_table(
-        ["Training run", "Device", "CPU architecture", "PyTorch", "Partition", "Source"],
+        ["Training run", "Device", "CPU architecture", "PyTorch", "Partition", "Source", "Commit"],
         [Group("", rows)],
     )
 
@@ -168,31 +170,35 @@ def data_section(reports: Reports) -> str:
                 fmt(d.get("split_count")),
                 f"`{dataset.get('revision', 'unknown')}`",
                 r.source,
+                r.commit,
             ]
         )
     if not rows:
-        rows = [["validation", NOT_YET, NOT_YET, NOT_YET], ["test", NOT_YET, NOT_YET, NOT_YET]]
-    return house_table(["Split", "Patches", "Dataset revision", "Source"], [Group("", rows)])
+        rows = [["validation"] + [NOT_YET] * 4, ["test"] + [NOT_YET] * 4]
+    return house_table(
+        ["Split", "Patches", "Dataset revision", "Source", "Commit"], [Group("", rows)]
+    )
 
 
 def model_section(reports: Reports) -> str:
     if reports.export:
         r = reports.export[-1]
         rows = [
-            ["Parameters", fmt(r.data.get("parameters")), r.source],
+            ["Parameters", fmt(r.data.get("parameters")), r.source, r.commit],
             [
                 "Multiply-accumulates, 1 x 4 x 512 x 512",
                 fmt(r.data.get("macs_1x4x512x512")),
                 r.source,
+                r.commit,
             ],
-            ["ONNX opset", fmt(r.data.get("opset")), r.source],
+            ["ONNX opset", fmt(r.data.get("opset")), r.source, r.commit],
         ]
     else:
         rows = [
-            ["Parameters", NOT_YET, NOT_YET],
-            ["Multiply-accumulates, 1 x 4 x 512 x 512", NOT_YET, NOT_YET],
+            ["Parameters", NOT_YET, NOT_YET, NOT_YET],
+            ["Multiply-accumulates, 1 x 4 x 512 x 512", NOT_YET, NOT_YET, NOT_YET],
         ]
-    return house_table(["", "Value", "Source"], [Group("", rows)])
+    return house_table(["", "Value", "Source", "Commit"], [Group("", rows)])
 
 
 def _method_rows(r: Report) -> list[list[str]]:
@@ -255,57 +261,47 @@ def pixel_frame_section(reports: Reports) -> str:
             continue
         m = r.data["model"]
         intervals = m.get("intervals", {})
+
+        def row(
+            name: str, value: Any, key: str, r: Report = r, intervals: dict[str, Any] = intervals
+        ) -> list[str]:
+            return [name, with_interval(value, intervals.get(key)), r.source, r.commit]
+
         rows = [
-            [
-                f"IoU, {name}",
-                with_interval(m["pixel"]["iou"][i], intervals.get(f"iou_class_{i}")),
-                r.source,
-            ]
+            row(f"IoU, {name}", m["pixel"]["iou"][i], f"iou_class_{i}")
             for i, name in enumerate(CLASS_NAMES)
         ]
+        rows.append(row("Overall accuracy", m["pixel"]["overall_accuracy"], "overall_accuracy"))
         rows.append(
-            [
-                "Overall accuracy",
-                with_interval(m["pixel"]["overall_accuracy"], intervals.get("overall_accuracy")),
-                r.source,
-            ]
-        )
-        rows.append(
-            [
+            row(
                 "Cloud fraction mean absolute error",
-                with_interval(
-                    m["frame"]["cloud_fraction_mae"], intervals.get("cloud_fraction_mae")
-                ),
-                r.source,
-            ]
+                m["frame"]["cloud_fraction_mae"],
+                "cloud_fraction_mae",
+            )
         )
         for key, values in sorted(m["frame"]["thresholds"].items()):
             pct = round(float(key) * 100)
             rows.append(
-                [
+                row(
                     f"False discard rate at {pct} percent",
-                    with_interval(
-                        values["false_discard_rate"], intervals.get(f"false_discard_rate@{key}")
-                    ),
-                    r.source,
-                ]
+                    values["false_discard_rate"],
+                    f"false_discard_rate@{key}",
+                )
             )
             rows.append(
-                [
+                row(
                     f"Decision accuracy at {pct} percent",
-                    with_interval(
-                        values["decision_accuracy"], intervals.get(f"decision_accuracy@{key}")
-                    ),
-                    r.source,
-                ]
+                    values["decision_accuracy"],
+                    f"decision_accuracy@{key}",
+                )
             )
         groups.append(Group(f"{'Validation' if split == 'val' else 'Test'} split", rows))
     if not groups:
-        rows = [[f"IoU, {name}", NOT_YET, NOT_YET] for name in CLASS_NAMES]
-        rows += [[f"False discard rate at {p} percent", NOT_YET, NOT_YET] for p in (30, 50, 70)]
-        rows += [[f"Decision accuracy at {p} percent", NOT_YET, NOT_YET] for p in (30, 50, 70)]
-        groups = [Group("Validation split", rows)]
-    return house_table(["", "Value [95 percent interval]", "Source"], groups)
+        names = [f"IoU, {name}" for name in CLASS_NAMES]
+        names += [f"False discard rate at {p} percent" for p in (30, 50, 70)]
+        names += [f"Decision accuracy at {p} percent" for p in (30, 50, 70)]
+        groups = [Group("Validation split", [[n, NOT_YET, NOT_YET, NOT_YET] for n in names])]
+    return house_table(["", "Value [95 percent interval]", "Source", "Commit"], groups)
 
 
 def quantisation_section(reports: Reports) -> str:
@@ -321,21 +317,21 @@ def quantisation_section(reports: Reports) -> str:
                     fmt(c["false_discard_rate_fp32"]),
                     fmt(c["false_discard_rate_int8"]),
                     r.source,
+                    r.commit,
                 ]
             )
     if not rows:
-        rows = [[NOT_YET] * 6]
-    return house_table(
-        [
-            "Run and split",
-            "Mean IoU FP32",
-            "Mean IoU INT8",
-            "False discard rate FP32",
-            "False discard rate INT8",
-            "Source",
-        ],
-        [Group("", rows)],
-    )
+        rows = [[NOT_YET] * 7]
+    headers = [
+        "Run and split",
+        "Mean IoU FP32",
+        "Mean IoU INT8",
+        "False discard rate FP32",
+        "False discard rate INT8",
+        "Source",
+        "Commit",
+    ]
+    return house_table(headers, [Group("", rows)])
 
 
 def hardware_section(reports: Reports) -> str:
@@ -350,17 +346,24 @@ def hardware_section(reports: Reports) -> str:
                 fmt(r.data["throughput"]["tiles_per_second"], 1),
                 f"{fmt(r.data['energy_per_tile_mj']['total'], 1)} mJ",
                 r.source,
+                r.commit,
             ]
         )
     if not rows:
         rows = [
-            ["Jetson Orin, FP16", NOT_YET, NOT_YET, NOT_YET, NOT_YET, NOT_YET],
-            ["Jetson Orin, INT8", NOT_YET, NOT_YET, NOT_YET, NOT_YET, NOT_YET],
+            ["Jetson Orin, FP16"] + [NOT_YET] * 6,
+            ["Jetson Orin, INT8"] + [NOT_YET] * 6,
         ]
-    return house_table(
-        ["Engine", "Latency p50", "Latency p99", "Tiles per second", "Energy per tile", "Source"],
-        [Group("", rows)],
-    )
+    headers = [
+        "Engine",
+        "Latency p50",
+        "Latency p99",
+        "Tiles per second",
+        "Energy per tile",
+        "Source",
+        "Commit",
+    ]
+    return house_table(headers, [Group("", rows)])
 
 
 def compute_section(reports: Reports) -> str:
@@ -374,13 +377,13 @@ def compute_section(reports: Reports) -> str:
                     step.get("Elapsed", "n/a"),
                     step.get("AllocTRES", "n/a"),
                     f"`reports/compute/{r.path.name}`",
+                    "n/a",
                 ]
             )
     if not rows:
-        rows = [[NOT_YET] * 5]
-    return house_table(
-        ["Job", "Partition", "Elapsed", "Allocated resources", "Source"], [Group("", rows)]
-    )
+        rows = [[NOT_YET] * 6]
+    headers = ["Job", "Partition", "Elapsed", "Allocated resources", "Source", "Commit"]
+    return house_table(headers, [Group("", rows)])
 
 
 LIMITATIONS = [
@@ -419,7 +422,7 @@ def render(reports: Reports, date: dt.date) -> str:
             "do not edit it by hand.",
             "assets/header.png",
         ),
-        "## 1. Summary\n\n" + " ".join(summary(reports)),
+        "## 1. Summary\n\n" + " ".join(summary(reports)) + "\n\n"
         f"Numbers are rounded to {DIGITS} decimals unless a unit says otherwise. Intervals are "
         "95 percent bootstrap intervals over patches. A value is written `n/a` where it is "
         "undefined and `not yet measured` where no report exists.",
@@ -442,7 +445,9 @@ def render(reports: Reports, date: dt.date) -> str:
         f"{len(reports.export)} export, {len(reports.jetson)} Jetson and "
         f"{len(reports.compute)} compute report files.",
     ]
-    return "\n\n".join(p.rstrip("\n") for p in parts) + "\n"
+    head, rest = parts[0], parts[1:]
+    body = "\n\n---\n\n".join(p.rstrip("\n") for p in rest)
+    return head.rstrip("\n") + "\n\n" + body + "\n"
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
