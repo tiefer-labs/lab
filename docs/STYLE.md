@@ -4,7 +4,7 @@
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-The Markdown standard for every Tiefer repository: headers, characters and voice, structure, formatting, numbers, model cards, images and the house table style.
+The Markdown standard for every Tiefer repository: headers, characters and voice, structure, formatting, numbers, model cards, images and tables.
 
 ---
 
@@ -63,7 +63,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 - Commands, file names, variables and configuration keys in backticks.
 - Code blocks always name their language (`bash`, `python`, `toml`, `text`). Commands are copy-ready: no `$` prompt, one command per line, placeholders in angle brackets (`<run-id>`).
-- Tables for anything compared across rows, written in the house table style (section 9).
+- Tables for anything compared across rows, written as plain Markdown tables (section 9).
 - Numbered lists when order matters, bullets otherwise, at most two levels.
 - Bold at most once per paragraph, for the one phrase a reader must not miss. No italics for emphasis.
 - Relative links inside the repository, absolute links to other repositories.
@@ -93,43 +93,34 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 ---
 
-## 9. House table style
+## 9. Tables
 
-Every table in a Markdown file is written as an HTML table in the house style below, in brand blue `#0C003D`: blue column headers with a blue rule, optional blue category rows that group the rows below them, light grey row lines, the first column left-aligned and indented, all other columns centred. Tables written by scripts (for example `docs/RESULTS.md` and model cards) use the same style, produced by one shared helper in `src/tiefer_lab/` so every generated table is identical.
+Every table is a plain GitHub Markdown table. It renders the same on github.com, on Hugging Face and on the website, in light and dark mode, and it stays readable as plain text. HTML tables, inline styles and colours are not used: GitHub removes inline styles, so a styled table looks different on every site.
+
+Tables written by scripts (for example `docs/RESULTS.md` and model cards) are produced by one shared helper, `markdown_table` in `src/tiefer_lab/tables.py`, so every generated table is identical.
 
 Pattern (one category row and one data row shown; repeat as needed):
 
-```html
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:1000px;margin:0 auto;padding:16px 0">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr>
-<th align="left" style="padding:10px 7px;text-align:left;font-weight:600;border-bottom:2px solid #0C003D;color:#0C003D"></th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Column A</th>
-<th align="center" style="padding:10px 7px;text-align:center;font-weight:500;border-bottom:2px solid #0C003D;color:#0C003D;font-size:14px">Column B</th>
-</tr></thead>
-<tbody>
-<tr><td colspan="3" align="left" style="padding:8px 12px;font-weight:600;color:#0C003D;border-bottom:1px solid rgba(12, 0, 61, 0.2);background:rgba(12, 0, 61, 0.1)">Category</td></tr>
-<tr>
-<td align="left" style="padding:7px 7px;padding-left:20px;border-bottom:1px solid rgba(128, 128, 128, 0.15)">Row name</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">82.3</td>
-<td align="center" style="padding:7px 7px;text-align:center;border-bottom:1px solid rgba(128, 128, 128, 0.15)">79.6</td>
-</tr>
-</tbody>
-</table>
-</div>
+```markdown
+|  | Column A | Column B |
+| :--- | :---: | :---: |
+| **Category** | | |
+| Row name | 82.3 | 79.6 |
 ```
 
 Rules:
 
-- `colspan` of a category row equals the number of columns. Leave out category rows when a table has no groups.
+- The first column is left-aligned (`:---`), all other columns are centred (`:---:`).
 - The top-left header cell is empty when the first column holds row names; otherwise it names the column.
-- Keep the colours exactly: `#0C003D` and `rgba(12, 0, 61, ...)` for headers and categories, `rgba(128, 128, 128, 0.15)` for row lines. No other colours, no bold numbers, no highlighting of "best" values.
-- A missing value is written `not measured` (or `n/a` when the measure does not apply), never left empty.
-- Leave one empty line before and after the HTML block, and no empty lines inside it, so Markdown renderers keep it as one block.
-- Also give every `th` and `td` an `align` attribute (`align="left"` for the first column, `align="center"` for the others), because GitHub keeps `align` but removes inline `style` attributes when it renders Markdown. On github.com these tables therefore show as clean tables with the same structure (headers, category rows, alignment) but without the blue colours. The colours appear where inline styles are kept, such as Hugging Face pages and the website. This is expected; do not replace the tables with images to force the colours.
+- Category rows are optional and group the rows below them: the category in bold in the first cell, the other cells empty. Leave them out when a table has no groups.
+- A missing value is written `not measured` (or `n/a` when the measure does not apply), never left empty. Category rows are the only rows with empty cells.
+- Cells hold one line each. Inline code and links are allowed; a `|` inside a cell is written `\|`.
+- No bold numbers and no highlighting of "best" values.
+- Leave one empty line before and after a table.
 
 ---
 
 ## Changelog
 
+- 1 October 2026: tables are plain Markdown tables; the HTML house table style with inline colours is removed, because GitHub removes inline styles.
 - 1 October 2026: first version, written for milestone L1 of Tiefer Lab.
