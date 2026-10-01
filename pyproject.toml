@@ -1,0 +1,85 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+[project]
+name = "tiefer-lab"
+version = "0.1.0"
+description = "Training, compression and measurement of Tiefer's onboard Earth observation models."
+readme = "README.md"
+license = "MPL-2.0"
+requires-python = ">=3.12"
+authors = [{ name = "Tiefer", email = "hello@tiefer.space" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+# torch is a range on purpose: on CSC Roihu it comes from the CSC module.
+# Every run records the version it actually used.
+dependencies = [
+    "torch>=2.5",
+    "numpy>=2.0",
+    "tacoreader>=0.5.6,<0.6",
+    "fsspec[http]>=2024.10.0",
+    "rasterio>=1.4",
+    "onnx>=1.17",
+    "onnxruntime>=1.20",
+]
+
+[project.urls]
+Homepage = "https://tiefer.space"
+Repository = "https://github.com/tiefer-labs/lab"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "regex>=2024.11.6",
+]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tiefer_lab"]
+
+[tool.uv]
+required-version = ">=0.8"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "S"]
+ignore = [
+    "S101",  # assert is used in tests
+    "S603",  # subprocess calls use fixed argument lists, never a shell
+    "S607",  # git and trtexec are looked up on PATH on purpose
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "N802", "N806"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["tacoreader.*", "rasterio.*", "onnxruntime.*", "onnx.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["slow: tests that train or export a small model (seconds, not minutes)"]
+filterwarnings = ["ignore::DeprecationWarning:torch.*"]
