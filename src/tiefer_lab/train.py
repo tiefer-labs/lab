@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 from tiefer_lab import metrics
 from tiefer_lab.config import Config, dump_toml, load_config
 from tiefer_lab.data import cache
-from tiefer_lab.data.dataset import EvalPatches, TrainPatches
+from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
 from tiefer_lab.data.transforms import Photometric
 from tiefer_lab.models.cloud_filter import (
     build_model,
@@ -199,24 +199,41 @@ def train(
         )
         print(f"resuming {run_dir.name} after epoch {start_epoch}", flush=True)
 
-    train_set = TrainPatches(
-        train_data,
-        mean,
-        std,
-        config.data.crop_size,
-        Photometric(config.data.brightness, config.data.contrast),
-    )
+    photometric = Photometric(config.data.brightness, config.data.contrast)
     generator = torch.Generator()
     pin = device.type == "cuda"
-    train_loader = DataLoader(
-        train_set,
-        batch_size=config.data.batch_size,
-        shuffle=True,
-        num_workers=workers,
-        generator=generator,
-        drop_last=len(train_set) >= config.data.batch_size,
-        pin_memory=pin,
-    )
+    device_batches: DeviceTrainBatches | None = None
+    train_set: TrainPatches | None = None
+    train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]] | None = None
+    if train_data.in_memory:
+        # The split fits in memory: hold it once per job (on the GPU when it fits)
+        # and augment on the device.
+        device_batches = DeviceTrainBatches(
+            train_data,
+            mean,
+            std,
+            config.data.crop_size,
+            photometric,
+            device,
+            config.data.batch_size,
+            config.train.seed,
+        )
+        placement = device_batches.placement
+    else:
+        train_set = TrainPatches(train_data, mean, std, config.data.crop_size, photometric)
+        train_loader = DataLoader(
+            train_set,
+            batch_size=config.data.batch_size,
+            shuffle=True,
+            num_workers=workers,
+            generator=generator,
+            drop_last=len(train_set) >= config.data.batch_size,
+            pin_memory=pin,
+        )
+        placement = "data loader (memory-mapped)"
+    print(f"training data: {len(train_data)} patches, {placement}", flush=True)
+    meta.setdefault("data", {})["train_placement"] = placement
+    _write_json(meta_path, meta)
     val_loader = DataLoader(
         EvalPatches(val_data, mean, std, multiple=max(32, model.downsampling)),
         batch_size=config.data.eval_batch_size,
@@ -244,11 +261,14 @@ def train(
         for epoch in range(start_epoch, config.train.epochs):
             # One seed per epoch, so a resumed run sees the same batches.
             generator.manual_seed(config.train.seed * 100_003 + epoch)
-            train_set.set_epoch(epoch)
+            if train_set is not None:
+                train_set.set_epoch(epoch)
+            batches = device_batches.epoch(epoch) if device_batches is not None else train_loader
+            assert batches is not None
             model.train()
             started = time.monotonic()
             losses: list[float] = []
-            for step, (images, labels) in enumerate(train_loader):
+            for step, (images, labels) in enumerate(batches):
                 if stop.requested or (
                     config.train.max_steps_per_epoch and step >= config.train.max_steps_per_epoch
                 ):

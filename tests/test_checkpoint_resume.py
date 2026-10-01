@@ -17,7 +17,7 @@ import torch
 from tiefer_lab import train
 from tiefer_lab.config import config_from_dict
 from tiefer_lab.data import build_cache
-from tiefer_lab.data.dataset import TrainPatches
+from tiefer_lab.data.dataset import DeviceTrainBatches
 from tiefer_lab.utils import checkpoint
 from tiefer_lab.utils.signals import StopRequest
 
@@ -76,23 +76,22 @@ def test_interrupted_run_resumes_to_the_same_result(
     status = train.train(config, runs / "full", device_name="cpu", allow_synthetic=True)
     assert status == "completed"
 
-    # Second run: send SIGUSR1 while the first batch of epoch 2 is loaded.
-    original = TrainPatches.__getitem__
-    calls = {"n": 0}
+    # Second run: send SIGUSR1 while the first batch of epoch 2 is prepared.
+    original = DeviceTrainBatches.epoch
 
-    def interrupting(self: TrainPatches, index: int):  # type: ignore[no-untyped-def]
-        if self.epoch == 1:
-            calls["n"] += 1
-            if calls["n"] == 1:
+    def interrupting(self: DeviceTrainBatches, epoch: int):  # type: ignore[no-untyped-def]
+        for n, batch in enumerate(original(self, epoch)):
+            if epoch == 1 and n == 0:
                 os.kill(os.getpid(), signal.SIGUSR1)
-        return original(self, index)
+            yield batch
 
-    monkeypatch.setattr(TrainPatches, "__getitem__", interrupting)
+    monkeypatch.setattr(DeviceTrainBatches, "epoch", interrupting)
     run = runs / "interrupted"
     assert train.train(config, run, device_name="cpu", allow_synthetic=True) == "interrupted"
     assert checkpoint.load_checkpoint(run / checkpoint.LAST)["epochs_done"] == 1
-    assert json.loads((run / train.METADATA_NAME).read_text())["status"] == "interrupted"
-    monkeypatch.setattr(TrainPatches, "__getitem__", original)
+    meta = json.loads((run / train.METADATA_NAME).read_text())
+    assert meta["status"] == "interrupted" and meta["data"]["train_placement"] == "cpu"
+    monkeypatch.setattr(DeviceTrainBatches, "epoch", original)
 
     assert train.main(["--resume", str(run), "--device", "cpu", "--allow-synthetic"]) == 0
     meta = json.loads((run / train.METADATA_NAME).read_text())

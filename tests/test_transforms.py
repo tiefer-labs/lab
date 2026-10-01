@@ -107,3 +107,66 @@ def test_datasets_return_normalised_crops_and_padded_patches(tiefer_env: dict) -
     evaluation = EvalPatches(cache.load_split(directory, "val"), mean, std, multiple=32)
     image, label, index = evaluation[1]
     assert image.shape == (4, 64, 64) and label.shape == (40, 40) and index == 1
+
+
+def _aligned_split(n: int = 6, size: int = 40):  # type: ignore[no-untyped-def]
+    """Synthetic split whose every band holds 1000 x (label + 1), so alignment can be checked."""
+    from tiefer_lab.data.cache import SplitData
+
+    rng = np.random.default_rng(0)
+    labels = rng.integers(0, 4, size=(n, size, size)).astype(np.uint8)
+    images = np.repeat(((labels.astype(np.uint16) + 1) * 1000)[:, None], 4, axis=1)
+    return SplitData("train", images, labels, [str(i) for i in range(n)], [], in_memory=True)
+
+
+def test_device_batches_keep_labels_aligned_and_values_exact() -> None:
+    import torch
+
+    from tiefer_lab.data.dataset import DeviceTrainBatches
+
+    batches = DeviceTrainBatches(
+        _aligned_split(),
+        np.zeros(4, np.float32),
+        np.ones(4, np.float32),
+        crop_size=32,
+        photometric=tf.Photometric(brightness=0.0, contrast=0.0),
+        device=torch.device("cpu"),
+        batch_size=4,
+        seed=0,
+    )
+    assert batches.placement == "cpu" and len(batches) == 1
+    for epoch in range(5):
+        for image, label in batches.epoch(epoch):
+            assert image.shape == (4, 4, 32, 32) and label.shape == (4, 32, 32)
+            assert label.dtype == torch.int64
+            expected = 0.1 * (label.to(torch.float32) + 1)
+            for band in range(4):
+                torch.testing.assert_close(image[:, band], expected)
+
+
+def test_device_batches_repeat_per_epoch_and_stay_in_range() -> None:
+    import torch
+
+    from tiefer_lab.data.dataset import DeviceTrainBatches
+
+    def make() -> DeviceTrainBatches:
+        return DeviceTrainBatches(
+            _aligned_split(8),
+            np.zeros(4, np.float32),
+            np.ones(4, np.float32),
+            32,
+            tf.Photometric(0.1, 0.1),
+            torch.device("cpu"),
+            batch_size=4,
+            seed=3,
+        )
+
+    a = [img for img, _ in make().epoch(2)]
+    b = [img for img, _ in make().epoch(2)]
+    c = [img for img, _ in make().epoch(3)]
+    assert len(a) == 2
+    for x, y in zip(a, b, strict=True):
+        torch.testing.assert_close(x, y)
+    assert not torch.equal(a[0], c[0])
+    assert float(min(x.min() for x in a)) >= 0.0
+    assert float(max(x.max() for x in a)) <= tf.MAX_REFLECTANCE
