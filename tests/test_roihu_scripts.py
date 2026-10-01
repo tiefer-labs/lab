@@ -62,6 +62,11 @@ def test_env_requires_project(roihu_env: dict[str, str]) -> None:
         ["bash", "-c", f"source {ROIHU / 'env.sh'}"], env=env, capture_output=True, text=True
     )
     assert result.returncode == 1 and "TIEFER_CSC_PROJECT" in result.stderr
+    env["TIEFER_CSC_PROJECT"] = "<project>"
+    result = subprocess.run(
+        ["bash", "-c", f"source {ROIHU / 'env.sh'}"], env=env, capture_output=True, text=True
+    )
+    assert result.returncode == 1 and "remove that line" in result.stderr
 
 
 def test_submit_adds_account_and_log_location(roihu_env: dict[str, str], tmp_path: Path) -> None:
@@ -104,7 +109,7 @@ def test_submit_rejects_unsafe_values(
     roihu_env: dict[str, str], tmp_path: Path, extra: dict[str, str], args: list[str]
 ) -> None:
     result = _run("submit.sh", args, {**roihu_env, **extra})
-    assert result.returncode == 2
+    assert result.returncode != 0 and "error:" in result.stderr
     assert not (tmp_path / "sbatch.log").exists()
 
 

@@ -23,6 +23,10 @@ if [[ -z "${TIEFER_CSC_PROJECT:-}" ]]; then
   echo "error: TIEFER_CSC_PROJECT is not set; add 'export TIEFER_CSC_PROJECT=<project>' to ~/.bashrc" >&2
   return 1 2>/dev/null || exit 1
 fi
+if [[ ! "${TIEFER_CSC_PROJECT}" =~ ^[A-Za-z0-9_]+$ ]]; then
+  echo "error: TIEFER_CSC_PROJECT='${TIEFER_CSC_PROJECT}' is not a CSC project name (letters, digits, _); if ~/.bashrc holds the literal placeholder, remove that line (hpc/roihu/README.md, step 1)" >&2
+  return 1 2>/dev/null || exit 1
+fi
 
 export TIEFER_PROJAPPL="${TIEFER_PROJAPPL:-/projappl/${TIEFER_CSC_PROJECT}/tiefer-lab}"
 export TIEFER_SCRATCH="${TIEFER_SCRATCH:-/scratch/${TIEFER_CSC_PROJECT}/tiefer-lab}"
