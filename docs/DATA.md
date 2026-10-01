@@ -12,17 +12,18 @@ What data milestone L1 trains and evaluates on, which facts about it the code de
 
 |  | Value |
 | :--- | :---: |
-| Dataset | CloudSEN12+, Level-1C variant, labels of quality high only |
+| Dataset | CloudSEN12+, Level-1C variant, labels of quality high only, 509 x 509 patches only |
 | Publisher | TACO Foundation on Hugging Face: [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
 | Licence | CC0 1.0 |
-| Reader | `tacoreader` 0.5.6 (v1 API) and `rasterio` |
+| Dataset card version | 1.1.2 |
+| Reader | `tacoreader` 0.5.6 (v1 API) and `rasterio`; the card example uses 0.5.3, and 0.5.6 works on CSC Roihu |
 | Revision used | not yet recorded: the builder writes it to `index.json` |
 | Included in this repository | no; patches are read at run time and cached outside git |
 
 The dataset is not part of this repository. `python -m tiefer_lab.data.build_cache` reads only the four used bands and the label of each selected patch; the full dataset (about 248 GB according to the specification) is never downloaded.
 
 > [!NOTE]
-> The build environment of Part A could not reach `huggingface.co` (blocked by its network policy). Every fact below that comes from the dataset card is therefore marked `TODO(verify)` and must be checked against the card before the first real cache build. The reader also checks each of them against the data at run time and stops with a clear message when one does not hold.
+> The facts below were checked against the dataset card, version 1.1.2, on 1 October 2026. Two facts are still marked `TODO(verify)`: the split field, which the card does not name, and the revision field of the Hugging Face API, which was not checked. The reader prints the metadata columns once per build and stops with a clear message when the split field or another field it needs is missing.
 
 ---
 
@@ -34,22 +35,24 @@ All of these are defined once, in `src/tiefer_lab/data/source.py`.
 | :--- | :---: | :---: |
 | **Access** | | |
 | Reader API | `tacoreader.load(name)` returns a metadata table; `table.read(i)` returns the sample; `sample.read(k)` returns a GDAL virtual file path for item `k` | verified by reading the source of `tacoreader` 0.5.6 ([PyPI](https://pypi.org/project/tacoreader/0.5.6/)); 2.x rejects `tacofoundation:` names and refers to 0.x for them |
-| Level-1C variant name | `tacofoundation:cloudsen12-l1c` | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Dataset format | TACO v1 (`.taco` files), read by `tacoreader` 0.5 | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) that the dataset is still published in this format |
+| Level-1C variant name | `tacofoundation:cloudsen12-l1c` | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
+| Variant with the reference masks | `tacofoundation:cloudsen12-extra` | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
+| Dataset format | TACO v1 (`.taco` files), read by `tacoreader` 0.5 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12): its example uses `tacoreader` 0.5.3; 0.5.6 works on CSC Roihu |
 | Dataset revision | `sha` field of the Hugging Face dataset API, recorded at build time | TODO(verify) the [API response](https://huggingface.co/api/datasets/tacofoundation/cloudsen12) |
 | **Image** | | |
-| Band order of the image item | B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12 | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: 13 bands, and band descriptions when present |
+| Band order of the image item | B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: 13 bands, and band descriptions when present |
 | Bands used | B02, B03, B04, B08 (rasterio indexes 2, 3, 4, 8) | follows from the band order; tested in `tests/test_bands_and_labels.py` |
-| Scale factor | reflectance = DN x 0.0001 + 0.0 | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12), including whether an offset applies |
+| Scale factor | reflectance = DN x 0.0001, no offset | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
 | Data type | uint16 | checked at run time |
-| Patch size | read from the data; all patches of a split must share it | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12); export assumes at most 512 x 512 |
+| Patch size | field `real_proj_shape`, 509 or 2000; only 509 is kept, as the export input is 512 x 512 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); kept and dropped counts are written to `index.json` |
 | **Labels and metadata** | | |
-| Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: any other code stops the build |
-| Item positions in a sample | image item 0, label item 1 | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time |
-| Quality field and value | `label_type` = `high` | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time |
-| Patch ID field | `tortilla:id` | the reader sorts by this column (`tacoreader` source); TODO(verify) its meaning on the card |
-| Reference masks | none configured | TODO(verify) on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) which algorithm masks ship with the dataset |
+| Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: any other code stops the build |
+| Item positions in a sample | `read(0)` image, `read(1)` label | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
+| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | TODO(verify): the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) does not name it; checked at run time, and the reader prints the metadata columns to find it |
+| Quality field and value | `label_type` = `high` (values high, scribble, nolabel) | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time |
+| Patch ID field | `roi_id` (also `old_roi_id`), used in every report | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
+| Row key | `tortilla:id`, used only to sort rows and to resume a build | `tacoreader` source |
+| Reference masks | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2`, in the extra variant | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); not read by the cache builder yet |
 
 ---
 
@@ -68,19 +71,19 @@ Only blue, green, red and near infrared (Sentinel-2 B02, B03, B04 and B08, all a
 | 2 | thin cloud | semi-transparent cloud through which the surface is still visible |
 | 3 | cloud shadow | surface in the shadow of a cloud |
 
-The meanings are the usual CloudSEN12 definitions; TODO(verify) the exact wording on the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12). The cloud fraction of a frame counts thick and thin cloud; cloud shadow is reported separately.
+The codes and names are those of the [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); the meanings column is this repository's short description. The cloud fraction of a frame counts thick and thin cloud; cloud shadow is reported separately.
 
 ---
 
 ## 5. Split sizes
 
-The dataset's own train, validation and test splits are used. Counts are written by the cache builder to `index.json` (`splits.<split>.count`) and copied into every evaluation report.
+The dataset's own train, validation and test splits are used. Of the high quality patches of a split, only those with `real_proj_shape` 509 are kept; the 2000 x 2000 patches are dropped. The cache builder prints both counts and writes them to `index.json` (`splits.<split>.selection`: `high_quality`, `kept_509`, `dropped_other_shape`); the number of cached patches is `splits.<split>.count` and is copied into every evaluation report.
 
-| Split | High quality patches |
-| :--- | :---: |
-| train | not yet measured |
-| validation | not yet measured |
-| test | not yet measured |
+| Split | High quality patches | Kept (509 x 509) | Dropped (other size) |
+| :--- | :---: | :---: | :---: |
+| train | not yet measured | not yet measured | not yet measured |
+| validation | not yet measured | not yet measured | not yet measured |
+| test | not yet measured | not yet measured | not yet measured |
 
 ---
 
@@ -107,12 +110,13 @@ The geographic, seasonal and land cover distribution of the high quality patches
 
 ## 9. Citation
 
-CloudSEN12+ is CC0 1.0, so no citation is required, but the work behind it is cited here:
+CloudSEN12+ is CC0 1.0, so no citation is required, but the work behind it is cited here. These are the citations of the [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12):
 
-- CloudSEN12, a global dataset for semantic understanding of cloud and cloud shadow in Sentinel-2. Scientific Data, 2022. DOI `10.1038/s41597-022-01878-2`. TODO(verify) at [doi.org](https://doi.org/10.1038/s41597-022-01878-2).
-- CloudSEN12+: the largest dataset of expert-labeled pixels for cloud and cloud shadow detection in Sentinel-2. Data in Brief, 2024. DOI `10.1016/j.dib.2024.110852`. TODO(verify) at [doi.org](https://doi.org/10.1016/j.dib.2024.110852).
+- Scientific Data, 2022: [10.1038/s41597-022-01878-2](https://doi.org/10.1038/s41597-022-01878-2)
+- Data in Brief, 2024: [10.1016/j.dib.2024.110852](https://doi.org/10.1016/j.dib.2024.110852)
+- IGARSS 2023: [10.1109/IGARSS52108.2023.10282381](https://doi.org/10.1109/IGARSS52108.2023.10282381)
 
-Authors are listed at the DOI links; this repository names no individuals.
+Titles and authors are listed at the DOI links; this repository names no individuals.
 
 ---
 
@@ -130,4 +134,5 @@ Add `--limit <n>` for a small subset. The build is resumable: run the same comma
 
 ## Changelog
 
+- 1 October 2026: dataset facts checked against the card, version 1.1.2; only 509 x 509 patches are kept, with kept and dropped counts per split; `roi_id` is the patch identifier; the split field is still `TODO(verify)`.
 - 1 October 2026: first version; dataset facts marked `TODO(verify)` because the dataset card was not reachable from the build environment.
