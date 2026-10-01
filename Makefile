@@ -6,7 +6,7 @@
 # an already activated environment, for example: make RUN= test
 RUN ?= uv run --frozen
 
-.PHONY: setup lint typecheck test check requirements results
+.PHONY: setup lint typecheck test check smoke requirements results
 
 # Packages that only torch needs. On CSC Roihu they come with the PyTorch
 # module, so hpc/roihu/requirements.txt leaves them out.
@@ -32,6 +32,12 @@ test:
 	$(RUN) pytest
 
 check: lint typecheck test
+
+# The full local smoke pipeline on a tiny subset. SMOKE_SOURCE: auto (real
+# CloudSEN12+ patches when reachable, synthetic otherwise), cloudsen12 or synthetic.
+SMOKE_SOURCE ?= auto
+smoke:
+	$(RUN) python -m tiefer_lab.smoke --source $(SMOKE_SOURCE)
 
 requirements:
 	uv export $(REQUIREMENTS_ARGS) --output-file hpc/roihu/requirements.txt
