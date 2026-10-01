@@ -21,7 +21,6 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=16G
-#SBATCH --export=NONE
 set -euo pipefail
 
 # The data build runs on either architecture, with venv-aarch64 or venv-x86_64.

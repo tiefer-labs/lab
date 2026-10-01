@@ -18,7 +18,6 @@
 #SBATCH --time=00:15:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=72
-#SBATCH --export=NONE
 set -euo pipefail
 
 # GPU jobs run only on the ARM (aarch64) GH200 nodes; stop before loading anything.

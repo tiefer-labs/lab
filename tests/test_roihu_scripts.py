@@ -187,7 +187,7 @@ def test_job_scripts_request_documented_resources() -> None:
         text = script.read_text()
         assert "#SBATCH --account" not in text, "the account is passed by submit.sh"
         assert text.startswith("#!/bin/bash -l\n"), script.name
-        assert "#SBATCH --export=NONE\n" in text and "--export=ALL" not in text, script.name
+        assert "--export" not in text, "jobs use sbatch's default export"
         prelude = text.index("source hpc/roihu/job_prelude.sh")
         assert prelude < text.index("source hpc/roihu/env.sh"), script.name
         assert text.index("uname -m") < prelude, "architecture is checked before loading"
@@ -206,18 +206,6 @@ def test_data_job_accepts_both_architectures_only(roihu_env: dict[str, str]) -> 
     assert result.returncode == 1 and "expected aarch64 or x86_64" in result.stderr
     text = (ROIHU / "data.sbatch").read_text()
     assert "aarch64 | x86_64) ;;" in text and "gh200" not in text
-
-
-def test_prelude_sets_home_and_user_and_purges_modules(roihu_env: dict[str, str]) -> None:
-    import pwd
-
-    env = {k: v for k, v in roihu_env.items() if k not in ("HOME", "USER")}
-    script = f'set -euo pipefail; source {ROIHU / "job_prelude.sh"}; echo "$HOME|$USER"'
-    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    entry = pwd.getpwuid(os.getuid())
-    assert result.stdout.strip() == f"{entry.pw_dir}|{entry.pw_name}"
-    assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
 
 
 def test_gpu_shell_requests_one_gh200_on_gputest(roihu_env: dict[str, str]) -> None:
@@ -248,41 +236,6 @@ def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:
     assert "--split train --limit 32" in smoke and "--split val --limit 16" in smoke
     # The tiny cache must be built before the first training command.
     assert smoke.index("--limit 32") < smoke.index("tiefer_lab.train")
-
-
-# A stand-in for /etc/profile on Roihu: like /etc/profile.d/colorls.sh it ends
-# a non-interactive shell with a non-zero return, after code that would also
-# fail under nounset and pipefail. It defines 'module' as Lmod does.
-STUB_PROFILE = """\
-module() {
-  local unset_inside="${TIEFER_TEST_NOT_SET}"
-  false | true
-  echo "module $*" >> "$STUB_LOG.module"
-}
-echo "${TIEFER_TEST_NOT_SET}" | false
-[ -n "${PS1}" ]
-return
-"""
-
-
-@pytest.mark.parametrize("options", ["-euo pipefail", "+euo pipefail", "-e +u -o pipefail"])
-def test_prelude_survives_a_system_profile_that_returns_non_zero(
-    roihu_env: dict[str, str], tmp_path: Path, options: str
-) -> None:
-    (tmp_path / "bin" / "module").unlink()
-    profile = tmp_path / "profile"
-    profile.write_text(STUB_PROFILE)
-    env = {**roihu_env, "TIEFER_SYSTEM_PROFILE": str(profile)}
-    env.pop("PS1", None)
-    script = (
-        f"set {options}; before=$(set +o; echo $-); "
-        f"source {ROIHU / 'job_prelude.sh'}; "
-        'after=$(set +o; echo $-); echo continued; [[ "$before" == "$after" ]] && echo same'
-    )
-    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.split() == ["continued", "same"], "options restored exactly"
-    assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
 
 
 # 'module' as a shell function, like Lmod: not written for set -euo pipefail.
@@ -321,3 +274,30 @@ def test_env_stops_when_module_load_fails(roihu_env: dict[str, str], tmp_path: P
     result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
     assert result.returncode == 1 and "continued" not in result.stdout
     assert "cannot load broken/1.0 (module status 1)" in result.stderr
+
+
+@pytest.mark.parametrize("options", ["-euo pipefail", "+euo pipefail", "-e +u -o pipefail"])
+def test_prelude_purges_modules_under_strict_options_and_restores_them(
+    roihu_env: dict[str, str], tmp_path: Path, options: str
+) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    script = (
+        f"set {options}; {STUB_MODULE}"
+        "before=$(set +o; echo $-); "
+        f"source {ROIHU / 'job_prelude.sh'}; "
+        'after=$(set +o; echo $-); echo continued; [[ "$before" == "$after" ]] && echo same'
+    )
+    result = subprocess.run(["bash", "-c", script], env=roihu_env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["continued", "same"], "options restored exactly"
+    assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
+
+
+def test_prelude_stops_without_the_module_command(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    script = f"set -euo pipefail; source {ROIHU / 'job_prelude.sh'}; echo continued"
+    result = subprocess.run(["bash", "-c", script], env=roihu_env, capture_output=True, text=True)
+    assert result.returncode == 1 and "continued" not in result.stdout
+    assert "submit it with hpc/roihu/submit.sh from a Roihu login node" in result.stderr

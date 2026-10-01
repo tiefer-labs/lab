@@ -7,11 +7,10 @@
 # script that uses it. Source it, do not run it:
 #
 #   tiefer_relax_shell
-#   source /etc/profile     # or: module purge, module load <name>
+#   module purge            # or: module load <name>
 #   tiefer_restore_shell
 #
-# On Roihu, /etc/profile.d/colorls.sh ends a non-interactive shell with a
-# non-zero 'return', and with errexit set that ends the whole job.
+# The module command can fail under nounset or end a job under errexit.
 # tiefer_relax_shell saves every 'set -o' option and turns off errexit,
 # nounset and pipefail; tiefer_restore_shell restores exactly the saved options.
 
