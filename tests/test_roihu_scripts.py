@@ -111,3 +111,12 @@ def test_job_scripts_request_documented_resources() -> None:
         text = script.read_text()
         assert "#SBATCH --account" not in text, "the account is passed by submit.sh"
         assert "source hpc/roihu/env.sh" in text
+
+
+def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:
+    smoke = (ROIHU / "smoke.sbatch").read_text()
+    assert 'if [[ ! -f "${TIEFER_DATA_DIR}/${cache_name}/index.json" ]]' in smoke
+    assert 'export TIEFER_DATA_DIR="${TIEFER_SCRATCH}/smoke/data"' in smoke
+    assert "--split train --limit 32" in smoke and "--split val --limit 16" in smoke
+    # The tiny cache must be built before the first training command.
+    assert smoke.index("--limit 32") < smoke.index("tiefer_lab.train")
