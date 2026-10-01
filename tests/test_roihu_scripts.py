@@ -259,3 +259,41 @@ def test_prelude_survives_a_system_profile_that_returns_non_zero(
     assert result.returncode == 0, result.stderr
     assert result.stdout.split() == ["continued", "same"], "options restored exactly"
     assert Path(roihu_env["STUB_LOG"] + ".module").read_text() == "module purge\n"
+
+
+# 'module' as a shell function, like Lmod: not written for set -euo pipefail.
+STUB_MODULE = """\
+module() {
+  local unset_inside="${TIEFER_TEST_NOT_SET}"
+  false | true
+  echo "module $*" >> "$STUB_LOG.module"
+  [[ "$*" != *broken* ]]
+}
+"""
+
+
+@pytest.mark.parametrize("options", ["-euo pipefail", "+euo pipefail"])
+def test_env_loads_modules_under_strict_options_and_restores_them(
+    roihu_env: dict[str, str], tmp_path: Path, options: str
+) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    script = (
+        f"set {options}; {STUB_MODULE}"
+        "before=$(set +o; echo $-); "
+        f"source {ROIHU / 'env.sh'}; "
+        'after=$(set +o; echo $-); echo continued; [[ "$before" == "$after" ]] && echo same'
+    )
+    result = subprocess.run(["bash", "-c", script], env=roihu_env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == ["continued", "same"], "options restored exactly"
+    calls = Path(roihu_env["STUB_LOG"] + ".module").read_text()
+    assert calls == "module purge\nmodule load python-data/3.12-31.03\n"
+
+
+def test_env_stops_when_module_load_fails(roihu_env: dict[str, str], tmp_path: Path) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    env = {**roihu_env, "TIEFER_CPU_PYTHON_MODULE": "broken/1.0"}
+    script = f"set -euo pipefail; {STUB_MODULE} source {ROIHU / 'env.sh'}; echo continued"
+    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+    assert result.returncode == 1 and "continued" not in result.stdout
+    assert "cannot load broken/1.0 (module status 1)" in result.stderr

@@ -53,12 +53,29 @@ export TIEFER_PYTORCH_MODULE="${TIEFER_PYTORCH_MODULE:-python-pytorch/2.10}"
 export TIEFER_CPU_PYTHON_MODULE="${TIEFER_CPU_PYTHON_MODULE:-python-data/3.12-31.03}"
 export TIEFER_VENV="${TIEFER_PROJAPPL}/venv-${TIEFER_ARCH}"
 
-module purge
 if [[ "${TIEFER_ARCH}" == "aarch64" ]]; then
-  module load "${TIEFER_PYTORCH_MODULE}" || { echo "error: cannot load ${TIEFER_PYTORCH_MODULE}" >&2; return 1 2>/dev/null || exit 1; }
+  tiefer_module="${TIEFER_PYTORCH_MODULE}"
 else
-  module load "${TIEFER_CPU_PYTHON_MODULE}" || { echo "error: cannot load ${TIEFER_CPU_PYTHON_MODULE}" >&2; return 1 2>/dev/null || exit 1; }
+  tiefer_module="${TIEFER_CPU_PYTHON_MODULE}"
 fi
+# The module command is not written for 'set -euo pipefail'; relax the
+# options around it and restore exactly the saved ones (shell_options.sh).
+# shellcheck source=hpc/roihu/shell_options.sh
+source "$(dirname "${BASH_SOURCE[0]}")/shell_options.sh"
+tiefer_relax_shell
+module purge
+tiefer_status=$?
+if [[ "${tiefer_status}" == "0" ]]; then
+  module load "${tiefer_module}"
+  tiefer_status=$?
+fi
+tiefer_restore_shell
+if [[ "${tiefer_status}" != "0" ]]; then
+  echo "error: cannot load ${tiefer_module} (module status ${tiefer_status})" >&2
+  unset tiefer_module tiefer_status
+  return 1 2>/dev/null || exit 1
+fi
+unset tiefer_module tiefer_status
 
 if [[ -f "${TIEFER_VENV}/bin/activate" ]]; then
   # shellcheck disable=SC1091
