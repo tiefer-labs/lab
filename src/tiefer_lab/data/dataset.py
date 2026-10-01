@@ -18,7 +18,8 @@ class TrainPatches(Dataset[tuple[torch.Tensor, torch.Tensor]]):
     """Augmented random crops of training patches.
 
     Randomness comes from `torch.initial_seed()`, which the DataLoader sets
-    per worker and per epoch from its seeded generator, so runs repeat exactly.
+    per worker from its seeded generator, and from the epoch set with
+    `set_epoch`, so runs and resumed runs repeat exactly.
     """
 
     def __init__(
@@ -34,17 +35,21 @@ class TrainPatches(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         self.std = std
         self.crop_size = crop_size
         self.photometric = photometric
+        self.epoch = 0
         self._rng: np.random.Generator | None = None
-        self._rng_seed: int | None = None
+        self._rng_key: tuple[int, int] | None = None
 
     def __len__(self) -> int:
         return len(self.data)
 
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+
     def _generator(self) -> np.random.Generator:
-        seed = torch.initial_seed()
-        if self._rng is None or self._rng_seed != seed:
-            self._rng = np.random.default_rng(seed)
-            self._rng_seed = seed
+        key = (torch.initial_seed() % 2**63, self.epoch)
+        if self._rng is None or self._rng_key != key:
+            self._rng = np.random.default_rng(list(key))
+            self._rng_key = key
         return self._rng
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
