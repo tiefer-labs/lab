@@ -117,6 +117,41 @@ def validate(
     return metrics.pixel_metrics(cm)
 
 
+def epoch_timing(
+    train_seconds: float, val_seconds: float, steps: int, full_steps: int, batch_size: int
+) -> dict[str, Any]:
+    """Wall-clock time of one epoch, and the time a full epoch would take.
+
+    When an epoch is cut short (max_steps_per_epoch), the full epoch is
+    estimated from the measured time per step; otherwise it is the measured time.
+    """
+    per_step = train_seconds / steps if steps else None
+    full_train = per_step * full_steps if per_step is not None else None
+    return {
+        "train_seconds": round(train_seconds, 2),
+        "val_seconds": round(val_seconds, 2),
+        "steps_per_full_epoch": full_steps,
+        "patches_per_second": round(steps * batch_size / train_seconds, 1)
+        if steps and train_seconds > 0
+        else None,
+        "full_epoch_seconds": round(full_train + val_seconds, 1)
+        if full_train is not None
+        else None,
+        "full_epoch_estimated": steps < full_steps,
+    }
+
+
+def timing_line(record: dict[str, Any]) -> str:
+    estimate = record["full_epoch_seconds"]
+    kind = "estimated" if record["full_epoch_estimated"] else "measured"
+    return (
+        f"epoch {record['epoch']} time: train {record['train_seconds']} s for "
+        f"{record['steps']} of {record['steps_per_full_epoch']} steps "
+        f"({record['patches_per_second']} patches/s), validation {record['val_seconds']} s; "
+        f"full epoch {estimate} s ({kind})"
+    )
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -130,6 +165,7 @@ def train(
     device_name: str = "auto",
     resume: bool = False,
     allow_synthetic: bool = False,
+    timing: bool = False,
 ) -> str:
     """Train into `run_dir`. Returns the final status: completed, early_stopped or interrupted."""
     device = devices.select_device(device_name)
@@ -137,6 +173,7 @@ def train(
     seed_everything(config.train.seed)
     directory, index = open_cache(config, allow_synthetic)
     mean, std = cache.normalisation(index)
+    load_started = time.monotonic()
     train_data = subset(
         cache.load_split(directory, "train", config.data.load_mode), config.data.max_train_patches
     )
@@ -173,7 +210,9 @@ def train(
                 "parameters": count_parameters(model_probe),
                 "macs_1x4x512x512": count_macs(model_probe),
             },
-            "smoke": bool(cache.is_synthetic(index)) or config.name == "smoke",
+            # Smoke and timing runs (cut short from the command line) are never results.
+            "smoke": bool(cache.is_synthetic(index)) or config.name == "smoke" or timing,
+            "timing_run": timing,
             "start_time": metadata.now(),
             "status": "running",
         }
@@ -231,8 +270,14 @@ def train(
             pin_memory=pin,
         )
         placement = "data loader (memory-mapped)"
-    print(f"training data: {len(train_data)} patches, {placement}", flush=True)
+    full_steps = len(device_batches) if device_batches is not None else len(train_loader or [])
+    load_seconds = round(time.monotonic() - load_started, 1)
+    print(
+        f"training data: {len(train_data)} patches, {placement}, ready in {load_seconds} s",
+        flush=True,
+    )
     meta.setdefault("data", {})["train_placement"] = placement
+    meta["data"]["ready_seconds"] = load_seconds
     _write_json(meta_path, meta)
     val_loader = DataLoader(
         EvalPatches(val_data, mean, std, multiple=max(32, model.downsampling)),
@@ -299,8 +344,13 @@ def train(
                 status = "interrupted"
                 print(f"{stop.signal_name} received: saved {checkpoint.LAST}", flush=True)
                 break
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
+            train_seconds = time.monotonic() - started
             scheduler.step()
+            val_started = time.monotonic()
             val = validate(model, val_loader, device, precision)
+            val_seconds = time.monotonic() - val_started
             val_miou = val["mean_iou"] if val["mean_iou"] is not None else -1.0
             # Early stopping on validation mean IoU: only a gain of at least
             # min_improvement counts, so noise does not keep training alive.
@@ -325,6 +375,9 @@ def train(
                 "best_epoch": best_epoch,
                 "seconds": round(time.monotonic() - started, 2),
                 "time": metadata.now(),
+                **epoch_timing(
+                    train_seconds, val_seconds, len(losses), full_steps, config.data.batch_size
+                ),
             }
             with (run_dir / METRICS_NAME).open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(record, sort_keys=True) + "\n")
@@ -333,6 +386,7 @@ def train(
                 f"val mIoU {val['mean_iou']} best {best_epoch}",
                 flush=True,
             )
+            print(timing_line(record), flush=True)
             if stale >= config.train.patience:
                 status = "early_stopped"
                 break
@@ -356,6 +410,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument(
         "--cache-name", help="override data.cache_name (used by the smoke pipeline)"
+    )
+    parser.add_argument(
+        "--epochs", type=int, help="override train.epochs (timing runs; marked as smoke)"
+    )
+    parser.add_argument(
+        "--max-steps-per-epoch",
+        type=int,
+        help="override train.max_steps_per_epoch (timing runs; marked as smoke)",
     )
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
@@ -387,12 +449,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config = dataclasses.replace(
                     config, data=dataclasses.replace(config.data, cache_name=args.cache_name)
                 )
+            timing = args.epochs is not None or args.max_steps_per_epoch is not None
+            if timing:
+                train_cfg = dataclasses.replace(
+                    config.train,
+                    epochs=args.epochs or config.train.epochs,
+                    max_steps_per_epoch=args.max_steps_per_epoch
+                    or config.train.max_steps_per_epoch,
+                )
+                config = dataclasses.replace(config, train=train_cfg)
             run_id = args.run_id or new_run_id(config, metadata.git_commit()["commit"])
             run_dir = paths.runs_dir() / run_id
             if run_dir.exists():
                 raise TrainingError(f"run {run_id} already exists; use --resume to continue it")
             status = train(
-                config, run_dir, device_name=args.device, allow_synthetic=args.allow_synthetic
+                config,
+                run_dir,
+                device_name=args.device,
+                allow_synthetic=args.allow_synthetic,
+                timing=timing,
             )
     except (TrainingError, cache.CacheError) as err:
         print(f"error: {err}", file=sys.stderr)

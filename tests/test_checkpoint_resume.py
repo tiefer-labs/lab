@@ -120,3 +120,25 @@ def test_run_metadata_has_provenance_and_no_absolute_paths(
     assert meta["data"]["cache"] == "$TIEFER_DATA_DIR/synthetic"
     assert str(tiefer_env["TIEFER_RUNS_DIR"]) not in text
     assert (run / checkpoint.BEST).is_file() and (run / train.CONFIG_NAME).is_file()
+
+
+def test_epochs_are_timed_and_timing_runs_are_marked_smoke(
+    synthetic_cache: None, tiefer_env: dict[str, Path], tmp_path: Path
+) -> None:
+    from tiefer_lab.config import dump_toml
+
+    config_path = tmp_path / "tiny.toml"
+    config_path.write_text(dump_toml(config_from_dict(TINY)), encoding="utf-8")
+    args = ["--config", str(config_path), "--run-id", "timed", "--device", "cpu"]
+    args += ["--epochs", "1", "--max-steps-per-epoch", "1", "--allow-synthetic"]
+    assert train.main(args) == 0
+    run = tiefer_env["TIEFER_RUNS_DIR"] / "timed"
+    record = json.loads((run / train.METRICS_NAME).read_text().splitlines()[0])
+    assert record["steps"] == 1 and record["steps_per_full_epoch"] == 2
+    assert record["full_epoch_estimated"] is True
+    assert record["train_seconds"] >= 0 and record["val_seconds"] >= 0
+    assert record["full_epoch_seconds"] >= record["val_seconds"]
+    meta = json.loads((run / train.METADATA_NAME).read_text())
+    assert meta["smoke"] is True and meta["timing_run"] is True
+    assert meta["data"]["ready_seconds"] >= 0
+    assert "full epoch" in train.timing_line(record)

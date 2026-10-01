@@ -70,6 +70,12 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
    ls /scratch/<project>/tiefer-lab/runs/slurm/
    ```
 
+   The smoke job ends with a timing run of `configs/l1_base.toml` (one epoch cut to 50 steps). Its log line `full epoch ... s (estimated)` is the time per epoch of the real training on this GPU; multiply by the number of epochs to plan the `--time` of the training job. Every epoch of every run also logs its time, and `metrics.jsonl` records `train_seconds`, `val_seconds` and `full_epoch_seconds`:
+
+   ```bash
+   grep "full epoch" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>.out
+   ```
+
 6. Train. Follow the job with `squeue --me`. The run ID is printed in the log (`run directory: $TIEFER_RUNS_DIR/<run-id>`). If the time limit is reached, the job saves `last.pt` and stops; submit again with the run ID to continue:
 
    ```bash
@@ -113,7 +119,7 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
 | `requirements.txt` | generated from `uv.lock` with `make requirements`, without `torch` and its own dependencies |
 | `submit.sh` | `sbatch` with `--account=$TIEFER_CSC_PROJECT` and the log location |
 | `data.sbatch` | builds the cache in `/scratch` on a CPU node |
-| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation |
+| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/l1_base.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable |
 | `evaluate.sbatch` | validation with baselines; test only with `FINAL=1` and `REASON` |
 | `export.sbatch` | ONNX export, check against PyTorch, INT8 quantisation |
@@ -168,6 +174,7 @@ These facts come from the CSC documentation at [docs.csc.fi](https://docs.csc.fi
 
 ## Changelog
 
+- 1 October 2026: the smoke job measures the time per epoch of `configs/l1_base.toml`.
 - 1 October 2026: GPU jobs request 72 cores; data loader workers follow `SLURM_CPUS_PER_TASK`.
 - 1 October 2026: sections ordered as Requirements, Steps, Files, Troubleshooting, then the facts to verify.
 - 1 October 2026: first version for milestone L1; CSC facts marked `TODO(verify)`.

@@ -4,7 +4,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Smoke run on one GPU: environment check, configs/smoke.toml on the real
-# cache, and a validation evaluation. Its outputs are labelled smoke and are
+# cache, a validation evaluation, and a timing run of configs/l1_base.toml. Its outputs are labelled smoke and are
 # never results.
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch
@@ -23,4 +23,10 @@ python3 hpc/roihu/check_env.py
 run_id="smoke-${SLURM_JOB_ID}"
 python3 -m tiefer_lab.train --config configs/smoke.toml --run-id "${run_id}"
 python3 -m tiefer_lab.evaluate --run "${run_id}" --split val --baselines
+
+# Real duration: the full training configuration, cut to one epoch of 50
+# steps. Its line "full epoch ... s (estimated)" is the time per epoch of
+# configs/l1_base.toml on this GPU; the run is marked as smoke.
+python3 -m tiefer_lab.train --config configs/l1_base.toml --run-id "timing-${SLURM_JOB_ID}" \
+  --epochs 1 --max-steps-per-epoch 50
 echo "smoke run ${run_id} finished"
