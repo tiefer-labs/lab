@@ -161,3 +161,11 @@ def test_seed_override_goes_into_metadata_and_run_id(
         meta = json.loads((run / train.METADATA_NAME).read_text())
         assert meta["seed"] == seed and meta["seed_from_command_line"] is True
         assert f"seed = {seed}" in (run / train.CONFIG_NAME).read_text()
+
+
+def test_epoch_timing_rounds_the_estimate_like_its_parts() -> None:
+    # Fast epochs: 0.012 s for 1 of 2 steps, 0.024 s of validation.
+    record = train.epoch_timing(0.012, 0.024, steps=1, full_steps=2, batch_size=4)
+    assert record["val_seconds"] == 0.02
+    assert record["full_epoch_seconds"] == 0.05
+    assert record["full_epoch_seconds"] >= record["val_seconds"]

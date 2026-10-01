@@ -135,7 +135,8 @@ def epoch_timing(
         "patches_per_second": round(steps * batch_size / train_seconds, 1)
         if steps and train_seconds > 0
         else None,
-        "full_epoch_seconds": round(full_train + val_seconds, 1)
+        # Same rounding as the parts, so the estimate is never below val_seconds.
+        "full_epoch_seconds": round(full_train + val_seconds, 2)
         if full_train is not None
         else None,
         "full_epoch_estimated": steps < full_steps,
