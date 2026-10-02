@@ -84,3 +84,28 @@ def test_l1_base_scales_learning_rate_with_batch_size(repo_root: Path) -> None:
     assert config.train.patience == 15
     with pytest.raises(ConfigError):
         config_from_dict({"name": "x", "train": {"min_improvement": -0.1}})
+
+
+def test_l1_full_runs_its_cosine_schedule_to_the_end(repo_root: Path) -> None:
+    base = load_config(repo_root / "configs" / "l1_base.toml")
+    full = load_config(repo_root / "configs" / "l1_full.toml")
+    assert full.name == "l1_full"
+    assert full.train.patience >= full.train.epochs, "early stopping never ends the schedule"
+    assert full.train.warmup_epochs == 5 and full.train.ema_decay == pytest.approx(0.999)
+    # Everything else is l1_base.
+    import dataclasses
+
+    same = dataclasses.replace(
+        full.train, patience=base.train.patience, warmup_epochs=0, ema_decay=0.0
+    )
+    assert same == base.train
+    assert (full.data, full.model, full.evaluation, full.export) == (
+        base.data,
+        base.model,
+        base.evaluation,
+        base.export,
+    )
+    with pytest.raises(ConfigError):
+        config_from_dict({"name": "x", "train": {"ema_decay": 0.5}})
+    with pytest.raises(ConfigError):
+        config_from_dict({"name": "x", "train": {"epochs": 3, "warmup_epochs": 3}})

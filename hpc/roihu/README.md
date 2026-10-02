@@ -29,7 +29,7 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
 
    ```bash
    bash hpc/roihu/submit.sh --test-only hpc/roihu/smoke.sbatch
-   bash hpc/roihu/submit.sh --test-only hpc/roihu/train.sbatch configs/l1_base.toml
+   bash hpc/roihu/submit.sh --test-only hpc/roihu/train.sbatch configs/l1_full.toml
    ```
 
 3. Know where things run. Jobs use sbatch's default export, the standard CSC way: a job inherits the environment of the shell that submitted it, including the `module` command. So each job is submitted from the login node of its own architecture, and `submit.sh` refuses it otherwise:
@@ -129,24 +129,26 @@ grep "full epoch" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>
 
 ### Step 5: train on `gpumedium`
 
+Train `configs/l1_full.toml`: `l1_base` run to the end of its 150-epoch cosine schedule, with a learning rate warm-up and a moving average of the weights (the reasons are in [ASSUMPTIONS.md](../../docs/ASSUMPTIONS.md), section 6). At the measured 8.6 s per epoch on one GH200 (2 October 2026), 150 epochs take about 22 minutes, about 0.4 GPU hours. `configs/l1_base.toml` stays as it was measured.
+
 Each training job uses one GPU. The run ID is printed in the log (`run directory: $TIEFER_RUNS_DIR/<run-id>`) and contains the seed, for example `l1_base-seed0-<time>-<commit>`. If the time limit is reached, the job saves `last.pt` and stops; submit again with the run ID to continue:
 
 ```bash
-bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml
-bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml <run-id>
+bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
+bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml <run-id>
 ```
 
 The default time is 12 hours; `gpumedium` allows up to 36 hours. Set a longer time from the estimate of step 4:
 
 ```bash
-bash hpc/roihu/submit.sh --time=24:00:00 hpc/roihu/train.sbatch configs/l1_base.toml
+bash hpc/roihu/submit.sh --time=24:00:00 hpc/roihu/train.sbatch configs/l1_full.toml
 ```
 
 Optional: two seeds. Submit two separate one-GPU jobs. `SEED` overrides the seed of the configuration and is recorded in the run metadata and the run ID, so the two runs never share a run folder. Each job is billed for its own GPU hours:
 
 ```bash
-SEED=0 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml
-SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml
+SEED=0 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
+SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
 ```
 
 To resume one of them, pass its run ID as above; the seed then comes from the run itself.
@@ -267,6 +269,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 2 October 2026: training uses `configs/l1_full.toml`.
 - 2 October 2026: Hugging Face token from `HF_TOKEN`, shared backoff on HTTP 429, and the finishing step of a data job resumes on its own.
 - 2 October 2026: the smoke job uses the full cache only when its train and val splits are complete, and otherwise builds its tiny cache in its own folder.
 - 1 October 2026: back to the standard CSC way of submitting jobs: sbatch's default export, CPU work and the data job from `roihu-cpu.csc.fi`, GPU setup and GPU jobs from `roihu-gpu.csc.fi` (SSH or the web interface); `gpu_shell.sh` and the `--export=NONE` workarounds removed.

@@ -256,6 +256,7 @@ lab/
   configs/
     smoke.toml                    tiny run, minutes on CPU or MPS
     l1_base.toml                  full training on one GH200 GPU
+    l1_full.toml                  l1_base to the end of its schedule, with warm-up and moving average
   docs/
     SPEC.md                       sections 1 to 17 of the build brief, unchanged
     STYLE.md                      the Markdown standard (section 18), for every Tiefer repository

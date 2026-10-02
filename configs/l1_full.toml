@@ -1,0 +1,57 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Milestone L1: l1_base trained to the end of its cosine schedule, with a
+# learning rate warm-up and an exponential moving average of the weights.
+# On Roihu (2 October 2026) l1_base stopped early while the training loss was
+# still falling, and validation mean IoU moved by up to 0.10 between nearby
+# epochs; see docs/ASSUMPTIONS.md. Differences from l1_base: warmup_epochs,
+# ema_decay and patience.
+name = "l1_full"
+
+[data]
+cache_name = "cloudsen12-l1c-high"
+crop_size = 256
+# 128 patches per step; the learning rate is scaled linearly with the batch
+# size from 0.002 at 32 (0.002 x 128 / 32 = 0.008).
+batch_size = 128
+eval_batch_size = 8
+# Outside Slurm; inside a job the workers follow SLURM_CPUS_PER_TASK.
+num_workers = 16
+load_mode = "auto"
+brightness = 0.1
+contrast = 0.1
+
+[model]
+widths = [16, 32, 64, 128, 256]
+
+[train]
+seed = 0
+epochs = 150
+learning_rate = 0.008
+weight_decay = 0.0001
+dice_weight = 1.0
+# Patience equal to the number of epochs: the cosine schedule always runs to
+# the end. best.pt still keeps the epoch with the best validation mean IoU.
+patience = 150
+min_improvement = 0.001
+log_every = 20
+# Linear warm-up over the first 5 epochs of the scaled learning rate 0.008.
+warmup_epochs = 5
+# Averaging horizon of about 1 / (1 - 0.999) = 1000 steps, about 15 epochs
+# at 66 steps per epoch on the full training split.
+ema_decay = 0.999
+
+[evaluation]
+thresholds = [0.3, 0.5, 0.7]
+decision_threshold = 0.5
+bootstrap_resamples = 1000
+bootstrap_seed = 0
+
+[export]
+opset = 17
+input_size = 512
+calibration_patches = 256
+max_logit_difference = 0.01
+min_argmax_agreement = 0.999

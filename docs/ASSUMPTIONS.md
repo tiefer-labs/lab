@@ -61,8 +61,19 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 
 ---
 
+## 6. Training
+
+| Assumption | Reason | Revisit when |
+| :--- | :---: | :---: |
+| Final runs train to the end of the cosine schedule (`patience` equal to `epochs`), and `best.pt` keeps the epoch with the best validation mean IoU | On Roihu on 2 October 2026, `l1_base` stopped early while the training loss was still falling: seed 0 at epoch 72 (best validation mean IoU 0.678 at epoch 57), seed 1 at epoch 36 (best 0.626 at epoch 21). Its cosine schedule is defined over 150 epochs, so patience 15 ended it long before the learning rate had decayed | a full run shows validation mean IoU falling for many epochs before the end |
+| A linear warm-up of the learning rate (5 epochs) and an exponential moving average of the weights (decay 0.999) make validation steadier | Validation mean IoU moved by up to 0.10 between nearby epochs in the same runs; the learning rate 0.008 is scaled for a batch of 128. Both values are design choices, not measured optima | the `l1_full` runs show whether the swing is smaller; one change per run separates the effect of each |
+| `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | The GPU budget before the maintenance on 6 October 2026 favours one run that fixes the known problems; separating the three effects needs extra runs | the budget allows ablation runs |
+
+---
+
 ## Changelog
 
+- 2 October 2026: section 6, training: run to the end of the schedule, warm-up and moving average, with the measured reason.
 - 1 October 2026: the PyTorch module assumption is checked on Roihu.
 - 1 October 2026: the TACO format assumption is checked against the dataset card, version 1.1.2.
 - 1 October 2026: first version for milestone L1.
