@@ -328,6 +328,8 @@ lab/
       models/
         __init__.py
         cloud_filter.py           the compact network
+        convnext_unet.py          U-Net with ConvNeXt-style encoder blocks, for the largest size
+        flexible.py               band-flexible input: 13 bands, availability flags, two designs
         losses.py                 cross-entropy plus Dice
       export/
         __init__.py
@@ -361,6 +363,7 @@ lab/
     test_references.py            reference masks: verification stop, encodings, coverage, resume
     test_metrics.py
     test_binary_metrics.py        BOA, PA, UA and OA per patch, by hand
+    test_flexible_model.py        band-flexible models, ConvNeXt-style U-Net, loss terms
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

@@ -67,10 +67,13 @@ class CloudFilterNet(nn.Module):
     The input height and width must be multiples of 2 ** (len(widths) - 1).
     """
 
-    def __init__(self, widths: Sequence[int] = (16, 32, 64, 128, 256)) -> None:
+    def __init__(
+        self, widths: Sequence[int] = (16, 32, 64, 128, 256), in_channels: int = IN_CHANNELS
+    ) -> None:
         super().__init__()
         self.widths = tuple(widths)
-        self.stem = ConvBNAct(IN_CHANNELS, widths[0], 3)
+        self.in_channels = in_channels
+        self.stem = ConvBNAct(in_channels, widths[0], 3)
         self.encoder = nn.ModuleList([Block(widths[0], widths[0])])
         for cin, cout in itertools.pairwise(widths):
             self.encoder.append(Block(cin, cout))
@@ -85,6 +88,10 @@ class CloudFilterNet(nn.Module):
     def downsampling(self) -> int:
         return int(2 ** (len(self.widths) - 1))
 
+    @property
+    def input_bands(self) -> int:
+        return self.in_channels
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         skips = []
         x = self.encoder[0](self.stem(x))
@@ -97,21 +104,24 @@ class CloudFilterNet(nn.Module):
         return out
 
 
-def build_model(widths: Sequence[int]) -> CloudFilterNet:
-    return CloudFilterNet(widths)
+def build_model(widths: Sequence[int], in_channels: int = IN_CHANNELS) -> CloudFilterNet:
+    return CloudFilterNet(widths, in_channels)
 
 
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters())
 
 
-def count_macs(model: nn.Module, input_shape: tuple[int, ...] = REFERENCE_INPUT) -> int:
+def count_macs(model: nn.Module, input_shape: tuple[int, ...] | None = None) -> int:
     """Multiply-accumulate operations of convolutions for one forward pass.
 
     Counts every Conv2d (out_elements x in_channels / groups x kernel area).
     Batch norm, activations, pooling and upsampling are not counted; batch
-    norm disappears when folded at export.
+    norm disappears when folded at export. The default input is one 512 x 512
+    tile with the model's input bands.
     """
+    if input_shape is None:
+        input_shape = (1, int(getattr(model, "input_bands", IN_CHANNELS)), 512, 512)
     total = 0
 
     def hook(module: nn.Module, _inputs: Any, output: torch.Tensor) -> None:

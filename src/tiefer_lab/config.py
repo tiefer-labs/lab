@@ -19,6 +19,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
+from tiefer_lab.data.source import L1C_BAND_NAMES as L1C_BANDS
+from tiefer_lab.data.source import USED_BANDS
+
 
 class ConfigError(ValueError):
     """The configuration file is invalid."""
@@ -41,8 +44,13 @@ class DataConfig:
     contrast: float = 0.1
     max_train_patches: int | None = None
     max_val_patches: int | None = None
+    # Bands loaded from the cache, by name; a band-flexible model takes all 13.
+    bands: tuple[str, ...] = USED_BANDS
 
     def __post_init__(self) -> None:
+        _check(len(self.bands) >= 1, "bands: at least one")
+        _check(all(b in L1C_BANDS for b in self.bands), f"bands must be among {L1C_BANDS}")
+        _check(len(set(self.bands)) == len(self.bands), "bands must not repeat")
         _check(self.crop_size >= 32 and self.crop_size % 32 == 0, "crop_size: multiple of 32")
         _check(self.batch_size >= 1 and self.eval_batch_size >= 1, "batch sizes must be >= 1")
         _check(self.num_workers >= 0, "num_workers must be >= 0")
@@ -56,6 +64,11 @@ class DataConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     widths: tuple[int, ...] = (16, 32, 64, 128, 256)
+    architecture: Literal["separable_unet", "convnext_unet"] = "separable_unet"
+    # "fixed": the network takes data.bands. "flexible": all 13 bands plus
+    # availability flags, trained on the band sets of train.band_sets.
+    input: Literal["fixed", "flexible"] = "fixed"
+    flexible_design: Literal["placeholder", "zero"] = "placeholder"
 
     def __post_init__(self) -> None:
         _check(2 <= len(self.widths) <= 6, "widths: 2 to 6 stages")
@@ -79,11 +92,25 @@ class TrainConfig:
     # Exponential moving average of the weights, used for validation and for
     # best.pt. 0 means off; otherwise a decay in [0.9, 1).
     ema_decay: float = 0.0
+    # Band sets drawn, one per batch, for a band-flexible model.
+    band_sets: tuple[tuple[str, ...], ...] = ()
+    # Weight of the self-distillation term: the prediction with all bands (no
+    # gradient) as a soft target for the prediction with the drawn band set.
+    distill_weight: float = 0.0
+    # "median_frequency" weights the cross-entropy by class; "none" does not.
+    class_weighting: Literal["median_frequency", "none"] = "median_frequency"
+    # Focal term (1 - p)^gamma on the cross-entropy; 0 is plain cross-entropy.
+    focal_gamma: float = 0.0
 
     def __post_init__(self) -> None:
         _check(self.epochs >= 1, "epochs must be >= 1")
         _check(0 <= self.warmup_epochs < self.epochs, "warmup_epochs in [0, epochs)")
         _check(self.ema_decay == 0.0 or 0.9 <= self.ema_decay < 1.0, "ema_decay: 0 or in [0.9, 1)")
+        _check(self.distill_weight >= 0, "distill_weight must be >= 0")
+        _check(0 <= self.focal_gamma <= 5, "focal_gamma in [0, 5]")
+        for band_set in self.band_sets:
+            _check(len(band_set) >= 1, "band_sets: every set needs a band")
+            _check(all(b in L1C_BANDS for b in band_set), f"band_sets: bands among {L1C_BANDS}")
         _check(self.learning_rate > 0 and self.weight_decay >= 0, "learning rate and decay")
         _check(self.dice_weight >= 0, "dice_weight must be >= 0")
         _check(self.patience >= 1, "patience must be >= 1")
@@ -134,6 +161,12 @@ class Config:
 
     def __post_init__(self) -> None:
         _check(bool(self.name) and self.name.replace("_", "").replace("-", "").isalnum(), "name")
+        if self.model.input == "flexible":
+            _check(self.data.bands == L1C_BANDS, "a flexible model loads all 13 bands in order")
+            _check(len(self.train.band_sets) >= 1, "a flexible model needs train.band_sets")
+        else:
+            _check(not self.train.band_sets, "band_sets need model.input = flexible")
+            _check(self.train.distill_weight == 0, "distill_weight needs model.input = flexible")
 
 
 SECTIONS: dict[str, type[Any]] = {
