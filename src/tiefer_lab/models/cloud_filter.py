@@ -143,7 +143,7 @@ def count_macs(model: nn.Module, input_shape: tuple[int, ...] | None = None) -> 
     return total
 
 
-def fold_batch_norm(model: CloudFilterNet) -> CloudFilterNet:
+def fold_batch_norm[M: nn.Module](model: M) -> M:
     """A copy in eval mode with every batch norm folded into its convolution."""
     folded = copy.deepcopy(model).eval()
     for module in folded.modules():

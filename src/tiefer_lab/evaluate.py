@@ -36,11 +36,18 @@ from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
 from tiefer_lab.data import cache
 from tiefer_lab.data.dataset import EvalPatches
-from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD
+from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
-from tiefer_lab.models.cloud_filter import CloudFilterNet, build_model, predict_masks
+from tiefer_lab.models import flexible
+from tiefer_lab.models.cloud_filter import predict_masks
 from tiefer_lab.tables import header_block
-from tiefer_lab.train import CONFIG_NAME, METADATA_NAME, TrainingError, resolve_run_dir
+from tiefer_lab.train import (
+    CONFIG_NAME,
+    METADATA_NAME,
+    TrainingError,
+    band_set_name,
+    resolve_run_dir,
+)
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
 
 TEST_LOG = "test_log.md"
@@ -277,10 +284,10 @@ def check_test_guard(split: str, final: bool, reason: str | None) -> None:
 # Evaluation ----------------------------------------------------------------
 
 
-def load_model(run_dir: Path, config: Config, which: str, device: torch.device) -> CloudFilterNet:
+def load_model(run_dir: Path, config: Config, which: str, device: torch.device) -> flexible.Model:
     name = checkpoint.BEST if which == "best" else checkpoint.LAST
     state = checkpoint.load_checkpoint(run_dir / name, map_location=device)
-    model = build_model(config.model.widths).to(device)
+    model = flexible.build(config.model, config.data.bands).to(device)
     model.load_state_dict(state["model"])
     model.eval()
     if device.type == "cuda":
@@ -360,7 +367,9 @@ def evaluate_run(
     which: str = "best",
     device_name: str = "auto",
     allow_synthetic: bool = False,
+    band_set: Sequence[str] | None = None,
 ) -> Path:
+    """Evaluate a run on one split; a band-flexible run on one band set."""
     check_test_guard(split, final, reason)
     config = load_config(run_dir / CONFIG_NAME)
     run_meta = json.loads((run_dir / METADATA_NAME).read_text(encoding="utf-8"))
@@ -373,11 +382,21 @@ def evaluate_run(
     if split == "test":
         log_test_evaluation(run_id, git["commit"], reason or "", which)
 
+    if config.model.input == "flexible":
+        if not band_set:
+            sets = [",".join(b) for b in config.train.band_sets]
+            raise TrainingError(f"a band-flexible run needs --band-set, for example {sets}")
+    elif band_set and tuple(band_set) != tuple(config.data.bands):
+        raise TrainingError(f"this run takes the bands {list(config.data.bands)} only")
     device = devices.select_device(device_name)
     precision = devices.precision_for(device)
-    mean, std = cache.normalisation(index)
-    data = cache.load_split(directory, split)
+    bands = config.data.bands
+    mean, std = cache.normalisation(index, bands)
+    data = cache.load_split(directory, split, bands=bands)
     model = load_model(run_dir, config, which, device)
+    if isinstance(model, flexible.FlexibleModel):
+        model.set_band_set(band_set or bands)
+    evaluated_bands = list(band_set or bands)
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]] = DataLoader(
         EvalPatches(data, mean, std, multiple=32),
         batch_size=config.data.eval_batch_size,
@@ -405,6 +424,7 @@ def evaluate_run(
             "model": run_meta.get("model"),
         },
         "config": config_to_dict(config),
+        "band_set": evaluated_bands,
         "data": {
             "cache": paths.portable(directory),
             "source": index.get("source"),
@@ -417,10 +437,13 @@ def evaluate_run(
         "frames": frame_decisions(scores, positions, data.patch_ids, config.evaluation),
     }
     if with_baselines:
-        val = data if split == "val" else cache.load_split(directory, "val")
-        report["baselines"] = evaluate_baselines(data, val, config.evaluation)
+        # The baselines read blue, green, red and near infrared, in that order.
+        base = cache.load_split(directory, split, bands=USED_BANDS)
+        val = base if split == "val" else cache.load_split(directory, "val", bands=USED_BANDS)
+        report["baselines"] = evaluate_baselines(base, val, config.evaluation)
 
-    out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}.json"
+    suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
+    out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return out
@@ -436,6 +459,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--final", action="store_true", help="required for --split test")
     parser.add_argument("--reason", help="why the test split is evaluated (with --final)")
     parser.add_argument("--checkpoint", default="best", choices=["best", "last"])
+    parser.add_argument(
+        "--band-set", default=None, help="bands of a band-flexible run, for example B02,B03,B04"
+    )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
@@ -455,8 +481,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             which=args.checkpoint,
             device_name=args.device,
             allow_synthetic=args.allow_synthetic,
+            band_set=args.band_set.split(",") if args.band_set else None,
         )
-    except (TestGuardError, TrainingError, cache.CacheError) as err:
+    except (TestGuardError, TrainingError, cache.CacheError, ValueError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     report = json.loads(out.read_text(encoding="utf-8"))

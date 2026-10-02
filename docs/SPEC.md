@@ -364,6 +364,7 @@ lab/
     test_metrics.py
     test_binary_metrics.py        BOA, PA, UA and OA per patch, by hand
     test_flexible_model.py        band-flexible models, ConvNeXt-style U-Net, loss terms
+    test_flexible_pipeline.py     train, evaluate and export a flexible model and a specialist
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

@@ -240,11 +240,16 @@ def load_config(path: Path) -> Config:
     return config_from_dict(raw)
 
 
+def _plain(value: Any) -> Any:
+    """Tuples, also nested ones, as lists, for TOML and JSON."""
+    return [_plain(v) for v in value] if isinstance(value, tuple | list) else value
+
+
 def config_to_dict(config: Config) -> dict[str, Any]:
     out: dict[str, Any] = {"name": config.name}
     for key in SECTIONS:
         section = dataclasses.asdict(getattr(config, key))
-        out[key] = {k: list(v) if isinstance(v, tuple) else v for k, v in section.items()}
+        out[key] = {k: _plain(v) for k, v in section.items()}
     return out
 
 

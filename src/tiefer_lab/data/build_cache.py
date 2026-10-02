@@ -829,15 +829,42 @@ def synthetic_patches(
         yield np.clip(np.rint(scaled), 0, 65535).astype(np.uint16), label
 
 
-def build_synthetic_split(directory: Path, split: str, count: int, size: int, seed: int) -> None:
+def synthetic_all_bands(four: NDArray[np.uint16], rng: np.random.Generator) -> NDArray[np.uint16]:
+    """13 synthetic bands from the four synthetic ones, for tests of 13-band models.
+
+    The four used bands are kept; every other band is the mean of the four
+    times a fixed random factor plus noise. Synthetic only: it carries no
+    information about the real spectra of those bands.
+    """
+    mean = four.astype(np.float64).mean(axis=0)
+    out = np.empty((len(source.L1C_BAND_NAMES), *four.shape[1:]), dtype=np.uint16)
+    for b, name in enumerate(source.L1C_BAND_NAMES):
+        if name in source.USED_BANDS:
+            out[b] = four[source.USED_BANDS.index(name)]
+        else:
+            values = mean * rng.uniform(0.5, 1.5) + rng.normal(0.0, 50.0, size=mean.shape)
+            out[b] = np.clip(np.rint(values), 0, 65535).astype(np.uint16)
+    return out
+
+
+def build_synthetic_split(
+    directory: Path, split: str, count: int, size: int, seed: int, all_bands: bool = False
+) -> None:
     dataset = {"name": "synthetic", "note": "synthetic scenes for smoke runs and tests only"}
     directory.mkdir(parents=True, exist_ok=True)
     index = _open_index(directory, cache.SYNTHETIC_SOURCE, dataset)
+    bands = source.L1C_BAND_NAMES if all_bands else source.USED_BANDS
+    if index["splits"] and list(index["bands"]) != list(bands):
+        raise cache.CacheError(f"{paths.portable(directory)} stores bands {index['bands']}")
+    index["bands"] = list(bands)
+    index["band_labels"] = [source.BAND_LABELS.get(b, b) for b in bands]
     split_seed = seed + cache.SPLITS.index(split) * 1000
-    images = np.empty((count, len(source.USED_BANDS), size, size), dtype=np.uint16)
+    rng = np.random.default_rng(split_seed + 1)
+    images = np.empty((count, len(bands), size, size), dtype=np.uint16)
     labels = np.empty((count, size, size), dtype=np.uint8)
     for i, (img, lab) in enumerate(synthetic_patches(count, size, split_seed)):
-        images[i], labels[i] = img, lab
+        images[i] = synthetic_all_bands(img, rng) if all_bands else img
+        labels[i] = lab
     np.save(cache.images_path(directory, split), images, allow_pickle=False)
     np.save(cache.labels_path(directory, split), labels, allow_pickle=False)
     ids = [f"synthetic-{split}-{i:05d}" for i in range(count)]
@@ -933,7 +960,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.synthetic:
         directory = cache.cache_dir(args.name or SYNTHETIC_NAME)
         for split in splits:
-            build_synthetic_split(directory, split, args.limit, args.patch_size, args.seed)
+            build_synthetic_split(
+                directory, split, args.limit, args.patch_size, args.seed, args.bands == "all"
+            )
     else:
         directory = cache.cache_dir(args.name or DEFAULT_NAME)
         revision = args.revision

@@ -187,7 +187,7 @@ def model_section(reports: Reports) -> str:
             ["Parameters", fmt(r.data.get("parameters")), r.source, r.commit],
             [
                 "Multiply-accumulates, 1 x 4 x 512 x 512",
-                fmt(r.data.get("macs_1x4x512x512")),
+                fmt(r.data.get("macs_512x512", r.data.get("macs_1x4x512x512"))),
                 r.source,
                 r.commit,
             ],
@@ -318,7 +318,7 @@ def reference_comparison_section(reports: Reports) -> str:
                     f"`{run_id}`",
                     _bands(r),
                     fmt(model.get("parameters")),
-                    fmt(model.get("macs_1x4x512x512")),
+                    fmt(model.get("macs_512x512", model.get("macs_1x4x512x512"))),
                     *_binary_cells(m, "cloud"),
                     *_binary_cells(m, "shadow"),
                     "n/a",

@@ -100,7 +100,60 @@ def backbone(architecture: str, widths: Sequence[int], in_channels: int) -> Back
     raise ValueError(f"architecture must be one of {ARCHITECTURES}, got {architecture!r}")
 
 
-def build(model_config: Any, bands: Sequence[str]) -> nn.Module:
+class BandSetModel(nn.Module):
+    """A band-flexible model fixed to one band set, taking only those bands.
+
+    Input: (batch, k, H, W), the k bands of the set in the order given.
+    Everything that depends only on the band set is precomputed as one
+    constant: the value of each unavailable band (its learned placeholder, or
+    0) and the 13 availability flags. The network sees exactly what the
+    flexible model would see for this band set, and the exported model takes
+    only the sensor's bands; its flags cannot be changed after export.
+    """
+
+    def __init__(self, model: FlexibleModel, bands: Sequence[str]) -> None:
+        super().__init__()
+        mask = availability(bands)
+        self.backbone = model.backbone
+        self.bands = tuple(bands)
+        position = {b: i for i, b in enumerate(bands)}
+        self.layout = [position.get(name, -1) for name in L1C_BAND_NAMES]
+        placeholder = model.band_input.placeholder
+        fill = (
+            placeholder.detach().clone() * (1 - mask)
+            if placeholder is not None
+            else torch.zeros_like(mask)
+        )
+        self.register_buffer("constants", torch.cat([fill, mask]))
+
+    @property
+    def downsampling(self) -> int:
+        return int(self.backbone.downsampling)
+
+    @property
+    def input_bands(self) -> int:
+        return len(self.bands)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        constants: torch.Tensor = self.constants  # type: ignore[assignment]
+        count = len(self.layout)
+        maps = (
+            constants[None, :, None, None]
+            .to(x.dtype)
+            .expand(x.shape[0], -1, x.shape[2], x.shape[3])
+        )
+        parts = [
+            x[:, j : j + 1] if j >= 0 else maps[:, b : b + 1] for b, j in enumerate(self.layout)
+        ]
+        parts.append(maps[:, count:])
+        out: torch.Tensor = self.backbone(torch.cat(parts, dim=1))
+        return out
+
+
+Model = FlexibleModel | CloudFilterNet | ConvNeXtUNet
+
+
+def build(model_config: Any, bands: Sequence[str]) -> Model:
     """The model of a configuration: fixed bands, or band-flexible over `bands`."""
     if model_config.input == "flexible":
         if tuple(bands) != tuple(L1C_BAND_NAMES):

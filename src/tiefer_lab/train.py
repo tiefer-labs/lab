@@ -37,14 +37,15 @@ from tiefer_lab import metrics
 from tiefer_lab.config import Config, dump_toml, load_config
 from tiefer_lab.data import cache
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
+from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
+from tiefer_lab.models import flexible
 from tiefer_lab.models.cloud_filter import (
-    build_model,
     count_macs,
     count_parameters,
     predict_masks,
 )
-from tiefer_lab.models.losses import CrossEntropyDice, class_weights
+from tiefer_lab.models.losses import CrossEntropyDice, class_weights, distillation
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
 from tiefer_lab.utils.ema import WeightEMA
 from tiefer_lab.utils.seeding import seed_everything
@@ -121,6 +122,39 @@ def validate(
     return metrics.pixel_metrics(cm)
 
 
+def band_set_name(bands: Sequence[str]) -> str:
+    return "+".join(bands)
+
+
+def validate_band_sets(
+    model: torch.nn.Module,
+    band_sets: Sequence[Sequence[str]],
+    loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
+    device: torch.device,
+    precision: devices.Precision,
+) -> dict[str, Any]:
+    """Validation of a band-flexible model on every band set; mean IoU is their mean."""
+    per_set = {}
+    for bands in band_sets:
+        model.set_band_set(bands)  # type: ignore[operator]
+        per_set[band_set_name(bands)] = validate(model, loader, device, precision)
+    model.set_band_set(L1C_BAND_NAMES)  # type: ignore[operator]
+    values = [v["mean_iou"] for v in per_set.values() if v["mean_iou"] is not None]
+    first = next(iter(per_set.values()))
+    return {
+        "mean_iou": float(np.mean(values)) if values else None,
+        "iou": first["iou"],
+        "overall_accuracy": first["overall_accuracy"],
+        "band_sets": {k: v["mean_iou"] for k, v in per_set.items()},
+    }
+
+
+def draw_band_set(seed: int, epoch: int, step: int, count: int) -> int:
+    """The band set of a training step, fixed by seed, epoch and step (resumable)."""
+    generator = torch.Generator().manual_seed(seed * 1_000_003 + epoch * 10_007 + step)
+    return int(torch.randint(count, (1,), generator=generator))
+
+
 def learning_rate_factor(step: int, total_steps: int, warmup_steps: int) -> float:
     """Multiplier of the configured learning rate at optimizer step `step` (from 0).
 
@@ -190,14 +224,18 @@ def train(
     precision = devices.precision_for(device)
     seed_everything(config.train.seed)
     directory, index = open_cache(config, allow_synthetic)
-    mean, std = cache.normalisation(index)
+    bands = config.data.bands
+    mean, std = cache.normalisation(index, bands)
     load_started = time.monotonic()
     train_data = subset(
-        cache.load_split(directory, "train", config.data.load_mode), config.data.max_train_patches
+        cache.load_split(directory, "train", config.data.load_mode, bands=bands),
+        config.data.max_train_patches,
     )
     val_data = subset(
-        cache.load_split(directory, "val", config.data.load_mode), config.data.max_val_patches
+        cache.load_split(directory, "val", config.data.load_mode, bands=bands),
+        config.data.max_val_patches,
     )
+    flexible_input = config.model.input == "flexible"
     workers = devices.data_workers(config.data.num_workers)
 
     meta_path = run_dir / METADATA_NAME
@@ -207,7 +245,7 @@ def train(
     else:
         run_dir.mkdir(parents=True, exist_ok=False)
         (run_dir / CONFIG_NAME).write_text(dump_toml(config, CONFIG_HEADER), encoding="utf-8")
-        model_probe = build_model(config.model.widths)
+        model_probe = flexible.build(config.model, bands)
         meta = {
             "run_id": run_dir.name,
             "seed": config.train.seed,
@@ -226,8 +264,11 @@ def train(
             },
             "model": {
                 "widths": list(config.model.widths),
+                "architecture": config.model.architecture,
+                "input": config.model.input,
+                "bands": list(bands),
                 "parameters": count_parameters(model_probe),
-                "macs_1x4x512x512": count_macs(model_probe),
+                "macs_512x512": count_macs(model_probe),
             },
             # Smoke and timing runs (cut short from the command line) are never results.
             "smoke": bool(cache.is_synthetic(index)) or config.name == "smoke" or timing,
@@ -237,12 +278,21 @@ def train(
         }
     _write_json(meta_path, meta)
 
-    model = build_model(config.model.widths).to(device)
+    model = flexible.build(config.model, bands).to(device)
     if device.type == "cuda":
         model = model.to(memory_format=torch.channels_last)
         torch.backends.cudnn.benchmark = True
-    weights = class_weights(index["splits"]["train"]["class_pixels"]).to(device)
-    loss_fn = CrossEntropyDice(weights, config.train.dice_weight).to(device)
+    weights = (
+        class_weights(index["splits"]["train"]["class_pixels"]).to(device)
+        if config.train.class_weighting == "median_frequency"
+        else None
+    )
+    loss_fn = CrossEntropyDice(
+        weights, config.train.dice_weight, focal_gamma=config.train.focal_gamma
+    ).to(device)
+    band_sets = [tuple(b) for b in config.train.band_sets]
+    all_bands = torch.ones(len(bands), device=device)
+    set_masks = [flexible.availability(b).to(device) for b in band_sets]
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=config.train.learning_rate, weight_decay=config.train.weight_decay
     )
@@ -356,8 +406,21 @@ def train(
                     group["lr"] = config.train.learning_rate * factor
                 optimizer.zero_grad(set_to_none=True)
                 with devices.autocast(device, precision):
-                    logits = model(images)
+                    if flexible_input:
+                        choice = draw_band_set(config.train.seed, epoch, step, len(band_sets))
+                        drawn = set_masks[choice].expand(images.shape[0], -1)
+                        logits = model(images, drawn)
+                    else:
+                        logits = model(images)
                 loss = loss_fn(logits, labels)
+                if (
+                    flexible_input
+                    and config.train.distill_weight > 0
+                    and band_sets[choice] != tuple(bands)
+                ):
+                    with torch.no_grad(), devices.autocast(device, precision):
+                        teacher = model(images, all_bands.expand(images.shape[0], -1))
+                    loss = loss + config.train.distill_weight * distillation(logits, teacher)
                 if scaler is not None:
                     scaler.scale(loss).backward()
                     scaler.step(optimizer)
@@ -384,7 +447,10 @@ def train(
             val_started = time.monotonic()
             # With EMA, validation and best.pt use the averaged weights.
             eval_model = ema.module if ema is not None else model
-            val = validate(eval_model, val_loader, device, precision)
+            if flexible_input:
+                val = validate_band_sets(eval_model, band_sets, val_loader, device, precision)
+            else:
+                val = validate(eval_model, val_loader, device, precision)
             val_seconds = time.monotonic() - val_started
             val_miou = val["mean_iou"] if val["mean_iou"] is not None else -1.0
             # Early stopping on validation mean IoU: only a gain of at least
@@ -412,6 +478,7 @@ def train(
                 "val_mean_iou": val["mean_iou"],
                 "val_iou": val["iou"],
                 "val_overall_accuracy": val["overall_accuracy"],
+                "val_mean_iou_by_band_set": val.get("band_sets"),
                 "best_epoch": best_epoch,
                 "seconds": round(time.monotonic() - started, 2),
                 "time": metadata.now(),

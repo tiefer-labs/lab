@@ -117,3 +117,23 @@ def test_distillation_is_zero_for_equal_predictions() -> None:
     assert float(loss.detach()) > 0
     loss.backward()
     assert student.grad is not None
+
+
+@pytest.mark.parametrize("design", flexible.DESIGNS)
+def test_band_set_model_matches_the_flexible_model(design: str) -> None:
+    torch.manual_seed(4)
+    raw = {**FLEX, "model": {**FLEX["model"], "flexible_design": design}}
+    config = config_from_dict(raw)
+    model = flexible.build(config.model, config.data.bands).eval()
+    assert isinstance(model, flexible.FlexibleModel)
+    if model.band_input.placeholder is not None:
+        with torch.no_grad():
+            model.band_input.placeholder.uniform_(-1, 1)
+    bands = ["B04", "B03", "B02", "B11"]
+    fixed = flexible.BandSetModel(model, bands).eval()
+    x = torch.randn(2, 13, 32, 32)
+    positions = [L1C_BAND_NAMES.index(b) for b in bands]
+    model.set_band_set(bands)
+    with torch.no_grad():
+        torch.testing.assert_close(fixed(x[:, positions]), model(x))
+    assert fixed.input_bands == 4

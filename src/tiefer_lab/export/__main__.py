@@ -34,8 +34,15 @@ from tiefer_lab.config import load_config
 from tiefer_lab.data import cache
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, log_test_evaluation
 from tiefer_lab.export import onnx_export, quantise, verify
-from tiefer_lab.models.cloud_filter import REFERENCE_INPUT, count_macs, count_parameters
-from tiefer_lab.train import CONFIG_NAME, METADATA_NAME, TrainingError, resolve_run_dir
+from tiefer_lab.models import flexible
+from tiefer_lab.models.cloud_filter import count_macs, count_parameters
+from tiefer_lab.train import (
+    CONFIG_NAME,
+    METADATA_NAME,
+    TrainingError,
+    band_set_name,
+    resolve_run_dir,
+)
 from tiefer_lab.utils import metadata, paths
 
 FILES = {
@@ -54,7 +61,13 @@ def export_run(
     final: bool = False,
     reason: str | None = None,
     allow_synthetic: bool = False,
+    band_set: Sequence[str] | None = None,
 ) -> Path:
+    """Export a run; a band-flexible run is exported for one band set at a time.
+
+    The exported model of a band set takes only those bands (BandSetModel):
+    one ONNX file per band set and size, each checked against PyTorch.
+    """
     if final:
         check_test_guard("test", final, reason)
     config = load_config(run_dir / CONFIG_NAME)
@@ -68,11 +81,26 @@ def export_run(
     if final:
         log_test_evaluation(run_id, git["commit"], reason or "", f"{which}, exported ONNX")
 
-    mean, std = cache.normalisation(index)
     size = config.export.input_size
     cpu = torch.device("cpu")
-    model = load_model(run_dir, config, which, cpu)
-    out_dir = run_dir / "export"
+    loaded = load_model(run_dir, config, which, cpu)
+    model: torch.nn.Module
+    if isinstance(loaded, flexible.FlexibleModel):
+        if not band_set:
+            sets = [",".join(b) for b in config.train.band_sets]
+            raise TrainingError(f"a band-flexible run is exported per band set: --band-set {sets}")
+        bands = tuple(band_set)
+        model = flexible.BandSetModel(loaded, bands).eval()
+        out_dir = run_dir / "export" / band_set_name(bands)
+        report_name = f"{run_id}_{band_set_name(bands)}.json"
+    else:
+        if band_set and tuple(band_set) != tuple(config.data.bands):
+            raise TrainingError(f"this run takes the bands {list(config.data.bands)} only")
+        bands = tuple(config.data.bands)
+        model = loaded
+        out_dir = run_dir / "export"
+        report_name = f"{run_id}.json"
+    mean, std = cache.normalisation(index, bands)
     files = {k: out_dir / v for k, v in FILES.items()}
     onnx_export.export_fp32(model, files["fp32"], size, config.export.opset)
     onnx_export.export_fp32(
@@ -80,7 +108,7 @@ def export_run(
     )
     onnx_export.export_fp16(files["fp32"], files["fp16"])
 
-    val = cache.load_split(directory, "val")
+    val = cache.load_split(directory, "val", bands=bands)
     limit = config.export.max_verify_patches
     checks: dict[str, Any] = {}
     for key in ("fp32", "fp32_dynamic", "fp16"):
@@ -101,16 +129,17 @@ def export_run(
         "provenance": metadata.provenance(cpu),
         "run": {"provenance": run_meta.get("provenance"), "seed": run_meta.get("seed")},
         "opset": config.export.opset,
-        "input_shape": [1, 4, size, size],
+        "band_set": list(bands),
+        "input_shape": [1, len(bands), size, size],
         "parameters": count_parameters(model),
-        "macs_1x4x512x512": count_macs(model, REFERENCE_INPUT),
+        "macs_512x512": count_macs(model, (1, len(bands), 512, 512)),
         "operators": {k: onnx_export.operator_types(p) for k, p in files.items() if p.exists()},
         "verification": checks,
         "verification_note": "FP16 agreement is reported, not enforced",
     }
 
     if with_int8:
-        train_data = cache.load_split(directory, "train")
+        train_data = cache.load_split(directory, "train", bands=bands)
         reader = quantise.CalibrationReader(
             train_data, mean, std, size, config.export.calibration_patches
         )
@@ -120,7 +149,7 @@ def export_run(
         quant: dict[str, Any] = {}
         splits = ["val", "test"] if final else ["val"]
         for split in splits:
-            data = val if split == "val" else cache.load_split(directory, "test")
+            data = val if split == "val" else cache.load_split(directory, "test", bands=bands)
             fp32 = quantise.score_onnx(files["fp32"], data, mean, std, size, config.evaluation)
             int8 = quantise.score_onnx(files["int8"], data, mean, std, size, config.evaluation)
             quant[split] = {
@@ -143,7 +172,7 @@ def export_run(
     for p in files.values():
         if p.exists():
             onnx.checker.check_model(str(p))
-    out = paths.reports_dir() / "export" / f"{run_id}.json"
+    out = paths.reports_dir() / "export" / report_name
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return out
@@ -158,6 +187,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--skip-int8", action="store_true", help="skip INT8 quantisation")
     parser.add_argument("--final", action="store_true", help="also measure INT8 on the test split")
     parser.add_argument("--reason", help="why the test split is used (with --final)")
+    parser.add_argument(
+        "--band-set", default=None, help="bands of a band-flexible run, for example B02,B03,B04"
+    )
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
 
@@ -172,8 +204,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             final=args.final,
             reason=args.reason,
             allow_synthetic=args.allow_synthetic,
+            band_set=args.band_set.split(",") if args.band_set else None,
         )
-    except (TestGuardError, TrainingError, cache.CacheError, verify.VerificationError) as err:
+    except (
+        TestGuardError,
+        TrainingError,
+        cache.CacheError,
+        verify.VerificationError,
+        ValueError,
+    ) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     report = json.loads(out.read_text(encoding="utf-8"))

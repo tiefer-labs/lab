@@ -19,8 +19,9 @@ from pathlib import Path
 import onnx
 import torch
 from onnx import TensorProto, numpy_helper
+from torch import nn
 
-from tiefer_lab.models.cloud_filter import IN_CHANNELS, CloudFilterNet, fold_batch_norm
+from tiefer_lab.models.cloud_filter import IN_CHANNELS, fold_batch_norm
 
 INPUT_NAME = "reflectance"
 OUTPUT_NAME = "logits"
@@ -57,7 +58,7 @@ def inline_constant_identities(model: onnx.ModelProto) -> onnx.ModelProto:
 
 
 def export_fp32(
-    model: CloudFilterNet,
+    model: nn.Module,
     path: Path,
     input_size: int,
     opset: int,
@@ -65,7 +66,8 @@ def export_fp32(
 ) -> Path:
     """Export a batch-norm-folded copy of `model` to ONNX (FP32)."""
     folded = fold_batch_norm(model).cpu().float()
-    dummy = torch.zeros(1, IN_CHANNELS, input_size, input_size)
+    bands = int(getattr(model, "input_bands", IN_CHANNELS))
+    dummy = torch.zeros(1, bands, input_size, input_size)
     with tempfile.TemporaryDirectory() as tmp, warnings.catch_warnings():
         raw = Path(tmp) / "raw.onnx"
         # The TorchScript exporter is deprecated in recent PyTorch versions but
