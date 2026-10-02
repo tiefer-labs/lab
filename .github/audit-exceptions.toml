@@ -1,0 +1,20 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Accepted findings of the dependency vulnerability audit (.github/workflows/audit.yml).
+# A finding fails the audit unless it has an entry here. Every entry needs:
+#
+#   id       the advisory ID as pip-audit prints it (PYSEC-..., GHSA-..., CVE-...)
+#   package  the affected package
+#   reason   why the finding does not apply here, or why it cannot be fixed yet
+#   expires  a date at most 90 days ahead; after it, the audit fails again until
+#            the entry is renewed with a new reason or removed
+#
+# Example (not active):
+#
+# [[exception]]
+# id = "PYSEC-0000-0"
+# package = "example"
+# reason = "the vulnerable function is never called; no fixed version exists yet"
+# expires = 2026-12-31

@@ -1,0 +1,65 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Known vulnerabilities in the locked environment (every group of uv.lock), on
+# push and weekly, so a new advisory against an unchanged lock is found too.
+# A finding fails the job unless it is accepted in .github/audit-exceptions.toml
+# with a reason and an expiry date.
+name: Audit
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+
+      # Pinned with hashes; see the header of .github/ci-tools/requirements.in.
+      - name: Install CI tools
+        run: |
+          uv venv "$RUNNER_TEMP/tools"
+          uv pip install --python "$RUNNER_TEMP/tools/bin/python" --require-hashes --only-binary :all: \
+            -r .github/ci-tools/requirements.txt
+
+      - name: Export the locked environment with hashes
+        run: |
+          uv export --frozen --all-groups --format requirements.txt --no-emit-project \
+            --output-file "$RUNNER_TEMP/locked.txt"
+
+      - name: Audit
+        run: |
+          python3 .github/scripts/audit_exceptions.py > "$RUNNER_TEMP/ignore.txt"
+          mapfile -t ignore < "$RUNNER_TEMP/ignore.txt"
+          "$RUNNER_TEMP/tools/bin/pip-audit" --requirement "$RUNNER_TEMP/locked.txt" \
+            --require-hashes --disable-pip --progress-spinner off --desc on \
+            --format markdown --output "$RUNNER_TEMP/audit.md" "${ignore[@]}" \
+            || status=$?
+          # pip-audit writes no report when it finds nothing.
+          [[ -s "$RUNNER_TEMP/audit.md" ]] || echo "No known vulnerabilities found." > "$RUNNER_TEMP/audit.md"
+          {
+            echo "### Dependency vulnerability audit"
+            echo
+            cat "$RUNNER_TEMP/audit.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/audit.md"
+          exit "${status:-0}"

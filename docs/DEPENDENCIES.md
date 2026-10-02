@@ -137,8 +137,27 @@ This table is also the licence source of the software bill of materials: `python
 
 ---
 
+## 4. Vulnerability audit
+
+`.github/workflows/audit.yml` runs `pip-audit` on every package of `uv.lock` (all groups, with hashes) on every push and pull request and every Monday, so a new advisory against an unchanged lock is also found. Any finding fails the job. The fix is to update the package (`uv lock --upgrade-package <name>`, then `make requirements`) and commit the new lock.
+
+When a finding cannot be fixed yet or does not apply, it is accepted in `.github/audit-exceptions.toml`, never by turning the audit off:
+
+```toml
+[[exception]]
+id = "PYSEC-2026-1"
+package = "example"
+reason = "the vulnerable function is never called; no fixed version exists yet"
+expires = 2026-12-31
+```
+
+`id` is the advisory ID as `pip-audit` prints it. `reason` says why the finding is accepted. `expires` is at most 90 days ahead; after that date the audit fails again until the entry is renewed with a new reason or removed. `.github/scripts/audit_exceptions.py` checks every entry before the audit runs and stops on a missing field, an expired date or one too far ahead, and the job log lists every accepted finding with its reason and expiry.
+
+---
+
 ## Changelog
 
+- 2 October 2026: vulnerability audit and its accepted exceptions (section 4).
 - 2 October 2026: CI-only tools (section 2A).
 - 2 October 2026: section 3 is the licence source of the software bill of materials.
 - 1 October 2026: first version for milestone L1.
