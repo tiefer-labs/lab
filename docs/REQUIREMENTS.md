@@ -32,6 +32,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-DAT-10` | Extra training patches never share a location with the validation or test split | `tests/test_extra_patches.py::test_built_index_proves_no_training_patch_shares_a_location_with_val_or_test` |
 | `REQ-DAT-11` | Facts not yet verified stop the code instead of being guessed | `tests/test_extra_patches.py::test_extra_patches_wait_for_verified_facts`, `tests/test_references.py::test_references_wait_for_verified_facts` |
 | `REQ-DAT-12` | Reference masks are linked and encoded only with verified encodings; unknown values stop | `tests/test_references.py::test_references_are_linked_encoded_and_resumable`, `tests/test_references.py::test_unknown_raw_values_stop_the_encoding` |
+| `REQ-DAT-13` | The richness report states class shares, cloud cover bins and shadow per split, and interprets verified metadata fields only | `tests/test_richness.py::test_patch_statistics_by_hand`, `tests/test_richness.py::test_field_summary_reports_verified_fields_only` |
 
 ---
 
@@ -59,6 +60,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-EVL-04` | Expected calibration error and the worst stratum are reported | `tests/test_binary_metrics.py::test_expected_calibration_error_by_hand`, `tests/test_binary_metrics.py::test_worst_stratum_is_named` |
 | `REQ-EVL-05` | Sensor perturbations are measured as fixed perturbations on validation | `tests/test_sensor.py::test_perturbations_parse_and_apply`, `tests/test_flexible_pipeline.py::test_specialist_reads_four_bands_from_the_13_band_cache` |
 | `REQ-EVL-06` | Results come only from report files, never from typed numbers | `tests/test_results.py::test_refuses_without_real_reports`, `tests/test_results.py::test_real_report_values_appear_with_source` |
+| `REQ-EVL-07` | Evaluation and export cover every band set of a run when asked for all of them | `tests/test_flexible_pipeline.py::test_flexible_model_trains_evaluates_and_exports_per_band_set`, `tests/test_roihu_scripts.py::test_evaluate_and_export_cover_every_band_set` |
 
 ---
 
@@ -91,6 +93,9 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-REP-02` | No secrets, project IDs, personal paths or tool names in tracked files | `tests/test_public_hygiene.py::test_tracked_files_are_clean` |
 | `REQ-REP-03` | Pinned dependencies: requirements.txt is exactly what uv export writes from uv.lock | `tests/test_requirements_sync.py::test_file_is_exactly_what_uv_export_writes` |
 | `REQ-REP-04` | Every requirement and acceptance target has a verification, and every verification exists | `tests/test_requirements_doc.py::test_every_requirement_is_verified` |
+| `REQ-REP-05` | A software bill of materials lists every locked package with its licence and hashes, and is generated in CI | `tests/test_sbom.py::test_every_locked_package_is_a_component_with_licence_and_hash`, `tests/test_sbom.py::test_missing_licence_row_stops` |
+| `REQ-REP-06` | No document claims that a standard is met for an agency or operator; standards matrix statuses are valid | `tests/test_wording.py::test_no_tracked_document_claims_compliance`, `tests/test_wording.py::test_standards_matrix_rows_have_a_valid_status` |
+| `REQ-REP-07` | No pretrained weights are loaded | `tests/test_public_hygiene.py::test_no_pretrained_weights_are_loaded` |
 
 ---
 
@@ -135,4 +140,5 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 2 October 2026: richness report, every band set, software bill of materials, wording and pretrained weights requirements.
 - 2 October 2026: first version, with the requirements and acceptance targets of milestone L2.
