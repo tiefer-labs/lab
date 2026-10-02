@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -185,3 +186,72 @@ def test_a_limited_build_never_resets_or_replaces_the_full_cache(
     assert reads == [] and _snapshot(directory) == before
     assert build_cache.main([*tiny, "--restart"]) == 0
     assert len(cache.load_split(directory, "train")) == 32
+
+
+def test_class_pixels_are_counted_in_chunks_without_loading_the_split(tmp_path: Path) -> None:
+    import tracemalloc
+
+    labels = np.lib.format.open_memmap(
+        tmp_path / "labels.npy", mode="w+", dtype=np.uint8, shape=(200, 256, 256)
+    )
+    labels[:] = np.arange(256, dtype=np.uint8)[None, None, :] % 4
+    labels.flush()
+    labels = np.load(tmp_path / "labels.npy", mmap_mode="r")
+    tracemalloc.start()
+    counts = build_cache.class_pixels(labels, chunk=16)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    assert counts == [200 * 256 * 64] * 4
+    # Counting the whole split at once would allocate 8 bytes per pixel.
+    assert peak < labels.nbytes, f"peak {peak} bytes for {labels.nbytes} bytes of labels"
+
+
+def test_band_statistics_are_chunked(tmp_path: Path) -> None:
+    import tracemalloc
+
+    from tiefer_lab.data import transforms
+
+    images = np.lib.format.open_memmap(
+        tmp_path / "images.npy", mode="w+", dtype=np.uint16, shape=(256, 13, 128, 128)
+    )
+    images[:] = np.arange(256 * 13, dtype=np.uint16).reshape(256, 13, 1, 1) + 1
+    images.flush()
+    images = np.load(tmp_path / "images.npy", mmap_mode="r")
+    tracemalloc.start()
+    transforms.band_statistics(images)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    # float64 of the whole split would be 4 times its uint16 size; chunks keep
+    # the peak at a few chunks, independent of the number of patches.
+    assert peak < images.nbytes / 2
+
+
+def test_finishing_step_resumes_after_it_failed(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    table = _FakeTable(20)
+    reads: list[int] = []
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _fake_reads(table, reads, {"position": -1}))
+    real_finish = build_cache._finish_split
+
+    def out_of_memory(*_: Any, **__: Any) -> None:
+        raise MemoryError("simulated out of memory in the finishing step")
+
+    monkeypatch.setattr(build_cache, "_finish_split", out_of_memory)
+    args = ["--split", "train", "--revision", "r", "--taco", "local.taco"]
+    with pytest.raises(MemoryError):
+        build_cache.main(args)
+    directory = cache.cache_dir(build_cache.DEFAULT_NAME)
+    # The state that failed on Roihu: final files in place, no partial files, progress at the end.
+    assert (directory / "train_images.npy").is_file()
+    assert not (directory / "train_images.partial.npy").exists()
+    assert json.loads((directory / "train.progress.json").read_text())["done"] == 20
+
+    monkeypatch.setattr(build_cache, "_finish_split", real_finish)
+    reads.clear()
+    assert build_cache.main(args) == 0
+    assert reads == [], "no patch is read again"
+    data = cache.load_split(directory, "train")
+    assert len(data) == 20 and not (directory / "train.progress.json").exists()
+    assert sum(cache.read_index(directory)["splits"]["train"]["class_pixels"]) == 20 * 16 * 16

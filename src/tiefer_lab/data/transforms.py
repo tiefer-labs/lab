@@ -36,12 +36,13 @@ def to_reflectance(
 
 
 def band_statistics(
-    images: NDArray[np.uint16], chunk: int = 32
+    images: NDArray[np.uint16], chunk: int = 8
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Per-band mean and standard deviation of reflectance over all pixels.
 
     `images` has shape (patches, bands, height, width) and may be memory-mapped;
-    it is read in chunks of patches.
+    it is read in chunks of patches. A chunk of 8 patches of 13 bands at
+    509 x 509 is about 0.3 GB as float64, so the peak stays well under 4 GB.
     """
     if images.ndim != 4:
         raise ValueError(f"expected (patches, bands, height, width), got shape {images.shape}")

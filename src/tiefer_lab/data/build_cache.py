@@ -100,6 +100,20 @@ def _update_normalisation(directory: Path, index: dict[str, Any]) -> None:
     }
 
 
+# Patches per chunk when counting class pixels: 64 patches of 509 x 509 are
+# about 17 MB of labels and 133 MB of int64 counts at most.
+COUNT_CHUNK = 64
+
+
+def class_pixels(labels: np.ndarray, chunk: int = COUNT_CHUNK) -> list[int]:
+    """Pixels per class, counted in chunks so a memory-mapped split is never loaded whole."""
+    counts = np.zeros(4, dtype=np.int64)
+    for start in range(0, labels.shape[0], chunk):
+        block = np.asarray(labels[start : start + chunk]).ravel()
+        counts += np.bincount(block, minlength=4)[:4]
+    return [int(c) for c in counts]
+
+
 def _finish_split(
     directory: Path,
     index: dict[str, Any],
@@ -130,7 +144,7 @@ def _finish_split(
         "selection": selection or {},
         "metadata": metadata,
         "reference_masks": list(reference_names),
-        "class_pixels": [int(c) for c in np.bincount(np.asarray(labels).ravel(), minlength=4)],
+        "class_pixels": class_pixels(labels),
     }
     if split == "train":
         _update_normalisation(directory, index)
@@ -224,6 +238,31 @@ def build_real_split(
             progress = {}
 
     ref_names = list(source.REFERENCE_MASK_ITEMS)
+    final_images = cache.images_path(directory, split)
+    if (
+        progress
+        and int(progress["done"]) == len(rows)
+        and final_images.is_file()
+        and cache.labels_path(directory, split).is_file()
+        and not _partial(final_images).exists()
+    ):
+        # Every patch was written and the files were moved into place, but the
+        # finishing step did not complete (for example out of memory): finish only.
+        print(f"{split}: all {len(rows)} patches written; running the finishing step", flush=True)
+        _finish_split(
+            directory,
+            index,
+            split,
+            roi_ids,
+            progress["metadata"],
+            limit,
+            ref_names,
+            counts,
+            row_keys=ids,
+        )
+        progress_file.unlink()
+        return
+
     first: source.Patch | None = None
     if progress:
         height, width = progress["height"], progress["width"]
