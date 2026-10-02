@@ -253,6 +253,103 @@ def comparison_section(reports: Reports) -> str:
     return markdown_table(headers, groups)
 
 
+# Reference algorithms whose median per-patch values the dataset paper
+# reports on the same test patches. The values are not copied here until they
+# are checked against the paper's tables (TODO(verify)), and they are never
+# mixed with measured values: they stay in their own column.
+PAPER = "https://doi.org/10.1038/s41597-022-01878-2"
+PUBLISHED: dict[str, dict[str, float]] = {}
+
+
+def _binary_cells(m: dict[str, Any], problem: str) -> list[str]:
+    block = m.get("binary", {}).get(problem)
+    if not block:
+        return ["n/a", "n/a", "n/a"]
+    intervals = block.get("intervals", {})
+    return [
+        with_interval(block.get("median_boa"), intervals.get("median_boa")),
+        with_interval(block.get("median_pa"), intervals.get("median_pa")),
+        with_interval(block.get("median_ua"), intervals.get("median_ua")),
+    ]
+
+
+def _bands(r: Report) -> str:
+    bands = r.data.get("config", {}).get("data", {}).get("bands")
+    return " ".join(bands) if bands else "B02 B03 B04 B08"
+
+
+def _published(name: str) -> str:
+    values = PUBLISHED.get(name)
+    if values is None:
+        return f"TODO(verify) in the [paper]({PAPER})"
+    return f"{fmt(values.get('cloud_boa'))} ([paper]({PAPER}))"
+
+
+def reference_comparison_section(reports: Reports) -> str:
+    headers = [
+        "",
+        "Bands",
+        "Parameters",
+        "Multiply-accumulates",
+        "Cloud BOA",
+        "Cloud PA",
+        "Cloud UA",
+        "Shadow BOA",
+        "Shadow PA",
+        "Shadow UA",
+        "Published cloud BOA",
+        "Source",
+        "Commit",
+    ]
+    groups = []
+    for split in ("val", "test"):
+        matching = [r for r in reports.evaluation if r.data.get("split") == split]
+        latest_per_run: dict[str, Report] = {}
+        for r in matching:
+            latest_per_run[str(r.data.get("run_id"))] = r
+        if not latest_per_run:
+            continue
+        rows = []
+        for run_id, r in latest_per_run.items():
+            model = r.data.get("run", {}).get("model") or {}
+            m = r.data["model"]
+            rows.append(
+                [
+                    f"`{run_id}`",
+                    _bands(r),
+                    fmt(model.get("parameters")),
+                    fmt(model.get("macs_1x4x512x512")),
+                    *_binary_cells(m, "cloud"),
+                    *_binary_cells(m, "shadow"),
+                    "n/a",
+                    r.source,
+                    r.commit,
+                ]
+            )
+        with_baselines = [r for r in latest_per_run.values() if r.data.get("baselines")]
+        if with_baselines:
+            r = with_baselines[-1]
+            for name, m in r.data["baselines"].items():
+                reference = name.startswith("reference_")
+                rows.append(
+                    [
+                        name.replace("reference_", "").replace("_", " "),
+                        "all of the algorithm's own" if reference else "B02 B03 B04",
+                        "n/a",
+                        "n/a",
+                        *_binary_cells(m, "cloud"),
+                        *_binary_cells(m, "shadow"),
+                        _published(name.replace("reference_", "")) if reference else "n/a",
+                        r.source,
+                        r.commit,
+                    ]
+                )
+        groups.append(Group(f"{'Validation' if split == 'val' else 'Test'} split", rows))
+    if not groups:
+        groups = [Group("Test split", [["every model and reference algorithm", *[NOT_YET] * 12]])]
+    return markdown_table(headers, groups)
+
+
 def pixel_frame_section(reports: Reports) -> str:
     groups = []
     for split in ("val", "test"):
@@ -433,14 +530,22 @@ def render(reports: Reports, date: dt.date) -> str:
         "## 5. Baselines and model\n\nReference masks, when shipped with the dataset, use more "
         "spectral bands than the four used here, so the comparison favours them.\n\n"
         + comparison_section(reports),
-        "## 6. Pixel and frame metrics\n\nThe false discard rate is the share of useful frames "
+        "## 6. Cloud and shadow against the reference algorithms\n\nMedian over patches of the "
+        "per-patch balanced overall accuracy (BOA), producer's accuracy (PA) and user's "
+        "accuracy (UA), for cloud (thick and thin) against the rest and for cloud shadow "
+        "against the rest, with 95 percent bootstrap intervals; definitions in "
+        "`src/tiefer_lab/binary_metrics.py`. Every row is measured by this repository's code on "
+        "the same patches. Values published in the dataset paper stay in their own column "
+        "and are not filled in until they are checked against its tables.\n\n"
+        + reference_comparison_section(reports),
+        "## 7. Pixel and frame metrics\n\nThe false discard rate is the share of useful frames "
         "(true cloud fraction below the threshold) that would be kept on board.\n\n"
         + pixel_frame_section(reports),
-        "## 7. Quantisation\n\n" + quantisation_section(reports),
-        "## 8. Hardware\n\n" + hardware_section(reports),
-        "## 9. Compute used\n\n" + compute_section(reports),
-        "## 10. Limitations\n\n" + "\n".join(f"- {line}" for line in LIMITATIONS),
-        "## 11. How to reproduce\n\n" + REPRODUCE,
+        "## 8. Quantisation\n\n" + quantisation_section(reports),
+        "## 9. Hardware\n\n" + hardware_section(reports),
+        "## 10. Compute used\n\n" + compute_section(reports),
+        "## 11. Limitations\n\n" + "\n".join(f"- {line}" for line in LIMITATIONS),
+        "## 12. How to reproduce\n\n" + REPRODUCE,
         "## Changelog\n\n" + f"- {when}: generated from {len(reports.evaluation)} evaluation, "
         f"{len(reports.export)} export, {len(reports.jetson)} Jetson and "
         f"{len(reports.compute)} compute report files.",

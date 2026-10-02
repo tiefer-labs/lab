@@ -57,7 +57,18 @@ Reference masks, when shipped with the dataset, use more spectral bands than the
 
 ---
 
-## 6. Pixel and frame metrics
+## 6. Cloud and shadow against the reference algorithms
+
+Median over patches of the per-patch balanced overall accuracy (BOA), producer's accuracy (PA) and user's accuracy (UA), for cloud (thick and thin) against the rest and for cloud shadow against the rest, with 95 percent bootstrap intervals; definitions in `src/tiefer_lab/binary_metrics.py`. Every row is measured by this repository's code on the same patches. Values published in the dataset paper stay in their own column and are not filled in until they are checked against its tables.
+
+|  | Bands | Parameters | Multiply-accumulates | Cloud BOA | Cloud PA | Cloud UA | Shadow BOA | Shadow PA | Shadow UA | Published cloud BOA | Source | Commit |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Test split** | | | | | | | | | | | | |
+| every model and reference algorithm | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured | not yet measured |
+
+---
+
+## 7. Pixel and frame metrics
 
 The false discard rate is the share of useful frames (true cloud fraction below the threshold) that would be kept on board.
 
@@ -77,7 +88,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ---
 
-## 7. Quantisation
+## 8. Quantisation
 
 | Run and split | Mean IoU FP32 | Mean IoU INT8 | False discard rate FP32 | False discard rate INT8 | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -85,7 +96,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ---
 
-## 8. Hardware
+## 9. Hardware
 
 | Engine | Latency p50 | Latency p99 | Tiles per second | Energy per tile | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -94,7 +105,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ---
 
-## 9. Compute used
+## 10. Compute used
 
 | Job | Partition | Elapsed | Allocated resources | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -102,7 +113,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ---
 
-## 10. Limitations
+## 11. Limitations
 
 - Training data is Sentinel-2 at 10 m ground sampling; Tiefer's target sensors are very high resolution, where clouds and shadows look different.
 - Only four bands are used (blue, green, red, near infrared); classic cloud algorithms also use shortwave infrared, which the target sensors lack.
@@ -112,7 +123,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ---
 
-## 11. How to reproduce
+## 12. How to reproduce
 
 ```bash
 python -m tiefer_lab.data.build_cache --split all
@@ -129,4 +140,4 @@ On CSC Roihu, the same steps run as Slurm jobs; see
 
 ## Changelog
 
-- 1 October 2026: generated from 0 evaluation, 0 export, 0 Jetson and 0 compute report files.
+- 2 October 2026: generated from 0 evaluation, 0 export, 0 Jetson and 0 compute report files.
