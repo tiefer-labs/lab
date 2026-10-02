@@ -68,10 +68,18 @@ def test_synthetic_cache_is_refused_without_flag(synthetic_cache: None) -> None:
         train.open_cache(config_from_dict(TINY), allow_synthetic=False)
 
 
+# The same tiny run with linear warm-up and an exponential moving average.
+TINY_STABLE = {**TINY, "train": {**TINY["train"], "warmup_epochs": 1, "ema_decay": 0.99}}
+
+
+@pytest.mark.parametrize("raw", [TINY, TINY_STABLE], ids=["plain", "warmup-ema"])
 def test_interrupted_run_resumes_to_the_same_result(
-    synthetic_cache: None, tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+    synthetic_cache: None,
+    tiefer_env: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    raw: dict,
 ) -> None:
-    config = config_from_dict(TINY)
+    config = config_from_dict(raw)
     runs = tiefer_env["TIEFER_RUNS_DIR"]
     status = train.train(config, runs / "full", device_name="cpu", allow_synthetic=True)
     assert status == "completed"
@@ -101,10 +109,14 @@ def test_interrupted_run_resumes_to_the_same_result(
     ]
     assert epochs == [1, 2, 3]
 
-    full = checkpoint.load_checkpoint(runs / "full" / checkpoint.LAST)["model"]
-    resumed = checkpoint.load_checkpoint(run / checkpoint.LAST)["model"]
-    for key in full:
-        torch.testing.assert_close(resumed[key], full[key])
+    full_state = checkpoint.load_checkpoint(runs / "full" / checkpoint.LAST)
+    resumed_state = checkpoint.load_checkpoint(run / checkpoint.LAST)
+    for key in full_state["model"]:
+        torch.testing.assert_close(resumed_state["model"][key], full_state["model"][key])
+    if config.train.ema_decay:
+        assert resumed_state["ema"]["updates"] == full_state["ema"]["updates"] == 6
+        for key, value in full_state["ema"]["module"].items():
+            torch.testing.assert_close(resumed_state["ema"]["module"][key], value)
 
 
 def test_run_metadata_has_provenance_and_no_absolute_paths(
@@ -169,3 +181,69 @@ def test_epoch_timing_rounds_the_estimate_like_its_parts() -> None:
     assert record["val_seconds"] == 0.02
     assert record["full_epoch_seconds"] == 0.05
     assert record["full_epoch_seconds"] >= record["val_seconds"]
+
+
+def test_learning_rate_warms_up_linearly_then_follows_a_cosine_to_zero() -> None:
+    f = train.learning_rate_factor
+    assert [f(s, 100, 4) for s in range(4)] == [0.25, 0.5, 0.75, 1.0]
+    assert f(4, 100, 4) == pytest.approx(1.0)
+    assert f(52, 100, 4) == pytest.approx(0.5)
+    assert f(100, 100, 4) == pytest.approx(0.0, abs=1e-12)
+    assert f(0, 10, 0) == pytest.approx(1.0)
+
+
+def test_ema_update_by_hand() -> None:
+    from tiefer_lab.utils.ema import WeightEMA
+
+    model = torch.nn.Linear(1, 1, bias=False)
+    with torch.no_grad():
+        model.weight.fill_(1.0)
+    ema = WeightEMA(model, decay=0.9)
+    with torch.no_grad():
+        model.weight.fill_(3.0)
+    ema.update(model)  # first update: d = min(0.9, 2 / 11)
+    d = 2 / 11
+    assert float(ema.module.weight) == pytest.approx(d * 1.0 + (1 - d) * 3.0)
+    for _ in range(200):
+        ema.update(model)
+    assert ema.current_decay() == 0.9
+    assert float(ema.module.weight) == pytest.approx(3.0, abs=1e-6)
+    assert not ema.module.weight.requires_grad
+
+
+def test_best_checkpoint_holds_the_averaged_weights(
+    synthetic_cache: None, tiefer_env: dict[str, Path]
+) -> None:
+    raw = {**TINY_STABLE, "train": {**TINY_STABLE["train"], "epochs": 2}}
+    run = tiefer_env["TIEFER_RUNS_DIR"] / "ema"
+    assert (
+        train.train(config_from_dict(raw), run, device_name="cpu", allow_synthetic=True)
+        == "completed"
+    )
+    best = checkpoint.load_checkpoint(run / checkpoint.BEST)
+    last = checkpoint.load_checkpoint(run / checkpoint.LAST)
+    assert best["weights"] == "ema"
+    if best["epoch"] == 2:
+        for key, value in last["ema"]["module"].items():
+            torch.testing.assert_close(best["model"][key], value)
+    differs = any(
+        not torch.equal(last["ema"]["module"][k], last["model"][k])
+        for k in last["model"]
+        if last["model"][k].dtype.is_floating_point
+    )
+    assert differs, "the averaged weights are not the raw weights"
+
+
+def test_a_checkpoint_of_the_earlier_schedule_is_not_resumed(
+    synthetic_cache: None, tiefer_env: dict[str, Path]
+) -> None:
+    run = tiefer_env["TIEFER_RUNS_DIR"] / "old"
+    train.train(config_from_dict(TINY), run, device_name="cpu", allow_synthetic=True)
+    state = checkpoint.load_checkpoint(run / checkpoint.LAST)
+    del state["schedule"]
+    state["epochs_done"] = 1
+    checkpoint.save_checkpoint(run / checkpoint.LAST, state)
+    with pytest.raises(train.TrainingError, match="earlier per-epoch learning rate schedule"):
+        train.train(
+            config_from_dict(TINY), run, device_name="cpu", allow_synthetic=True, resume=True
+        )

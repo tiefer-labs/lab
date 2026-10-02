@@ -22,6 +22,7 @@ import argparse
 import dataclasses
 import datetime as dt
 import json
+import math
 import sys
 import time
 from collections.abc import Sequence
@@ -45,6 +46,7 @@ from tiefer_lab.models.cloud_filter import (
 )
 from tiefer_lab.models.losses import CrossEntropyDice, class_weights
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
+from tiefer_lab.utils.ema import WeightEMA
 from tiefer_lab.utils.seeding import seed_everything
 from tiefer_lab.utils.signals import StopRequest
 
@@ -116,6 +118,18 @@ def validate(
     for _, pred, label in predict_masks(model, loader, device, precision):
         cm += metrics.confusion_matrix(pred, label)
     return metrics.pixel_metrics(cm)
+
+
+def learning_rate_factor(step: int, total_steps: int, warmup_steps: int) -> float:
+    """Multiplier of the configured learning rate at optimizer step `step` (from 0).
+
+    Linear warm-up from 1 / warmup_steps to 1 over the first warmup_steps steps,
+    then cosine decay from 1 to 0 at total_steps.
+    """
+    if warmup_steps > 0 and step < warmup_steps:
+        return (step + 1) / warmup_steps
+    progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+    return 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
 
 
 def epoch_timing(
@@ -231,15 +245,20 @@ def train(
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=config.train.learning_rate, weight_decay=config.train.weight_decay
     )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.train.epochs)
     scaler = torch.amp.GradScaler("cuda") if precision == "fp16" else None
 
+    ema = WeightEMA(model, config.train.ema_decay) if config.train.ema_decay > 0 else None
     start_epoch, best_metric, best_epoch, stale = 0, -1.0, -1, 0
     if resume:
         state = checkpoint.load_checkpoint(run_dir / checkpoint.LAST, map_location=device)
-        start_epoch, best_metric, best_epoch, stale = checkpoint.restore_training_state(
-            state, model=model, optimizer=optimizer, scheduler=scheduler, scaler=scaler
-        )
+        try:
+            start_epoch, best_metric, best_epoch, stale = checkpoint.restore_training_state(
+                state, model=model, optimizer=optimizer, scaler=scaler
+            )
+        except ValueError as err:
+            raise TrainingError(str(err)) from None
+        if ema is not None:
+            ema.load_state_dict(state["ema"])
         print(f"resuming {run_dir.name} after epoch {start_epoch}", flush=True)
 
     photometric = Photometric(config.data.brightness, config.data.contrast)
@@ -275,6 +294,9 @@ def train(
         )
         placement = "data loader (memory-mapped)"
     full_steps = len(device_batches) if device_batches is not None else len(train_loader or [])
+    steps_per_epoch = min(full_steps, config.train.max_steps_per_epoch or full_steps)
+    total_steps = steps_per_epoch * config.train.epochs
+    warmup_steps = steps_per_epoch * config.train.warmup_epochs
     load_seconds = round(time.monotonic() - load_started, 1)
     print(
         f"training data: {len(train_data)} patches, {placement}, ready in {load_seconds} s",
@@ -296,12 +318,12 @@ def train(
             checkpoint.training_state(
                 model=model,
                 optimizer=optimizer,
-                scheduler=scheduler,
                 scaler=scaler,
                 epochs_done=epochs_done,
                 best_metric=best_metric,
                 best_epoch=best_epoch,
                 epochs_without_improvement=stale,
+                ema=ema.state_dict() if ema is not None else None,
             ),
         )
 
@@ -326,6 +348,11 @@ def train(
                 labels = labels.to(device, non_blocking=True)
                 if device.type == "cuda":
                     images = images.contiguous(memory_format=torch.channels_last)
+                factor = learning_rate_factor(
+                    epoch * steps_per_epoch + step, total_steps, warmup_steps
+                )
+                for group in optimizer.param_groups:
+                    group["lr"] = config.train.learning_rate * factor
                 optimizer.zero_grad(set_to_none=True)
                 with devices.autocast(device, precision):
                     logits = model(images)
@@ -337,6 +364,8 @@ def train(
                 else:
                     loss.backward()
                     optimizer.step()
+                if ema is not None:
+                    ema.update(model)
                 losses.append(float(loss.detach()))
                 if (step + 1) % config.train.log_every == 0:
                     print(
@@ -351,9 +380,10 @@ def train(
             if device.type == "cuda":
                 torch.cuda.synchronize(device)
             train_seconds = time.monotonic() - started
-            scheduler.step()
             val_started = time.monotonic()
-            val = validate(model, val_loader, device, precision)
+            # With EMA, validation and best.pt use the averaged weights.
+            eval_model = ema.module if ema is not None else model
+            val = validate(eval_model, val_loader, device, precision)
             val_seconds = time.monotonic() - val_started
             val_miou = val["mean_iou"] if val["mean_iou"] is not None else -1.0
             # Early stopping on validation mean IoU: only a gain of at least
@@ -363,7 +393,12 @@ def train(
                 best_metric, best_epoch, stale = val_miou, epoch + 1, 0
                 checkpoint.save_checkpoint(
                     run_dir / checkpoint.BEST,
-                    {"model": model.state_dict(), "epoch": epoch + 1, "val_mean_iou": val_miou},
+                    {
+                        "model": eval_model.state_dict(),
+                        "weights": "ema" if ema is not None else "model",
+                        "epoch": epoch + 1,
+                        "val_mean_iou": val_miou,
+                    },
                 )
             else:
                 stale += 1

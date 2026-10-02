@@ -73,9 +73,17 @@ class TrainConfig:
     min_improvement: float = 0.0
     max_steps_per_epoch: int | None = None
     log_every: int = 50
+    # Linear warm-up of the learning rate over this many epochs, then cosine
+    # decay to zero at the last epoch. 0 means no warm-up.
+    warmup_epochs: int = 0
+    # Exponential moving average of the weights, used for validation and for
+    # best.pt. 0 means off; otherwise a decay in [0.9, 1).
+    ema_decay: float = 0.0
 
     def __post_init__(self) -> None:
         _check(self.epochs >= 1, "epochs must be >= 1")
+        _check(0 <= self.warmup_epochs < self.epochs, "warmup_epochs in [0, epochs)")
+        _check(self.ema_decay == 0.0 or 0.9 <= self.ema_decay < 1.0, "ema_decay: 0 or in [0.9, 1)")
         _check(self.learning_rate > 0 and self.weight_decay >= 0, "learning rate and decay")
         _check(self.dice_weight >= 0, "dice_weight must be >= 0")
         _check(self.patience >= 1, "patience must be >= 1")

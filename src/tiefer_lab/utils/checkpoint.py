@@ -34,22 +34,29 @@ def load_checkpoint(path: Path, map_location: str | torch.device = "cpu") -> dic
     return state
 
 
+# The learning rate is computed from the step number (warm-up, then cosine),
+# so no scheduler state is stored. Checkpoints of the earlier per-epoch
+# scheduler cannot be resumed with this version.
+SCHEDULE = "per-step warm-up and cosine"
+
+
 def training_state(
     *,
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
     scaler: torch.amp.GradScaler | None,
     epochs_done: int,
     best_metric: float,
     best_epoch: int,
     epochs_without_improvement: int,
+    ema: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Everything needed to continue training exactly where it stopped."""
     return {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
-        "scheduler": scheduler.state_dict(),
+        "schedule": SCHEDULE,
+        "ema": ema or {},
         "scaler": scaler.state_dict() if scaler is not None else {},
         "epochs_done": epochs_done,
         "best_metric": best_metric,
@@ -64,13 +71,16 @@ def restore_training_state(
     *,
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
     scaler: torch.amp.GradScaler | None,
 ) -> tuple[int, float, int, int]:
     """Load a training state; returns (epochs_done, best_metric, best_epoch, patience)."""
+    if state.get("schedule") != SCHEDULE:
+        raise ValueError(
+            "this checkpoint was written with the earlier per-epoch learning rate schedule; "
+            "resume it with the commit recorded in its metadata.json, or start a new run"
+        )
     model.load_state_dict(state["model"])
     optimizer.load_state_dict(state["optimizer"])
-    scheduler.load_state_dict(state["scheduler"])
     if scaler is not None and state.get("scaler"):
         scaler.load_state_dict(state["scaler"])
     torch.set_rng_state(state["torch_rng"])

@@ -338,6 +338,7 @@ lab/
         metadata.py               run provenance, Slurm fields, relative paths only
         signals.py                SIGTERM and SIGUSR1 handling
         checkpoint.py             save, load (weights_only), resume
+        ema.py                    exponential moving average of the weights
   tests/
     __init__.py
     conftest.py                   synthetic fixtures, temporary TIEFER_* paths
