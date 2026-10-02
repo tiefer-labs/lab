@@ -59,7 +59,7 @@ Tools that only check the repository in CI. They are not in `uv.lock` and never 
 
 Every package in `uv.lock`, including indirect dependencies, with the licence its metadata declares.
 
-This table is also the licence source of the software bill of materials: `python -m tiefer_lab.sbom` writes CycloneDX 1.5 JSON with every locked package, its version, the SHA-256 of its files and its licence from this table, and stops when a locked package has no row here. CI runs it on every push and shows the result in the job summary.
+This table is also the licence source of the software bill of materials: `python -m tiefer_lab.sbom` writes CycloneDX 1.5 JSON with every locked package, its version, the SHA-256 of its files and its licence from this table, and stops when a locked package has no row here. CI runs it on every push and pull request and attaches the file to the run as the artifact `sbom-cdx` (kept 90 days).
 
 | Package | Locked version | Licence (package metadata) |
 | :--- | :---: | :---: |
