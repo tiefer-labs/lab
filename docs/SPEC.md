@@ -120,7 +120,7 @@ Evaluated with the same code and splits as the model:
 
 ## 8. Model and training
 
-- `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. At most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types).
+- `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. The L1 configs (`configs/l1_*.toml`) stay at most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types). The L2 family below has its own sizes.
 - Report parameter count and multiply-accumulate operations for a 1 x 4 x 512 x 512 input.
 - Loss: cross-entropy plus Dice, class weights from the training split.
 - Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS.
@@ -132,6 +132,24 @@ Evaluated with the same code and splits as the model:
 - From the mask, derive per frame: cloud fraction (thick plus thin), shadow fraction, and a **send or keep decision** at an operator-configurable threshold.
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--resume <run-dir>] [--device ...]`.
 - Configs: `configs/smoke.toml` (tiny, minutes on CPU) and `configs/l1_base.toml` (full training on one GH200 GPU).
+
+### Milestone L2: one band-flexible model family
+
+- **Input:** all 13 Level-1C bands, normalised, plus one availability flag per band (26 input channels). An unavailable band is replaced before the network sees it, so it cannot look like a dark pixel. Two designs are compared on validation and the better one is kept: `placeholder` (a learned value per band) and `zero` (0, the training mean after normalisation).
+- **Band sets:** one is drawn per batch from a fixed list in the config (`train.band_sets`); the list matches sensor classes:
+
+  | Band set | Bands |
+  | :--- | :---: |
+  | red, green, blue | B02, B03, B04 |
+  | plus near infrared | B02, B03, B04, B08 |
+  | plus short-wave infrared | B02, B03, B04, B08, B11, B12 (TODO(verify) that these are the short-wave infrared bands, from the Sentinel-2 mission documentation) |
+  | all | B01 to B12 and B8A, 13 bands |
+
+- **Self-distillation:** on a batch that draws a smaller band set, the prediction with all 13 bands (no gradient) is a soft target for the prediction with the drawn set, next to the label loss (`train.distill_weight`).
+- **Size ladder:** about 0.5 M, 1 M, 4 M and 20 to 30 M parameters with otherwise identical settings; two architectures at the largest size (the separable U-Net and a U-Net with ConvNeXt-style encoder blocks). No pretrained weights.
+- **Control:** four-band specialists (blue, green, red, near infrared) at 1 M and at the largest size, same data and schedule. The decision rule is in docs/ASSUMPTIONS.md.
+- **Loss:** cross-entropy plus Dice without class weights as the baseline; class weights and a focal term as separate runs. Pixels without a label (scribble gaps, nolabel patches) are ignored.
+- **Export:** one ONNX file per band set and size; the exported model takes only the bands of its set, with the availability flags fixed. FP32, FP16 and INT8, each checked against PyTorch.
 
 ---
 
@@ -467,6 +485,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 2 October 2026: section 8 adds milestone L2, one band-flexible model family (input with availability flags in two designs, band sets drawn per batch, self-distillation, a size ladder from 0.5 M to about 22 M parameters, four-band specialists as control, export per band set). The 1.0 million parameter budget now applies to the L1 configs only. Before, the model took four bands only and the budget applied to every model.
 - 1 October 2026: `hpc/roihu/gpu_shell.sh` removed; GPU setup and GPU jobs run from `roihu-gpu.csc.fi`.
 - 1 October 2026: job scripts no longer use `--export=NONE`; `job_prelude.sh` keeps only the module check and `module purge`.
 - 1 October 2026: `submit.sh` uses sbatch's default export again and checks the architecture of the submitting host.
