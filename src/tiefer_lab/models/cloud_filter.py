@@ -177,3 +177,33 @@ def predict_masks(
             preds = logits.argmax(dim=1).to(torch.uint8).cpu().numpy()
             for pred, label, index in zip(preds, labels.numpy(), indexes.tolist(), strict=True):
                 yield int(index), crop_back(pred, label.shape), label.astype(np.int64)
+
+
+def predict_masks_with_confidence(
+    model: nn.Module,
+    loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
+    device: torch.device,
+    precision: Precision,
+) -> Iterator[tuple[int, NDArray[np.uint8], NDArray[np.int64], NDArray[np.float32]]]:
+    """As predict_masks, plus the probability of the predicted class per pixel."""
+    model.eval()
+    channels_last = device.type == "cuda"
+    with torch.no_grad():
+        for images, labels, indexes in loader:
+            images = images.to(device, non_blocking=True)
+            if channels_last:
+                images = images.contiguous(memory_format=torch.channels_last)
+            with autocast(device, precision):
+                logits = model(images)
+            confidence, predicted = logits.float().softmax(dim=1).max(dim=1)
+            preds = predicted.to(torch.uint8).cpu().numpy()
+            confs = confidence.cpu().numpy()
+            for pred, conf, label, index in zip(
+                preds, confs, labels.numpy(), indexes.tolist(), strict=True
+            ):
+                yield (
+                    int(index),
+                    crop_back(pred, label.shape),
+                    label.astype(np.int64),
+                    crop_back(conf, label.shape).astype(np.float32),
+                )

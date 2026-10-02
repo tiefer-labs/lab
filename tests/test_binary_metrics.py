@@ -83,3 +83,47 @@ def test_binary_only_scores_report_the_cloud_problem_only() -> None:
     assert set(report) == {"patches", "ignored_pixels", "binary"}
     assert set(report["binary"]) == {"cloud", "definition", "paper_definition_verified"}
     assert report["binary"]["cloud"]["median_boa"] == 1.0
+
+
+def test_expected_calibration_error_by_hand() -> None:
+    calibration = metrics.Calibration(bins=10)
+    # Bin [0.9, 1.0): 4 pixels at 0.95, 3 right: accuracy 0.75, confidence 0.95.
+    # Bin [0.6, 0.7): 2 pixels at 0.65, both right: accuracy 1.0, confidence 0.65.
+    confidence = np.array([0.95, 0.95, 0.95, 0.95, 0.65, 0.65, 0.5])
+    prediction = np.array([1, 1, 1, 1, 2, 2, 0])
+    reference = np.array([1, 1, 1, 0, 2, 2, IGNORE_INDEX])
+    calibration.add(confidence, prediction, reference)
+    expected = 4 / 6 * abs(0.75 - 0.95) + 2 / 6 * abs(1.0 - 0.65)
+    assert calibration.ece() == pytest.approx(expected)
+    assert calibration.report()["pixels"] == 6
+    assert metrics.Calibration().ece() is None
+
+
+def test_worst_stratum_is_named() -> None:
+    from tiefer_lab.evaluate import worst_stratum
+
+    strata = {
+        "season": {
+            "winter": {"patches": 40, "cloud_boa": 0.71},
+            "summer": {"patches": 60, "cloud_boa": 0.93},
+        },
+        "region": {"north": {"patches": 5, "cloud_boa": 0.20}},  # too few patches
+    }
+    worst = worst_stratum(strata)
+    assert worst is not None and (worst["field"], worst["value"]) == ("season", "winter")
+    assert worst_stratum({}) is None
+
+
+def test_int8_comparison_reports_the_boa_change() -> None:
+    from tiefer_lab.export.quantise import compare_reports
+
+    def report(miou: float, boa: float) -> dict:
+        return {
+            "pixel": {"mean_iou": miou},
+            "false_discard_rate": 0.1,
+            "binary": {"cloud": {"median_boa": boa}, "shadow": {"median_boa": None}},
+        }
+
+    out = compare_reports(report(0.7, 0.90), report(0.69, 0.885))
+    assert out["cloud_boa_change"] == pytest.approx(-0.015)
+    assert out["shadow_boa_change"] is None

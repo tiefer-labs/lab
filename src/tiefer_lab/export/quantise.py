@@ -105,10 +105,14 @@ def score_onnx(
 
 
 def compare_reports(fp32: dict[str, Any], int8: dict[str, Any]) -> dict[str, Any]:
-    """Change in mean IoU and false discard rate from FP32 to INT8."""
+    """Change in mean IoU, cloud and shadow BOA and false discard rate from FP32 to INT8."""
 
     def delta(a: float | None, b: float | None) -> float | None:
         return None if a is None or b is None else b - a
+
+    def boa(report: dict[str, Any], problem: str) -> float | None:
+        value = report.get("binary", {}).get(problem, {}).get("median_boa")
+        return None if value is None else float(value)
 
     miou_change = delta(fp32["pixel"]["mean_iou"], int8["pixel"]["mean_iou"])
     out: dict[str, Any] = {
@@ -119,6 +123,8 @@ def compare_reports(fp32: dict[str, Any], int8: dict[str, Any]) -> dict[str, Any
         "false_discard_rate_int8": int8["false_discard_rate"],
         "false_discard_rate_change": delta(fp32["false_discard_rate"], int8["false_discard_rate"]),
         "max_mean_iou_drop": MAX_MEAN_IOU_DROP,
+        "cloud_boa_change": delta(boa(fp32, "cloud"), boa(int8, "cloud")),
+        "shadow_boa_change": delta(boa(fp32, "shadow"), boa(int8, "shadow")),
     }
     if miou_change is not None and -miou_change > MAX_MEAN_IOU_DROP:
         out["note"] = (

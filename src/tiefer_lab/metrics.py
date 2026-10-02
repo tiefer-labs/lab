@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from tiefer_lab.data.source import CLASS_NAMES, NUM_CLASSES
+from tiefer_lab.data.source import CLASS_NAMES, IGNORE_INDEX, NUM_CLASSES
 from tiefer_lab.decisions import send_mask
 
 FloatArray = NDArray[np.float64]
@@ -92,6 +92,47 @@ def pixel_metrics(cm: NDArray[np.integer[Any]]) -> dict[str, Any]:
         "confusion_matrix": cm.astype(int).tolist(),
         "pixels": int(cm.sum()),
     }
+
+
+class Calibration:
+    """Expected calibration error over pixels, with equal-width confidence bins.
+
+    ECE = sum over bins of (pixels in bin / all pixels) x |accuracy - mean
+    confidence|, where confidence is the predicted probability of the
+    predicted class. Pixels without a label (IGNORE_INDEX) are left out.
+    """
+
+    def __init__(self, bins: int = 15) -> None:
+        self.bins = bins
+        self.count = np.zeros(bins, dtype=np.int64)
+        self.correct = np.zeros(bins, dtype=np.int64)
+        self.confidence = np.zeros(bins, dtype=np.float64)
+
+    def add(
+        self,
+        confidence: NDArray[np.floating[Any]],
+        prediction: NDArray[np.integer[Any]],
+        reference: NDArray[np.integer[Any]],
+    ) -> None:
+        valid = reference != IGNORE_INDEX
+        conf = np.asarray(confidence, dtype=np.float64)[valid]
+        hit = (prediction == reference)[valid]
+        index = np.minimum((conf * self.bins).astype(np.int64), self.bins - 1)
+        self.count += np.bincount(index, minlength=self.bins)
+        self.correct += np.bincount(index, weights=hit, minlength=self.bins).astype(np.int64)
+        self.confidence += np.bincount(index, weights=conf, minlength=self.bins)
+
+    def ece(self) -> float | None:
+        total = int(self.count.sum())
+        if total == 0:
+            return None
+        used = self.count > 0
+        accuracy = self.correct[used] / self.count[used]
+        mean_conf = self.confidence[used] / self.count[used]
+        return float(np.sum(self.count[used] / total * np.abs(accuracy - mean_conf)))
+
+    def report(self) -> dict[str, Any]:
+        return {"bins": self.bins, "pixels": int(self.count.sum()), "ece": self.ece()}
 
 
 def false_discard_rate(

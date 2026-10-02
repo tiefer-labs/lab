@@ -151,11 +151,14 @@ def export_run(
         for split in splits:
             data = val if split == "val" else cache.load_split(directory, "test", bands=bands)
             fp32 = quantise.score_onnx(files["fp32"], data, mean, std, size, config.evaluation)
+            fp16 = quantise.score_onnx(files["fp16"], data, mean, std, size, config.evaluation)
             int8 = quantise.score_onnx(files["int8"], data, mean, std, size, config.evaluation)
             quant[split] = {
                 "fp32": fp32,
+                "fp16": fp16,
                 "int8": int8,
                 "change": quantise.compare_reports(fp32, int8),
+                "fp16_change": quantise.compare_reports(fp32, fp16),
             }
         report["quantisation"] = quant
 

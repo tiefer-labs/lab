@@ -39,7 +39,7 @@ from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
 from tiefer_lab.models import flexible
-from tiefer_lab.models.cloud_filter import predict_masks
+from tiefer_lab.models.cloud_filter import predict_masks_with_confidence
 from tiefer_lab.tables import header_block
 from tiefer_lab.train import (
     CONFIG_NAME,
@@ -208,8 +208,22 @@ def breakdown(
                 "patches": len(group),
                 "mean_iou": summary["pixel"]["mean_iou"],
                 "false_discard_rate": summary["false_discard_rate"],
+                "cloud_boa": summary["binary"]["cloud"]["median_boa"],
             }
     return out
+
+
+def worst_stratum(strata: dict[str, Any], min_patches: int = 10) -> dict[str, Any] | None:
+    """The stratum with the lowest cloud BOA among those with at least `min_patches`."""
+    candidates = [
+        {"field": field, "value": value, **entry}
+        for field, groups in strata.items()
+        for value, entry in groups.items()
+        if entry.get("cloud_boa") is not None and entry["patches"] >= min_patches
+    ]
+    if not candidates:
+        return None
+    return min(candidates, key=lambda c: c["cloud_boa"])
 
 
 def frame_decisions(
@@ -415,10 +429,15 @@ def evaluate_run(
         num_workers=devices.data_workers(config.data.num_workers),
     )
     scores = Scores()
+    calibration = metrics.Calibration()
     positions: list[int] = []
-    for position, pred, label in predict_masks(model, loader, device, precision):
+    for position, pred, label, confidence in predict_masks_with_confidence(
+        model, loader, device, precision
+    ):
         scores.add(pred, label)
+        calibration.add(confidence, pred, label)
         positions.append(position)
+    strata = breakdown(scores, data.metadata, config.evaluation)
 
     report: dict[str, Any] = {
         "kind": "evaluation",
@@ -446,7 +465,9 @@ def evaluate_run(
             "split_build_date": index["splits"][split].get("build_date"),
         },
         "model": scores.report(config.evaluation),
-        "breakdown": breakdown(scores, data.metadata, config.evaluation),
+        "breakdown": strata,
+        "worst_stratum": worst_stratum(strata),
+        "calibration": calibration.report(),
         "frames": frame_decisions(scores, positions, data.patch_ids, config.evaluation),
     }
     if with_baselines:
