@@ -306,7 +306,8 @@ lab/
       __init__.py                 package version
       py.typed
       config.py                   typed dataclasses, TOML loading and validation
-      metrics.py                  IoU, F1, confusion, frame metrics, false discard rate
+      metrics.py                  IoU, F1, producer's and user's accuracy, frame metrics
+      binary_metrics.py           cloud and shadow BOA, PA, UA, OA per patch, median
       bootstrap.py                confidence intervals
       decisions.py                cloud fraction and send or keep decision
       baselines.py                always send, threshold rule, reference masks
@@ -359,6 +360,7 @@ lab/
     test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
     test_references.py            reference masks: verification stop, encodings, coverage, resume
     test_metrics.py
+    test_binary_metrics.py        BOA, PA, UA and OA per patch, by hand
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

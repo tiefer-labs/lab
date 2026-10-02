@@ -32,10 +32,11 @@ import torch
 from numpy.typing import NDArray
 from torch.utils.data import DataLoader
 
-from tiefer_lab import baselines, bootstrap, decisions, metrics
+from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
 from tiefer_lab.data import cache
 from tiefer_lab.data.dataset import EvalPatches
+from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD
 from tiefer_lab.data.transforms import to_reflectance
 from tiefer_lab.models.cloud_filter import CloudFilterNet, build_model, predict_masks
 from tiefer_lab.tables import header_block
@@ -55,17 +56,29 @@ class TestGuardError(RuntimeError):
 
 
 class Scores:
-    """Per-patch confusion matrices and cloud fractions, for metrics and intervals."""
+    """Per-patch confusion matrices and cloud fractions, for metrics and intervals.
 
-    def __init__(self) -> None:
+    Pixels marked IGNORE_INDEX in the reference or the prediction (no label,
+    or no data in a reference mask) are left out and counted. With
+    `binary_only`, only the cloud against non-cloud measures are reported
+    (for masks that do not separate the four classes).
+    """
+
+    def __init__(self, binary_only: bool = False) -> None:
+        self.binary_only = binary_only
         self.confusions: list[NDArray[np.int64]] = []
         self.true_fraction: list[float] = []
         self.pred_fraction: list[float] = []
         self.pred_shadow: list[float] = []
+        self.ignored_pixels = 0
 
     def add(
         self, prediction: NDArray[np.integer[Any]], reference: NDArray[np.integer[Any]]
     ) -> None:
+        valid = (reference != IGNORE_INDEX) & (prediction != IGNORE_INDEX)
+        if not valid.all():
+            self.ignored_pixels += int((~valid).sum())
+            prediction, reference = prediction[valid], reference[valid]
         self.confusions.append(metrics.confusion_matrix(prediction, reference))
         self.true_fraction.append(decisions.cloud_fraction(reference))
         self.pred_fraction.append(decisions.cloud_fraction(prediction))
@@ -74,9 +87,32 @@ class Scores:
     def __len__(self) -> int:
         return len(self.confusions)
 
+    def binary_report(self, settings: EvaluationConfig, with_intervals: bool) -> dict[str, Any]:
+        cms = np.stack(self.confusions)
+        problems = ("cloud",) if self.binary_only else tuple(binary_metrics.PROBLEMS)
+        out = binary_metrics.summary(cms, problems)
+        if with_intervals:
+            for problem in problems:
+                values = binary_metrics.per_patch(cms, problem)
+                stats = {f"median_{m}": _median_of(values[m]) for m in binary_metrics.MEASURES}
+                intervals = bootstrap.bootstrap(
+                    len(self),
+                    stats,
+                    resamples=settings.bootstrap_resamples,
+                    seed=settings.bootstrap_seed,
+                )
+                out[problem]["intervals"] = {k: i.as_dict() for k, i in intervals.items()}
+        return out
+
     def report(self, settings: EvaluationConfig, with_intervals: bool = True) -> dict[str, Any]:
         if not self.confusions:
             raise ValueError("no patches were scored")
+        if self.binary_only:
+            return {
+                "patches": len(self),
+                "ignored_pixels": self.ignored_pixels,
+                "binary": self.binary_report(settings, with_intervals),
+            }
         cms = np.stack(self.confusions)
         true = np.asarray(self.true_fraction)
         pred = np.asarray(self.pred_fraction)
@@ -87,6 +123,8 @@ class Scores:
             "frame": metrics.frame_metrics(true, pred, thresholds),
             "decision_threshold": settings.decision_threshold,
             "mean_predicted_shadow_fraction": float(np.mean(self.pred_shadow)),
+            "ignored_pixels": self.ignored_pixels,
+            "binary": self.binary_report(settings, with_intervals),
         }
         out["false_discard_rate"] = out["frame"]["thresholds"][
             f"{settings.decision_threshold:.2f}"
@@ -102,6 +140,11 @@ class Scores:
                 ).items()
             }
         return out
+
+
+def _median_of(values: NDArray[np.float64]) -> bootstrap.Statistic:
+    """The median over a resample of patches, leaving out undefined values."""
+    return lambda idx: binary_metrics.median(values[idx])
 
 
 def _statistics(
@@ -246,9 +289,9 @@ def load_model(run_dir: Path, config: Config, which: str, device: torch.device) 
 
 
 def score_mask_function(
-    data: cache.SplitData, predict: Callable[[int], NDArray[np.uint8]]
+    data: cache.SplitData, predict: Callable[[int], NDArray[np.uint8]], binary_only: bool = False
 ) -> Scores:
-    scores = Scores()
+    scores = Scores(binary_only=binary_only)
     for i in range(len(data)):
         scores.add(predict(i), np.asarray(data.labels[i]))
     return scores
@@ -280,10 +323,19 @@ def evaluate_baselines(
     }
     for name, masks in data.reference.items():
         if data.reference_kinds.get(name, "four_class") != "four_class":
-            # A cloud against non-cloud mask has no four classes to score.
+            # A cloud against non-cloud mask (1 cloud, 0 not) is scored on the
+            # cloud problem only: cloud is shown as thick cloud, the rest as clear.
+            def binary_mask(i: int, m: NDArray[np.uint8] = masks) -> NDArray[np.uint8]:
+                raw = np.asarray(m[i])
+                out_mask = np.where(raw == 1, THICK_CLOUD, CLEAR).astype(np.uint8)
+                out_mask[raw == IGNORE_INDEX] = IGNORE_INDEX
+                return out_mask
+
+            ref = score_mask_function(data, binary_mask, binary_only=True)
             out[f"reference_{name}"] = {
                 "description": "mask shipped with the dataset; cloud against non-cloud only",
                 "kind": data.reference_kinds[name],
+                **ref.report(settings),
             }
             continue
 

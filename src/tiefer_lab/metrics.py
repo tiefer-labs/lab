@@ -68,6 +68,16 @@ def overall_accuracy(cm: NDArray[np.integer[Any]]) -> float:
     return float(np.trace(cm) / total) if total else float("nan")
 
 
+def producers_accuracy(cm: NDArray[np.integer[Any]]) -> FloatArray:
+    """Per class: correct pixels over reference pixels of the class (recall)."""
+    return _safe_divide(np.diag(cm).astype(np.float64), cm.sum(axis=1).astype(np.float64))
+
+
+def users_accuracy(cm: NDArray[np.integer[Any]]) -> FloatArray:
+    """Per class: correct pixels over pixels predicted as the class (precision)."""
+    return _safe_divide(np.diag(cm).astype(np.float64), cm.sum(axis=0).astype(np.float64))
+
+
 def pixel_metrics(cm: NDArray[np.integer[Any]]) -> dict[str, Any]:
     iou = per_class_iou(cm)
     f1 = per_class_f1(cm)
@@ -75,6 +85,8 @@ def pixel_metrics(cm: NDArray[np.integer[Any]]) -> dict[str, Any]:
         "classes": list(CLASS_NAMES[: cm.shape[0]]),
         "iou": [_json_float(v) for v in iou],
         "f1": [_json_float(v) for v in f1],
+        "producers_accuracy": [_json_float(v) for v in producers_accuracy(cm)],
+        "users_accuracy": [_json_float(v) for v in users_accuracy(cm)],
         "mean_iou": _json_float(mean_iou(cm)),
         "overall_accuracy": _json_float(overall_accuracy(cm)),
         "confusion_matrix": cm.astype(int).tolist(),
