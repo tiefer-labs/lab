@@ -255,3 +255,47 @@ def test_finishing_step_resumes_after_it_failed(
     data = cache.load_split(directory, "train")
     assert len(data) == 20 and not (directory / "train.progress.json").exists()
     assert sum(cache.read_index(directory)["splits"]["train"]["class_pixels"]) == 20 * 16 * 16
+
+
+def test_bands_are_selected_by_name_at_load_time(tiefer_env: dict[str, Path]) -> None:
+    build_cache.main(["--split", "all", "--synthetic", "--limit", "4", "--patch-size", "32"])
+    directory = cache.cache_dir(build_cache.SYNTHETIC_NAME)
+    index = cache.read_index(directory)
+    assert index["bands"] == ["B02", "B03", "B04", "B08"]
+    full = cache.load_split(directory, "train", mode="memory")
+    wanted = ["B08", "B02"]
+    expected = full.images[:, [3, 0]]
+    for mode in ("memory", "mmap"):
+        data = cache.load_split(directory, "train", mode=mode, bands=wanted)
+        assert data.images.shape == (4, 2, 32, 32)
+        np.testing.assert_array_equal(np.asarray(data.images[1]), expected[1])
+        np.testing.assert_array_equal(np.asarray(data.images[1:3]), expected[1:3])
+        np.testing.assert_array_equal(
+            np.asarray(data.images[2, :, 4:9, 5:7]), expected[2, :, 4:9, 5:7]
+        )
+        np.testing.assert_array_equal(np.asarray(data.images), expected)
+    mean, std = cache.normalisation(index, wanted)
+    all_mean, all_std = cache.normalisation(index)
+    np.testing.assert_array_equal(mean, all_mean[[3, 0]])
+    np.testing.assert_array_equal(std, all_std[[3, 0]])
+    with pytest.raises(cache.CacheError, match=r"\['B11'\] are not among them"):
+        cache.load_split(directory, "train", bands=["B02", "B11"])
+
+
+def test_memory_mapped_band_selection_feeds_the_training_dataset(
+    tiefer_env: dict[str, Path],
+) -> None:
+    import torch
+
+    from tiefer_lab.data.dataset import TrainPatches
+    from tiefer_lab.data.transforms import Photometric
+
+    build_cache.main(["--split", "train", "--synthetic", "--limit", "3", "--patch-size", "32"])
+    directory = cache.cache_dir(build_cache.SYNTHETIC_NAME)
+    index = cache.read_index(directory)
+    bands = ["B04", "B03", "B02"]
+    data = cache.load_split(directory, "train", mode="mmap", bands=bands)
+    assert isinstance(data.images, cache.BandSelection)
+    mean, std = cache.normalisation(index, bands)
+    image, _ = TrainPatches(data, mean, std, 32, Photometric(0.0, 0.0))[0]
+    assert image.shape == (3, 32, 32) and image.dtype == torch.float32

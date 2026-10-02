@@ -5,7 +5,9 @@
 
 Layout of `$TIEFER_DATA_DIR/<cache-name>/`:
 
-- `<split>_images.npy`: uint16 digital numbers, shape (patches, 4, height, width)
+- `<split>_images.npy`: uint16 digital numbers, shape (patches, bands, height, width);
+  the stored bands are listed by name in the index (`bands`), and a model's
+  band set is selected from them at load time
 - `<split>_labels.npy`: uint8 class indexes, shape (patches, height, width)
 - `<split>_ref_<name>.npy`: optional reference masks, same shape as labels
 - `index.json`: patch IDs, metadata, dataset revision, build dates, counts and
@@ -117,13 +119,68 @@ class SplitData:
         return int(self.images.shape[0])
 
 
-def load_split(directory: Path, split: str, mode: LoadMode = "auto") -> SplitData:
+def band_positions(index: dict[str, Any], bands: Sequence[str] | None) -> list[int]:
+    """Positions of `bands` (names such as "B02") among the bands the cache stores."""
+    stored = list(index["bands"])
+    if bands is None:
+        return list(range(len(stored)))
+    missing = [b for b in bands if b not in stored]
+    if missing:
+        raise CacheError(f"the cache stores bands {stored}; {missing} are not among them")
+    return [stored.index(b) for b in bands]
+
+
+class BandSelection:
+    """A memory-mapped image array that shows only some bands, read on access.
+
+    Indexing works like a (patches, selected bands, height, width) array:
+    the first index selects patches, the rest applies to the selected bands.
+    """
+
+    def __init__(self, base: NDArray[np.uint16], positions: Sequence[int]) -> None:
+        self.base = base
+        self.positions = list(positions)
+        self.shape = (base.shape[0], len(self.positions), *base.shape[2:])
+        self.dtype = base.dtype
+        self.ndim = base.ndim
+
+    def __len__(self) -> int:
+        return int(self.shape[0])
+
+    def __getitem__(self, key: Any) -> NDArray[np.uint16]:
+        parts = key if isinstance(key, tuple) else (key,)
+        first, rest = parts[0], parts[1:]
+        block = np.asarray(self.base[first])
+        if isinstance(first, int | np.integer):
+            out = block[self.positions]
+            return out[rest] if rest else out
+        out = block[:, self.positions]
+        return out[(slice(None), *rest)] if rest else out
+
+    def __array__(self, dtype: Any = None, copy: Any = None) -> NDArray[np.uint16]:
+        out = self[:]
+        return out.astype(dtype) if dtype is not None else out
+
+
+# Patches per chunk when only some bands are read into memory.
+SELECT_CHUNK = 64
+
+
+def load_split(
+    directory: Path, split: str, mode: LoadMode = "auto", bands: Sequence[str] | None = None
+) -> SplitData:
     """Load one split, checking it against the index.
+
+    `bands` selects bands by name (for example ["B02", "B03", "B04", "B08"]);
+    by default every stored band is loaded. One cache with all bands thus
+    serves models with any band set.
 
     `auto` loads the arrays into memory when they fit (see MEMORY_SHARE) and
     memory-maps them otherwise.
     """
     index = read_index(directory)
+    positions = band_positions(index, bands)
+    all_bands = positions == list(range(len(index["bands"])))
     entry = index.get("splits", {}).get(split)
     if not entry or not entry.get("complete"):
         raise CacheError(f"split {split!r} is not complete in {paths.portable(directory)}")
@@ -134,13 +191,25 @@ def load_split(directory: Path, split: str, mode: LoadMode = "auto") -> SplitDat
         if not f.is_file():
             raise CacheError(f"missing cache file {paths.portable(f)}")
     if mode == "auto":
-        size = sum(f.stat().st_size for f in files)
+        image_bytes = files[0].stat().st_size * len(positions) / len(index["bands"])
+        size = image_bytes + sum(f.stat().st_size for f in files[1:])
         available = available_memory_bytes()
         in_memory = available is not None and size <= MEMORY_SHARE * available
     else:
         in_memory = mode == "memory"
     mmap: Literal["r"] | None = None if in_memory else "r"
-    images = np.load(files[0], mmap_mode=mmap, allow_pickle=False)
+    stored = np.load(files[0], mmap_mode="r", allow_pickle=False)
+    images: Any
+    if all_bands:
+        images = np.load(files[0], mmap_mode=mmap, allow_pickle=False)
+    elif in_memory:
+        images = np.empty((stored.shape[0], len(positions), *stored.shape[2:]), stored.dtype)
+        for start in range(0, stored.shape[0], SELECT_CHUNK):
+            images[start : start + SELECT_CHUNK] = stored[start : start + SELECT_CHUNK][
+                :, positions
+            ]
+    else:
+        images = BandSelection(stored, positions)
     labels = np.load(files[1], mmap_mode=mmap, allow_pickle=False)
     reference = {
         n: np.load(reference_path(directory, split, n), mmap_mode=mmap, allow_pickle=False)
@@ -154,8 +223,10 @@ def load_split(directory: Path, split: str, mode: LoadMode = "auto") -> SplitDat
         )
     if images.dtype != np.uint16 or labels.dtype != np.uint8:
         raise CacheError(f"unexpected dtypes {images.dtype}, {labels.dtype}")
-    if images.ndim != 4 or images.shape[1] != len(index["bands"]):
-        raise CacheError(f"images have shape {images.shape}, expected (N, 4, H, W)")
+    if stored.ndim != 4 or stored.shape[1] != len(index["bands"]):
+        raise CacheError(
+            f"images have shape {stored.shape}, expected (N, {len(index['bands'])}, H, W)"
+        )
     return SplitData(
         split=split,
         images=images,
@@ -167,16 +238,19 @@ def load_split(directory: Path, split: str, mode: LoadMode = "auto") -> SplitDat
     )
 
 
-def normalisation(index: dict[str, Any]) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
-    """Per-band mean and standard deviation of the training split."""
+def normalisation(
+    index: dict[str, Any], bands: Sequence[str] | None = None
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
+    """Per-band mean and standard deviation of the training split, for `bands`."""
     stats = index.get("normalisation")
     if not stats:
         raise CacheError("the cache has no normalisation statistics; build the train split first")
     if stats.get("computed_on") != "train":
         raise CacheError("normalisation statistics must come from the training split")
+    positions = band_positions(index, bands)
     return (
-        np.asarray(stats["mean"], dtype=np.float32),
-        np.asarray(stats["std"], dtype=np.float32),
+        np.asarray(stats["mean"], dtype=np.float32)[positions],
+        np.asarray(stats["std"], dtype=np.float32)[positions],
     )
 
 
