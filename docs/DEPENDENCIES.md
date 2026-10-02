@@ -43,6 +43,17 @@ Versions are ranges in `pyproject.toml` and exact in `uv.lock`. Licences are as 
 
 ---
 
+## 2A. CI-only tools
+
+Tools that only check the repository in CI. They are not in `uv.lock` and never run inside the project's environment; they are pinned with hashes in `.github/ci-tools/requirements.txt`, generated from `.github/ci-tools/requirements.in` (the command is in its header). Their indirect dependencies are listed in that file.
+
+| Tool | Why it is needed | Licence |
+| :--- | :---: | :---: |
+| `shellcheck-py` 0.11.0.1 | installs ShellCheck 0.11.0 for `make shellcheck` | MIT (`shellcheck-py`); GPL-3.0 (ShellCheck itself, run in CI, not distributed) |
+| `pip-audit` 2.10.1 | audits the locked environment for known vulnerabilities | Apache Software License |
+
+---
+
 ## 3. All locked packages
 
 Every package in `uv.lock`, including indirect dependencies, with the licence its metadata declares.
@@ -128,5 +139,6 @@ This table is also the licence source of the software bill of materials: `python
 
 ## Changelog
 
+- 2 October 2026: CI-only tools (section 2A).
 - 2 October 2026: section 3 is the licence source of the software bill of materials.
 - 1 October 2026: first version for milestone L1.

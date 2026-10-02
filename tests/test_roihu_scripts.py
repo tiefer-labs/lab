@@ -426,3 +426,20 @@ def test_evaluate_and_export_cover_every_band_set() -> None:
     assert default is not None
     for text in default.group(1).split():
         Perturbation.parse(text)
+
+
+def test_every_shell_script_is_in_the_shellcheck_list(repo_root: Path) -> None:
+    """make shellcheck covers hpc/*.sh, hpc/*.sbatch and jetson/*.sh; no script hides elsewhere."""
+    listed = subprocess.run(
+        ["git", "ls-files", "hpc", "jetson"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    for name in listed:
+        path = repo_root / name
+        first = path.read_bytes()[:64].split(b"\n", 1)[0]
+        is_shell = first.startswith(b"#!") and b"sh" in first.rsplit(b"/", 1)[-1]
+        if is_shell or name.endswith((".sh", ".sbatch")):
+            assert name.endswith((".sh", ".sbatch")), f"{name}: rename to .sh so shellcheck sees it"

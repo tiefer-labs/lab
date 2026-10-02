@@ -6,7 +6,7 @@
 # an already activated environment, for example: make RUN= test
 RUN ?= uv run --frozen
 
-.PHONY: setup lint typecheck test check smoke requirements results
+.PHONY: setup lint typecheck test check smoke requirements results shellcheck
 
 # Packages that only torch needs. On CSC Roihu they come with the PyTorch
 # module, so hpc/roihu/requirements.txt leaves them out.
@@ -44,3 +44,10 @@ requirements:
 
 results:
 	$(RUN) python -m tiefer_lab.results
+
+# Every shell script under hpc/ and jetson/, including the Slurm batch files.
+# CI installs shellcheck from .github/ci-tools/requirements.txt.
+SHELL_SCRIPTS = $(shell git ls-files 'hpc/*.sh' 'hpc/*.sbatch' 'jetson/*.sh')
+SHELLCHECK ?= shellcheck
+shellcheck:
+	$(SHELLCHECK) --external-sources --shell=bash $(SHELL_SCRIPTS)
