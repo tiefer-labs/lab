@@ -279,6 +279,13 @@ def evaluate_baselines(
         **scored.report(settings),
     }
     for name, masks in data.reference.items():
+        if data.reference_kinds.get(name, "four_class") != "four_class":
+            # A cloud against non-cloud mask has no four classes to score.
+            out[f"reference_{name}"] = {
+                "description": "mask shipped with the dataset; cloud against non-cloud only",
+                "kind": data.reference_kinds[name],
+            }
+            continue
 
         def reference_mask(i: int, m: NDArray[np.uint8] = masks) -> NDArray[np.uint8]:
             return np.asarray(m[i])

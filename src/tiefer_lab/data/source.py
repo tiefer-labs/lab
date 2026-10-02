@@ -115,8 +115,7 @@ IMAGE_ITEM = 0
 LABEL_ITEM = 1
 
 # Reference masks of established algorithms (card). They are in TACO_NAME_EXTRA,
-# not in the Level-1C samples, and are not read yet; reading them needs the item
-# layout of that variant. As {name: item position}.
+# not in the Level-1C samples, and are read by `build_cache --references`.
 REFERENCE_MASK_NAMES: tuple[str, ...] = (
     "cloudmask_qa60",
     "cloudmask_sen2cor",
@@ -127,7 +126,81 @@ REFERENCE_MASK_NAMES: tuple[str, ...] = (
     "cloudmask_unetmobv2_v2",
     "cloudmask_sensei_v2",
 )
-REFERENCE_MASK_ITEMS: Mapping[str, int] = {}
+# Item name of each mask in a sample of the extra table: {mask name: item name}.
+# TODO(verify) from the survey (extra.samples[*].items[*].name). Empty until then.
+REFERENCE_MASK_ITEMS: Mapping[str, str] = {}
+# Metadata field shared by a Level-1C row and its row in the extra table.
+# TODO(verify) from the survey (extra.link_to_l1c). None until then.
+REFERENCE_LINK_FIELD: str | None = None
+
+
+@dataclass(frozen=True)
+class MaskEncoding:
+    """How one reference mask is encoded, read from the survey.
+
+    `kind` is "four_class" when the mask has our four classes, or "cloud"
+    when it only separates cloud from non-cloud. `codes` maps every raw value
+    to a class index (four_class), to 1 for cloud and 0 for non-cloud (cloud),
+    or to IGNORE_INDEX for no data. Any other raw value is an error.
+    """
+
+    kind: str
+    codes: Mapping[int, int]
+
+    def __post_init__(self) -> None:
+        if self.kind not in ("four_class", "cloud"):
+            raise ValueError(f"kind must be four_class or cloud, got {self.kind!r}")
+
+
+# {mask name: encoding}. TODO(verify) from the survey (value histograms and
+# band descriptions of every mask item) and the card. Empty until then.
+REFERENCE_ENCODINGS: Mapping[str, MaskEncoding] = {}
+
+
+def reference_encoding(name: str) -> MaskEncoding:
+    """The verified encoding of a reference mask, or a clear stop."""
+    require_verified("REFERENCE_LINK_FIELD", REFERENCE_LINK_FIELD)
+    require_verified(f"REFERENCE_MASK_ITEMS[{name!r}]", REFERENCE_MASK_ITEMS.get(name))
+    return require_verified(f"REFERENCE_ENCODINGS[{name!r}]", REFERENCE_ENCODINGS.get(name))
+
+
+def encode_mask(
+    raw: NDArray[np.integer[Any]], encoding: MaskEncoding, name: str
+) -> NDArray[np.uint8]:
+    """Apply a verified encoding; a raw value it does not list is an error."""
+    unknown = sorted(int(v) for v in np.unique(raw) if int(v) not in encoding.codes)
+    if unknown:
+        raise DataSourceError(f"{name}: raw values {unknown} are not in its verified encoding")
+    lookup = np.zeros(max(encoding.codes) + 1, dtype=np.uint8)
+    for code, value in encoding.codes.items():
+        lookup[code] = value
+    return lookup[raw.astype(np.int64)]
+
+
+def open_extra_table(taco: str = TACO_NAME_EXTRA) -> Any:
+    """The extra table (reference masks); its columns are printed, not checked."""
+    import tacoreader
+
+    table = tacoreader.load(taco)
+    print(f"extra metadata columns: {', '.join(sorted(map(str, table.columns)))}", flush=True)
+    return table
+
+
+def read_references(
+    extra: Any, position: int, names: Sequence[str]
+) -> dict[str, NDArray[np.uint8]]:
+    """Read and encode the named masks of row `position` of the extra table."""
+    sample = extra.read(position)
+    items = [str(n) for n in sample["tortilla:id"]]
+    out = {}
+    for name in names:
+        item = REFERENCE_MASK_ITEMS[name]
+        if item not in items:
+            raise DataSourceError(f"item {item!r} for {name} is not in the extra sample: {items}")
+        raw = _read_bands(sample.read(items.index(item)), (1,), 1)[0]
+        out[name] = encode_mask(raw, reference_encoding(name), name)
+    return out
+
 
 # Metadata columns that describe file layout rather than the scene.
 _LAYOUT_PREFIXES = ("internal:", "tortilla:offset", "tortilla:length", "tortilla:file_format")
@@ -171,7 +244,7 @@ def map_labels(
     return lookup[raw.astype(np.int64)]
 
 
-def require_verified(name: str, value: Any) -> Any:
+def require_verified[T](name: str, value: T | None) -> T:
     """Stop with a clear message when a fact the code needs is not verified yet."""
     if value is None:
         raise DataSourceError(
@@ -412,16 +485,11 @@ def read_patch(table: Any, position: int, bands: Sequence[str] = USED_BANDS) -> 
     label = map_labels(raw_label.astype(np.int64))
     if label.shape != image.shape[1:]:
         raise DataSourceError(f"label shape {label.shape} differs from image {image.shape[1:]}")
-    reference = {
-        name: map_labels(_read_bands(sample.read(item), (1,), 1)[0].astype(np.int64))
-        for name, item in REFERENCE_MASK_ITEMS.items()
-    }
     return Patch(
         patch_id=str(row[PATCH_ID_FIELD]),
         image=image.astype(np.uint16),
         label=label,
         metadata=row_metadata(row),
-        reference=reference,
     )
 
 

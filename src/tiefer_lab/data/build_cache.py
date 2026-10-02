@@ -483,6 +483,120 @@ def build_real_split(
     target.progress.unlink()
 
 
+# Reference masks -------------------------------------------------------------
+
+
+def build_references(
+    directory: Path,
+    split: str,
+    names: Sequence[str] | None = None,
+    workers: int = 4,
+    max_rate: float | None = None,
+) -> None:
+    """Add the reference masks of established algorithms to a complete split.
+
+    Reads them from the extra table, row by row in the split's order, so every
+    reference algorithm is scored by our code on our patches. Stops with a
+    clear message until the link field, the item names and the encodings are
+    verified (source.reference_encoding). A patch without a row in the extra
+    table gets IGNORE_INDEX everywhere; the count is recorded in the index.
+    Resumable through `<split>.references.json`.
+    """
+    index = cache.read_index(directory)
+    entry = index["splits"].get(split)
+    if not entry or not entry.get("complete"):
+        raise cache.CacheError(f"split {split!r} is not complete; build it before its references")
+    names = list(names or source.REFERENCE_MASK_NAMES)
+    encodings = {name: source.reference_encoding(name) for name in names}
+    field = source.require_verified("REFERENCE_LINK_FIELD", source.REFERENCE_LINK_FIELD)
+    keys = []
+    for m in entry["metadata"]:
+        if field not in m:
+            raise cache.CacheError(f"the {split} metadata has no {field!r}; it cannot be linked")
+        keys.append(str(m[field]))
+    backoff = http.Backoff()
+    extra = backoff.call(source.open_extra_table)
+    lookup: dict[str, int] = {}
+    for position, value in enumerate(extra[field]):
+        if str(value) in lookup:
+            raise cache.CacheError(f"{field!r} is not unique in the extra table: {value!r}")
+        lookup[str(value)] = position
+    rows = [lookup.get(k) for k in keys]
+    missing = sum(r is None for r in rows)
+    print(f"{split}: {len(rows) - missing} of {len(rows)} patches have reference masks", flush=True)
+    labels = np.load(cache.labels_path(directory, split), mmap_mode="r")
+    n, height, width = labels.shape
+    progress_file = directory / f"{split}.references.json"
+    done = 0
+    if progress_file.is_file():
+        state = json.loads(progress_file.read_text(encoding="utf-8"))
+        if state.get("names") == names:
+            done = int(state["done"])
+    mode: Literal["r+", "w+"] = "r+" if done else "w+"
+    arrays = {
+        name: np.lib.format.open_memmap(
+            _partial(cache.reference_path(directory, split, name)),
+            mode=mode,
+            dtype=np.uint8,
+            shape=(n, height, width),
+        )
+        for name in names
+    }
+
+    def save() -> None:
+        for a in arrays.values():
+            a.flush()
+        progress_file.write_text(json.dumps({"names": names, "done": done}))
+
+    limiter = http.RateLimiter(max_rate) if max_rate else None
+
+    def read(row: int | None) -> dict[str, NDArray[np.uint8]]:
+        if row is None:
+            return {name: np.full((height, width), source.IGNORE_INDEX, np.uint8) for name in names}
+
+        def once() -> dict[str, NDArray[np.uint8]]:
+            if limiter is not None:
+                limiter.acquire()
+            return source.read_references(extra, row, names)
+
+        return backoff.call(once)
+
+    pool = ThreadPoolExecutor(max_workers=max(1, workers))
+    pending: dict[int, Future[dict[str, NDArray[np.uint8]]]] = {}
+    submitted = done
+    try:
+        for i in range(done, n):
+            while submitted < min(i + max(1, workers) * 4, n):
+                pending[submitted] = pool.submit(read, rows[submitted])
+                submitted += 1
+            masks = pending.pop(i).result()
+            for name in names:
+                if masks[name].shape != (height, width):
+                    raise cache.CacheError(f"{name} of patch {i} is {masks[name].shape}")
+                arrays[name][i] = masks[name]
+            done = i + 1
+            if done % SAVE_EVERY == 0 or done == n:
+                save()
+                print(f"{split} references: {done}/{n}", flush=True)
+    except BaseException:
+        save()
+        print(f"{split} references: stopped after {done} of {n}; run again to continue", flush=True)
+        raise
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
+    arrays.clear()  # release the memory maps before the files are moved
+    for name in names:
+        path = cache.reference_path(directory, split, name)
+        os.replace(_partial(path), path)
+    entry["reference_masks"] = names
+    entry["reference_kinds"] = {name: encodings[name].kind for name in names}
+    entry["reference_missing"] = missing
+    entry["reference_link_field"] = field
+    cache.write_index(directory, index)
+    progress_file.unlink()
+    print(f"{split}: reference masks {', '.join(names)} added", flush=True)
+
+
 # Shards ----------------------------------------------------------------------
 #
 # Several CPU jobs can build one split side by side: shard i of n reads its
@@ -773,6 +887,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="merge the N complete shards of the split into the cache",
     )
     parser.add_argument(
+        "--references",
+        action="store_true",
+        help="add the reference masks of the extra table to a complete split",
+    )
+    parser.add_argument(
         "--max-rate",
         type=float,
         default=None,
@@ -830,7 +949,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         workers = download_workers(args.workers)
         bands = source.L1C_BAND_NAMES if args.bands == "all" else source.USED_BANDS
         for split in splits:
-            if args.merge:
+            if args.references:
+                build_references(directory, split, workers=workers, max_rate=args.max_rate)
+            elif args.merge:
                 merge_shards(directory, split, args.merge, taco, revision)
             elif args.shard:
                 shard, shards = args.shard

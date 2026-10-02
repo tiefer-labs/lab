@@ -52,7 +52,8 @@ All of these are defined once, in `src/tiefer_lab/data/source.py`.
 | Quality field and value | `label_type` = `high` (values high, scribble, nolabel) | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time |
 | Patch ID field | `roi_id` (also `old_roi_id`), used in every report | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
 | Row key | `tortilla:id`, used only to sort rows and to resume a build | `tacoreader` source |
-| Reference masks | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2`, in the extra variant | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); not read by the cache builder yet |
+| Reference masks: how a row of the extra table links to a Level-1C row, the item name of each mask, and how each mask is encoded (four classes, or cloud against non-cloud) | `REFERENCE_LINK_FIELD`, `REFERENCE_MASK_ITEMS`, `REFERENCE_ENCODINGS` | TODO(verify) from the survey; until then `build_cache --references` stops with a clear message |
+| Reference masks | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2`, in the extra variant | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); added to a complete split by `build_cache --references` once their encodings are verified |
 
 ---
 
@@ -157,6 +158,7 @@ Add `--limit <n>` for a small subset. The build is resumable: run the same comma
 
 ## Changelog
 
+- 2 October 2026: reference masks from the extra table, added to a split once their link and encodings are verified.
 - 2 October 2026: extra training patches (scribble and nolabel) away from val and test, with the facts still to verify; 2000 x 2000 patches stay out.
 - 2 October 2026: all 13 bands (`--bands all`), shards, a rate cap and a disk estimate.
 - 2 October 2026: a build with another selection never replaces an existing split without `--restart`.

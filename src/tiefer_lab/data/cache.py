@@ -117,6 +117,8 @@ class SplitData:
     metadata: list[dict[str, Any]]
     reference: dict[str, NDArray[np.uint8]] = field(default_factory=dict)
     in_memory: bool = False
+    # "four_class" or "cloud" per reference mask (build_cache --references).
+    reference_kinds: dict[str, str] = field(default_factory=dict)
 
     def __len__(self) -> int:
         return int(self.images.shape[0])
@@ -238,6 +240,9 @@ def load_split(
         metadata=list(entry.get("metadata", [])),
         reference=reference,
         in_memory=in_memory,
+        reference_kinds={
+            n: str(entry.get("reference_kinds", {}).get(n, "four_class")) for n in names
+        },
     )
 
 

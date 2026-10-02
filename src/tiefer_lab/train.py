@@ -95,6 +95,7 @@ def subset(data: cache.SplitData, limit: int | None) -> cache.SplitData:
         patch_ids=data.patch_ids[:limit],
         metadata=data.metadata[:limit],
         reference={k: v[:limit] for k, v in data.reference.items()},
+        reference_kinds=dict(data.reference_kinds),
     )
 
 

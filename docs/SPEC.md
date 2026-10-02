@@ -357,6 +357,7 @@ lab/
     test_http.py                  backoff on HTTP 429, token never printed
     test_survey.py                survey on a synthetic table with real GeoTIFF items
     test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
+    test_references.py            reference masks: verification stop, encodings, coverage, resume
     test_metrics.py
     test_bootstrap.py
     test_decisions.py
