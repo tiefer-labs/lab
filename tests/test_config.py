@@ -109,3 +109,50 @@ def test_l1_full_runs_its_cosine_schedule_to_the_end(repo_root: Path) -> None:
         config_from_dict({"name": "x", "train": {"ema_decay": 0.5}})
     with pytest.raises(ConfigError):
         config_from_dict({"name": "x", "train": {"epochs": 3, "warmup_epochs": 3}})
+
+
+def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
+    import dataclasses
+
+    from tiefer_lab.models import flexible
+    from tiefer_lab.models.cloud_filter import count_parameters
+
+    def load(name: str) -> Config:
+        return load_config(repo_root / "configs" / f"{name}.toml")
+
+    targets = {
+        "l2_flex_0p5m": (0.4e6, 0.6e6),
+        "l2_flex_1m": (0.8e6, 1.2e6),
+        "l2_flex_4m": (3.0e6, 5.0e6),
+        "l2_flex_22m": (20e6, 30e6),
+        "l2_flex_cnx_21m": (20e6, 30e6),
+        "l2_spec_1m": (0.8e6, 1.2e6),
+        "l2_spec_22m": (20e6, 30e6),
+    }
+    reference = load("l2_flex_1m")
+    for name, (low, high) in targets.items():
+        config = load(name)
+        n = count_parameters(flexible.build(config.model, config.data.bands))
+        assert low <= n <= high, f"{name}: {n} parameters"
+        # The ladder shares every training setting with the reference run.
+        expected_train = (
+            reference.train
+            if config.model.input == "flexible"
+            else dataclasses.replace(reference.train, band_sets=(), distill_weight=0.0)
+        )
+        assert config.train == expected_train, name
+    variants = {
+        "l2_flex_1m_zero": ("model", "flexible_design"),
+        "l2_flex_1m_classweights": ("train", "class_weighting"),
+        "l2_flex_1m_focal": ("train", "focal_gamma"),
+        "l2_flex_1m_nodistill": ("train", "distill_weight"),
+    }
+    for name, (section, key) in variants.items():
+        config = load(name)
+        for part in ("data", "model", "train", "evaluation", "export"):
+            a, b = (
+                dataclasses.asdict(getattr(config, part)),
+                dataclasses.asdict(getattr(reference, part)),
+            )
+            changed = {k for k in a if a[k] != b[k]}
+            assert changed == ({key} if part == section else set()), (name, part, changed)

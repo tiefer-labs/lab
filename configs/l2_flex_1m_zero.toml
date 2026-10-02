@@ -1,0 +1,56 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Milestone L2: as l2_flex_1m with the zero design: the input design comparison.
+# Generated layout; the settings shared by the l2 family are listed in hpc/roihu/plan.md.
+# Band sets: B02 B03 B04 (red, green, blue); plus B08 (near infrared); plus B11 B12
+# (TODO(verify) that these are the short-wave infrared bands, from the Sentinel-2
+# mission documentation); all 13 bands.
+name = "l2_flex_1m_zero"
+
+[data]
+cache_name = "cloudsen12-l1c-all"
+crop_size = 256
+batch_size = 128
+eval_batch_size = 8
+num_workers = 16
+load_mode = "auto"
+brightness = 0.1
+contrast = 0.1
+bands = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B09", "B10", "B11", "B12"]
+
+[model]
+widths = [32, 64, 128, 256, 512]
+architecture = "separable_unet"
+input = "flexible"
+flexible_design = "zero"
+
+[train]
+seed = 0
+epochs = 150
+learning_rate = 0.008
+weight_decay = 0.0001
+dice_weight = 1.0
+patience = 150
+min_improvement = 0.001
+log_every = 20
+warmup_epochs = 5
+ema_decay = 0.999
+band_sets = [["B02", "B03", "B04"], ["B02", "B03", "B04", "B08"], ["B02", "B03", "B04", "B08", "B11", "B12"], ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B09", "B10", "B11", "B12"]]
+distill_weight = 1.0
+class_weighting = "none"
+focal_gamma = 0.0
+
+[evaluation]
+thresholds = [0.3, 0.5, 0.7]
+decision_threshold = 0.5
+bootstrap_resamples = 1000
+bootstrap_seed = 0
+
+[export]
+opset = 17
+input_size = 512
+calibration_patches = 256
+max_logit_difference = 0.01
+min_argmax_agreement = 0.999

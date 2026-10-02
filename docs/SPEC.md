@@ -258,6 +258,17 @@ lab/
     smoke.toml                    tiny run, minutes on CPU or MPS
     l1_base.toml                  full training on one GH200 GPU
     l1_full.toml                  l1_base to the end of its schedule, with warm-up and moving average
+    l2_flex_1m.toml               band-flexible, about 1 M parameters: reference run of the family
+    l2_flex_1m_zero.toml          as l2_flex_1m with the zero input design
+    l2_flex_0p5m.toml             size ladder, about 0.5 M parameters
+    l2_flex_4m.toml               size ladder, about 4 M parameters
+    l2_flex_22m.toml              size ladder, about 22 M parameters, separable U-Net
+    l2_flex_cnx_21m.toml          size ladder, about 21 M parameters, ConvNeXt-style U-Net
+    l2_spec_1m.toml               four-band specialist, about 1 M parameters (control)
+    l2_spec_22m.toml              four-band specialist, about 22 M parameters (control)
+    l2_flex_1m_classweights.toml  as l2_flex_1m with class weights
+    l2_flex_1m_focal.toml         as l2_flex_1m with a focal term
+    l2_flex_1m_nodistill.toml     as l2_flex_1m without self-distillation
   docs/
     SPEC.md                       sections 1 to 17 of the build brief, unchanged
     STYLE.md                      the Markdown standard (section 18), for every Tiefer repository
