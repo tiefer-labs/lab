@@ -71,8 +71,18 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 
 ---
 
+## 7. Product decision
+
+| Assumption | Reason | Revisit when |
+| :--- | :---: | :---: |
+| The band-flexible model is the product if, on the four-band set (blue, green, red, near infrared), its result is within the confidence interval of the four-band specialist of the same size; otherwise specialists are shipped per sensor | One model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation |
+| Target sensors are optical satellites whose bands differ; high resolution satellites usually carry blue, green, red and near infrared only, for example SPOT-7 NAOMI ([eoPortal](https://directory.eoportal.org/web/eoportal/satellite-missions/s/spot-6-7), TODO(verify) the page) | Specifications of newer target satellites are not public, so nothing about them is assumed | a target sensor's specification is available |
+
+---
+
 ## Changelog
 
+- 2 October 2026: section 7, product decision between the band-flexible model and four-band specialists.
 - 2 October 2026: section 6, training: run to the end of the schedule, warm-up and moving average, with the measured reason.
 - 1 October 2026: the PyTorch module assumption is checked on Roihu.
 - 1 October 2026: the TACO format assumption is checked against the dataset card, version 1.1.2.
