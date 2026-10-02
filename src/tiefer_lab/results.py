@@ -484,16 +484,29 @@ def compute_section(reports: Reports) -> str:
 
 
 LIMITATIONS = [
-    "Training data is Sentinel-2 at 10 m ground sampling; Tiefer's target sensors are very "
-    "high resolution, where clouds and shadows look different.",
-    "Only four bands are used (blue, green, red, near infrared); classic cloud algorithms "
-    "also use shortwave infrared, which the target sensors lack.",
+    "Training and validation data is Sentinel-2 Level-1C at 10 m ground sampling only; no "
+    "data from Tiefer's target sensors was used. Tiefer's target sensors are very high "
+    "resolution, where clouds and shadows look different.",
+    "Sensor robustness is simulated on Sentinel-2 (rescaling, gain, offset, noise and blur); "
+    "a robustness result is evidence about those perturbations, not about a real sensor.",
+    "Every result holds for the band set and model size stated next to it. The L1 models use "
+    "four bands (blue, green, red, near infrared); the band-flexible L2 models are scored per "
+    "band set.",
+    "Thin cloud and cloud shadow are hard to label even for people, which bounds what any "
+    "model can score on them; the human agreement reported for CloudSEN12+ is TODO(verify) "
+    "from the dataset paper (docs/DATA.md, section 9).",
+    "The test split is independent of the training patches, not of the dataset: it shares "
+    "the labelling protocol, sensor and processing level (docs/DATASETS.md).",
+    "Only 509 x 509 patches are used; the 2000 x 2000 patches are left out (docs/DATA.md, "
+    "section 5A).",
     "The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with "
     "its own calibration, noise and compression.",
     "No space environment effects are covered: radiation, vacuum and thermal behaviour of "
     "the onboard computer are not tested.",
     "Hardware measurements, when present, come from an NVIDIA Jetson Orin, which is "
     "flight-like reference hardware, not flight hardware.",
+    "No agency or operator standard is claimed to be met; docs/STANDARDS.md lists every "
+    "document as not read.",
 ]
 
 REPRODUCE = """```bash
