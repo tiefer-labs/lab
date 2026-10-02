@@ -314,6 +314,7 @@ lab/
       tiefer-logo.svg             the logo in brand blue
       tiefer-logo-white.svg       the logo in white, for dark backgrounds
     DATA.md                       data card with verified dataset facts and links
+    DATASETS.md                   dataset roles, unchecked candidates, harmonisation, comparison metrics
     ASSUMPTIONS.md                sensor and data assumptions to revisit
     REQUIREMENTS.md               every requirement and acceptance target with its verification
     STANDARDS.md                  standards matrix: area, document and clause, evidence, status
