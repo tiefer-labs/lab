@@ -325,6 +325,7 @@ lab/
       train.py                    python -m tiefer_lab.train
       evaluate.py                 python -m tiefer_lab.evaluate, with the test guard
       results.py                  python -m tiefer_lab.results, builds docs/RESULTS.md
+      experiments.py              python -m tiefer_lab.experiments: one row per run
       smoke.py                    python -m tiefer_lab.smoke, the full local smoke pipeline
       tables.py                   Markdown table helper for every generated table
       data/
@@ -376,6 +377,7 @@ lab/
     test_binary_metrics.py        BOA, PA, UA and OA per patch, by hand
     test_flexible_model.py        band-flexible models, ConvNeXt-style U-Net, loss terms
     test_flexible_pipeline.py     train, evaluate and export a flexible model and a specialist
+    test_experiments.py           reports/experiments.md from the run folders
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

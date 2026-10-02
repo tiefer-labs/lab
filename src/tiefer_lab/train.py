@@ -276,6 +276,15 @@ def train(
             "start_time": metadata.now(),
             "status": "running",
         }
+    slurm = meta["resumed"][-1] if resume else meta["provenance"]
+    meta.setdefault("sessions", []).append(
+        {
+            "start": metadata.now(),
+            "end": None,
+            "job_id": slurm.get("slurm", {}).get("job_id"),
+            "gpus": 1 if device.type == "cuda" else 0,
+        }
+    )
     _write_json(meta_path, meta)
 
     model = flexible.build(config.model, bands).to(device)
@@ -502,6 +511,7 @@ def train(
     meta["best_epoch"] = best_epoch
     meta["best_val_mean_iou"] = best_metric if best_epoch > 0 else None
     meta["end_time"] = metadata.now()
+    meta["sessions"][-1]["end"] = meta["end_time"]
     _write_json(meta_path, meta)
     return status
 
