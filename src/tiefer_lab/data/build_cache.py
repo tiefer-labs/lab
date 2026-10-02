@@ -142,7 +142,7 @@ def _finish_split(
 
 
 def _progress_path(directory: Path, split: str) -> Path:
-    return directory / f"{split}.progress.json"
+    return cache.progress_path(directory, split)
 
 
 def _partial(path: Path) -> Path:

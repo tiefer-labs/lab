@@ -116,7 +116,7 @@ squeue --me
 ls /scratch/<project>/tiefer-lab/runs/slurm/
 ```
 
-The smoke job checks the environment, trains `configs/smoke.toml` for a few steps and evaluates it on validation; its outputs are labelled smoke and are never results. If the full cache from step 3 does not exist yet, it first builds a tiny cache (32 training and 16 validation patches) under `/scratch/<project>/tiefer-lab/smoke/` and skips the timing run.
+The smoke job checks the environment, trains `configs/smoke.toml` for a few steps and evaluates it on validation; its outputs are labelled smoke and are never results. If the train and val splits of the full cache from step 3 are not complete yet (missing, or `data.sbatch` still building them), it builds a tiny cache (32 training and 16 validation patches) in `/scratch/<project>/tiefer-lab/smoke/data/` instead and skips the timing run. Its log names the folder it uses (`full cache: ...` or `tiny smoke cache: ...`). The smoke job only reads the full cache and never writes to it, so it can run while `data.sbatch` is running.
 
 With the full cache, the job ends with a timing run of `configs/l1_base.toml` (one epoch cut to 50 steps). Its log line `full epoch ... s (estimated)` is the time per epoch of the real training on this GPU; multiply by the number of epochs to plan the `--time` of the training job:
 
@@ -262,6 +262,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 2 October 2026: the smoke job uses the full cache only when its train and val splits are complete, and otherwise builds its tiny cache in its own folder.
 - 1 October 2026: back to the standard CSC way of submitting jobs: sbatch's default export, CPU work and the data job from `roihu-cpu.csc.fi`, GPU setup and GPU jobs from `roihu-gpu.csc.fi` (SSH or the web interface); `gpu_shell.sh` and the `--export=NONE` workarounds removed.
 - 1 October 2026: troubleshooting row for jobs that end within seconds with an empty log.
 - 1 October 2026: source links corrected for `$TMPDIR`, the `/scratch` cleanup, the PyTorch module and the venv rule; `python-data/3.12-31.03` is marked as observed only.

@@ -16,8 +16,11 @@ Arrays are plain `.npy` files read without pickle.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -57,6 +60,11 @@ def labels_path(directory: Path, split: str) -> Path:
 
 def reference_path(directory: Path, split: str, name: str) -> Path:
     return directory / f"{split}_ref_{name}.npy"
+
+
+def progress_path(directory: Path, split: str) -> Path:
+    """Progress file of a split whose build is under way or was interrupted."""
+    return directory / f"{split}.progress.json"
 
 
 def read_index(directory: Path) -> dict[str, Any]:
@@ -174,3 +182,40 @@ def normalisation(index: dict[str, Any]) -> tuple[NDArray[np.float32], NDArray[n
 
 def is_synthetic(index: dict[str, Any]) -> bool:
     return bool(index.get("source") == SYNTHETIC_SOURCE)
+
+
+def splits_ready(directory: Path, splits: Sequence[str]) -> bool:
+    """True when every split is complete in the index and none is being rebuilt.
+
+    The index exists as soon as the first split is finished, so it alone does
+    not show that a build (for example data.sbatch) has finished.
+    """
+    try:
+        index = read_index(directory)
+    except (CacheError, ValueError):
+        return False
+    for split in splits:
+        entry = index.get("splits", {}).get(split)
+        if not entry or not entry.get("complete") or progress_path(directory, split).exists():
+            return False
+    return True
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m tiefer_lab.data.cache",
+        description="Exit 0 when the named splits of a cache are complete and not being built.",
+    )
+    parser.add_argument("command", choices=["ready"])
+    parser.add_argument("name", help="cache folder name in $TIEFER_DATA_DIR")
+    parser.add_argument("splits", nargs="+", choices=SPLITS)
+    args = parser.parse_args(argv)
+    directory = cache_dir(args.name)
+    ready = splits_ready(directory, args.splits)
+    state = "ready" if ready else "not ready"
+    print(f"cache {paths.portable(directory)}: {', '.join(args.splits)} {state}", flush=True)
+    return 0 if ready else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

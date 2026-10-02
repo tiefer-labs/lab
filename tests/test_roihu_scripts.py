@@ -208,13 +208,98 @@ def test_data_job_accepts_both_architectures_only(roihu_env: dict[str, str]) -> 
     assert "aarch64 | x86_64) ;;" in text and "gh200" not in text
 
 
-def test_smoke_builds_a_tiny_cache_when_the_index_is_missing() -> None:
-    smoke = (ROIHU / "smoke.sbatch").read_text()
-    assert 'if [[ ! -f "${TIEFER_DATA_DIR}/${cache_name}/index.json" ]]' in smoke
-    assert 'export TIEFER_DATA_DIR="${TIEFER_SCRATCH}/smoke/data"' in smoke
-    assert "--split train --limit 32" in smoke and "--split val --limit 16" in smoke
-    # The tiny cache must be built before the first training command.
-    assert smoke.index("--limit 32") < smoke.index("tiefer_lab.train")
+def _smoke_env(roihu_env: dict[str, str], tmp_path: Path) -> dict[str, str]:
+    """Run smoke.sbatch off Roihu: python3 runs the real cache check and logs every other call."""
+    import sys
+
+    log = tmp_path / "python.log"
+    (tmp_path / "bin" / "python3").write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "-m" ] && [ "$2" = "tiefer_lab.data.cache" ]; then\n'
+        f'  exec "{sys.executable}" "$@"\n'
+        "fi\n"
+        f'echo "$TIEFER_DATA_DIR | $*" >> "{log}"\n'
+    )
+    (tmp_path / "bin" / "python3").chmod(0o755)
+    venv = tmp_path / "projappl" / "venv-aarch64" / "bin"
+    venv.mkdir(parents=True)
+    (venv / "activate").write_text("")
+    return {**roihu_env, "STUB_ARCH": "aarch64", "SLURM_JOB_ID": "7"}
+
+
+def _full_cache(tmp_path: Path, splits: dict[str, bool], building: tuple[str, ...] = ()) -> Path:
+    """A full cache folder as data.sbatch leaves it, possibly while still building."""
+    from tiefer_lab.data import cache
+
+    directory = tmp_path / "scratch" / "data" / "cloudsen12-l1c-high"
+    entries = {split: {"complete": done, "count": 100} for split, done in splits.items()}
+    cache.write_index(directory, {"format": cache.CACHE_FORMAT, "splits": entries})
+    (directory / "train_images.npy").write_bytes(b"full cache data")
+    for split in building:
+        cache.progress_path(directory, split).write_text('{"done": 50}')
+    return directory
+
+
+def _tree(directory: Path) -> dict[str, bytes]:
+    return {
+        str(p.relative_to(directory)): p.read_bytes() for p in directory.rglob("*") if p.is_file()
+    }
+
+
+@pytest.mark.parametrize(
+    "state",
+    ["missing", "train done, val being built", "train and val done, val rebuilding"],
+)
+def test_smoke_builds_its_tiny_cache_apart_and_never_touches_the_full_cache(
+    roihu_env: dict[str, str], tmp_path: Path, state: str
+) -> None:
+    env = _smoke_env(roihu_env, tmp_path)
+    full = tmp_path / "scratch" / "data"
+    if state == "train done, val being built":
+        _full_cache(tmp_path, {"train": True}, building=("val",))
+    elif state == "train and val done, val rebuilding":
+        _full_cache(tmp_path, {"train": True, "val": True}, building=("val",))
+    full.mkdir(parents=True, exist_ok=True)
+    before = _tree(full)
+    result = _run("smoke.sbatch", [], env)
+    assert result.returncode == 0, result.stderr
+    assert "full cache not ready" in result.stdout and "it is not touched" in result.stdout
+    assert _tree(full) == before, "the full cache folder is unchanged"
+    calls = (tmp_path / "python.log").read_text().splitlines()
+    smoke_dir = str(tmp_path / "scratch" / "smoke" / "data")
+    builds = [c for c in calls if "build_cache" in c]
+    assert len(builds) == 2 and all(c.startswith(f"{smoke_dir} |") for c in builds)
+    assert "--split train --limit 32" in builds[0] and "--split val --limit 16" in builds[1]
+    assert all(c.startswith(f"{smoke_dir} |") for c in calls if "tiefer_lab." in c)
+    assert not any("l1_base" in c for c in calls), "no timing run on the tiny cache"
+
+
+def test_smoke_reads_a_complete_full_cache_without_building(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    env = _smoke_env(roihu_env, tmp_path)
+    _full_cache(tmp_path, {"train": True, "val": True, "test": False}, building=("test",))
+    full = tmp_path / "scratch" / "data"
+    before = _tree(full)
+    result = _run("smoke.sbatch", [], env)
+    assert result.returncode == 0, result.stderr
+    calls = (tmp_path / "python.log").read_text().splitlines()
+    assert not any("build_cache" in c for c in calls)
+    assert any("configs/l1_base.toml" in c for c in calls), "timing run on the full cache"
+    assert all(c.startswith(f"{full} |") for c in calls if "tiefer_lab." in c)
+    assert _tree(full) == before
+    assert not (tmp_path / "scratch" / "smoke").exists()
+
+
+def test_smoke_stops_when_the_smoke_folder_is_the_full_cache_folder(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    env = _smoke_env(roihu_env, tmp_path)
+    env["TIEFER_DATA_DIR"] = str(tmp_path / "scratch" / "smoke" / "data")
+    result = _run("smoke.sbatch", [], env)
+    assert result.returncode == 1 and "is the full cache folder" in result.stderr
+    log = tmp_path / "python.log"
+    assert not log.exists() or "build_cache" not in log.read_text()
 
 
 # 'module' as a shell function, like Lmod: not written for set -euo pipefail.

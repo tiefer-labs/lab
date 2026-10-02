@@ -209,7 +209,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
-| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache first when the full cache is missing |
+| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache in its own folder when the train and val splits of the full cache are not complete, and only reads the full cache |
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
 | `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
@@ -226,7 +226,7 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export; 
 3. Clone with `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` (public, no key) and set `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>` and how to remove such a line.
 4. `bash hpc/roihu/setup.sh` on the CPU side (`venv-x86_64`, on `roihu-cpu.csc.fi`) and on the GPU side (`venv-aarch64`, on `roihu-gpu.csc.fi`).
 5. Build the data cache with `data.sbatch`.
-6. `bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch` on `gputest`, check the log; it builds a tiny cache first when the full cache is missing.
+6. `bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch` on `gputest`, check the log; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
 7. `bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml` on `gpumedium`, one GPU per job, optionally two seeds as two jobs with `SEED`; follow with `squeue --me`; resubmit with the run ID if the time limit is reached.
 8. `evaluate.sbatch`, then `export.sbatch`, the final test with `FINAL=1` and `REASON`, `usage.sh` per job, and `bash hpc/roihu/collect.sh <run-id>`; copy the archive to the founder's computer (for example with `scp` from the computer) and unpack it into the repository, where the results are processed.
 
