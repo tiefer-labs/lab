@@ -91,3 +91,19 @@ def test_tracked_files_are_clean(repo_root: Path, tracked_files: list[Path]) -> 
         text = (repo_root / rel).read_text(encoding="utf-8", errors="replace")
         problems.extend(f"{rel}: {finding}" for finding in findings(text))
     assert not problems, "\n".join(problems)
+
+
+PRETRAINED = re.compile(
+    r"torch\.hub|load_state_dict_from_url|pretrained\s*=\s*True|from_pretrained|timm\.create_model"
+)
+
+
+def test_no_pretrained_weights_are_loaded(repo_root: Path) -> None:
+    """NOTICE.md states that every model is trained from random initialisation."""
+    offenders = [
+        f"{path.relative_to(repo_root)}: {line.strip()}"
+        for path in sorted((repo_root / "src").rglob("*.py"))
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if PRETRAINED.search(line)
+    ]
+    assert not offenders, "\n".join(offenders)

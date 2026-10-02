@@ -20,6 +20,12 @@ Trained models are not part of this repository and are not covered by any licenc
 
 ---
 
+## Pretrained weights
+
+No pretrained weights are used. Every model is trained from random initialisation on the data in [docs/DATA.md](docs/DATA.md), so no third-party model licence applies to a trained model.
+
+---
+
 ## Trademarks
 
 The Tiefer name and logo (`docs/assets/`) are trademarks of Tiefer and are not licensed. MPL 2.0 section 2.3 grants no rights to trademarks, service marks or logos.

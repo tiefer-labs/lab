@@ -33,7 +33,7 @@ Release folders are written in Part B of milestone L1, after the runs on CSC Roi
    (cd runs/<run-id>/export && sha256sum cloud_filter_*.onnx) > models/cloud-filter/<version>/SHA256SUMS
    ```
 
-4. Write `MODEL_CARD.md` following `docs/STYLE.md`, section 7, with every number taken from a report file.
+4. Copy `models/cloud-filter/MODEL_CARD_TEMPLATE.md` to `MODEL_CARD.md` in the release folder and fill it following `docs/STYLE.md`, section 7, with every number taken from a report file.
 
 ---
 

@@ -349,6 +349,7 @@ lab/
   models/
     cloud-filter/
       README.md                   what release folders contain (filled in Part B)
+      MODEL_CARD_TEMPLATE.md      model card to copy into each release folder
   reports/
     README.md                     what each report file is and which script writes it
     test_log.md                   log of every test split evaluation (header only in Part A)
