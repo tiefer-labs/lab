@@ -165,6 +165,22 @@ Evaluated with the same code and splits as the model:
 - Output: JSON in `$TIEFER_REPORTS_DIR` with all provenance fields from section 8.
 - **Test guard:** `--split test` requires the flag `--final` and appends an entry to `reports/test_log.md` (date, run ID, git commit, reason). Without `--final` it refuses to run. A test checks this.
 
+### Operational design domain and fail-safe behaviour
+
+The inputs the filter is designed for (`tiefer_lab.onboard.Domain`). A frame outside them is not classified: it is sent and flagged.
+
+| Property | Inside the domain | Validated so far |
+| :--- | :---: | :---: |
+| Bands | exactly the bands of the model's band set, in its order | Sentinel-2 Level-1C bands only |
+| Values | top-of-atmosphere reflectance in [0, 2] after the reflectance scale (1e-4 for Sentinel-2 digital numbers) | Sentinel-2 Level-1C |
+| Ground sampling distance | 0.5 to 20 m; the frame is resampled to 10 m before inference | 10 m, and resolution changes simulated by rescaling Sentinel-2 |
+| Invalid pixels | at most 1 percent saturated, empty (all bands 0) or out of range | not applicable |
+| Frame size | at least 32 pixels per side; large frames run in 512-pixel tiles overlapping by 64 | 509 x 509 patches; tiling tested on synthetic frames |
+| Other sensors | outside the validated domain until measured on that sensor's data | none |
+
+- **Fail-safe:** wrong band count, non-finite values, too many invalid pixels, a resolution or size outside the domain, a model file whose SHA-256 is not the expected one, or any error during inference end in "send" with a status and a flag. A doubtful frame costs downlink, never a lost frame.
+- `tiefer_lab.onboard.failsafe_check` runs nine such cases and a valid cloudy control; the acceptance target is that none of them is discarded (`tests/test_onboard.py`, `reports/acceptance.md`).
+
 ---
 
 ## 10. Export and quantisation
@@ -498,6 +514,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 2 October 2026: section 9 adds the operational design domain and the fail-safe behaviour of `tiefer_lab.onboard`. Before, the specification did not say which inputs the filter is designed for or what happens outside them.
 - 2 October 2026: section 8 adds milestone L2, one band-flexible model family (input with availability flags in two designs, band sets drawn per batch, self-distillation, a size ladder from 0.5 M to about 22 M parameters, four-band specialists as control, export per band set). The 1.0 million parameter budget now applies to the L1 configs only. Before, the model took four bands only and the budget applied to every model.
 - 1 October 2026: `hpc/roihu/gpu_shell.sh` removed; GPU setup and GPU jobs run from `roihu-gpu.csc.fi`.
 - 1 October 2026: job scripts no longer use `--export=NONE`; `job_prelude.sh` keeps only the module check and `module purge`.
