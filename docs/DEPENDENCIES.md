@@ -47,6 +47,8 @@ Versions are ranges in `pyproject.toml` and exact in `uv.lock`. Licences are as 
 
 Every package in `uv.lock`, including indirect dependencies, with the licence its metadata declares.
 
+This table is also the licence source of the software bill of materials: `python -m tiefer_lab.sbom` writes CycloneDX 1.5 JSON with every locked package, its version, the SHA-256 of its files and its licence from this table, and stops when a locked package has no row here. CI runs it on every push and shows the result in the job summary.
+
 | Package | Locked version | Licence (package metadata) |
 | :--- | :---: | :---: |
 | `affine` | 3.0.1 | BSD-3-Clause |
@@ -126,4 +128,5 @@ Every package in `uv.lock`, including indirect dependencies, with the licence it
 
 ## Changelog
 
+- 2 October 2026: section 3 is the licence source of the software bill of materials.
 - 1 October 2026: first version for milestone L1.

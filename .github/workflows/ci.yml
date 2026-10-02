@@ -37,3 +37,18 @@ jobs:
 
       - name: Lint, type check and test
         run: make check
+
+      - name: Software bill of materials
+        run: |
+          uv run --frozen python -m tiefer_lab.sbom --output "$RUNNER_TEMP/sbom.cdx.json"
+          {
+            echo "### Software bill of materials (CycloneDX 1.5)"
+            echo
+            echo '<details><summary>sbom.cdx.json</summary>'
+            echo
+            echo '```json'
+            cat "$RUNNER_TEMP/sbom.cdx.json"
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
