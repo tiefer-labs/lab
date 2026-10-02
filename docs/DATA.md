@@ -156,8 +156,49 @@ Add `--limit <n>` for a small subset. The build is resumable: run the same comma
 
 ---
 
+## 11. Data sheet
+
+Short answers to the usual data sheet questions, pointing to the section that holds the detail. Anything the card does not state is `TODO(verify)`.
+
+| Question | Answer |
+| :--- | :---: |
+| **Motivation** | |
+| Why is the data used? | to train and evaluate a cloud and shadow filter that decides on board whether a frame is worth sending |
+| Who created the dataset? | the CloudSEN12+ authors, published by the TACO Foundation (section 1, section 9) |
+| **Composition** | |
+| What is one instance? | one Sentinel-2 Level-1C patch of 509 x 509 pixels with 13 bands and a four-class label (section 2) |
+| How many instances? | per split in `index.json` and the richness report; not yet measured here (section 5) |
+| Is it a sample of a larger set? | yes: high quality labels and 509 x 509 patches only (sections 1 and 5) |
+| Are labels complete? | high quality labels are dense; scribble labels are partial and nolabel patches have none (section 5A) |
+| Is there personal or sensitive data? | none known; satellite images at 10 m do not show individuals |
+| **Collection and labelling** | |
+| How were images selected and labelled? | TODO(verify) from the Scientific Data paper (section 9) |
+| Human agreement on thin cloud and shadow | TODO(verify) from the Scientific Data paper (section 9) |
+| **Preprocessing in this repository** | |
+| What is done to the data? | selection, band selection at load time, reflectance scale, normalisation from the training split (sections 3, 6 and 10) |
+| **Uses** | |
+| What should it not be used for? | conclusions about other sensors, raw on-board data, compression or space environment effects (section 8) |
+| **Distribution and maintenance** | |
+| Licence | CC0 1.0 (section 1) |
+| Revision used | recorded in `index.json` at build time (section 2) |
+
+---
+
+## 12. Richness report
+
+`python -m tiefer_lab.data.richness <cache-name>` writes `$TIEFER_REPORTS_DIR/data/richness_<cache-name>.json` for every complete split of a built cache:
+
+- patch count and the pixel share of each class;
+- patches per cloud cover bin (thick plus thin cloud as a share of labelled pixels: below 0.1, 0.1 to 0.3, 0.3 to 0.7, 0.7 to 0.9, 0.9 and above) and patches that contain shadow;
+- distinct values of the verified fields `roi_id`, `label_type` and `real_proj_shape`.
+
+Other metadata fields are listed by name only. Their meaning is not verified from the card, so the report draws no conclusion about geography, season or land cover from them; section 7 stays open until such a field is verified.
+
+---
+
 ## Changelog
 
+- 2 October 2026: data sheet (section 11) and richness report (section 12).
 - 2 October 2026: reference masks from the extra table, added to a split once their link and encodings are verified.
 - 2 October 2026: extra training patches (scribble and nolabel) away from val and test, with the facts still to verify; 2000 x 2000 patches stay out.
 - 2 October 2026: all 13 bands (`--bands all`), shards, a rate cap and a disk estimate.

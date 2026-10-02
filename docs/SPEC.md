@@ -382,6 +382,7 @@ lab/
         http.py                   backoff on HTTP 429 and the Hugging Face token
         sensor.py                 sensor robustness augmentations and evaluation perturbations
         survey.py                 python -m tiefer_lab.data.survey: counts, splits, encodings
+      richness.py               python -m tiefer_lab.data.richness: classes, cloud cover, verified fields
         cache.py                  cache reading, in memory or memory-mapped
         dataset.py                PyTorch datasets for train and evaluation
         transforms.py             reflectance, normalisation, crops, augmentation, padding
@@ -420,6 +421,7 @@ lab/
     test_http.py                  backoff on HTTP 429, token never printed
     test_survey.py                survey on a synthetic table with real GeoTIFF items
     test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
+    test_richness.py              richness report: cloud cover bins, verified fields only
     test_references.py            reference masks: verification stop, encodings, coverage, resume
     test_metrics.py
     test_binary_metrics.py        BOA, PA, UA and OA per patch, by hand
