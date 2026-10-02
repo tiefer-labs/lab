@@ -96,6 +96,9 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-REP-05` | A software bill of materials lists every locked package with its licence and hashes, and is generated in CI | `tests/test_sbom.py::test_every_locked_package_is_a_component_with_licence_and_hash`, `tests/test_sbom.py::test_missing_licence_row_stops` |
 | `REQ-REP-06` | No document claims that a standard is met for an agency or operator; standards matrix statuses are valid | `tests/test_wording.py::test_no_tracked_document_claims_compliance`, `tests/test_wording.py::test_standards_matrix_rows_have_a_valid_status` |
 | `REQ-REP-07` | No pretrained weights are loaded | `tests/test_public_hygiene.py::test_no_pretrained_weights_are_loaded` |
+| `REQ-REP-08` | Every shell script under hpc/ and jetson/ is checked by shellcheck in CI | `tests/test_roihu_scripts.py::test_every_shell_script_is_in_the_shellcheck_list`, `.github/workflows/ci.yml` |
+| `REQ-REP-09` | An accepted vulnerability finding has a reason and expires within 90 days | `tests/test_audit_exceptions.py::test_invalid_entries_fail`, `.github/workflows/audit.yml` |
+| `REQ-REP-10` | The test coverage floor is never lowered | `tests/test_coverage_floor.py::test_lowering_the_floor_fails` |
 
 ---
 
@@ -140,5 +143,6 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 2 October 2026: shellcheck, accepted vulnerability findings and the coverage floor.
 - 2 October 2026: richness report, every band set, software bill of materials, wording and pretrained weights requirements.
 - 2 October 2026: first version, with the requirements and acceptance targets of milestone L2.
