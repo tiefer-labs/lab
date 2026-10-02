@@ -226,3 +226,60 @@ class OnboardFilter:
             return FrameResult(decisions.decide(cloud, self.threshold), cloud, shadow, "ok")
         except Exception as err:  # fail-safe: any error sends the frame
             return self._send("error", [f"{type(err).__name__}: {err}"])
+
+
+def failsafe_check() -> dict[str, Any]:
+    """Run invalid, missing, saturated and out-of-domain frames through the filter.
+
+    Uses a fixed pixel-wise model that would call every bright pixel thick
+    cloud, and frames that are bright (cloudy) where they are valid, so a
+    frame is only sent because the fail-safe rules sent it. Returns the
+    number of cases and how many of them ended in a discarded frame ("keep").
+    """
+    conv = nn.Conv2d(2, 4, 1)
+    bias = torch.zeros(4)
+    bias[1] = -5.0
+    weight = torch.zeros(4, 2, 1, 1)
+    weight[1, 0] = 10.0
+    conv.weight = nn.Parameter(weight)
+    conv.bias = nn.Parameter(bias)
+    zero, one = np.zeros(2, np.float32), np.ones(2, np.float32)
+    domain = Domain(bands=2)
+    cloudy = np.full((2, 200, 200), 8000, np.uint16)
+    nan = cloudy.astype(np.float32)
+    nan[0, 0, 0] = np.nan
+    saturated = cloudy.copy()
+    saturated[:, :80] = 65535
+    empty = cloudy.copy()
+    empty[:, :40] = 0
+    out_of_range = cloudy.copy()
+    out_of_range[0, :40] = 30000
+    cases: dict[str, tuple[NDArray[Any], float]] = {
+        "wrong band count": (cloudy[:1], TRAINING_GSD_M),
+        "extra band": (np.concatenate([cloudy, cloudy[:1]]), TRAINING_GSD_M),
+        "non-finite": (nan, TRAINING_GSD_M),
+        "saturated": (saturated, TRAINING_GSD_M),
+        "empty": (empty, TRAINING_GSD_M),
+        "out of range": (out_of_range, TRAINING_GSD_M),
+        "too small": (cloudy[:, :10, :10], TRAINING_GSD_M),
+        "resolution outside the domain": (cloudy, 100.0),
+    }
+    results = {
+        name: OnboardFilter(conv, zero, one, domain, tile=128, overlap=16).process(frame, gsd)
+        for name, (frame, gsd) in cases.items()
+    }
+
+    class Broken(nn.Module):
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            raise RuntimeError("simulated failure")
+
+    results["error during inference"] = OnboardFilter(Broken(), zero, one, domain).process(cloudy)
+    valid = OnboardFilter(conv, zero, one, domain, tile=128, overlap=16).process(cloudy)
+    return {
+        "cases": len(results),
+        "discarded": sum(r.decision == "keep" for r in results.values()),
+        "control_valid_cloudy_frame": valid.decision,
+        "results": {
+            name: {"decision": r.decision, "status": r.status} for name, r in results.items()
+        },
+    }

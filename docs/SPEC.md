@@ -351,6 +351,8 @@ lab/
       results.py                  python -m tiefer_lab.results, builds docs/RESULTS.md
       experiments.py              python -m tiefer_lab.experiments: one row per run
       onboard.py                  fail-safe decision per frame, model hash check, tiled large frames
+      acceptance.py               python -m tiefer_lab.acceptance: reports/acceptance.md
+      requirements.py             traceability check of docs/REQUIREMENTS.md
       smoke.py                    python -m tiefer_lab.smoke, the full local smoke pipeline
       tables.py                   Markdown table helper for every generated table
       data/
@@ -406,6 +408,7 @@ lab/
     test_experiments.py           reports/experiments.md from the run folders
     test_sensor.py                rescaling, gain, offset, noise and blur
     test_onboard.py               tiled inference, fail-safe decisions, corrupted model files
+    test_acceptance.py            acceptance targets, minimum and target judged separately
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

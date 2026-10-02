@@ -137,3 +137,10 @@ def test_corrupted_model_files_stop_inference(tmp_path: Path) -> None:
         onboard.verify_model_file(tmp_path / "flipped.pt", expected)
     missing = _filter(model_path=tmp_path / "missing.pt", expected_sha256=expected)
     assert missing.process(_frame()).decision == "send"
+
+
+def test_failsafe_check_counts_no_discarded_frame() -> None:
+    out = onboard.failsafe_check()
+    assert out["cases"] == 9 and out["discarded"] == 0
+    # The control shows the check would see a discard: a valid cloudy frame is kept.
+    assert out["control_valid_cloudy_frame"] == "keep"
