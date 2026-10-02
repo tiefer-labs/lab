@@ -2,24 +2,26 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Lint, type check and tests on CPU. Tests use synthetic arrays only.
+# Lint, type check and tests on CPU, each as its own check. Tests use
+# synthetic arrays only.
 name: CI
 
 on:
   push:
   pull_request:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,12 +37,72 @@ jobs:
       - name: Install locked environment
         run: uv sync --frozen
 
-      - name: Lint, type check and test
-        run: make check
+      - name: Lint and format check
+        run: make lint
 
+  typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install locked environment
+        run: uv sync --frozen
+
+      - name: Type check
+        run: make typecheck
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install locked environment
+        run: uv sync --frozen
+
+      - name: Test
+        run: make test
+
+  sbom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The generator uses the standard library only (Python 3.12 of the runner).
       - name: Software bill of materials
+        env:
+          PYTHONPATH: src
         run: |
-          uv run --frozen python -m tiefer_lab.sbom --output "$RUNNER_TEMP/sbom.cdx.json"
+          python3 -m tiefer_lab.sbom --output "$RUNNER_TEMP/sbom.cdx.json"
           {
             echo "### Software bill of materials (CycloneDX 1.5)"
             echo
