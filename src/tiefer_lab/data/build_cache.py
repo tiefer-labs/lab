@@ -936,9 +936,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             build_synthetic_split(directory, split, args.limit, args.patch_size, args.seed)
     else:
         directory = cache.cache_dir(args.name or DEFAULT_NAME)
-        revision = args.revision or source.dataset_revision()
-        if revision is None:
-            print("warning: dataset revision could not be read; recorded as unknown", flush=True)
+        revision = args.revision
+        if revision is None and not args.references:
+            revision = source.dataset_revision()
+            if revision is None:
+                print(
+                    "warning: dataset revision could not be read; recorded as unknown", flush=True
+                )
         token = (
             "set"
             if http.configure_token()
