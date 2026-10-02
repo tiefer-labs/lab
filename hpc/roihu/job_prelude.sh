@@ -1,4 +1,7 @@
 # shellcheck shell=bash
+# "return N || exit N" stops a sourced file with return and an executed one with
+# exit; shellcheck reads the exit as unreachable (SC2317), so that check is off here.
+# shellcheck disable=SC2317
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
