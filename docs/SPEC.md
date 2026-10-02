@@ -354,6 +354,7 @@ lab/
         source.py                 CloudSEN12+ access with tacoreader
         build_cache.py            python -m tiefer_lab.data.build_cache
         http.py                   backoff on HTTP 429 and the Hugging Face token
+        sensor.py                 sensor robustness augmentations and evaluation perturbations
         survey.py                 python -m tiefer_lab.data.survey: counts, splits, encodings
         cache.py                  cache reading, in memory or memory-mapped
         dataset.py                PyTorch datasets for train and evaluation
@@ -399,6 +400,7 @@ lab/
     test_flexible_model.py        band-flexible models, ConvNeXt-style U-Net, loss terms
     test_flexible_pipeline.py     train, evaluate and export a flexible model and a specialist
     test_experiments.py           reports/experiments.md from the run folders
+    test_sensor.py                rescaling, gain, offset, noise and blur
     test_bootstrap.py
     test_decisions.py
     test_baselines.py

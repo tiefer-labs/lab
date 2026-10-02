@@ -34,7 +34,7 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
-from tiefer_lab.data import cache
+from tiefer_lab.data import cache, sensor
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
@@ -368,8 +368,14 @@ def evaluate_run(
     device_name: str = "auto",
     allow_synthetic: bool = False,
     band_set: Sequence[str] | None = None,
+    perturbation: str | None = None,
 ) -> Path:
-    """Evaluate a run on one split; a band-flexible run on one band set."""
+    """Evaluate a run on one split; a band-flexible run on one band set.
+
+    `perturbation` (for example "rescale=0.5" or "noise=0.01") perturbs every
+    input patch in a fixed way (data/sensor.py) to measure the cost of a
+    sensor effect; the report name and the report record it.
+    """
     check_test_guard(split, final, reason)
     config = load_config(run_dir / CONFIG_NAME)
     run_meta = json.loads((run_dir / METADATA_NAME).read_text(encoding="utf-8"))
@@ -398,7 +404,13 @@ def evaluate_run(
         model.set_band_set(band_set or bands)
     evaluated_bands = list(band_set or bands)
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]] = DataLoader(
-        EvalPatches(data, mean, std, multiple=32),
+        EvalPatches(
+            data,
+            mean,
+            std,
+            multiple=32,
+            perturbation=sensor.Perturbation.parse(perturbation) if perturbation else None,
+        ),
         batch_size=config.data.eval_batch_size,
         num_workers=devices.data_workers(config.data.num_workers),
     )
@@ -425,6 +437,7 @@ def evaluate_run(
         },
         "config": config_to_dict(config),
         "band_set": evaluated_bands,
+        "perturbation": perturbation,
         "data": {
             "cache": paths.portable(directory),
             "source": index.get("source"),
@@ -443,6 +456,8 @@ def evaluate_run(
         report["baselines"] = evaluate_baselines(base, val, config.evaluation)
 
     suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
+    if perturbation:
+        suffix += "_" + sensor.Perturbation.parse(perturbation).name
     out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -461,6 +476,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--checkpoint", default="best", choices=["best", "last"])
     parser.add_argument(
         "--band-set", default=None, help="bands of a band-flexible run, for example B02,B03,B04"
+    )
+    parser.add_argument(
+        "--perturb", default=None, help="a fixed sensor perturbation, for example rescale=0.5"
     )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
@@ -482,6 +500,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             device_name=args.device,
             allow_synthetic=args.allow_synthetic,
             band_set=args.band_set.split(",") if args.band_set else None,
+            perturbation=args.perturb,
         )
     except (TestGuardError, TrainingError, cache.CacheError, ValueError) as err:
         print(f"error: {err}", file=sys.stderr)

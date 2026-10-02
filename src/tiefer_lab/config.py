@@ -46,11 +46,27 @@ class DataConfig:
     max_val_patches: int | None = None
     # Bands loaded from the cache, by name; a band-flexible model takes all 13.
     bands: tuple[str, ...] = USED_BANDS
+    # Sensor robustness augmentations (data/sensor.py); all off by default.
+    rescale_min: float = 1.0
+    rescale_max: float = 1.0
+    gain_jitter: float = 0.0
+    offset_jitter: float = 0.0
+    noise_std: float = 0.0
+    blur_sigma: float = 0.0
 
     def __post_init__(self) -> None:
         _check(len(self.bands) >= 1, "bands: at least one")
         _check(all(b in L1C_BANDS for b in self.bands), f"bands must be among {L1C_BANDS}")
         _check(len(set(self.bands)) == len(self.bands), "bands must not repeat")
+        _check(
+            0.25 <= self.rescale_min <= self.rescale_max <= 4.0, "rescale: 0.25 <= min <= max <= 4"
+        )
+        _check(
+            0 <= self.gain_jitter < 0.5 and 0 <= self.offset_jitter < 0.1, "gain or offset jitter"
+        )
+        _check(
+            0 <= self.noise_std <= 0.1 and 0 <= self.blur_sigma <= 3.0, "noise_std or blur_sigma"
+        )
         _check(self.crop_size >= 32 and self.crop_size % 32 == 0, "crop_size: multiple of 32")
         _check(self.batch_size >= 1 and self.eval_batch_size >= 1, "batch sizes must be >= 1")
         _check(self.num_workers >= 0, "num_workers must be >= 0")

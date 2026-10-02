@@ -118,3 +118,10 @@ def test_specialist_reads_four_bands_from_the_13_band_cache(
     )
     assert report["band_set"] == list(USED_BANDS)
     assert np.isfinite(report["model"]["pixel"]["overall_accuracy"])
+    # A fixed sensor perturbation is recorded in the report and its name.
+    assert evaluate.main([*common, "--perturb", "rescale=0.5"]) == 0
+    perturbed = json.loads(
+        (tiefer_env["TIEFER_REPORTS_DIR"] / "evaluation" / "spec_val_rescale=0.5.json").read_text()
+    )
+    assert perturbed["perturbation"] == "rescale=0.5"
+    assert perturbed["model"]["pixel"]["pixels"] < report["model"]["pixel"]["pixels"]

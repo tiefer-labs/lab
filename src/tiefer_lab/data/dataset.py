@@ -12,7 +12,7 @@ import torch
 from numpy.typing import NDArray
 from torch.utils.data import Dataset
 
-from tiefer_lab.data import source, transforms
+from tiefer_lab.data import sensor, source, transforms
 from tiefer_lab.data.cache import SplitData
 
 
@@ -31,12 +31,14 @@ class TrainPatches(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         std: NDArray[np.float32],
         crop_size: int,
         photometric: transforms.Photometric,
+        robustness: sensor.Robustness | None = None,
     ) -> None:
         self.data = data
         self.mean = mean
         self.std = std
         self.crop_size = crop_size
         self.photometric = photometric
+        self.robustness = robustness or sensor.Robustness()
         self.epoch = 0
         self._rng: np.random.Generator | None = None
         self._rng_key: tuple[int, int] | None = None
@@ -58,10 +60,27 @@ class TrainPatches(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         rng = self._generator()
         dn = np.asarray(self.data.images[index])
         label = np.asarray(self.data.labels[index])
-        dn, label = transforms.random_crop(dn, label, self.crop_size, rng)
+        r = self.robustness
+        generator = (
+            torch.Generator().manual_seed(int(rng.integers(2**62)))
+            if (r.rescales or r.gain_jitter or r.offset_jitter or r.noise_std or r.blur_sigma)
+            else None
+        )
+        scale = sensor.draw_scale(r, generator) if generator is not None else 1.0
+        crop = max(8, round(self.crop_size / scale))
+        dn, label = transforms.random_crop(dn, label, crop, rng)
         refl = transforms.to_reflectance(np.ascontiguousarray(dn))
         refl, label = transforms.random_flip_rotate(refl, label, rng)
         refl = transforms.brightness_contrast(refl, rng, self.photometric)
+        if generator is not None:
+            out = min(self.crop_size, *refl.shape[-2:]) if scale == 1.0 else self.crop_size
+            t_image, t_label = sensor.resize(
+                torch.from_numpy(np.ascontiguousarray(refl))[None],
+                torch.from_numpy(np.ascontiguousarray(label))[None],
+                (out, out),
+            )
+            t_image = sensor.augment(t_image, r, generator)
+            refl, label = t_image[0].numpy(), t_label[0].numpy()
         image = transforms.normalise(refl, self.mean, self.std)
         return torch.from_numpy(image), torch.from_numpy(label.astype(np.int64))
 
@@ -79,20 +98,27 @@ class EvalPatches(Dataset[tuple[torch.Tensor, torch.Tensor, int]]):
         mean: NDArray[np.float32],
         std: NDArray[np.float32],
         multiple: int = 32,
+        perturbation: sensor.Perturbation | None = None,
     ) -> None:
         self.data = data
         self.mean = mean
         self.std = std
         self.multiple = multiple
+        self.perturbation = perturbation
 
     def __len__(self) -> int:
         return len(self.data)
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, int]:
         refl = transforms.to_reflectance(np.asarray(self.data.images[index]))
+        label = np.asarray(self.data.labels[index]).astype(np.int64)
+        if self.perturbation is not None:
+            t_image, t_label = self.perturbation.apply(
+                torch.from_numpy(refl), torch.from_numpy(label), seed=index
+            )
+            refl, label = t_image.numpy(), t_label.numpy()
         image = transforms.normalise(refl, self.mean, self.std)
         padded, _ = transforms.pad_to_multiple(image, self.multiple)
-        label = np.asarray(self.data.labels[index]).astype(np.int64)
         return torch.from_numpy(np.ascontiguousarray(padded)), torch.from_numpy(label), index
 
 
@@ -126,7 +152,9 @@ class DeviceTrainBatches:
         batch_size: int,
         seed: int,
         gpu_share: float = 0.6,
+        robustness: sensor.Robustness | None = None,
     ) -> None:
+        self.robustness = robustness or sensor.Robustness()
         images = np.ascontiguousarray(np.asarray(data.images))
         labels = np.ascontiguousarray(np.asarray(data.labels))
         # uint16 is stored bit for bit as int16 and read back with & 0xFFFF.
@@ -174,7 +202,11 @@ class DeviceTrainBatches:
     ) -> tuple[torch.Tensor, torch.Tensor]:
         n = int(indexes.numel())
         height, width = int(self.images.shape[2]), int(self.images.shape[3])
-        crop_h, crop_w = min(self.crop_size, height), min(self.crop_size, width)
+        out_h, out_w = min(self.crop_size, height), min(self.crop_size, width)
+        # With rescaling, a crop of crop_size / s pixels is resized to crop_size.
+        scale = sensor.draw_scale(self.robustness, generator)
+        crop_h = min(height, max(8, round(out_h / scale)))
+        crop_w = min(width, max(8, round(out_w / scale)))
         tops = torch.randint(0, height - crop_h + 1, (n,), generator=generator).tolist()
         lefts = torch.randint(0, width - crop_w + 1, (n,), generator=generator).tolist()
         hflip = torch.rand(n, generator=generator) < 0.5
@@ -216,5 +248,7 @@ class DeviceTrainBatches:
         f = factor.to(self.device).view(-1, 1, 1, 1)
         g = gain.to(self.device).view(-1, 1, 1, 1)
         refl = ((mean + (refl - mean) * f) * g).clamp(0.0, transforms.MAX_REFLECTANCE)
+        refl, label = sensor.resize(refl, label, (out_h, out_w))
+        refl = sensor.augment(refl, self.robustness, generator)
         image_out = (refl - self.mean) / self.std
         return image_out, label.to(torch.int64)

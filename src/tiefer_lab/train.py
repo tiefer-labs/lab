@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import metrics
 from tiefer_lab.config import Config, dump_toml, load_config
-from tiefer_lab.data import cache
+from tiefer_lab.data import cache, sensor
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
 from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
@@ -322,6 +322,14 @@ def train(
         print(f"resuming {run_dir.name} after epoch {start_epoch}", flush=True)
 
     photometric = Photometric(config.data.brightness, config.data.contrast)
+    robustness = sensor.Robustness(
+        config.data.rescale_min,
+        config.data.rescale_max,
+        config.data.gain_jitter,
+        config.data.offset_jitter,
+        config.data.noise_std,
+        config.data.blur_sigma,
+    )
     generator = torch.Generator()
     pin = device.type == "cuda"
     device_batches: DeviceTrainBatches | None = None
@@ -339,10 +347,13 @@ def train(
             device,
             config.data.batch_size,
             config.train.seed,
+            robustness=robustness,
         )
         placement = device_batches.placement
     else:
-        train_set = TrainPatches(train_data, mean, std, config.data.crop_size, photometric)
+        train_set = TrainPatches(
+            train_data, mean, std, config.data.crop_size, photometric, robustness
+        )
         train_loader = DataLoader(
             train_set,
             batch_size=config.data.batch_size,
