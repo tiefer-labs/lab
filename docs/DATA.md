@@ -87,6 +87,27 @@ The dataset's own train, validation and test splits are used. Of the high qualit
 
 ---
 
+## 5A. Extra training patches
+
+Besides the high quality patches, the card lists the label types `scribble` and `nolabel`. They can add training data, never evaluation data, under three rules, each checked by the code:
+
+- Only 509 x 509 patches of the training split are used.
+- A patch is dropped when its location appears in any row of the validation or test split, of any label type. `python -m tiefer_lab.data.cache overlap <cache> <field>` proves it on a built cache: it reads the metadata in the index and exits with an error when a training patch shares a location with val or test, or lacks the field.
+- Scribble labels are partial: unlabelled pixels get class index 255 and the loss ignores them. Nolabel patches have no label; every pixel is 255.
+
+Two facts are still `TODO(verify)` and must be read from the survey (`hpc/roihu/survey.sbatch`) before these patches are built; until they are set in `src/tiefer_lab/data/source.py`, the build of the `train_extra` split stops with a clear message:
+
+| Fact | Where it is set | Status |
+| :--- | :---: | :---: |
+| The field that identifies a patch's location (candidates in the metadata: `roi_id`, `stac:centroid`) | `LOCATION_FIELD` | TODO(verify) from the survey |
+| The code of unlabelled pixels in scribble labels | `SCRIBBLE_UNLABELLED_CODE` | TODO(verify) from the survey |
+| How many scribble and nolabel patches there are, and whether they carry a split | survey report | TODO(verify) from the survey |
+| Whether `tacofoundation:cloudsen12-extra` has reference masks for them | survey report | TODO(verify) from the survey |
+
+The high quality 2000 x 2000 patches stay out. Whether they show new locations and whether tiling them to 509 x 509 is sound cannot be decided from the facts verified so far; the survey reports their counts and locations.
+
+---
+
 ## 6. Normalisation
 
 Per-band mean and standard deviation of top-of-atmosphere reflectance are computed on the training split only, over all pixels of the cached patches, and stored in `index.json` (`normalisation`). Validation and test use the same statistics.
@@ -136,6 +157,7 @@ Add `--limit <n>` for a small subset. The build is resumable: run the same comma
 
 ## Changelog
 
+- 2 October 2026: extra training patches (scribble and nolabel) away from val and test, with the facts still to verify; 2000 x 2000 patches stay out.
 - 2 October 2026: all 13 bands (`--bands all`), shards, a rate cap and a disk estimate.
 - 2 October 2026: a build with another selection never replaces an existing split without `--restart`.
 - 1 October 2026: dataset facts checked against the card, version 1.1.2; only 509 x 509 patches are kept, with kept and dropped counts per split; `roi_id` is the patch identifier; the split field is still `TODO(verify)`.

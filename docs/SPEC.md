@@ -356,6 +356,7 @@ lab/
     test_cache.py                 cache build, resume and reading on synthetic data
     test_http.py                  backoff on HTTP 429, token never printed
     test_survey.py                survey on a synthetic table with real GeoTIFF items
+    test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
     test_metrics.py
     test_bootstrap.py
     test_decisions.py

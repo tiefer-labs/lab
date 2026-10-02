@@ -92,6 +92,21 @@ SHAPE_FIELD = "real_proj_shape"
 # Only 509 x 509 patches are kept: 2000 x 2000 patches would bloat the cache
 # and do not fit the fixed 512 x 512 export input.
 KEPT_SHAPE = 509
+# Extra training patches with partial or no labels (card: label_type values
+# scribble and nolabel). They are used for training only, never for
+# evaluation, and only when their location is not in the val or test split.
+EXTRA_LABEL_TYPES: tuple[str, ...] = ("scribble", "nolabel")
+# The field that identifies where a patch is. TODO(verify) from the survey
+# (reports/data/survey.json, "overlap_with_val_test"; roi_id and stac:centroid
+# are candidates). Until it is set, extra patches are not built.
+LOCATION_FIELD: str | None = None
+# The code of unlabelled pixels in scribble labels. TODO(verify) from the
+# survey (label histograms of the scribble samples). Until it is set, scribble
+# patches are not built.
+SCRIBBLE_UNLABELLED_CODE: int | None = None
+# Class index of pixels without a label; the loss ignores them.
+IGNORE_INDEX = 255
+
 # Row key of the TACO table; patches are sorted by it, reports use PATCH_ID_FIELD.
 ID_FIELD = "tortilla:id"
 
@@ -133,19 +148,38 @@ class Patch:
     reference: dict[str, NDArray[np.uint8]] = field(default_factory=dict)
 
 
-def map_labels(raw: NDArray[np.integer[Any]]) -> NDArray[np.uint8]:
-    """Map dataset label codes to class indexes; unknown codes are an error."""
+def map_labels(
+    raw: NDArray[np.integer[Any]], unlabelled_code: int | None = None
+) -> NDArray[np.uint8]:
+    """Map dataset label codes to class indexes; unknown codes are an error.
+
+    With `unlabelled_code`, pixels with that code become IGNORE_INDEX.
+    """
+    codes = dict(LABEL_CODES)
+    if unlabelled_code is not None:
+        codes[unlabelled_code] = IGNORE_INDEX
     values = np.unique(raw)
-    unknown = sorted(int(v) for v in values if int(v) not in LABEL_CODES)
+    unknown = sorted(int(v) for v in values if int(v) not in codes)
     if unknown:
         raise DataSourceError(
             f"label item contains codes {unknown} that are not in LABEL_CODES "
             f"{dict(LABEL_CODES)}; check the dataset card ({DATASET_CARD_URL})"
         )
-    lookup = np.zeros(max(LABEL_CODES) + 1, dtype=np.uint8)
-    for code, cls in LABEL_CODES.items():
+    lookup = np.zeros(max(codes) + 1, dtype=np.uint8)
+    for code, cls in codes.items():
         lookup[code] = cls
     return lookup[raw.astype(np.int64)]
+
+
+def require_verified(name: str, value: Any) -> Any:
+    """Stop with a clear message when a fact the code needs is not verified yet."""
+    if value is None:
+        raise DataSourceError(
+            f"{name} is not verified yet (TODO(verify)); run the survey "
+            "(hpc/roihu/survey.sbatch), read it from reports/data/survey.json and set "
+            f"{name} in src/tiefer_lab/data/source.py"
+        )
+    return value
 
 
 def open_table(taco: str | Sequence[str] = TACO_NAME_L1C) -> Any:
@@ -189,6 +223,7 @@ class Selection:
     kept: int
     dropped_other_shape: int
     limit: int | None
+    dropped_location: int = 0
 
     def counts(self) -> dict[str, int | None]:
         return {
@@ -197,6 +232,7 @@ class Selection:
             "dropped_other_shape": self.dropped_other_shape,
             "limit": self.limit,
             "selected": len(self.positions),
+            "dropped_location_in_val_or_test": self.dropped_location,
         }
 
 
@@ -240,6 +276,74 @@ def select(table: Any, split: str, limit: int | None = None, seed: int = 0) -> S
         kept=kept,
         dropped_other_shape=int(in_split.sum()) - kept,
         limit=limit,
+    )
+
+
+def select_extra(
+    table: Any, limit: int | None = None, seed: int = 0, location_field: str | None = None
+) -> Selection:
+    """Scribble and nolabel 509 x 509 patches for training, away from val and test.
+
+    A patch is used only when its split (if the table has one) is the training
+    split and its location (LOCATION_FIELD) appears in no row of the
+    validation or test split, of any label type. Dropped patches are counted.
+    """
+    field = require_verified("LOCATION_FIELD", location_field or LOCATION_FIELD)
+    check_columns([str(c) for c in table.columns])
+    if field not in table.columns:
+        raise DataSourceError(f"location field {field!r} is not in the metadata")
+    types = table[QUALITY_FIELD].astype(str)
+    extra = np.asarray(types.isin(EXTRA_LABEL_TYPES))
+    in_train = np.asarray(table[SPLIT_FIELD] == SPLIT_VALUES["train"])
+    held_out = np.asarray(table[SPLIT_FIELD].isin([SPLIT_VALUES["val"], SPLIT_VALUES["test"]]))
+    held_locations = set(map(str, table[field][held_out]))
+    shapes = np.asarray([_as_number(v) for v in table[SHAPE_FIELD]])
+    candidates = extra & in_train
+    sized = candidates & (shapes == KEPT_SHAPE)
+    away = np.asarray([str(v) not in held_locations for v in table[field]])
+    positions = [int(i) for i in np.flatnonzero(sized & away)]
+    positions.sort(key=lambda i: str(table.iloc[i][ID_FIELD]))
+    kept = len(positions)
+    if limit is not None and limit < len(positions):
+        rng = np.random.default_rng(seed)
+        chosen = rng.choice(len(positions), size=limit, replace=False)
+        positions = [positions[i] for i in sorted(int(c) for c in chosen)]
+    return Selection(
+        positions=positions,
+        high_quality=int(candidates.sum()),
+        kept=int(sized.sum()),
+        dropped_other_shape=int(candidates.sum() - sized.sum()),
+        limit=limit,
+        dropped_location=int(sized.sum()) - kept,
+    )
+
+
+def read_extra_patch(table: Any, position: int, bands: Sequence[str] = USED_BANDS) -> Patch:
+    """Read a scribble or nolabel patch: unlabelled pixels get IGNORE_INDEX.
+
+    Nolabel patches have no label to read: every pixel is IGNORE_INDEX.
+    """
+    row = table.iloc[position]
+    label_type = str(row[QUALITY_FIELD])
+    sample = table.read(position)
+    image = _read_bands(sample.read(IMAGE_ITEM), band_indexes(bands), len(L1C_BAND_NAMES))
+    if image.dtype != np.uint16:
+        raise DataSourceError(f"expected uint16 digital numbers, found {image.dtype}")
+    if label_type == "nolabel":
+        label = np.full(image.shape[1:], IGNORE_INDEX, dtype=np.uint8)
+    elif label_type == "scribble":
+        code = require_verified("SCRIBBLE_UNLABELLED_CODE", SCRIBBLE_UNLABELLED_CODE)
+        raw = _read_bands(sample.read(LABEL_ITEM), (1,), 1)[0]
+        label = map_labels(raw.astype(np.int64), unlabelled_code=int(code))
+    else:
+        raise DataSourceError(f"{label_type!r} is not an extra label type {EXTRA_LABEL_TYPES}")
+    if label.shape != image.shape[1:]:
+        raise DataSourceError(f"label shape {label.shape} differs from image {image.shape[1:]}")
+    return Patch(
+        patch_id=str(row[PATCH_ID_FIELD]),
+        image=image.astype(np.uint16),
+        label=label,
+        metadata=row_metadata(row),
     )
 
 

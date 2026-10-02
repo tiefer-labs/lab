@@ -132,6 +132,7 @@ def test_select_keeps_high_quality_509_patches_and_counts_dropped() -> None:
         "high_quality": 3,
         "kept_509": 2,
         "dropped_other_shape": 1,
+        "dropped_location_in_val_or_test": 0,
         "limit": None,
         "selected": 2,
     }

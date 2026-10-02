@@ -35,6 +35,9 @@ from tiefer_lab.utils import paths
 CACHE_FORMAT = 1
 INDEX_NAME = "index.json"
 SPLITS = ("train", "val", "test")
+# Scribble and nolabel patches for training only (source.select_extra).
+EXTRA_SPLIT = "train_extra"
+ALL_SPLITS = (*SPLITS, EXTRA_SPLIT)
 SYNTHETIC_SOURCE = "synthetic"
 
 LoadMode = Literal["auto", "memory", "mmap"]
@@ -275,16 +278,52 @@ def splits_ready(directory: Path, splits: Sequence[str]) -> bool:
     return True
 
 
+def location_overlap(
+    index: dict[str, Any],
+    field: str,
+    training: Sequence[str] = ("train", EXTRA_SPLIT),
+    held_out: Sequence[str] = ("val", "test"),
+) -> dict[str, int]:
+    """Patches of each training split whose location also appears in val or test.
+
+    Reads the metadata stored in the index. A training patch without the
+    field counts as overlapping, so a missing field can never pass the check.
+    """
+    splits = index.get("splits", {})
+    held = {
+        str(m[field]) for s in held_out for m in splits.get(s, {}).get("metadata", []) if field in m
+    }
+    out: dict[str, int] = {}
+    for split in training:
+        if split not in splits:
+            continue
+        metadata = splits[split].get("metadata", [])
+        out[split] = sum(1 for m in metadata if field not in m or str(m[field]) in held)
+    return out
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m tiefer_lab.data.cache",
-        description="Exit 0 when the named splits of a cache are complete and not being built.",
+        description=(
+            "ready: exit 0 when the named splits are complete and not being built. "
+            "overlap: exit 0 when no training patch shares its location with val or test."
+        ),
     )
-    parser.add_argument("command", choices=["ready"])
+    parser.add_argument("command", choices=["ready", "overlap"])
     parser.add_argument("name", help="cache folder name in $TIEFER_DATA_DIR")
-    parser.add_argument("splits", nargs="+", choices=SPLITS)
+    parser.add_argument("args", nargs="+", help="splits (ready) or the location field (overlap)")
     args = parser.parse_args(argv)
     directory = cache_dir(args.name)
+    if args.command == "overlap":
+        overlap = location_overlap(read_index(directory), args.args[0])
+        where = paths.portable(directory)
+        print(f"cache {where}: patches sharing a location with val or test: {overlap}")
+        return 0 if not any(overlap.values()) else 1
+    args.splits = args.args
+    unknown = [s for s in args.splits if s not in ALL_SPLITS]
+    if unknown:
+        parser.error(f"unknown splits {unknown}; choose from {ALL_SPLITS}")
     ready = splits_ready(directory, args.splits)
     state = "ready" if ready else "not ready"
     print(f"cache {paths.portable(directory)}: {', '.join(args.splits)} {state}", flush=True)

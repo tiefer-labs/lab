@@ -194,6 +194,7 @@ class Plan:
     roi_ids: list[str]
     counts: dict[str, Any]
     bands: tuple[str, ...]
+    extra: bool = False
 
 
 def bytes_per_patch(bands: int, size: int = source.KEPT_SHAPE) -> int:
@@ -376,12 +377,16 @@ def plan_split(
     backoff: http.Backoff,
 ) -> Plan:
     table = backoff.call(source.open_table, taco[0] if len(taco) == 1 else list(taco))
-    chosen = source.select(table, split, limit)
+    extra = split == cache.EXTRA_SPLIT
+    chosen = source.select_extra(table, limit) if extra else source.select(table, split, limit)
     counts = chosen.counts()
+    kind = "scribble and nolabel training" if extra else "high quality"
     print(
-        f"{split}: {counts['high_quality']} high quality patches, "
+        f"{split}: {counts['high_quality']} {kind} patches, "
         f"{counts['kept_509']} kept ({source.KEPT_SHAPE} x {source.KEPT_SHAPE}), "
-        f"{counts['dropped_other_shape']} dropped (other sizes), {counts['selected']} selected",
+        f"{counts['dropped_other_shape']} dropped (other sizes), "
+        f"{counts['dropped_location_in_val_or_test']} dropped (location in val or test), "
+        f"{counts['selected']} selected",
         flush=True,
     )
     if not chosen.positions:
@@ -399,6 +404,7 @@ def plan_split(
         roi_ids=[str(table.iloc[r][source.PATCH_ID_FIELD]) for r in rows],
         counts=counts,
         bands=tuple(bands),
+        extra=extra,
     )
 
 
@@ -409,6 +415,8 @@ def _reader(plan: Plan, backoff: http.Backoff, limiter: http.RateLimiter | None)
         def once() -> source.Patch:
             if limiter is not None:
                 limiter.acquire()
+            if plan.extra:
+                return source.read_extra_patch(plan.table, position, bands=plan.bands)
             if bands is None:
                 return source.read_patch(plan.table, position)
             return source.read_patch(plan.table, position, bands=bands)
@@ -730,7 +738,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m tiefer_lab.data.build_cache", description=__doc__.split("\n\n")[0]
     )
-    parser.add_argument("--split", required=True, choices=[*cache.SPLITS, "all"])
+    parser.add_argument("--split", required=True, choices=[*cache.ALL_SPLITS, "all"])
     parser.add_argument("--limit", type=int, default=None, help="build only N patches per split")
     parser.add_argument("--name", default=None, help="cache folder name in $TIEFER_DATA_DIR")
     parser.add_argument(
