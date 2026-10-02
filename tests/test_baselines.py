@@ -70,3 +70,28 @@ def test_tuning_recovers_a_separable_rule() -> None:
     assert rule.thin_brightness < rule.thick_brightness
     again, again_score = baselines.tune_threshold_rule(hist)
     assert again == rule and again_score == score
+
+
+def test_dark_pixels_bin_without_an_invalid_cast_and_match_the_rule() -> None:
+    import warnings
+
+    # Digital number 0 in the visible bands: brightness 0 and whiteness +inf.
+    image = _pixels([(0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.3), (0.5, 0.5, 0.5, 0.5)])
+    label = np.array([[0, 1, 1]], dtype=np.uint8)
+    assert np.isinf(baselines.whiteness(image)[0, :2]).all()
+    histogram = baselines.RuleHistogram()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        histogram.add(image, label)
+    # The two dark pixels are in the last whiteness bin, never called white.
+    assert histogram.counts[:, 0, baselines.WHITENESS_BINS].sum() == 2
+    assert histogram.counts[:, 0, 0].sum() == 0, "dark pixels are not in the whitest bin"
+    rule = baselines.ThresholdRule(thick_brightness=0.4, thin_brightness=0.2, max_whiteness=1.0)
+    expected = metrics.confusion_matrix(rule.predict(image)[None], label[None])
+    np.testing.assert_array_equal(histogram.confusion(rule), expected)
+
+
+def test_nan_reflectance_is_an_error_in_the_histogram() -> None:
+    image = _pixels([(np.nan, 0.1, 0.1, 0.1)])
+    with pytest.raises(ValueError, match="NaN"):
+        baselines.RuleHistogram().add(image, np.zeros((1, 1), dtype=np.uint8))

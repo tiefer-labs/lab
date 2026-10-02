@@ -94,9 +94,19 @@ class ThresholdRule:
 
 
 def _bin(values: FloatArray, step: float, bins: int) -> NDArray[np.int64]:
-    # Values are rounded to float32 like the thresholds compared in `predict`.
-    idx = np.floor(values.astype(np.float64) / step + 1e-9).astype(np.int64)
-    return np.clip(idx, 0, bins)
+    """Histogram bin of each value: [0, step) is bin 0, and >= bins * step is bin `bins`.
+
+    `whiteness` is +inf where the visible mean is not positive (for example
+    pixels with digital number 0); such pixels go to the last bin, which no
+    rule calls white, exactly as `ThresholdRule.predict` treats them. Casting
+    infinity to an integer is undefined, so values are clipped to the bin
+    range before the cast. NaN has no bin and is an error.
+    """
+    scaled = values.astype(np.float64) / step + 1e-9
+    if np.isnan(scaled).any():
+        raise ValueError(f"{int(np.isnan(scaled).sum())} NaN values cannot be binned")
+    scaled = np.clip(scaled, 0.0, float(bins))
+    return np.floor(scaled).astype(np.int64)
 
 
 class RuleHistogram:
