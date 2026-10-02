@@ -111,6 +111,29 @@ def throughput(mean_latency_ms: float, tile_pixels: int, gsd_m: float) -> dict[s
     }
 
 
+def tiles_per_frame(frame_pixels: int, tile_pixels: int, overlap: int) -> int:
+    """Tiles of the large-frame path (tiefer_lab.onboard.predict_frame) for a square frame
+    already at the training resolution."""
+    if frame_pixels <= tile_pixels:
+        return 1
+    side = math.ceil((frame_pixels - overlap) / (tile_pixels - overlap))
+    return side * side
+
+
+def frame_rate(
+    mean_latency_ms: float, frame_pixels: int, tile_pixels: int, overlap: int
+) -> dict[str, Any]:
+    tiles = tiles_per_frame(frame_pixels, tile_pixels, overlap)
+    return {
+        "frame_pixels": frame_pixels,
+        "overlap": overlap,
+        "tiles_per_frame": tiles,
+        "frames_per_second": 1000.0 / (mean_latency_ms * tiles),
+        "formula": "frames/s = 1000 / (mean tile latency (ms) x tiles per frame); "
+        "resampling and stitching are not included",
+    }
+
+
 def energy_per_tile_mj(mean_power_mw: float, mean_latency_ms: float) -> float:
     """Millijoules per tile: power (W) x time per tile (s) x 1000 = mW x ms / 1000."""
     return mean_power_mw * mean_latency_ms / 1000.0
@@ -209,6 +232,11 @@ def run(args: argparse.Namespace, trtexec: str) -> dict[str, Any]:
         "latency": lat,
         "warmup_ms": args.warmup_ms,
         "throughput": throughput(float(lat["mean_ms"]), args.tile_pixels, args.gsd_m),
+        "large_frame": frame_rate(
+            float(lat["mean_ms"]), args.frame_pixels, args.tile_pixels, args.overlap
+        )
+        if args.frame_pixels
+        else None,
         "power": {"run": run_power, "idle": idle_power, "interval_ms": args.interval_ms},
         "energy_per_tile_mj": {
             "total": energy_per_tile_mj(float(run_power["mean_mw"]), float(lat["mean_ms"])),
@@ -233,6 +261,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--rail", help="input power rail (default: first known)")
     parser.add_argument("--tile-pixels", type=int, default=512)
     parser.add_argument("--gsd-m", type=float, default=10.0, help="ground sampling distance")
+    parser.add_argument(
+        "--frame-pixels",
+        type=int,
+        default=0,
+        help="side of a square frame at the training resolution, for the tiled large-frame path",
+    )
+    parser.add_argument("--overlap", type=int, default=64, help="tile overlap of the frame path")
     parser.add_argument("--output-dir", type=Path, default=Path("reports/jetson"))
     parser.add_argument("--trtexec", help="path to trtexec")
     parser.add_argument("--dry-run", action="store_true")

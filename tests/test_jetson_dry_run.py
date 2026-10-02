@@ -140,3 +140,13 @@ def test_latency_throughput_and_energy_formulas(tmp_path: Path) -> None:
 def test_bench_records_the_repository_commit() -> None:
     commit = bench.git_commit()
     assert commit == "unknown" or len(commit) == 40
+
+
+def test_tiles_and_frames_of_the_large_frame_path() -> None:
+    from jetson import bench
+
+    assert bench.tiles_per_frame(512, 512, 64) == 1
+    # 2000 pixels with 512-pixel tiles overlapping by 64: ceil(1936 / 448) = 5 per side.
+    assert bench.tiles_per_frame(2000, 512, 64) == 25
+    rate = bench.frame_rate(40.0, 2000, 512, 64)
+    assert rate["frames_per_second"] == pytest.approx(1000.0 / (40.0 * 25))

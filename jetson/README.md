@@ -56,6 +56,7 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 - Power: the input rail from `tegrastats`, sampled every 100 ms during the run and for 10 s at idle before it.
 - Energy per tile in millijoules = mean input power (W) x mean latency (s) x 1000, for the total board power and for the power above idle.
 - Board temperatures at the start and the end of the run.
+- Large frames, with `--frame-pixels N`: frames per second of the tiled path (`tiefer_lab.onboard.predict_frame`) for a square frame of N pixels at the training resolution, = 1000 / (mean tile latency in ms x tiles per frame), with tiles of 512 pixels overlapping by `--overlap` pixels (default 64). Resampling and stitching are not included.
 
 ---
 
