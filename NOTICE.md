@@ -57,6 +57,7 @@ Direct dependencies and their licences, as declared in their package metadata fo
 | `ruff` | lint and format | MIT |
 | `mypy` | type check | MIT |
 | `regex` | text rule test | Apache-2.0 AND CNRI-Python |
+| `coverage` | test coverage | Apache-2.0 |
 | **Build** | | |
 | `hatchling` | builds the package | MIT |
 

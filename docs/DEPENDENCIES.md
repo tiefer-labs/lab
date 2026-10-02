@@ -27,6 +27,7 @@ Versions are ranges in `pyproject.toml` and exact in `uv.lock`. Licences are as 
 | `ruff` | lint and format | MIT |
 | `mypy` | strict type check of `src/` | MIT |
 | `regex` | the text rule test (`\p{Extended_Pictographic}`) | Apache-2.0 AND CNRI-Python |
+| `coverage` | test coverage and its floor in CI | Apache-2.0 |
 | **Build** | | |
 | `hatchling` | builds the package for `pip install -e .` | MIT |
 | **Standard library and system** | | |
@@ -72,6 +73,7 @@ This table is also the licence source of the software bill of materials: `python
 | `charset-normalizer` | 3.5.2 | MIT |
 | `click` | 8.5.0 | BSD-3-Clause |
 | `colorama` | 0.4.6 | BSD License (PyPI classifier) |
+| `coverage` | 7.16.2 | Apache-2.0 |
 | `cuda-bindings` | 13.4.3 | Apache-2.0 |
 | `cuda-pathfinder` | 1.8.2 | Apache-2.0 |
 | `cuda-toolkit` | 13.0.3.0 | not declared in package metadata; NVIDIA CUDA package |
@@ -158,6 +160,6 @@ expires = 2026-12-31
 ## Changelog
 
 - 2 October 2026: vulnerability audit and its accepted exceptions (section 4).
-- 2 October 2026: CI-only tools (section 2A).
+- 2 October 2026: CI-only tools (section 2A); `coverage` in the development group.
 - 2 October 2026: section 3 is the licence source of the software bill of materials.
 - 1 October 2026: first version for milestone L1.

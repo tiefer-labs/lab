@@ -6,7 +6,7 @@
 # an already activated environment, for example: make RUN= test
 RUN ?= uv run --frozen
 
-.PHONY: setup lint typecheck test check smoke requirements results shellcheck
+.PHONY: setup lint typecheck test coverage check smoke requirements results shellcheck
 
 # Packages that only torch needs. On CSC Roihu they come with the PyTorch
 # module, so hpc/roihu/requirements.txt leaves them out.
@@ -30,6 +30,11 @@ typecheck:
 
 test:
 	$(RUN) pytest
+
+# Tests under coverage; fails below the floor in pyproject.toml (fail_under).
+coverage:
+	$(RUN) coverage run -m pytest
+	$(RUN) coverage report
 
 check: lint typecheck test
 

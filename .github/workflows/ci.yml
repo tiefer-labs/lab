@@ -79,6 +79,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The x86 job compares the coverage floor with the base commit.
+          fetch-depth: ${{ matrix.runner == 'ubuntu-24.04' && 0 || 1 }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
@@ -90,7 +92,35 @@ jobs:
         run: uv sync --frozen
 
       - name: Test
+        if: matrix.runner != 'ubuntu-24.04'
         run: make test
+
+      # Coverage is measured once, on x86; the floor is fail_under in pyproject.toml.
+      - name: Test with coverage
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          uv run --frozen coverage run -m pytest
+          total="$(uv run --frozen coverage report --format=total --precision=2 || true)"
+          floor="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["tool"]["coverage"]["report"]["fail_under"])')"
+          {
+            echo "### Test coverage"
+            echo
+            echo "Total ${total} percent, floor ${floor} percent (line and branch coverage of src/tiefer_lab)."
+            echo
+            uv run --frozen coverage report --format=markdown || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          uv run --frozen coverage report
+
+      - name: Coverage floor never lowered
+        if: matrix.runner == 'ubuntu-24.04'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          : > "$RUNNER_TEMP/base-pyproject.toml"
+          if [[ -n "${BASE}" ]] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            git show "${BASE}:pyproject.toml" > "$RUNNER_TEMP/base-pyproject.toml" 2>/dev/null || true
+          fi
+          python3 .github/scripts/coverage_floor.py "$RUNNER_TEMP/base-pyproject.toml" pyproject.toml
 
   sbom:
     runs-on: ubuntu-24.04

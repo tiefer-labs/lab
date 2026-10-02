@@ -37,6 +37,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "regex>=2024.11.6",
+    "coverage>=7.6",
 ]
 
 [build-system]
@@ -86,3 +87,14 @@ filterwarnings = [
     "ignore::DeprecationWarning:torch.*",
     "ignore::rasterio.errors.NotGeoreferencedWarning",
 ]
+
+[tool.coverage.run]
+source = ["tiefer_lab"]
+branch = true
+
+[tool.coverage.report]
+# The floor is the measured total rounded down. Raise it when coverage rises;
+# never lower it to make a commit pass (CI compares it with the base commit).
+fail_under = 87
+show_missing = false
+skip_covered = true
