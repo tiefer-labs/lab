@@ -314,7 +314,10 @@ def read_patch(table: Any, position: int) -> Patch:
 def dataset_revision(timeout: float = 20.0) -> str | None:
     """Current commit of the dataset repository on Hugging Face (`sha` field), or None."""
     try:
-        with urllib.request.urlopen(DATASET_API_URL, timeout=timeout) as response:
+        from tiefer_lab.data import http
+
+        request = urllib.request.Request(DATASET_API_URL, headers=http.auth_headers())
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 (fixed https URL)
             payload = json.load(response)
     except (OSError, ValueError):
         return None

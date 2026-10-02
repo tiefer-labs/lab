@@ -10,8 +10,9 @@
 # The build reads the dataset over HTTPS with SLURM_CPUS_PER_TASK parallel
 # download workers. It is resumable: submit again after a time limit or an
 # error. Login nodes are for light work only, so the cache is never built there
-# (https://docs.csc.fi/computing/usage-policy/). Whether compute nodes reach
-# huggingface.co is TODO(verify): the first run of this job shows it.
+# (https://docs.csc.fi/computing/usage-policy/). Compute nodes reach
+# huggingface.co (observed on Roihu, 2 October 2026). Set HF_TOKEN in the
+# submitting shell to avoid HTTP 429 (hpc/roihu/README.md, step 3).
 #
 # CPU partition 'small': up to 72 hours on one node.
 # Source: https://docs.csc.fi/computing/running/batch-job-partitions/

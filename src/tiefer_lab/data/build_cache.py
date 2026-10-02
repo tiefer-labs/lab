@@ -31,7 +31,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from tiefer_lab.data import cache, source
+from tiefer_lab.data import cache, http, source
 from tiefer_lab.data.transforms import band_statistics
 from tiefer_lab.utils import paths
 
@@ -190,7 +190,8 @@ def build_real_split(
     index = _open_index(directory, "cloudsen12", dataset)
     if revision:
         index["dataset"]["revision"] = revision
-    table = source.open_table(taco[0] if len(taco) == 1 else list(taco))
+    backoff = http.Backoff()
+    table = backoff.call(source.open_table, taco[0] if len(taco) == 1 else list(taco))
     chosen = source.select(table, split, limit)
     rows = chosen.positions
     counts = chosen.counts()
@@ -270,7 +271,7 @@ def build_real_split(
         metadata: list[dict[str, Any]] = progress["metadata"]
         mode = "r+"
     else:
-        first = source.read_patch(table, rows[0])
+        first = backoff.call(source.read_patch, table, rows[0])
         height, width = first.label.shape
         done, metadata, mode = 0, [], "w+"
     n = len(rows)
@@ -329,7 +330,9 @@ def build_real_split(
                     ready.set_result(first)
                     pending[submitted] = ready
                 else:
-                    pending[submitted] = pool.submit(source.read_patch, table, rows[submitted])
+                    pending[submitted] = pool.submit(
+                        backoff.call, source.read_patch, table, rows[submitted]
+                    )
                 submitted += 1
             patch = pending.pop(i).result()
             if patch.label.shape != (height, width):
@@ -482,6 +485,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         revision = args.revision or source.dataset_revision()
         if revision is None:
             print("warning: dataset revision could not be read; recorded as unknown", flush=True)
+        token = (
+            "set"
+            if http.configure_token()
+            else f"not set (set {http.TOKEN_ENV} to raise the limit)"
+        )
+        print(f"Hugging Face token: {token}", flush=True)
         taco = args.taco or [source.TACO_NAME_L1C]
         workers = download_workers(args.workers)
         for split in splits:

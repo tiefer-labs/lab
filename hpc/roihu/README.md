@@ -91,16 +91,19 @@ bash hpc/roihu/setup.sh
 
 ### Step 3: build the data cache
 
-From `roihu-cpu.csc.fi`:
+From `roihu-cpu.csc.fi`. Without a Hugging Face token the server answers HTTP 429 (too many requests) after a few hundred patches, so set a read token in the shell first. `read -rs` keeps it out of the screen, the shell history and every file; the job inherits it through sbatch's default export, and the builder passes it to GDAL without printing it:
 
 ```bash
 ssh <user>@roihu-cpu.csc.fi
 cd /projappl/<project>/tiefer-lab/src
+read -rsp "Hugging Face token: " HF_TOKEN && export HF_TOKEN && echo
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch all
 squeue --me
 ```
 
 The job runs on the CPU partition `small` with 16 cores, one parallel download worker per core (`SLURM_CPUS_PER_TASK`). It keeps only high quality 509 x 509 patches and prints the kept and dropped counts per split. The build is resumable: if the job stops, submit the same command again and it continues where it stopped.
+
+The log says `Hugging Face token: set` or `not set`, never the token itself. When the server still answers HTTP 429, every reader pauses together and then continues: for the server's `Retry-After` when it is known, otherwise 10 s, 20 s, 40 s and so on up to 300 s, with random jitter. Never write the token into `~/.bashrc` or a file in the repository.
 
 Its log starts with the metadata columns of the dataset. If it stops because the split field is missing, see the troubleshooting table.
 
@@ -221,6 +224,8 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export, 
 | `cannot load python-data/3.12-31.03` | the module was removed or renamed | find it with `module avail python-data`, add `export TIEFER_CPU_PYTHON_MODULE=<name>` to `~/.bashrc`, run `setup.sh` again on the CPU side |
 | `the split field 'tortilla:data_split' is not in the metadata` | the dataset uses another name for the split field | find it in the `metadata columns` line of the log, set `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`, commit, and submit the data job again |
 | The data job fails with a network error | compute nodes cannot reach `huggingface.co` | stop and ask the CSC Service Desk; do not build the cache on a login node |
+| `rate limited (HTTP 429); all readers pause` in the data log | Hugging Face limits reads without a token | nothing to do, the job continues; set `HF_TOKEN` as in step 3 before the next data job |
+| `OUT_OF_MEMORY` in the finishing step of the data job, then `FileNotFoundError` on `train_images.partial.npy` | an older version counted class pixels on the whole split at once | run `git pull` and submit the same data job again; it goes straight to the finishing step |
 | `stopped after ... of ...` in the data log | the job hit its time limit or a read failed | submit the same data job again; it continues |
 | `invalid partition` from `sbatch` | a partition name differs on Roihu | check `sinfo` and the [partitions page](https://docs.csc.fi/computing/running/batch-job-partitions/), then edit the `#SBATCH --partition` line |
 | The training log ends with `interrupted` | the time limit was reached | submit `train.sbatch` again with the run ID |
@@ -256,12 +261,13 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | A Roihu-CPU or Roihu-GPU shell is available in the web interface | this guide | [www.roihu.csc.fi](https://www.roihu.csc.fi) |
 | **Storage and network** | | |
 | Files in `/scratch` unused for 180 days are deleted | `env.sh` | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
-| Whether compute nodes can reach `huggingface.co` | `data.sbatch`, `smoke.sbatch` | TODO(verify): the first data job shows it |
+| Compute nodes reach `huggingface.co`; without a token the server answered HTTP 429 after about 415 patches per window, and with a bearer token reads ran at 55 to 120 patches per minute without 429 | `data.sbatch`, `src/tiefer_lab/data/http.py` | observed on Roihu, 2 October 2026 |
 
 ---
 
 ## Changelog
 
+- 2 October 2026: Hugging Face token from `HF_TOKEN`, shared backoff on HTTP 429, and the finishing step of a data job resumes on its own.
 - 2 October 2026: the smoke job uses the full cache only when its train and val splits are complete, and otherwise builds its tiny cache in its own folder.
 - 1 October 2026: back to the standard CSC way of submitting jobs: sbatch's default export, CPU work and the data job from `roihu-cpu.csc.fi`, GPU setup and GPU jobs from `roihu-gpu.csc.fi` (SSH or the web interface); `gpu_shell.sh` and the `--export=NONE` workarounds removed.
 - 1 October 2026: troubleshooting row for jobs that end within seconds with an empty log.

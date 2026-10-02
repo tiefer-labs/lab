@@ -316,6 +316,7 @@ lab/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
         build_cache.py            python -m tiefer_lab.data.build_cache
+        http.py                   backoff on HTTP 429 and the Hugging Face token
         cache.py                  cache reading, in memory or memory-mapped
         dataset.py                PyTorch datasets for train and evaluation
         transforms.py             reflectance, normalisation, crops, augmentation, padding
@@ -348,6 +349,7 @@ lab/
     test_transforms.py
     test_bands_and_labels.py
     test_cache.py                 cache build, resume and reading on synthetic data
+    test_http.py                  backoff on HTTP 429, token never printed
     test_metrics.py
     test_bootstrap.py
     test_decisions.py
