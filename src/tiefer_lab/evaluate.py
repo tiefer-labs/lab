@@ -46,6 +46,7 @@ from tiefer_lab.train import (
     METADATA_NAME,
     TrainingError,
     band_set_name,
+    band_set_option,
     resolve_run_dir,
 )
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
@@ -496,7 +497,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--reason", help="why the test split is evaluated (with --final)")
     parser.add_argument("--checkpoint", default="best", choices=["best", "last"])
     parser.add_argument(
-        "--band-set", default=None, help="bands of a band-flexible run, for example B02,B03,B04"
+        "--band-set",
+        default=None,
+        help="bands of a band-flexible run, for example B02,B03,B04, or 'all' for every band set",
     )
     parser.add_argument(
         "--perturb", default=None, help="a fixed sensor perturbation, for example rescale=0.5"
@@ -511,29 +514,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         check_test_guard(args.split, args.final, args.reason)
         run_dir = resolve_run_dir(args.run)
-        out = evaluate_run(
-            run_dir,
-            args.split,
-            with_baselines=args.baselines,
-            final=args.final,
-            reason=args.reason,
-            which=args.checkpoint,
-            device_name=args.device,
-            allow_synthetic=args.allow_synthetic,
-            band_set=args.band_set.split(",") if args.band_set else None,
-            perturbation=args.perturb,
-        )
+        outs = [
+            evaluate_run(
+                run_dir,
+                args.split,
+                with_baselines=args.baselines and i == 0,
+                final=args.final,
+                reason=args.reason,
+                which=args.checkpoint,
+                device_name=args.device,
+                allow_synthetic=args.allow_synthetic,
+                band_set=band_set,
+                perturbation=args.perturb,
+            )
+            for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
+        ]
     except (TestGuardError, TrainingError, cache.CacheError, ValueError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
-    report = json.loads(out.read_text(encoding="utf-8"))
-    model = report["model"]
-    print(f"mean IoU {model['pixel']['mean_iou']}", flush=True)
-    print(
-        f"false discard rate at {model['decision_threshold']}: {model['false_discard_rate']}",
-        flush=True,
-    )
-    print(f"report: {paths.portable(out)}", flush=True)
+    for out in outs:
+        report = json.loads(out.read_text(encoding="utf-8"))
+        model = report["model"]
+        print(f"band set {','.join(report['band_set'])}", flush=True)
+        print(f"mean IoU {model['pixel']['mean_iou']}", flush=True)
+        print(
+            f"false discard rate at {model['decision_threshold']}: {model['false_discard_rate']}",
+            flush=True,
+        )
+        print(f"report: {paths.portable(out)}", flush=True)
     return 0
 
 

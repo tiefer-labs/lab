@@ -41,6 +41,7 @@ from tiefer_lab.train import (
     METADATA_NAME,
     TrainingError,
     band_set_name,
+    band_set_option,
     resolve_run_dir,
 )
 from tiefer_lab.utils import metadata, paths
@@ -191,7 +192,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--final", action="store_true", help="also measure INT8 on the test split")
     parser.add_argument("--reason", help="why the test split is used (with --final)")
     parser.add_argument(
-        "--band-set", default=None, help="bands of a band-flexible run, for example B02,B03,B04"
+        "--band-set",
+        default=None,
+        help="bands of a band-flexible run, for example B02,B03,B04, or 'all' for every band set",
     )
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
@@ -200,15 +203,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        out = export_run(
-            resolve_run_dir(args.run),
-            which=args.checkpoint,
-            with_int8=not args.skip_int8,
-            final=args.final,
-            reason=args.reason,
-            allow_synthetic=args.allow_synthetic,
-            band_set=args.band_set.split(",") if args.band_set else None,
-        )
+        run_dir = resolve_run_dir(args.run)
+        outs = [
+            export_run(
+                run_dir,
+                which=args.checkpoint,
+                with_int8=not args.skip_int8,
+                final=args.final,
+                reason=args.reason,
+                allow_synthetic=args.allow_synthetic,
+                band_set=band_set,
+            )
+            for band_set in band_set_option(run_dir, args.band_set)
+        ]
     except (
         TestGuardError,
         TrainingError,
@@ -218,19 +225,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     ) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
-    report = json.loads(out.read_text(encoding="utf-8"))
-    for key, value in report["verification"].items():
-        print(
-            f"{key}: argmax agreement {value['argmax_agreement']:.5f}, "
-            f"max logit difference {value['max_abs_logit_difference']:.3g}",
-            flush=True,
-        )
-    if "quantisation" in report:
-        change = report["quantisation"]["val"]["change"]
-        print(f"INT8 mean IoU change on val: {change['mean_iou_change']}", flush=True)
-        if "note" in change:
-            print(change["note"], flush=True)
-    print(f"report: {paths.portable(out)}", flush=True)
+    for out in outs:
+        report = json.loads(out.read_text(encoding="utf-8"))
+        print(f"band set {','.join(report['band_set'])}", flush=True)
+        for key, value in report["verification"].items():
+            print(
+                f"{key}: argmax agreement {value['argmax_agreement']:.5f}, "
+                f"max logit difference {value['max_abs_logit_difference']:.3g}",
+                flush=True,
+            )
+        if "quantisation" in report:
+            change = report["quantisation"]["val"]["change"]
+            print(f"INT8 mean IoU change on val: {change['mean_iou_change']}", flush=True)
+            if "note" in change:
+                print(change["note"], flush=True)
+        print(f"report: {paths.portable(out)}", flush=True)
     return 0
 
 

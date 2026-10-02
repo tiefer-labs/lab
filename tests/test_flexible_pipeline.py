@@ -103,6 +103,15 @@ def test_flexible_model_trains_evaluates_and_exports_per_band_set(
     dims = [d.dim_value for d in model.graph.input[0].type.tensor_type.shape.dim]
     assert dims == [1, 3, 64, 64]
 
+    # "all" evaluates and exports every band set of the run, as the Roihu jobs do.
+    assert evaluate.main([*common, "--band-set", "all"]) == 0
+    assert (
+        export.main(["--run", "flex", "--skip-int8", "--allow-synthetic", "--band-set", "all"]) == 0
+    )
+    for name in ("B04+B03+B02", "+".join(USED_BANDS), "+".join(L1C_BAND_NAMES)):
+        assert (tiefer_env["TIEFER_REPORTS_DIR"] / "evaluation" / f"flex_val_{name}.json").is_file()
+        assert (tiefer_env["TIEFER_REPORTS_DIR"] / "export" / f"flex_{name}.json").is_file()
+
 
 def test_specialist_reads_four_bands_from_the_13_band_cache(
     cache13: None, tiefer_env: dict[str, Path], tmp_path: Path
@@ -118,6 +127,8 @@ def test_specialist_reads_four_bands_from_the_13_band_cache(
     )
     assert report["band_set"] == list(USED_BANDS)
     assert np.isfinite(report["model"]["pixel"]["overall_accuracy"])
+    # "all" means the specialist's own bands.
+    assert evaluate.main([*common, "--band-set", "all"]) == 0
     # A fixed sensor perturbation is recorded in the report and its name.
     assert evaluate.main([*common, "--perturb", "rescale=0.5"]) == 0
     perturbed = json.loads(

@@ -126,6 +126,27 @@ def band_set_name(bands: Sequence[str]) -> str:
     return "+".join(bands)
 
 
+ALL_BAND_SETS = "all"
+
+
+def band_set_option(run_dir: Path, value: str | None) -> list[list[str] | None]:
+    """The band sets that `--band-set` names for a run.
+
+    None: the run's default (a specialist's own bands; a band-flexible run
+    then stops with a message naming its sets). "all": every band set of a
+    band-flexible run, or the specialist's own bands. Otherwise one
+    comma-separated list.
+    """
+    if value is None:
+        return [None]
+    if value == ALL_BAND_SETS:
+        config = load_config(run_dir / CONFIG_NAME)
+        if config.model.input == "flexible":
+            return [list(bands) for bands in config.train.band_sets]
+        return [None]
+    return [value.split(",")]
+
+
 def validate_band_sets(
     model: torch.nn.Module,
     band_sets: Sequence[Sequence[str]],
