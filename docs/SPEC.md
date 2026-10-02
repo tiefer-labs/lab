@@ -430,6 +430,7 @@ lab/
     test_acceptance.py            acceptance targets, minimum and target judged separately
     test_requirements_doc.py      no requirement without verification, no broken link
     test_sbom.py                  SBOM covers every locked package with licence and hashes
+    test_wording.py               no compliance claims, valid standards matrix statuses
     test_bootstrap.py
     test_decisions.py
     test_baselines.py
