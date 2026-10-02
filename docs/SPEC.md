@@ -294,6 +294,9 @@ lab/
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
       survey.sbatch               survey of the dataset metadata and item encodings
+      timing.sbatch               one cut epoch on gputest: the real cost of a config
+      sweep.sh                    configs and seeds as separate one-GPU jobs
+      plan.md                     run order with costs, under 5000 GPU BU
       smoke.sbatch                gputest, 15 minutes
       train.sbatch                gpumedium, resumable
       evaluate.sbatch             validation, or test with FINAL=1

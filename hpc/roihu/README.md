@@ -226,6 +226,9 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable, optional `SEED` |
 | `evaluate.sbatch` | validation with baselines; test only with `FINAL=1` and `REASON` |
 | `export.sbatch` | ONNX export, check against PyTorch, INT8 quantisation |
+| `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
+| `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
+| `plan.md` | the run order with costs, under 5000 GPU BU |
 | `usage.sh` | `sacct` record of a job, written to `reports/compute/<job-id>.json` |
 | `collect.sh` | packs reports, run metadata, best checkpoint and ONNX files, with relative paths only |
 
@@ -298,6 +301,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 2 October 2026: timing job, sweep script and run plan for milestone L2.
 - 2 October 2026: 13-band cache built in shards with a shared rate cap and a disk estimate.
 - 2 October 2026: survey job before a data build.
 - 2 October 2026: training uses `configs/l1_full.toml`.

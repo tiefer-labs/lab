@@ -366,3 +366,49 @@ def test_prelude_stops_without_the_module_command(
     result = subprocess.run(["bash", "-c", script], env=roihu_env, capture_output=True, text=True)
     assert result.returncode == 1 and "continued" not in result.stdout
     assert "submit it with hpc/roihu/submit.sh from a Roihu login node" in result.stderr
+
+
+def _appending_sbatch(roihu_env: dict[str, str], tmp_path: Path) -> Path:
+    log = tmp_path / "calls.log"
+    (tmp_path / "bin" / "sbatch").write_text(
+        f'#!/bin/sh\necho "SEED=${{SEED:-}} $*" >> "{log}"\necho "Submitted batch job 1"\n'
+    )
+    return log
+
+
+def test_sweep_submits_one_job_per_config_and_seed(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    log = _appending_sbatch(roihu_env, tmp_path)
+    env = {**roihu_env, "STUB_ARCH": "aarch64"}
+    configs = ["configs/l2_flex_1m.toml", "configs/l2_spec_1m.toml"]
+    result = _run("sweep.sh", ["--seeds", "0,1,2", *configs], env)
+    assert result.returncode == 0, result.stderr
+    calls = log.read_text().splitlines()
+    assert len(calls) == 6
+    assert calls[0].startswith("SEED=0 ") and calls[0].endswith(
+        "hpc/roihu/train.sbatch configs/l2_flex_1m.toml"
+    )
+    assert calls[5].startswith("SEED=2 ") and calls[5].endswith("configs/l2_spec_1m.toml")
+
+
+def test_sweep_timing_and_test_only(roihu_env: dict[str, str], tmp_path: Path) -> None:
+    log = _appending_sbatch(roihu_env, tmp_path)
+    env = {**roihu_env, "STUB_ARCH": "aarch64"}
+    args = ["--timing", "--test-only", "--seeds", "0,1", "configs/l2_flex_1m.toml"]
+    assert _run("sweep.sh", args, env).returncode == 0
+    calls = log.read_text().splitlines()
+    assert len(calls) == 1 and "--test-only" in calls[0]
+    assert calls[0].endswith("hpc/roihu/timing.sbatch configs/l2_flex_1m.toml")
+
+
+@pytest.mark.parametrize(
+    "args",
+    [[], ["--seeds", "a", "configs/l2_flex_1m.toml"], ["configs/missing.toml"], ["--bogus", "x"]],
+)
+def test_sweep_rejects_bad_input(
+    roihu_env: dict[str, str], tmp_path: Path, args: list[str]
+) -> None:
+    log = _appending_sbatch(roihu_env, tmp_path)
+    assert _run("sweep.sh", args, {**roihu_env, "STUB_ARCH": "aarch64"}).returncode == 2
+    assert not log.exists()
