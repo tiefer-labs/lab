@@ -114,6 +114,24 @@ The log says `Hugging Face token: set` or `not set`, never the token itself. Whe
 
 Its log starts with the metadata columns of the dataset. If it stops because the split field is missing, see the troubleshooting table.
 
+#### All 13 bands, in shards
+
+The band-flexible models read all 13 Level-1C bands from one cache, `cloudsen12-l1c-all`. With all bands a 509 x 509 patch takes about 6.7 MiB, so the high quality train, val and test splits (8490, 535 and 975 patches on 2 October 2026) need about 55.3, 3.5 and 6.4 GiB, 65.1 GiB in all; the merge needs one shard more at its peak. The builder prints its estimate and stops when the file system has less free space, but the project quota on `/scratch` can be lower than that: check it first (`TODO(verify)` the command on [docs.csc.fi](https://docs.csc.fi/computing/disk/)).
+
+The training split is read by four CPU jobs side by side, each into its own folder, and merged afterwards. `--max-rate` caps the reads per minute of the whole split and is shared between the shards; 120 is the highest rate observed with a token without HTTP 429 (2 October 2026):
+
+```bash
+for i in 0 1 2 3; do
+  bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train --name cloudsen12-l1c-all --bands all --shard "$i/4" --max-rate 120
+done
+bash hpc/roihu/submit.sh hpc/roihu/data.sbatch val --name cloudsen12-l1c-all --bands all --max-rate 30
+bash hpc/roihu/submit.sh hpc/roihu/data.sbatch test --name cloudsen12-l1c-all --bands all --max-rate 30
+# when all four shards say "complete":
+bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train --name cloudsen12-l1c-all --bands all --merge 4
+```
+
+Every shard job is resumable on its own: submit the same line again after a stop. The merge refuses to start until every shard is complete, deletes each shard after copying it, and is resumable too.
+
 ### Step 4: smoke job on `gputest`
 
 This and every later job is submitted from `roihu-gpu.csc.fi`:
@@ -237,6 +255,9 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export, 
 | `rate limited (HTTP 429); all readers pause` in the data log | Hugging Face limits reads without a token | nothing to do, the job continues; set `HF_TOKEN` as in step 3 before the next data job |
 | `OUT_OF_MEMORY` in the finishing step of the data job, then `FileNotFoundError` on `train_images.partial.npy` | an older version counted class pixels on the whole split at once | run `git pull` and submit the same data job again; it goes straight to the finishing step |
 | `stopped after ... of ...` in the data log | the job hit its time limit or a read failed | submit the same data job again; it continues |
+| `shard ... is not complete; merge later` | the merge was submitted before every shard finished | wait for the shard jobs (`squeue --me`), resubmit any that stopped, then merge |
+| `needs about ... GiB but only ... GiB are free` | the file system is too full for the build | free space in `/scratch/<project>` or ask CSC for more quota |
+| `stores bands ...; this build asks for ...` | a 4-band cache name was used for a 13-band build, or the other way round | use `--name cloudsen12-l1c-all` with `--bands all` |
 | `invalid partition` from `sbatch` | a partition name differs on Roihu | check `sinfo` and the [partitions page](https://docs.csc.fi/computing/running/batch-job-partitions/), then edit the `#SBATCH --partition` line |
 | The training log ends with `interrupted` | the time limit was reached | submit `train.sbatch` again with the run ID |
 | `the test split is only for final evaluation` | test was requested without `FINAL=1` and `REASON` | evaluate on validation; use test once, for the final result |
@@ -277,6 +298,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 2 October 2026: 13-band cache built in shards with a shared rate cap and a disk estimate.
 - 2 October 2026: survey job before a data build.
 - 2 October 2026: training uses `configs/l1_full.toml`.
 - 2 October 2026: Hugging Face token from `HF_TOKEN`, shared backoff on HTTP 429, and the finishing step of a data job resumes on its own.

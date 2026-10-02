@@ -299,3 +299,173 @@ def test_memory_mapped_band_selection_feeds_the_training_dataset(
     mean, std = cache.normalisation(index, bands)
     image, _ = TrainPatches(data, mean, std, 32, Photometric(0.0, 0.0))[0]
     assert image.shape == (3, 32, 32) and image.dtype == torch.float32
+
+
+def _band_reads(table: _FakeTable, fail: dict[str, int] | None = None) -> Any:
+    """A read_patch stand-in that honours `bands` and can fail once at a position."""
+
+    def fake_read(_: Any, position: int, bands: Any = source.USED_BANDS) -> source.Patch:
+        if fail is not None and position == fail.get("position"):
+            fail["position"] = -1
+            raise ConnectionError("simulated network failure")
+        image = np.stack(
+            [
+                np.full((16, 16), position * 100 + source.L1C_BAND_NAMES.index(b), np.uint16)
+                for b in bands
+            ]
+        )
+        return source.Patch(
+            patch_id=f"ROI_{position:05d}",
+            image=image,
+            label=np.full((16, 16), position % 4, dtype=np.uint8),
+            metadata=source.row_metadata(table.iloc[position]),
+        )
+
+    return fake_read
+
+
+def _tree_files(directory: Path) -> set[str]:
+    return {str(p.relative_to(directory)) for p in directory.rglob("*") if p.is_file()}
+
+
+def test_shards_write_apart_and_merge_into_the_same_cache_as_one_build(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    table = _FakeTable(50)
+    fail = {"position": 20}
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _band_reads(table, fail))
+    base = ["--split", "train", "--revision", "r", "--taco", "local.taco", "--bands", "all"]
+    sharded = [*base, "--name", "sharded"]
+    directory = cache.cache_dir("sharded")
+
+    seen: list[set[str]] = []
+    for shard in range(3):
+        before = _tree_files(directory) if directory.exists() else set()
+        args = [*sharded, "--shard", f"{shard}/3"]
+        if shard == 1:  # shard 1 holds row 20: it fails once and is resumed
+            with pytest.raises(ConnectionError):
+                build_cache.main(args)
+        assert build_cache.main(args) == 0
+        new = _tree_files(directory) - before
+        seen.append({f for f in new if f.startswith(f"shards/train/{shard}-of-3/")})
+        assert all(f.startswith(f"shards/train/{shard}-of-3/") or f == "index.json" for f in new)
+    with pytest.raises(cache.CacheError, match="not complete"):
+        build_cache.main([*sharded, "--merge", "4"])
+    assert build_cache.main([*sharded, "--merge", "3"]) == 0
+    assert not (directory / "shards").exists()
+
+    assert build_cache.main([*base, "--name", "single"]) == 0
+    one, many = cache.cache_dir("single"), directory
+    a, b = cache.read_index(one), cache.read_index(many)
+    assert b["bands"] == list(source.L1C_BAND_NAMES)
+    for key in ("patch_ids", "row_keys", "class_pixels", "count"):
+        assert a["splits"]["train"][key] == b["splits"]["train"][key]
+    assert a["normalisation"] == b["normalisation"]
+    np.testing.assert_array_equal(
+        np.load(cache.images_path(one, "train")), np.load(cache.images_path(many, "train"))
+    )
+    np.testing.assert_array_equal(
+        np.load(cache.labels_path(one, "train")), np.load(cache.labels_path(many, "train"))
+    )
+
+
+def test_an_interrupted_merge_resumes(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    table = _FakeTable(12)
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _band_reads(table))
+    args = ["--split", "train", "--revision", "r", "--taco", "local.taco"]
+    for shard in range(2):
+        build_cache.main([*args, "--shard", f"{shard}/2"])
+    real_finish = build_cache._finish_split
+    monkeypatch.setattr(
+        build_cache, "_finish_split", lambda *_, **__: (_ for _ in ()).throw(MemoryError())
+    )
+    with pytest.raises(MemoryError):
+        build_cache.main([*args, "--merge", "2"])
+    monkeypatch.setattr(build_cache, "_finish_split", real_finish)
+    assert build_cache.main([*args, "--merge", "2"]) == 0
+    data = cache.load_split(cache.cache_dir(build_cache.DEFAULT_NAME), "train")
+    assert len(data) == 12
+    np.testing.assert_array_equal(data.images[:, 0, 0, 0], np.arange(12) * 100 + 1)
+
+
+def test_a_cache_keeps_one_band_set(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    table = _FakeTable(4)
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _band_reads(table))
+    args = ["--split", "train", "--revision", "r", "--taco", "local.taco"]
+    assert build_cache.main([*args, "--bands", "all"]) == 0
+    with pytest.raises(cache.CacheError, match="stores bands"):
+        build_cache.main([*args, "--bands", "used"])
+
+
+def test_the_rate_cap_is_shared_between_shards(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tiefer_lab.data import http
+
+    table = _FakeTable(6)
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _band_reads(table))
+    created: list[float] = []
+
+    class Recording(http.RateLimiter):
+        def __post_init__(self) -> None:
+            created.append(self.per_minute)
+            super().__post_init__()
+
+        def acquire(self) -> None:
+            pass
+
+    monkeypatch.setattr(http, "RateLimiter", Recording)
+    args = ["--split", "train", "--revision", "r", "--taco", "local.taco", "--max-rate", "120"]
+    build_cache.main([*args, "--shard", "0/4"])
+    build_cache.main([*args, "--name", "single"])
+    assert created == [30.0, 120.0]
+
+
+def test_rate_limiter_spaces_reads() -> None:
+    from tiefer_lab.data import http
+
+    now = {"t": 0.0}
+    sleeps: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        now["t"] += seconds
+
+    limiter = http.RateLimiter(per_minute=30, sleep=sleep, clock=lambda: now["t"])
+    for _ in range(4):
+        limiter.acquire()
+    assert sleeps == [2.0, 2.0, 2.0]
+
+
+def test_build_stops_when_the_disk_is_too_small(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import shutil as shutil_module
+
+    table = _FakeTable(10)
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _band_reads(table))
+    monkeypatch.setattr(
+        shutil_module, "disk_usage", lambda _: shutil_module._ntuple_diskusage(10, 9, 1)
+    )
+    with pytest.raises(cache.CacheError, match="needs about"):
+        build_cache.main(["--split", "train", "--revision", "r", "--taco", "x", "--bands", "all"])
+    # 13 bands of 509 x 509 uint16 and a uint8 label.
+    assert build_cache.bytes_per_patch(13) == 13 * 509 * 509 * 2 + 509 * 509
+
+
+@pytest.mark.parametrize("n, shards", [(0, 1), (7, 3), (8490, 4), (5, 8)])
+def test_shard_bounds_cover_every_row_once(n: int, shards: int) -> None:
+    covered = []
+    for shard in range(shards):
+        start, stop = build_cache.shard_bounds(n, shard, shards)
+        covered.extend(range(start, stop))
+    assert covered == list(range(n))

@@ -74,6 +74,34 @@ def retry_after_seconds(error: BaseException) -> float | None:
 
 
 @dataclass
+class RateLimiter:
+    """At most `per_minute` reads per minute, shared by all threads of a job.
+
+    Reads are spaced evenly: each waits until 60 / per_minute seconds after
+    the previous one was allowed.
+    """
+
+    per_minute: float
+    sleep: Callable[[float], None] = time.sleep
+    clock: Callable[[], float] = time.monotonic
+    _next: float = 0.0
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def __post_init__(self) -> None:
+        if self.per_minute <= 0:
+            raise ValueError("per_minute must be positive")
+
+    def acquire(self) -> None:
+        interval = 60.0 / self.per_minute
+        with self._lock:
+            now = self.clock()
+            start = max(now, self._next)
+            self._next = start + interval
+        if start > now:
+            self.sleep(start - now)
+
+
+@dataclass
 class Backoff:
     """Shared pause for all reader threads after a rate-limited read."""
 

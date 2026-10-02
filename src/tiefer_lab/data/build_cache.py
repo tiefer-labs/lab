@@ -4,11 +4,19 @@
 """Build the local data cache.
 
     python -m tiefer_lab.data.build_cache --split train|val|test|all [--limit N]
+        [--bands used|all] [--shard I/N | --merge N] [--max-rate P]
 
-Reads only the four used bands and the label of each selected patch and
-writes them into `$TIEFER_DATA_DIR/<name>/` (layout in `cache.py`). The build
-is resumable: progress is saved every few patches, and running the same
-command again continues where it stopped. Counts are verified at the end.
+Reads the chosen bands (the four used bands, or all 13 Level-1C bands) and
+the label of each selected patch and writes them into
+`$TIEFER_DATA_DIR/<name>/` (layout in `cache.py`). The build is resumable:
+progress is saved every few patches, and running the same command again
+continues where it stopped. Counts are verified at the end, and the disk
+needed is printed before a build starts.
+
+`--shard I/N` builds part I of N of a split in its own folder, so several jobs
+can run side by side without writing the same file; `--merge N` joins the N
+complete shards. `--max-rate` caps the reads per minute of the whole split and
+is shared equally between the shards.
 
 `--synthetic` writes a cache of synthetic scenes instead, for smoke runs and
 tests when the dataset is not reachable. A synthetic cache is marked as such
@@ -20,13 +28,16 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
+import shutil
 import sys
 from collections.abc import Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -163,161 +174,135 @@ def _partial(path: Path) -> Path:
     return path.with_name(path.name.replace(".npy", ".partial.npy"))
 
 
-def build_real_split(
-    directory: Path,
-    split: str,
-    limit: int | None,
-    taco: Sequence[str],
-    revision: str | None,
-    workers: int = 4,
-    restart: bool = False,
-) -> None:
-    """Build one split of the real cache, resuming an interrupted build.
+@dataclass(frozen=True)
+class Target:
+    """Where one resumable read writes: final arrays and a progress file."""
 
-    A split that is already complete with the same selection is left as it
-    is. A complete or partly built split with another selection (for example
-    a `--limit` build pointed at the full cache) is never replaced unless
-    `restart` is set, so a small build can never reset a large one.
+    images: Path
+    labels: Path
+    progress: Path
+
+
+@dataclass
+class Plan:
+    """The selected rows of one split, their identities and the band choice."""
+
+    split: str
+    table: Any
+    rows: list[int]
+    ids: list[str]
+    roi_ids: list[str]
+    counts: dict[str, Any]
+    bands: tuple[str, ...]
+
+
+def bytes_per_patch(bands: int, size: int = source.KEPT_SHAPE) -> int:
+    """Disk use of one cached patch: uint16 bands and a uint8 label."""
+    return bands * size * size * 2 + size * size
+
+
+def check_disk(directory: Path, needed: int, what: str) -> None:
+    """Print the disk estimate and stop when the file system has less free space.
+
+    The free space of the file system is an upper bound: the project quota on
+    /scratch can be lower (hpc/roihu/README.md says how to check it).
     """
-    dataset = {
-        "repo": source.DATASET_REPO,
-        "card": source.DATASET_CARD_URL,
-        "licence": source.DATASET_LICENCE,
-        "taco": list(taco),
-        "revision": revision or "unknown",
-    }
     directory.mkdir(parents=True, exist_ok=True)
-    index = _open_index(directory, "cloudsen12", dataset)
-    if revision:
-        index["dataset"]["revision"] = revision
-    backoff = http.Backoff()
-    table = backoff.call(source.open_table, taco[0] if len(taco) == 1 else list(taco))
-    chosen = source.select(table, split, limit)
-    rows = chosen.positions
-    counts = chosen.counts()
+    free = shutil.disk_usage(directory).free
+    gib = 1024**3
     print(
-        f"{split}: {counts['high_quality']} high quality patches, "
-        f"{counts['kept_509']} kept ({source.KEPT_SHAPE} x {source.KEPT_SHAPE}), "
-        f"{counts['dropped_other_shape']} dropped (other sizes), {counts['selected']} selected",
+        f"disk estimate for {what}: {needed / gib:.1f} GiB; "
+        f"file system free: {free / gib:.1f} GiB (check the project quota too)",
         flush=True,
     )
-    if not rows:
+    if free < needed:
         raise cache.CacheError(
-            f"no high quality {source.KEPT_SHAPE} x {source.KEPT_SHAPE} patches for {split!r}"
-        )
-    # The row key identifies a row of the TACO table (resume); roi_id identifies
-    # the patch in reports.
-    ids = [str(table.iloc[r][source.ID_FIELD]) for r in rows]
-    roi_ids = [str(table.iloc[r][source.PATCH_ID_FIELD]) for r in rows]
-
-    where = paths.portable(directory)
-    existing = index["splits"].get(split)
-    if existing and existing.get("complete") and not restart:
-        if existing.get("row_keys") == ids:
-            print(f"{split}: already complete in {where} ({len(ids)} patches)", flush=True)
-            return
-        raise cache.CacheError(
-            f"{split}: {where} already holds a complete split with another selection "
-            f"({existing.get('count')} patches, limit {existing.get('limit')}; now "
-            f"{len(ids)} patches, limit {limit}). Use another --name or $TIEFER_DATA_DIR, "
-            "or pass --restart to replace it"
+            f"{what} needs about {needed / gib:.1f} GiB but only {free / gib:.1f} GiB are free"
         )
 
-    progress_file = _progress_path(directory, split)
+
+def _read_rows(
+    target: Target,
+    plan: Plan,
+    rows: Sequence[int],
+    ids: Sequence[str],
+    *,
+    reader: Any,
+    workers: int,
+    restart: bool,
+    label: str,
+) -> list[dict[str, Any]]:
+    """Read `rows` into `target`, resuming from its progress file. Returns the metadata.
+
+    Patches are read in parallel but written in order, so `done` always means
+    "patches 0 to done - 1 are in the arrays" and a restart continues there.
+    """
     progress: dict[str, Any] = {}
-    if progress_file.is_file():
-        progress = json.loads(progress_file.read_text(encoding="utf-8"))
-        if progress.get("patch_ids") != ids:
+    if target.progress.is_file():
+        progress = json.loads(target.progress.read_text(encoding="utf-8"))
+        if progress.get("patch_ids") != list(ids):
             if not restart:
                 raise cache.CacheError(
-                    f"{split}: {where} holds a build in progress with another selection "
-                    f"({len(progress.get('patch_ids', []))} patches; now {len(ids)}). "
-                    "Use another --name or $TIEFER_DATA_DIR, or pass --restart to "
-                    "discard it"
+                    f"{label}: {paths.portable(target.progress.parent)} holds a build in "
+                    f"progress with another selection ({len(progress.get('patch_ids', []))} "
+                    f"patches; now {len(ids)}). Use another --name or $TIEFER_DATA_DIR, or "
+                    "pass --restart to discard it"
                 )
-            print(f"{split}: --restart: discarding the build in progress", flush=True)
+            print(f"{label}: --restart: discarding the build in progress", flush=True)
             progress = {}
-
-    ref_names = list(source.REFERENCE_MASK_ITEMS)
-    final_images = cache.images_path(directory, split)
+    n = len(rows)
     if (
         progress
-        and int(progress["done"]) == len(rows)
-        and final_images.is_file()
-        and cache.labels_path(directory, split).is_file()
-        and not _partial(final_images).exists()
+        and int(progress["done"]) == n
+        and target.images.is_file()
+        and target.labels.is_file()
+        and not _partial(target.images).exists()
     ):
         # Every patch was written and the files were moved into place, but the
         # finishing step did not complete (for example out of memory): finish only.
-        print(f"{split}: all {len(rows)} patches written; running the finishing step", flush=True)
-        _finish_split(
-            directory,
-            index,
-            split,
-            roi_ids,
-            progress["metadata"],
-            limit,
-            ref_names,
-            counts,
-            row_keys=ids,
-        )
-        progress_file.unlink()
-        return
+        print(f"{label}: all {n} patches written; running the finishing step", flush=True)
+        metadata: list[dict[str, Any]] = progress["metadata"]
+        return metadata
 
     first: source.Patch | None = None
     if progress:
         height, width = progress["height"], progress["width"]
         done = int(progress["done"])
-        metadata: list[dict[str, Any]] = progress["metadata"]
+        metadata = progress["metadata"]
         mode = "r+"
     else:
-        first = backoff.call(source.read_patch, table, rows[0])
+        first = reader(rows[0])
         height, width = first.label.shape
         done, metadata, mode = 0, [], "w+"
-    n = len(rows)
+    target.images.parent.mkdir(parents=True, exist_ok=True)
     images = np.lib.format.open_memmap(
-        _partial(cache.images_path(directory, split)),
+        _partial(target.images),
         mode=mode,
         dtype=np.uint16,
-        shape=(n, len(source.USED_BANDS), height, width),
+        shape=(n, len(plan.bands), height, width),
     )
     labels = np.lib.format.open_memmap(
-        _partial(cache.labels_path(directory, split)),
-        mode=mode,
-        dtype=np.uint8,
-        shape=(n, height, width),
+        _partial(target.labels), mode=mode, dtype=np.uint8, shape=(n, height, width)
     )
-    refs = {
-        name: np.lib.format.open_memmap(
-            _partial(cache.reference_path(directory, split, name)),
-            mode=mode,
-            dtype=np.uint8,
-            shape=(n, height, width),
-        )
-        for name in ref_names
-    }
 
     def save_progress() -> None:
         images.flush()
         labels.flush()
-        for r in refs.values():
-            r.flush()
         state = {
-            "patch_ids": ids,
+            "patch_ids": list(ids),
             "done": done,
             "height": height,
             "width": width,
+            "bands": list(plan.bands),
             "metadata": metadata,
         }
-        tmp = progress_file.with_suffix(".tmp")
+        tmp = target.progress.with_suffix(".tmp")
         tmp.write_text(json.dumps(state), encoding="utf-8")
-        os.replace(tmp, progress_file)
+        os.replace(tmp, target.progress)
 
     if done:
-        print(f"{split}: resuming at patch {done} of {n}", flush=True)
-    print(f"{split}: reading with {workers} parallel workers", flush=True)
-    # Patches are read in parallel but written in order, so `done` always means
-    # "patches 0 to done - 1 are in the arrays" and a restart continues there.
+        print(f"{label}: resuming at patch {done} of {n}", flush=True)
+    print(f"{label}: reading with {workers} parallel workers", flush=True)
     window = max(1, workers) * 4
     pool = ThreadPoolExecutor(max_workers=max(1, workers))
     pending: dict[int, Future[source.Patch]] = {}
@@ -330,9 +315,7 @@ def build_real_split(
                     ready.set_result(first)
                     pending[submitted] = ready
                 else:
-                    pending[submitted] = pool.submit(
-                        backoff.call, source.read_patch, table, rows[submitted]
-                    )
+                    pending[submitted] = pool.submit(reader, rows[submitted])
                 submitted += 1
             patch = pending.pop(i).result()
             if patch.label.shape != (height, width):
@@ -341,29 +324,335 @@ def build_real_split(
                 )
             images[i] = patch.image
             labels[i] = patch.label
-            for name, arr in refs.items():
-                arr[i] = patch.reference[name]
             metadata.append(patch.metadata)
             done = i + 1
             if done % SAVE_EVERY == 0 or done == n:
                 save_progress()
-                print(f"{split}: {done}/{n}", flush=True)
+                print(f"{label}: {done}/{n}", flush=True)
     except BaseException:
         save_progress()
-        print(f"{split}: stopped after {done} of {n}; run the same command to continue", flush=True)
+        print(f"{label}: stopped after {done} of {n}; run the same command to continue", flush=True)
         raise
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
     save_progress()
-    os.replace(_partial(cache.images_path(directory, split)), cache.images_path(directory, split))
-    os.replace(_partial(cache.labels_path(directory, split)), cache.labels_path(directory, split))
-    for name in ref_names:
-        p = cache.reference_path(directory, split, name)
-        os.replace(_partial(p), p)
-    _finish_split(
-        directory, index, split, roi_ids, metadata, limit, ref_names, counts, row_keys=ids
+    os.replace(_partial(target.images), target.images)
+    os.replace(_partial(target.labels), target.labels)
+    return metadata
+
+
+def _dataset(taco: Sequence[str], revision: str | None) -> dict[str, Any]:
+    return {
+        "repo": source.DATASET_REPO,
+        "card": source.DATASET_CARD_URL,
+        "licence": source.DATASET_LICENCE,
+        "taco": list(taco),
+        "revision": revision or "unknown",
+    }
+
+
+def _open_real_index(
+    directory: Path, taco: Sequence[str], revision: str | None, bands: Sequence[str]
+) -> dict[str, Any]:
+    directory.mkdir(parents=True, exist_ok=True)
+    index = _open_index(directory, "cloudsen12", _dataset(taco, revision))
+    if index["splits"] and list(index["bands"]) != list(bands):
+        raise cache.CacheError(
+            f"{paths.portable(directory)} stores bands {index['bands']}; this build asks for "
+            f"{list(bands)}. Use another --name"
+        )
+    index["bands"] = list(bands)
+    index["band_labels"] = [source.BAND_LABELS.get(b, b) for b in bands]
+    if revision:
+        index["dataset"]["revision"] = revision
+    return index
+
+
+def plan_split(
+    split: str,
+    limit: int | None,
+    taco: Sequence[str],
+    bands: Sequence[str],
+    backoff: http.Backoff,
+) -> Plan:
+    table = backoff.call(source.open_table, taco[0] if len(taco) == 1 else list(taco))
+    chosen = source.select(table, split, limit)
+    counts = chosen.counts()
+    print(
+        f"{split}: {counts['high_quality']} high quality patches, "
+        f"{counts['kept_509']} kept ({source.KEPT_SHAPE} x {source.KEPT_SHAPE}), "
+        f"{counts['dropped_other_shape']} dropped (other sizes), {counts['selected']} selected",
+        flush=True,
     )
-    progress_file.unlink()
+    if not chosen.positions:
+        raise cache.CacheError(
+            f"no high quality {source.KEPT_SHAPE} x {source.KEPT_SHAPE} patches for {split!r}"
+        )
+    # The row key identifies a row of the TACO table (resume); roi_id identifies
+    # the patch in reports.
+    rows = chosen.positions
+    return Plan(
+        split=split,
+        table=table,
+        rows=rows,
+        ids=[str(table.iloc[r][source.ID_FIELD]) for r in rows],
+        roi_ids=[str(table.iloc[r][source.PATCH_ID_FIELD]) for r in rows],
+        counts=counts,
+        bands=tuple(bands),
+    )
+
+
+def _reader(plan: Plan, backoff: http.Backoff, limiter: http.RateLimiter | None) -> Any:
+    bands = None if plan.bands == source.USED_BANDS else plan.bands
+
+    def read(position: int) -> source.Patch:
+        def once() -> source.Patch:
+            if limiter is not None:
+                limiter.acquire()
+            if bands is None:
+                return source.read_patch(plan.table, position)
+            return source.read_patch(plan.table, position, bands=bands)
+
+        return backoff.call(once)
+
+    return read
+
+
+def build_real_split(
+    directory: Path,
+    split: str,
+    limit: int | None,
+    taco: Sequence[str],
+    revision: str | None,
+    workers: int = 4,
+    restart: bool = False,
+    bands: Sequence[str] = source.USED_BANDS,
+    max_rate: float | None = None,
+) -> None:
+    """Build one split of the real cache, resuming an interrupted build.
+
+    A split that is already complete with the same selection is left as it
+    is. A complete or partly built split with another selection (for example
+    a `--limit` build pointed at the full cache) is never replaced unless
+    `restart` is set, so a small build can never reset a large one.
+    """
+    index = _open_real_index(directory, taco, revision, bands)
+    backoff = http.Backoff()
+    plan = plan_split(split, limit, taco, bands, backoff)
+    where = paths.portable(directory)
+    existing = index["splits"].get(split)
+    if existing and existing.get("complete") and not restart:
+        if existing.get("row_keys") == plan.ids:
+            print(f"{split}: already complete in {where} ({len(plan.ids)} patches)", flush=True)
+            return
+        raise cache.CacheError(
+            f"{split}: {where} already holds a complete split with another selection "
+            f"({existing.get('count')} patches, limit {existing.get('limit')}; now "
+            f"{len(plan.ids)} patches, limit {limit}). Use another --name or $TIEFER_DATA_DIR, "
+            "or pass --restart to replace it"
+        )
+    target = Target(
+        cache.images_path(directory, split),
+        cache.labels_path(directory, split),
+        _progress_path(directory, split),
+    )
+    if not target.progress.is_file():
+        check_disk(directory, len(plan.rows) * bytes_per_patch(len(bands)), f"split {split}")
+    limiter = http.RateLimiter(max_rate) if max_rate else None
+    metadata = _read_rows(
+        target,
+        plan,
+        plan.rows,
+        plan.ids,
+        reader=_reader(plan, backoff, limiter),
+        workers=workers,
+        restart=restart,
+        label=split,
+    )
+    _finish_split(
+        directory, index, split, plan.roi_ids, metadata, limit, [], plan.counts, row_keys=plan.ids
+    )
+    target.progress.unlink()
+
+
+# Shards ----------------------------------------------------------------------
+#
+# Several CPU jobs can build one split side by side: shard i of n reads its
+# own contiguous part of the selected rows into its own folder, so no two jobs
+# ever write the same file. `--merge` then copies the shards in order into the
+# split's arrays, deleting each shard after it is copied, and writes the index.
+
+
+def shard_dir(directory: Path, split: str, shard: int, shards: int) -> Path:
+    return directory / "shards" / split / f"{shard}-of-{shards}"
+
+
+def shard_bounds(n: int, shard: int, shards: int) -> tuple[int, int]:
+    """Rows [start, stop) of shard `shard` of `shards`; sizes differ by at most one."""
+    if not 0 <= shard < shards:
+        raise ValueError(f"shard {shard} is not in 0 to {shards - 1}")
+    return n * shard // shards, n * (shard + 1) // shards
+
+
+def _fingerprint(ids: Sequence[str]) -> str:
+    return hashlib.sha256("\n".join(ids).encode()).hexdigest()
+
+
+def build_shard(
+    directory: Path,
+    split: str,
+    shard: int,
+    shards: int,
+    limit: int | None,
+    taco: Sequence[str],
+    revision: str | None,
+    workers: int = 4,
+    restart: bool = False,
+    bands: Sequence[str] = source.USED_BANDS,
+    max_rate: float | None = None,
+) -> None:
+    index = _open_real_index(directory, taco, revision, bands)
+    if index["splits"].get(split, {}).get("complete") and not restart:
+        raise cache.CacheError(
+            f"{split} is already complete in {paths.portable(directory)}; nothing to build"
+        )
+    backoff = http.Backoff()
+    plan = plan_split(split, limit, taco, bands, backoff)
+    start, stop = shard_bounds(len(plan.rows), shard, shards)
+    folder = shard_dir(directory, split, shard, shards)
+    done_file = folder / "shard.json"
+    label = f"{split} shard {shard} of {shards}"
+    if done_file.is_file() and not restart:
+        print(f"{label}: already complete", flush=True)
+        return
+    target = Target(folder / "images.npy", folder / "labels.npy", folder / "progress.json")
+    if not target.progress.is_file():
+        check_disk(folder, (stop - start) * bytes_per_patch(len(bands)), label)
+    # A global rate cap is shared equally between the shards.
+    limiter = http.RateLimiter(max_rate / shards) if max_rate else None
+    metadata = _read_rows(
+        target,
+        plan,
+        plan.rows[start:stop],
+        plan.ids[start:stop],
+        reader=_reader(plan, backoff, limiter),
+        workers=workers,
+        restart=restart,
+        label=label,
+    )
+    state = {
+        "split": split,
+        "shard": shard,
+        "shards": shards,
+        "start": start,
+        "stop": stop,
+        "selection": _fingerprint(plan.ids),
+        "patches": len(plan.ids),
+        "limit": limit,
+        "bands": list(bands),
+        "row_keys": plan.ids[start:stop],
+        "roi_ids": plan.roi_ids[start:stop],
+        "metadata": metadata,
+        "counts": plan.counts,
+    }
+    tmp = done_file.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state), encoding="utf-8")
+    os.replace(tmp, done_file)
+    target.progress.unlink()
+    print(f"{label}: complete ({stop - start} patches)", flush=True)
+
+
+def merge_shards(
+    directory: Path, split: str, shards: int, taco: Sequence[str], revision: str | None
+) -> None:
+    """Copy complete shards into the split's arrays, in order, and write the index.
+
+    Resumable: copied shards are recorded in `<split>.merge.json`. A shard's
+    files are deleted only after its rows are written and flushed, so the disk
+    peak is the split plus one shard.
+    """
+    states = []
+    for shard in range(shards):
+        done_file = shard_dir(directory, split, shard, shards) / "shard.json"
+        if not done_file.is_file():
+            raise cache.CacheError(
+                f"{split} shard {shard} of {shards} is not complete; merge later"
+            )
+        states.append(json.loads(done_file.read_text(encoding="utf-8")))
+    selection = {s["selection"] for s in states}
+    bands = {tuple(s["bands"]) for s in states}
+    if len(selection) != 1 or len(bands) != 1:
+        raise cache.CacheError(f"the {split} shards come from different selections or band sets")
+    n = int(states[0]["patches"])
+    if [s["start"] for s in states] != [shard_bounds(n, i, shards)[0] for i in range(shards)]:
+        raise cache.CacheError(f"the {split} shards do not cover the selection in order")
+    index = _open_real_index(directory, taco, revision, list(next(iter(bands))))
+    merge_file = directory / f"{split}.merge.json"
+    copied: list[int] = []
+    if merge_file.is_file():
+        copied = json.loads(merge_file.read_text(encoding="utf-8"))["copied"]
+    final_images = cache.images_path(directory, split)
+    final_labels = cache.labels_path(directory, split)
+    if copied:
+        saved = json.loads(merge_file.read_text(encoding="utf-8"))
+        height, width = int(saved["height"]), int(saved["width"])
+    else:
+        shapes = {
+            np.load(shard_dir(directory, split, i, shards) / "labels.npy", mmap_mode="r").shape[1:]
+            for i in range(shards)
+        }
+        if len(shapes) != 1:
+            raise cache.CacheError(f"the {split} shards have different patch sizes: {shapes}")
+        height, width = (int(v) for v in shapes.pop())
+        merge_file.write_text(json.dumps({"copied": [], "height": height, "width": width}))
+    remaining = [s for s in states if s["shard"] not in copied]
+    if remaining:
+        mode: Literal["r+", "w+"] = "r+" if copied else "w+"
+        images = np.lib.format.open_memmap(
+            _partial(final_images),
+            mode=mode,
+            dtype=np.uint16,
+            shape=(n, len(states[0]["bands"]), height, width),
+        )
+        labels = np.lib.format.open_memmap(
+            _partial(final_labels), mode=mode, dtype=np.uint8, shape=(n, height, width)
+        )
+        for s in remaining:
+            folder = shard_dir(directory, split, s["shard"], shards)
+            s_images = np.load(folder / "images.npy", mmap_mode="r")
+            s_labels = np.load(folder / "labels.npy", mmap_mode="r")
+            for offset in range(0, s_images.shape[0], COUNT_CHUNK):
+                rows = slice(s["start"] + offset, min(s["start"] + offset + COUNT_CHUNK, s["stop"]))
+                images[rows] = s_images[offset : offset + COUNT_CHUNK]
+                labels[rows] = s_labels[offset : offset + COUNT_CHUNK]
+            images.flush()
+            labels.flush()
+            copied.append(s["shard"])
+            merge_file.write_text(json.dumps({"copied": copied, "height": height, "width": width}))
+            (folder / "images.npy").unlink()
+            (folder / "labels.npy").unlink()
+            print(f"{split}: merged shard {s['shard']} of {shards}", flush=True)
+        del images, labels
+    if _partial(final_images).exists():
+        os.replace(_partial(final_images), final_images)
+        os.replace(_partial(final_labels), final_labels)
+    else:
+        print(f"{split}: all shards merged; running the finishing step", flush=True)
+    _finish_split(
+        directory,
+        index,
+        split,
+        [r for s in states for r in s["roi_ids"]],
+        [m for s in states for m in s["metadata"]],
+        states[0]["limit"],
+        [],
+        states[0]["counts"],
+        row_keys=[k for s in states for k in s["row_keys"]],
+    )
+    shutil.rmtree(directory / "shards" / split)
+    if not any((directory / "shards").iterdir()):
+        (directory / "shards").rmdir()
+    merge_file.unlink()
 
 
 # Synthetic data ------------------------------------------------------------
@@ -458,6 +747,30 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="parallel readers (default: SLURM_CPUS_PER_TASK, else 4)",
     )
     parser.add_argument(
+        "--bands",
+        choices=["used", "all"],
+        default="used",
+        help="store the four used bands (default) or all 13 Level-1C bands",
+    )
+    parser.add_argument(
+        "--shard",
+        default=None,
+        help="build part I of N of the split, for example 0/4, in its own folder",
+    )
+    parser.add_argument(
+        "--merge",
+        type=int,
+        default=None,
+        metavar="N",
+        help="merge the N complete shards of the split into the cache",
+    )
+    parser.add_argument(
+        "--max-rate",
+        type=float,
+        default=None,
+        help="patches per minute for the whole split, shared between shards",
+    )
+    parser.add_argument(
         "--restart",
         action="store_true",
         help="replace a split built or being built with another selection",
@@ -470,6 +783,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--limit must be at least 1")
     if args.synthetic and args.limit is None:
         parser.error("--synthetic needs --limit (patches per split)")
+    if args.shard is not None:
+        try:
+            shard, shards = (int(v) for v in args.shard.split("/"))
+        except ValueError:
+            parser.error("--shard takes I/N, for example 0/4")
+        if not 0 <= shard < shards:
+            parser.error("--shard I/N needs 0 <= I < N")
+        args.shard = (shard, shards)
+    if (args.shard or args.merge) and args.split == "all":
+        parser.error("--shard and --merge work on one split at a time")
+    if args.shard and args.merge:
+        parser.error("--shard and --merge are separate steps")
+    if args.max_rate is not None and args.max_rate <= 0:
+        parser.error("--max-rate must be positive")
     return args
 
 
@@ -493,10 +820,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Hugging Face token: {token}", flush=True)
         taco = args.taco or [source.TACO_NAME_L1C]
         workers = download_workers(args.workers)
+        bands = source.L1C_BAND_NAMES if args.bands == "all" else source.USED_BANDS
         for split in splits:
-            build_real_split(
-                directory, split, args.limit, taco, revision, workers, restart=args.restart
-            )
+            if args.merge:
+                merge_shards(directory, split, args.merge, taco, revision)
+            elif args.shard:
+                shard, shards = args.shard
+                build_shard(
+                    directory,
+                    split,
+                    shard,
+                    shards,
+                    args.limit,
+                    taco,
+                    revision,
+                    workers,
+                    restart=args.restart,
+                    bands=bands,
+                    max_rate=args.max_rate,
+                )
+            else:
+                build_real_split(
+                    directory,
+                    split,
+                    args.limit,
+                    taco,
+                    revision,
+                    workers,
+                    restart=args.restart,
+                    bands=bands,
+                    max_rate=args.max_rate,
+                )
     print(f"cache: {paths.portable(directory)}", flush=True)
     return 0
 

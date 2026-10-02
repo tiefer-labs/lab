@@ -60,6 +60,8 @@ L1C_BAND_NAMES: tuple[str, ...] = (
 # The four bands Tiefer uses: blue, green, red, near infrared (docs/ASSUMPTIONS.md).
 USED_BANDS: tuple[str, ...] = ("B02", "B03", "B04", "B08")
 USED_BAND_LABELS: tuple[str, ...] = ("blue", "green", "red", "near infrared")
+# Descriptive names of the used bands; other bands are named by their band name.
+BAND_LABELS: Mapping[str, str] = dict(zip(USED_BANDS, USED_BAND_LABELS, strict=True))
 # 1-based band indexes for rasterio, derived from the order above.
 USED_BAND_INDEXES: tuple[int, ...] = tuple(L1C_BAND_NAMES.index(b) + 1 for b in USED_BANDS)
 
@@ -285,13 +287,21 @@ def _read_bands(path: str, indexes: Sequence[int], expected_count: int) -> NDArr
     return data
 
 
-def read_patch(table: Any, position: int) -> Patch:
-    """Read the four used bands and the label of the patch at `position`."""
+def band_indexes(bands: Sequence[str]) -> tuple[int, ...]:
+    """1-based rasterio indexes of Level-1C bands given by name."""
+    unknown = [b for b in bands if b not in L1C_BAND_NAMES]
+    if unknown:
+        raise DataSourceError(f"unknown bands {unknown}; Level-1C bands are {L1C_BAND_NAMES}")
+    return tuple(L1C_BAND_NAMES.index(b) + 1 for b in bands)
+
+
+def read_patch(table: Any, position: int, bands: Sequence[str] = USED_BANDS) -> Patch:
+    """Read the given bands (by default the four used bands) and the label at `position`."""
     row = table.iloc[position]
     sample = table.read(position)
     image_path = sample.read(IMAGE_ITEM)
     label_path = sample.read(LABEL_ITEM)
-    image = _read_bands(image_path, USED_BAND_INDEXES, len(L1C_BAND_NAMES))
+    image = _read_bands(image_path, band_indexes(bands), len(L1C_BAND_NAMES))
     if image.dtype != np.uint16:
         raise DataSourceError(f"expected uint16 digital numbers, found {image.dtype}")
     raw_label = _read_bands(label_path, (1,), 1)[0]
