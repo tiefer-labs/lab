@@ -285,8 +285,16 @@ This is the complete list of committed files at the end of Part A. Create every 
 lab/
   .github/
     dependabot.yml                weekly updates: pip (uv) and github-actions
+    audit-exceptions.toml         accepted vulnerability findings, each with a reason and an expiry
+    ci-tools/
+      requirements.in             CI-only tools: pip-audit, shellcheck-py
+      requirements.txt            the same, pinned with hashes
+    scripts/
+      audit_exceptions.py         checks the accepted findings and turns them into pip-audit arguments
+      coverage_floor.py           fails when the coverage floor is lower than in the base commit
     workflows/
-      ci.yml                      lint, type check, tests on CPU with synthetic data
+      ci.yml                      lint, type check, tests (x86, ARM, coverage), shellcheck, smoke, SBOM, secret scan
+      audit.yml                   vulnerability audit of uv.lock on push and weekly
       codeql.yml                  CodeQL for python and actions
   configs/
     smoke.toml                    tiny run, minutes on CPU or MPS
@@ -435,6 +443,8 @@ lab/
     test_requirements_doc.py      no requirement without verification, no broken link
     test_sbom.py                  SBOM covers every locked package with licence and hashes
     test_wording.py               no compliance claims, valid standards matrix statuses
+    test_audit_exceptions.py      accepted findings need a reason and expire
+    test_coverage_floor.py        the coverage floor may rise, never fall
     test_bootstrap.py
     test_decisions.py
     test_baselines.py
@@ -482,7 +492,10 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 - **Text rule test:** fails if any tracked text file (`.py`, `.md`, `.toml`, `.yaml`, `.yml`, `.txt`, `.sh`, `.sbatch`, `.json`, `.cff`, `.cfg`) contains U+2014, U+2015, U+FE0F or a character with the Unicode property Extended_Pictographic (checked with the `regex` package), or an en dash (U+2013) that has a space or line boundary on either side (an en dash is only accepted directly between two characters, as in a range). `LICENSE` is checked too.
 - **Public hygiene test:** fails if a tracked file contains an absolute home or scratch path (for example `/home/`, `/Users/`, `/users/`, `/scratch/project_`, `/projappl/project_`), a CSC project identifier pattern (`project_` followed by digits), an email address other than `hello@tiefer.space`, something that looks like a key or token, or the name of any AI coding tool or its vendor in tracked content or paths (patterns built from string pieces so the test does not match itself). Report JSON stores paths relative to the repository or as `$TIEFER_*` placeholders.
 - Both tests write their patterns with escape sequences or string concatenation (for example the Python escape sequence for U+2014 instead of the character itself), never as literal characters, so they do not flag themselves. Placeholders such as `<project>` in documentation are allowed.
-- `ci.yml`: push and pull request, CPU only, synthetic data only: lint, type check, tests. Top-level `permissions: contents: read`. Actions pinned by full commit SHA with the tag in a comment; resolve SHAs with `git ls-remote`, never invent one. `persist-credentials: false`. No `pull_request_target`.
+- `ci.yml`: push and pull request, CPU only, synthetic data only. Each check is its own job: `lint`, `typecheck`, `test (ubuntu-24.04)` with coverage, `test (ubuntu-24.04-arm)`, `shellcheck` (every script under `hpc/` and `jetson/`, including the batch files), `smoke` (the synthetic smoke pipeline end to end, 10-minute limit), `sbom` (CycloneDX file attached to the run as an artifact) and `secrets` (gitleaks over the full history, binary checked against its SHA-256).
+- **Coverage floor:** `fail_under` in `pyproject.toml` is the measured total rounded down; CI fails below it and fails when a commit lowers it against the base commit. Raise it when coverage rises.
+- **Permissions and pinning:** workflow-level `permissions: {}`, and each job asks only for what it needs (`contents: read`; CodeQL also `security-events: write`). Actions pinned by full commit SHA with the tag in a comment; resolve SHAs with `git ls-remote`, never invent one. Downloaded tools are checked against a recorded SHA-256 or installed from a hashed requirements file. `persist-credentials: false`. No `pull_request_target`.
+- `audit.yml`: `pip-audit` over every package of `uv.lock` on push, pull request, weekly and on demand; a finding fails unless accepted in `.github/audit-exceptions.toml` with a reason and an expiry at most 90 days ahead (docs/DEPENDENCIES.md, section 4).
 - `codeql.yml`: CodeQL for Python and GitHub Actions on push, pull request and weekly.
 - `dependabot.yml`: weekly for Python dependencies and GitHub Actions.
 - No secrets anywhere. `.env.example` documents the `TIEFER_*` variables; `.env` is gitignored.
@@ -521,6 +534,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 2 October 2026: section 15 and the tree describe the new CI: separate jobs, tests on x86 and ARM, coverage with a floor, shellcheck, the smoke job, the SBOM artifact, the secret scan and the weekly vulnerability audit. Before, one CI job ran lint, type check and tests, with `permissions: contents: read` at the workflow level.
 - 2 October 2026: section 9 adds the operational design domain and the fail-safe behaviour of `tiefer_lab.onboard`. Before, the specification did not say which inputs the filter is designed for or what happens outside them.
 - 2 October 2026: section 8 adds milestone L2, one band-flexible model family (input with availability flags in two designs, band sets drawn per batch, self-distillation, a size ladder from 0.5 M to about 22 M parameters, four-band specialists as control, export per band set). The 1.0 million parameter budget now applies to the L1 configs only. Before, the model took four bands only and the budget applied to every model.
 - 1 October 2026: `hpc/roihu/gpu_shell.sh` removed; GPU setup and GPU jobs run from `roihu-gpu.csc.fi`.
