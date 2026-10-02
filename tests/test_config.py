@@ -142,17 +142,18 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
         )
         assert config.train == expected_train, name
     variants = {
-        "l2_flex_1m_zero": ("model", "flexible_design"),
-        "l2_flex_1m_classweights": ("train", "class_weighting"),
-        "l2_flex_1m_focal": ("train", "focal_gamma"),
-        "l2_flex_1m_nodistill": ("train", "distill_weight"),
+        "l2_flex_1m_zero": ("model", {"flexible_design"}),
+        "l2_flex_1m_classweights": ("train", {"class_weighting"}),
+        "l2_flex_1m_focal": ("train", {"focal_gamma"}),
+        "l2_flex_1m_nodistill": ("train", {"distill_weight"}),
+        "l2_flex_1m_rescale": ("data", {"rescale_min", "rescale_max"}),
+        "l2_flex_1m_gainoffset": ("data", {"gain_jitter", "offset_jitter"}),
+        "l2_flex_1m_noiseblur": ("data", {"noise_std", "blur_sigma"}),
     }
-    for name, (section, key) in variants.items():
+    for name, (section, keys) in variants.items():
         config = load(name)
         for part in ("data", "model", "train", "evaluation", "export"):
-            a, b = (
-                dataclasses.asdict(getattr(config, part)),
-                dataclasses.asdict(getattr(reference, part)),
-            )
+            a = dataclasses.asdict(getattr(config, part))
+            b = dataclasses.asdict(getattr(reference, part))
             changed = {k for k in a if a[k] != b[k]}
-            assert changed == ({key} if part == section else set()), (name, part, changed)
+            assert changed == (keys if part == section else set()), (name, part, changed)

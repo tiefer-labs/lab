@@ -31,6 +31,7 @@ The training runs of milestone L2 in the order they are submitted, with their ex
 | `l2_flex_1m_classweights` | 0.92 M | 4.23 | 69.8 | 2.91 | 581 |
 | `l2_flex_1m_focal` | 0.92 M | 4.23 | 69.8 | 2.91 | 581 |
 | `l2_flex_1m_nodistill` | 0.92 M | 4.23 | 62.9 | 2.62 | 524 |
+| `l2_flex_1m_rescale`, `l2_flex_1m_gainoffset`, `l2_flex_1m_noiseblur` | 0.92 M | 4.23 | 69.8 | 2.91 | 581 each |
 | `l2_spec_1m` | 0.92 M | 3.47 | 29.8 | 1.24 | 249 |
 | `l2_flex_4m` | 3.59 M | 14.34 | 236.6 | 9.86 | 1971 |
 | `l2_flex_cnx_21m` | 20.56 M | 42.36 | 698.7 | 29.11 | 5823 |
@@ -56,7 +57,7 @@ The runs with the largest expected gain come first. Cumulative cost is the upper
 | 7 | the kept 1 M design, seeds 1 and 2; `l2_spec_1m`, seeds 1 and 2 | three seeds for the final pair | 1660 | 3853 |
 | 8 | `l2_flex_4m`, seed 0, if its measured cost fits | the next size | up to 1971 | up to 5824 |
 
-The cut line is 5000 GPU BU: a step that would cross it with its measured cost is not submitted. The largest models, the loss variants (`classweights`, `focal`, `nodistill`) and the robustness runs of section 5 of the brief follow only if measured costs leave room; each is then added to this table with its measured cost before it is submitted.
+The cut line is 5000 GPU BU: a step that would cross it with its measured cost is not submitted. The largest models, the loss variants (`classweights`, `focal`, `nodistill`) and the robustness runs (`rescale`, `gainoffset`, `noiseblur`) follow only if measured costs leave room; each is then added to this table with its measured cost before it is submitted.
 
 ---
 
@@ -78,4 +79,5 @@ bash hpc/roihu/sweep.sh --seeds 1,2 configs/l2_flex_1m.toml configs/l2_spec_1m.t
 
 ## Changelog
 
+- 2 October 2026: the three sensor robustness runs added below the cut line.
 - 2 October 2026: first version, with upper-bound costs from the measured speed of `l1_base`.

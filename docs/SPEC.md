@@ -287,6 +287,9 @@ lab/
     l2_flex_1m_classweights.toml  as l2_flex_1m with class weights
     l2_flex_1m_focal.toml         as l2_flex_1m with a focal term
     l2_flex_1m_nodistill.toml     as l2_flex_1m without self-distillation
+    l2_flex_1m_rescale.toml       as l2_flex_1m with random rescaling, 0.5 to 2
+    l2_flex_1m_gainoffset.toml    as l2_flex_1m with per-band gain and offset jitter
+    l2_flex_1m_noiseblur.toml     as l2_flex_1m with sensor noise and mild blur
   docs/
     SPEC.md                       sections 1 to 17 of the build brief, unchanged
     STYLE.md                      the Markdown standard (section 18), for every Tiefer repository
