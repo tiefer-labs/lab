@@ -89,7 +89,14 @@ cd /projappl/<project>/tiefer-lab/src
 bash hpc/roihu/setup.sh
 ```
 
-### Step 3: build the data cache
+### Step 3: survey the dataset, then build the data cache
+
+Before a new build, run the survey: a short CPU job that reads the metadata and a few patches of every label type and writes `$TIEFER_REPORTS_DIR/data/survey.json` (counts by label type, patch size and split; locations shared with the validation and test splits; how labels and reference masks are encoded). Facts the code depends on are taken from this report, not assumed. From `roihu-cpu.csc.fi`, with the token set as below:
+
+```bash
+bash hpc/roihu/submit.sh hpc/roihu/survey.sbatch
+cat /scratch/<project>/tiefer-lab/reports/data/survey.json
+```
 
 From `roihu-cpu.csc.fi`. Without a Hugging Face token the server answers HTTP 429 (too many requests) after a few hundred patches, so set a read token in the shell first. `read -rs` keeps it out of the screen, the shell history and every file; the job inherits it through sbatch's default export, and the builder passes it to GDAL without printing it:
 
@@ -195,6 +202,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `check_env.py` | imports every dependency, prints versions, architecture, GPU, CUDA and bf16 support |
 | `requirements.txt` | generated from `uv.lock` with `make requirements`, without `torch` and its own dependencies |
 | `submit.sh` | `sbatch` with `--account`, `--chdir` and the log location; refuses GPU jobs unless run on `roihu-gpu.csc.fi` and the data job unless run on `roihu-cpu.csc.fi`; `SEED`, `FINAL` and `REASON` reach the job as plain environment variables |
+| `survey.sbatch` | short CPU job: counts, splits, locations and item encodings of the dataset, written to `reports/data/survey.json` |
 | `data.sbatch` | builds the cache in `/scratch` on a CPU node; submitted from `roihu-cpu.csc.fi` |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/l1_base.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable, optional `SEED` |
@@ -269,6 +277,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 2 October 2026: survey job before a data build.
 - 2 October 2026: training uses `configs/l1_full.toml`.
 - 2 October 2026: Hugging Face token from `HF_TOKEN`, shared backoff on HTTP 429, and the finishing step of a data job resumes on its own.
 - 2 October 2026: the smoke job uses the full cache only when its train and val splits are complete, and otherwise builds its tiny cache in its own folder.

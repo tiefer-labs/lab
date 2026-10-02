@@ -11,9 +11,9 @@
 # Jobs use sbatch's default export, the standard CSC way: the job sees the
 # environment of the submitting shell, including TIEFER_CSC_PROJECT and, when
 # set, SEED, FINAL, REASON, TIEFER_PYTORCH_MODULE and TIEFER_CPU_PYTHON_MODULE.
-# GPU jobs are submitted from roihu-gpu.csc.fi (aarch64) and the data job from
-# roihu-cpu.csc.fi (x86_64). sbatch options before the job script are passed
-# on, for example --test-only or --time=24:00:00.
+# GPU jobs are submitted from roihu-gpu.csc.fi (aarch64) and CPU jobs (the
+# data job, the survey) from roihu-cpu.csc.fi (x86_64). sbatch options before
+# the job script are passed on, for example --test-only or --time=24:00:00.
 #
 # Logs go to $TIEFER_RUNS_DIR/slurm/<job-name>-<job-id>.out.
 set -euo pipefail
@@ -54,11 +54,14 @@ if grep -q '^#SBATCH --gres=gpu' "${script}"; then
     echo "error: this is a GPU job and this host is ${host_arch}; submit GPU jobs from roihu-gpu.csc.fi" >&2
     exit 2
   fi
-elif [[ "$(basename "${script}")" == "data.sbatch" ]]; then
-  if [[ "${host_arch}" != "x86_64" ]]; then
+elif [[ "${host_arch}" != "x86_64" ]]; then
+  # CPU jobs (the data job, the survey) run on x86 CPU nodes.
+  if [[ "$(basename "${script}")" == "data.sbatch" ]]; then
     echo "error: this host is ${host_arch}; submit the data job from roihu-cpu.csc.fi" >&2
-    exit 2
+  else
+    echo "error: this host is ${host_arch}; submit CPU jobs from roihu-cpu.csc.fi" >&2
   fi
+  exit 2
 fi
 
 if [[ -n "${SEED:-}" && ! "${SEED}" =~ ^[0-9]+$ ]]; then

@@ -111,6 +111,7 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
         ("evaluate", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
         ("export", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
         ("data", "aarch64", "submit the data job from roihu-cpu.csc.fi"),
+        ("survey", "aarch64", "submit CPU jobs from roihu-cpu.csc.fi"),
     ],
 )
 def test_submit_refuses_a_job_from_the_wrong_login_node(

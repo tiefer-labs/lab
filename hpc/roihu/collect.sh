@@ -41,6 +41,7 @@ for f in "${TIEFER_REPORTS_DIR}"/evaluation/"${run_id}"_*.json "${TIEFER_REPORTS
   [[ -e "${f}" ]] && files+=("${f#"${base}/"}")
 done
 add "${reports_rel}/test_log.md"
+add "${reports_rel}/data/survey.json"
 
 mkdir -p "${base}/collect"
 archive="${base}/collect/tiefer-${run_id}.tar.gz"

@@ -208,6 +208,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
 | `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
+| `survey.sbatch` | Short CPU job: counts, splits, locations and item encodings of the dataset, in `reports/data/survey.json` |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache in its own folder when the train and val splits of the full cache are not complete, and only reads the full cache |
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
@@ -281,6 +282,7 @@ lab/
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
+      survey.sbatch               survey of the dataset metadata and item encodings
       smoke.sbatch                gputest, 15 minutes
       train.sbatch                gpumedium, resumable
       evaluate.sbatch             validation, or test with FINAL=1
@@ -318,6 +320,7 @@ lab/
         source.py                 CloudSEN12+ access with tacoreader
         build_cache.py            python -m tiefer_lab.data.build_cache
         http.py                   backoff on HTTP 429 and the Hugging Face token
+        survey.py                 python -m tiefer_lab.data.survey: counts, splits, encodings
         cache.py                  cache reading, in memory or memory-mapped
         dataset.py                PyTorch datasets for train and evaluation
         transforms.py             reflectance, normalisation, crops, augmentation, padding
@@ -352,6 +355,7 @@ lab/
     test_bands_and_labels.py
     test_cache.py                 cache build, resume and reading on synthetic data
     test_http.py                  backoff on HTTP 429, token never printed
+    test_survey.py                survey on a synthetic table with real GeoTIFF items
     test_metrics.py
     test_bootstrap.py
     test_decisions.py
