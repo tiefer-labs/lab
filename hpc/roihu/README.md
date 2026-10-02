@@ -187,6 +187,12 @@ bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
 bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <run-id>
 ```
 
+Both jobs cover every band set of a band-flexible run. For the robustness reports, evaluate the run again under fixed sensor perturbations (by default `rescale=0.5 rescale=2 gain=0.9 gain=1.1 offset=0.01 noise=0.01 blur=1`; set `PERTURBATIONS` to change the list):
+
+```bash
+ROBUSTNESS=1 bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
+```
+
 The test split is only for the final evaluation. It needs `FINAL=1` and a reason, and every such run is logged in `test_log.md`:
 
 ```bash
@@ -219,13 +225,13 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `setup.sh` | one-time setup per architecture: venv, `requirements.txt`, the package, environment check |
 | `check_env.py` | imports every dependency, prints versions, architecture, GPU, CUDA and bf16 support |
 | `requirements.txt` | generated from `uv.lock` with `make requirements`, without `torch` and its own dependencies |
-| `submit.sh` | `sbatch` with `--account`, `--chdir` and the log location; refuses GPU jobs unless run on `roihu-gpu.csc.fi` and the data job unless run on `roihu-cpu.csc.fi`; `SEED`, `FINAL` and `REASON` reach the job as plain environment variables |
+| `submit.sh` | `sbatch` with `--account`, `--chdir` and the log location; refuses GPU jobs unless run on `roihu-gpu.csc.fi` and the data job unless run on `roihu-cpu.csc.fi`; `SEED`, `FINAL`, `REASON`, `ROBUSTNESS` and `PERTURBATIONS` reach the job as plain environment variables |
 | `survey.sbatch` | short CPU job: counts, splits, locations and item encodings of the dataset, written to `reports/data/survey.json` |
 | `data.sbatch` | builds the cache in `/scratch` on a CPU node; submitted from `roihu-cpu.csc.fi` |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/l1_base.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable, optional `SEED` |
-| `evaluate.sbatch` | validation with baselines; test only with `FINAL=1` and `REASON` |
-| `export.sbatch` | ONNX export, check against PyTorch, INT8 quantisation |
+| `evaluate.sbatch` | validation with baselines on every band set of the run; test only with `FINAL=1` and `REASON`; `ROBUSTNESS=1` adds the fixed sensor perturbations in `PERTURBATIONS` |
+| `export.sbatch` | ONNX export per band set, check against PyTorch, INT8 quantisation |
 | `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
 | `plan.md` | the run order with costs, under 5000 GPU BU |

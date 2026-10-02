@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tarfile
 from pathlib import Path
 
 import pytest
+
+from tiefer_lab.data.sensor import Perturbation
 
 ROIHU = Path(__file__).resolve().parent.parent / "hpc" / "roihu"
 
@@ -412,3 +415,14 @@ def test_sweep_rejects_bad_input(
     log = _appending_sbatch(roihu_env, tmp_path)
     assert _run("sweep.sh", args, {**roihu_env, "STUB_ARCH": "aarch64"}).returncode == 2
     assert not log.exists()
+
+
+def test_evaluate_and_export_cover_every_band_set() -> None:
+    evaluate = (ROIHU / "evaluate.sbatch").read_text()
+    export = (ROIHU / "export.sbatch").read_text()
+    assert evaluate.count("--band-set all") == 2
+    assert export.count("--band-set all") == 2
+    default = re.search(r"PERTURBATIONS:-([^}]*)\}", evaluate)
+    assert default is not None
+    for text in default.group(1).split():
+        Perturbation.parse(text)

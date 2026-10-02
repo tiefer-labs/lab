@@ -33,7 +33,7 @@ cache_name="$(python3 -c 'import sys; from tiefer_lab.config import load_config;
 tiefer_stage_cache "${cache_name}"
 
 if [[ "${FINAL:-0}" == "1" ]]; then
-  python3 -m tiefer_lab.export --run "${run_id}" --final --reason "${REASON:?FINAL=1 needs REASON}"
+  python3 -m tiefer_lab.export --run "${run_id}" --band-set all --final --reason "${REASON:?FINAL=1 needs REASON}"
 else
-  python3 -m tiefer_lab.export --run "${run_id}"
+  python3 -m tiefer_lab.export --run "${run_id}" --band-set all
 fi
