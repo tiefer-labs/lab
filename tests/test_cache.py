@@ -126,3 +126,62 @@ def test_download_workers(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SLURM_CPUS_PER_TASK", "16")
     assert build_cache.download_workers() == 16
     assert build_cache.download_workers(2) == 2
+
+
+def _fake_reads(
+    table: _FakeTable, reads: list[int], fail_at: dict[str, int]
+) -> Any:  # a source.read_patch stand-in
+    def fake_read(_: Any, position: int) -> source.Patch:
+        if position == fail_at["position"]:
+            raise ConnectionError("simulated network failure")
+        reads.append(position)
+        return source.Patch(
+            patch_id=f"ROI_{position:05d}",
+            image=np.full((4, 16, 16), position, dtype=np.uint16),
+            label=np.full((16, 16), position % 4, dtype=np.uint8),
+            metadata=source.row_metadata(table.iloc[position]),
+        )
+
+    return fake_read
+
+
+def _snapshot(directory: Path) -> dict[str, bytes]:
+    return {p.name: p.read_bytes() for p in sorted(directory.iterdir()) if p.is_file()}
+
+
+def test_a_limited_build_never_resets_or_replaces_the_full_cache(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    table = _FakeTable(60)
+    reads: list[int] = []
+    fail_at = {"position": 40}
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", _fake_reads(table, reads, fail_at))
+    full = ["--split", "train", "--revision", "r", "--taco", "local.taco"]
+    tiny = [*full, "--limit", "32"]
+    directory = cache.cache_dir(build_cache.DEFAULT_NAME)
+
+    # A full build in progress (as while data.sbatch runs): a tiny build stops.
+    with pytest.raises(ConnectionError):
+        build_cache.main(full)
+    before = _snapshot(directory)
+    with pytest.raises(cache.CacheError, match="build in progress with another selection"):
+        build_cache.main(tiny)
+    assert _snapshot(directory) == before, "the build in progress is untouched"
+
+    # The full build continues where it stopped, then a tiny build still stops.
+    fail_at["position"] = -1
+    reads.clear()
+    assert build_cache.main(full) == 0
+    assert min(reads) == 40
+    before = _snapshot(directory)
+    with pytest.raises(cache.CacheError, match="complete split with another selection"):
+        build_cache.main(tiny)
+    assert _snapshot(directory) == before, "the complete split is untouched"
+
+    # The same full build again reads nothing; --restart is the only way to replace it.
+    reads.clear()
+    assert build_cache.main(full) == 0
+    assert reads == [] and _snapshot(directory) == before
+    assert build_cache.main([*tiny, "--restart"]) == 0
+    assert len(cache.load_split(directory, "train")) == 32

@@ -128,11 +128,12 @@ python -m tiefer_lab.data.build_cache --split val
 python -m tiefer_lab.data.build_cache --split test
 ```
 
-Add `--limit <n>` for a small subset. The build is resumable: run the same command again after an interruption. On CSC Roihu use `hpc/roihu/data.sbatch` (see [hpc/roihu/README.md](../hpc/roihu/README.md)).
+Add `--limit <n>` for a small subset. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection (for example `--limit`) into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart` to replace it on purpose. On CSC Roihu use `hpc/roihu/data.sbatch` (see [hpc/roihu/README.md](../hpc/roihu/README.md)).
 
 ---
 
 ## Changelog
 
+- 2 October 2026: a build with another selection never replaces an existing split without `--restart`.
 - 1 October 2026: dataset facts checked against the card, version 1.1.2; only 509 x 509 patches are kept, with kept and dropped counts per split; `roi_id` is the patch identifier; the split field is still `TODO(verify)`.
 - 1 October 2026: first version; dataset facts marked `TODO(verify)` because the dataset card was not reachable from the build environment.

@@ -156,7 +156,15 @@ def build_real_split(
     taco: Sequence[str],
     revision: str | None,
     workers: int = 4,
+    restart: bool = False,
 ) -> None:
+    """Build one split of the real cache, resuming an interrupted build.
+
+    A split that is already complete with the same selection is left as it
+    is. A complete or partly built split with another selection (for example
+    a `--limit` build pointed at the full cache) is never replaced unless
+    `restart` is set, so a small build can never reset a large one.
+    """
     dataset = {
         "repo": source.DATASET_REPO,
         "card": source.DATASET_CARD_URL,
@@ -187,12 +195,32 @@ def build_real_split(
     ids = [str(table.iloc[r][source.ID_FIELD]) for r in rows]
     roi_ids = [str(table.iloc[r][source.PATCH_ID_FIELD]) for r in rows]
 
+    where = paths.portable(directory)
+    existing = index["splits"].get(split)
+    if existing and existing.get("complete") and not restart:
+        if existing.get("row_keys") == ids:
+            print(f"{split}: already complete in {where} ({len(ids)} patches)", flush=True)
+            return
+        raise cache.CacheError(
+            f"{split}: {where} already holds a complete split with another selection "
+            f"({existing.get('count')} patches, limit {existing.get('limit')}; now "
+            f"{len(ids)} patches, limit {limit}). Use another --name or $TIEFER_DATA_DIR, "
+            "or pass --restart to replace it"
+        )
+
     progress_file = _progress_path(directory, split)
     progress: dict[str, Any] = {}
     if progress_file.is_file():
         progress = json.loads(progress_file.read_text(encoding="utf-8"))
         if progress.get("patch_ids") != ids:
-            print(f"{split}: selection changed, starting this split again", flush=True)
+            if not restart:
+                raise cache.CacheError(
+                    f"{split}: {where} holds a build in progress with another selection "
+                    f"({len(progress.get('patch_ids', []))} patches; now {len(ids)}). "
+                    "Use another --name or $TIEFER_DATA_DIR, or pass --restart to "
+                    "discard it"
+                )
+            print(f"{split}: --restart: discarding the build in progress", flush=True)
             progress = {}
 
     ref_names = list(source.REFERENCE_MASK_ITEMS)
@@ -387,6 +415,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         help="parallel readers (default: SLURM_CPUS_PER_TASK, else 4)",
     )
+    parser.add_argument(
+        "--restart",
+        action="store_true",
+        help="replace a split built or being built with another selection",
+    )
     parser.add_argument("--synthetic", action="store_true", help="write synthetic scenes")
     parser.add_argument("--patch-size", type=int, default=128, help="synthetic patch size")
     parser.add_argument("--seed", type=int, default=0, help="synthetic data seed")
@@ -413,7 +446,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         taco = args.taco or [source.TACO_NAME_L1C]
         workers = download_workers(args.workers)
         for split in splits:
-            build_real_split(directory, split, args.limit, taco, revision, workers)
+            build_real_split(
+                directory, split, args.limit, taco, revision, workers, restart=args.restart
+            )
     print(f"cache: {paths.portable(directory)}", flush=True)
     return 0
 
