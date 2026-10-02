@@ -63,9 +63,15 @@ jobs:
       - name: Type check
         run: make typecheck
 
+  # x86 and ARM: Roihu's GPU nodes and the Jetson boards are ARM (aarch64).
   test:
-    runs-on: ubuntu-24.04
+    name: test (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     permissions:
       contents: read
     steps:
