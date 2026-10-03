@@ -80,7 +80,7 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 
 ## 4. Model
 
-|  | Value | Source | Commit |
+| Metric | Value | Source | Commit |
 | :--- | :---: | :---: | :---: |
 | Parameters | 240564 | `reports/export/l1_full-seed0-20261003T141417Z-5ba4585.json` | `0f0984d76116` |
 | Multiply-accumulates, 1 x 4 x 512 x 512 | 2190082048 | `reports/export/l1_full-seed0-20261003T141417Z-5ba4585.json` | `0f0984d76116` |
@@ -92,14 +92,14 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 
 Reference masks, when shipped with the dataset, use more spectral bands than the four used here, so the comparison favours them.
 
-|  | Mean IoU | False discard rate at 50 percent | Decision accuracy at 50 percent | Source | Commit |
+| Evaluated model | Mean IoU | False discard rate at 50 percent | Decision accuracy at 50 percent | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Validation split** | | | | | |
-| Cloud filter | 0.732 [0.714, 0.749] | 0.036 [0.018, 0.058] | 0.951 [0.933, 0.968] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
+| Cloud filter (`l2_spec_1m`) | 0.732 [0.714, 0.749] | 0.036 [0.018, 0.058] | 0.951 [0.933, 0.968] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
 | always send | 0.135 [0.128, 0.143] | 0.000 [0.000, 0.000] | 0.619 [0.578, 0.660] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
 | threshold rule | 0.297 [0.282, 0.314] | 0.227 [0.180, 0.269] | 0.751 [0.716, 0.785] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
 | **Test split** | | | | | |
-| Cloud filter | 0.720 [0.707, 0.732] | 0.042 [0.026, 0.059] | 0.942 [0.926, 0.956] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
+| Cloud filter (`l2_spec_1m`) | 0.720 [0.707, 0.732] | 0.042 [0.026, 0.059] | 0.942 [0.926, 0.956] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
 | always send | 0.133 [0.128, 0.138] | 0.000 [0.000, 0.000] | 0.635 [0.607, 0.664] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
 | threshold rule | 0.296 [0.285, 0.308] | 0.218 [0.186, 0.252] | 0.741 [0.713, 0.768] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
 
@@ -109,13 +109,13 @@ Reference masks, when shipped with the dataset, use more spectral bands than the
 
 Median over patches of the per-patch balanced overall accuracy (BOA), producer's accuracy (PA) and user's accuracy (UA), for cloud (thick and thin) against the rest and for cloud shadow against the rest, with 95 percent bootstrap intervals; definitions in `src/tiefer_lab/binary_metrics.py`. Every row is measured by this repository's code on the same patches. Values published in the dataset paper stay in their own column and are not filled in until they are checked against its tables.
 
-|  | Bands | Parameters | Multiply-accumulates | Cloud BOA | Cloud PA | Cloud UA | Shadow BOA | Shadow PA | Shadow UA | Published cloud BOA | Source | Commit |
+| Evaluated model / configuration | Bands | Parameters | Multiply-accumulates | Cloud BOA | Cloud PA | Cloud UA | Shadow BOA | Shadow PA | Shadow UA | Published cloud BOA | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Validation split** | | | | | | | | | | | | |
 | `l1_base-seed0-20261003T093922Z-81ab34b` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.853 [0.836, 0.869] | 0.943 [0.932, 0.947] | 0.778 [0.736, 0.809] | 0.858 [0.845, 0.873] | 0.916 [0.900, 0.932] | 0.265 [0.198, 0.311] | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 | `l1_base-seed1-20261003T124209Z-5ba4585` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.899 [0.887, 0.909] | 0.931 [0.920, 0.945] | 0.920 [0.908, 0.933] | 0.908 [0.895, 0.916] | 0.878 [0.862, 0.896] | 0.658 [0.622, 0.689] | n/a | `reports/evaluation/l1_base-seed1-20261003T124209Z-5ba4585_val.json` | `5ba45852a2f1` |
 | `l1_full-seed0-20261003T141417Z-5ba4585` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.907 [0.895, 0.915] | 0.947 [0.941, 0.953] | 0.904 [0.889, 0.919] | 0.921 [0.909, 0.926] | 0.906 [0.889, 0.924] | 0.640 [0.591, 0.672] | n/a | `reports/evaluation/l1_full-seed0-20261003T141417Z-5ba4585_val.json` | `5ba45852a2f1` |
-| `l2_flex_1m-seed0-20261003T140653Z-5ba4585` | B01 B02 B03 B04 B05 B06 B07 B08 B8A B09 B10 B11 B12 | 923697 | 9262333952 | 0.825 [0.806, 0.843] | 0.739 [0.699, 0.787] | 0.967 [0.961, 0.972] | 0.700 [0.685, 0.724] | 0.432 [0.391, 0.468] | 0.700 [0.661, 0.731] | n/a | `reports/evaluation/l2_flex_1m-seed0-20261003T140653Z-5ba4585_val_B01+B02+B03+B04+B05+B06+B07+B08+B8A+B09+B10+B11+B12.json` | `0f0984d76116` |
+| `l2_flex_1m-seed0-20261003T140653Z-5ba4585` | B01-B12 (13 bands) | 923697 | 9262333952 | 0.825 [0.806, 0.843] | 0.739 [0.699, 0.787] | 0.967 [0.961, 0.972] | 0.700 [0.685, 0.724] | 0.432 [0.391, 0.468] | 0.700 [0.661, 0.731] | n/a | `reports/evaluation/l2_flex_1m-seed0-20261003T140653Z-5ba4585_val_B01+B02+B03+B04+B05+B06+B07+B08+B8A+B09+B10+B11+B12.json` | `0f0984d76116` |
 | `l2_spec_1m-seed0-20261003T145219Z-0f0984d` | B02 B03 B04 B08 | 917348 | 7601389568 | 0.918 [0.908, 0.926] | 0.945 [0.937, 0.953] | 0.939 [0.931, 0.944] | 0.902 [0.888, 0.915] | 0.836 [0.809, 0.854] | 0.827 [0.801, 0.843] | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
 | always send | B02 B03 B04 | n/a | n/a | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
 | threshold rule | B02 B03 B04 | n/a | n/a | 0.716 [0.694, 0.739] | 0.793 [0.740, 0.839] | 0.783 [0.732, 0.839] | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
@@ -123,7 +123,7 @@ Median over patches of the per-patch balanced overall accuracy (BOA), producer's
 | `l1_base-seed0-20261003T093922Z-81ab34b` | B02 B03 B04 B08 | 240564 | 2190082048 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
 | `l1_base-seed1-20261003T124209Z-5ba4585` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.906 [0.899, 0.912] | 0.923 [0.915, 0.933] | 0.931 [0.924, 0.939] | 0.902 [0.895, 0.911] | 0.868 [0.853, 0.881] | 0.691 [0.665, 0.728] | n/a | `reports/evaluation/l1_base-seed1-20261003T124209Z-5ba4585_test.json` | `5ba45852a2f1` |
 | `l1_full-seed0-20261003T141417Z-5ba4585` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.914 [0.907, 0.920] | 0.940 [0.933, 0.945] | 0.916 [0.907, 0.922] | 0.914 [0.908, 0.920] | 0.896 [0.882, 0.907] | 0.684 [0.665, 0.710] | n/a | `reports/evaluation/l1_full-seed0-20261003T141417Z-5ba4585_test.json` | `5ba45852a2f1` |
-| `l2_flex_1m-seed0-20261003T140653Z-5ba4585` | B01 B02 B03 B04 B05 B06 B07 B08 B8A B09 B10 B11 B12 | 923697 | 9262333952 | 0.849 [0.836, 0.858] | 0.760 [0.739, 0.782] | 0.969 [0.965, 0.972] | 0.688 [0.667, 0.706] | 0.408 [0.364, 0.435] | 0.725 [0.684, 0.750] | n/a | `reports/evaluation/l2_flex_1m-seed0-20261003T140653Z-5ba4585_test_B01+B02+B03+B04+B05+B06+B07+B08+B8A+B09+B10+B11+B12.json` | `0f0984d76116` |
+| `l2_flex_1m-seed0-20261003T140653Z-5ba4585` | B01-B12 (13 bands) | 923697 | 9262333952 | 0.849 [0.836, 0.858] | 0.760 [0.739, 0.782] | 0.969 [0.965, 0.972] | 0.688 [0.667, 0.706] | 0.408 [0.364, 0.435] | 0.725 [0.684, 0.750] | n/a | `reports/evaluation/l2_flex_1m-seed0-20261003T140653Z-5ba4585_test_B01+B02+B03+B04+B05+B06+B07+B08+B8A+B09+B10+B11+B12.json` | `0f0984d76116` |
 | `l2_spec_1m-seed0-20261003T145219Z-0f0984d` | B02 B03 B04 B08 | 917348 | 7601389568 | 0.918 [0.911, 0.926] | 0.939 [0.932, 0.946] | 0.945 [0.940, 0.949] | 0.894 [0.884, 0.901] | 0.814 [0.796, 0.834] | 0.848 [0.836, 0.860] | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
 | always send | B02 B03 B04 | n/a | n/a | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
 | threshold rule | B02 B03 B04 | n/a | n/a | 0.738 [0.717, 0.752] | 0.746 [0.719, 0.776] | 0.854 [0.808, 0.890] | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | n/a | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_test.json` | `0f0984d76116` |
@@ -134,7 +134,7 @@ Median over patches of the per-patch balanced overall accuracy (BOA), producer's
 
 The false discard rate is the share of useful frames (true cloud fraction below the threshold) that would be kept on board.
 
-|  | Value [95 percent interval] | Source | Commit |
+| Metric category and label | Value [95 percent interval] | Source | Commit |
 | :--- | :---: | :---: | :---: |
 | **Validation split** | | | |
 | IoU, clear | 0.886 [0.870, 0.900] | `reports/evaluation/l2_spec_1m-seed0-20261003T145219Z-0f0984d_val.json` | `0f0984d76116` |
@@ -186,7 +186,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 
 ## 10. Compute used
 
-| Job | Partition | Elapsed | Allocated resources | Source | Commit |
+| Job ID and name | Partition | Elapsed | Allocated resources | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | `1978550` tiefer-train | gpumedium | 00:07:23 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/1978550.json` | n/a |
 | `1980386` tiefer-evaluate | gpumedium | 00:00:24 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/1980386.json` | n/a |
@@ -212,7 +212,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 - Training and validation data is Sentinel-2 Level-1C at 10 m ground sampling only; no data from Tiefer's target sensors was used. Tiefer's target sensors are very high resolution, where clouds and shadows look different.
 - Sensor robustness is simulated on Sentinel-2 (rescaling, gain, offset, noise and blur); a robustness result is evidence about those perturbations, not about a real sensor.
 - Every result holds for the band set and model size stated next to it. The L1 models use four bands (blue, green, red, near infrared); the band-flexible L2 models are scored per band set.
-- Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the human agreement reported for CloudSEN12+ is TODO(verify) from the dataset paper (docs/DATA.md, section 9).
+- Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the human agreement reported for CloudSEN12+ is verified from the dataset paper (docs/DATA.md, section 9).
 - The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, sensor and processing level (docs/DATASETS.md).
 - Only 509 x 509 patches are used; the 2000 x 2000 patches are left out (docs/DATA.md, section 5A).
 - The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with its own calibration, noise and compression.
@@ -232,8 +232,7 @@ python -m tiefer_lab.export --run <run-id>
 python -m tiefer_lab.results
 ```
 
-On CSC Roihu, the same steps run as Slurm jobs; see
-[hpc/roihu/README.md](../hpc/roihu/README.md).
+On CSC Roihu, the same steps run as Slurm jobs; see [hpc/roihu/README.md](../hpc/roihu/README.md).
 
 ---
 
