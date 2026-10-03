@@ -20,8 +20,15 @@ Numbers are rounded to 3 decimals unless a unit says otherwise. Intervals are 95
 
 | Training run | Device | CPU architecture | PyTorch | Partition | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
 | `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_rescale=0.5.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_rescale=2.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_gain=0.9.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_gain=1.1.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_offset=0.01.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_noise=0.01.json` | `4ce677d1811b` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | NVIDIA GH200 120GB | aarch64 | 2.10.0+cu130 | gpumedium | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 
 ---
 
@@ -31,8 +38,15 @@ CloudSEN12+, Level-1C, high quality labels, four bands; see [DATA.md](DATA.md).
 
 | Split | Patches | Dataset revision | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: |
-| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
 | test | 975 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_rescale=0.5.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_rescale=2.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_gain=0.9.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_gain=1.1.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_offset=0.01.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_noise=0.01.json` | `4ce677d1811b` |
+| val | 535 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 
 ---
 
@@ -53,9 +67,7 @@ Reference masks, when shipped with the dataset, use more spectral bands than the
 |  | Mean IoU | False discard rate at 50 percent | Decision accuracy at 50 percent | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Validation split** | | | | | |
-| Cloud filter | 0.649 [0.630, 0.667] | 0.042 [0.022, 0.066] | 0.936 [0.916, 0.957] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| always send | 0.135 [0.128, 0.143] | 0.000 [0.000, 0.000] | 0.619 [0.578, 0.660] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| threshold rule | 0.297 [0.282, 0.314] | 0.227 [0.180, 0.269] | 0.751 [0.716, 0.785] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
+| Cloud filter | 0.468 [0.447, 0.491] | 0.178 [0.139, 0.219] | 0.869 [0.839, 0.897] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 | **Test split** | | | | | |
 | Cloud filter | 0.635 [0.621, 0.649] | 0.039 [0.024, 0.055] | 0.927 [0.910, 0.943] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
 | always send | 0.133 [0.128, 0.138] | 0.000 [0.000, 0.000] | 0.635 [0.607, 0.664] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
@@ -70,9 +82,7 @@ Median over patches of the per-patch balanced overall accuracy (BOA), producer's
 |  | Bands | Parameters | Multiply-accumulates | Cloud BOA | Cloud PA | Cloud UA | Shadow BOA | Shadow PA | Shadow UA | Published cloud BOA | Source | Commit |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Validation split** | | | | | | | | | | | | |
-| `l1_base-seed0-20261003T093922Z-81ab34b` | B02 B03 B04 B08 | 240564 | 2190082048 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| always send | B02 B03 B04 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| threshold rule | B02 B03 B04 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
+| `l1_base-seed0-20261003T093922Z-81ab34b` | B02 B03 B04 B08 | 240564 | 2190082048 | 0.853 [0.836, 0.869] | 0.943 [0.932, 0.947] | 0.778 [0.736, 0.809] | 0.858 [0.845, 0.873] | 0.916 [0.900, 0.932] | 0.265 [0.198, 0.311] | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 | **Test split** | | | | | | | | | | | | |
 | `l1_base-seed0-20261003T093922Z-81ab34b` | B02 B03 B04 B08 | 240564 | 2190082048 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
 | always send | B02 B03 B04 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
@@ -87,18 +97,18 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 |  | Value [95 percent interval] | Source | Commit |
 | :--- | :---: | :---: | :---: |
 | **Validation split** | | | |
-| IoU, clear | 0.831 [0.810, 0.849] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| IoU, thick cloud | 0.789 [0.765, 0.810] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| IoU, thin cloud | 0.498 [0.451, 0.541] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| IoU, cloud shadow | 0.479 [0.451, 0.507] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| Overall accuracy | 0.844 [0.830, 0.856] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| Cloud fraction mean absolute error | 0.061 [0.053, 0.071] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| False discard rate at 30 percent | 0.058 [0.033, 0.090] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| Decision accuracy at 30 percent | 0.948 [0.927, 0.966] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| False discard rate at 50 percent | 0.042 [0.022, 0.066] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| Decision accuracy at 50 percent | 0.936 [0.916, 0.957] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| False discard rate at 70 percent | 0.043 [0.024, 0.063] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
-| Decision accuracy at 70 percent | 0.931 [0.908, 0.951] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json` | `81ab34b03bcc` |
+| IoU, clear | 0.543 [0.511, 0.578] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| IoU, thick cloud | 0.682 [0.648, 0.716] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| IoU, thin cloud | 0.359 [0.315, 0.408] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| IoU, cloud shadow | 0.290 [0.264, 0.315] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| Overall accuracy | 0.672 [0.651, 0.694] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| Cloud fraction mean absolute error | 0.121 [0.107, 0.136] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| False discard rate at 30 percent | 0.290 [0.237, 0.349] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| Decision accuracy at 30 percent | 0.849 [0.819, 0.879] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| False discard rate at 50 percent | 0.178 [0.139, 0.219] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| Decision accuracy at 50 percent | 0.869 [0.839, 0.897] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| False discard rate at 70 percent | 0.135 [0.103, 0.166] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
+| Decision accuracy at 70 percent | 0.875 [0.847, 0.903] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val_blur=1.json` | `4ce677d1811b` |
 | **Test split** | | | |
 | IoU, clear | 0.832 [0.817, 0.846] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
 | IoU, thick cloud | 0.788 [0.771, 0.805] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` | `81ab34b03bcc` |
@@ -140,6 +150,7 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 | `1980386` tiefer-evaluate | gpumedium | 00:00:24 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/1980386.json` | n/a |
 | `1982440` tiefer-export | gpumedium | 00:30:55 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/1982440.json` | n/a |
 | `1982441` tiefer-evaluate | gpumedium | 00:00:29 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/1982441.json` | n/a |
+| `2000113` tiefer-evaluate | gpumedium | 00:01:56 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2000113.json` | n/a |
 
 ---
 
@@ -175,4 +186,4 @@ On CSC Roihu, the same steps run as Slurm jobs; see
 
 ## Changelog
 
-- 3 October 2026: generated from 2 evaluation, 1 export, 0 Jetson and 4 compute report files.
+- 3 October 2026: generated from 9 evaluation, 1 export, 0 Jetson and 5 compute report files.
