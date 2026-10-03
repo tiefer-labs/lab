@@ -199,11 +199,11 @@ The false discard rate is the share of useful frames (true cloud fraction below 
 | `2001269` tiefer-evaluate | gpumedium | 00:00:32 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2001269.json` | n/a |
 | `2001281` tiefer-export | gpumedium | 01:20:54 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2001281.json` | n/a |
 | `2001425` tiefer-train | gpumedium | 00:37:27 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2001425.json` | n/a |
-| `2002028` tiefer-export | gpumedium | 00:21:10 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002028.json` | n/a |
+| `2002028` tiefer-export | gpumedium | 00:36:01 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002028.json` | n/a |
 | `2002099` tiefer-evaluate | gpumedium | 00:01:00 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002099.json` | n/a |
 | `2002100` tiefer-evaluate | gpumedium | 00:01:15 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002100.json` | n/a |
-| `2002101` tiefer-export | gpumedium | 00:14:05 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002101.json` | n/a |
-| `2002148` tiefer-export | gpumedium | 00:09:21 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002148.json` | n/a |
+| `2002101` tiefer-export | gpumedium | 00:28:56 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002101.json` | n/a |
+| `2002148` tiefer-export | gpumedium | 00:24:12 | billing=72,cpu=72,gres/gpu:gh200=1,mem=217086M,node=1 | `reports/compute/2002148.json` | n/a |
 
 ---
 
