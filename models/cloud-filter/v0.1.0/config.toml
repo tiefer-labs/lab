@@ -1,0 +1,41 @@
+# Resolved configuration of a training run, written by tiefer_lab.train.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+name = "l1_base"
+
+[data]
+cache_name = "cloudsen12-l1c-high"
+crop_size = 256
+batch_size = 128
+eval_batch_size = 8
+num_workers = 16
+load_mode = "auto"
+brightness = 0.1
+contrast = 0.1
+
+[model]
+widths = [16, 32, 64, 128, 256]
+
+[train]
+seed = 0
+epochs = 150
+learning_rate = 0.008
+weight_decay = 0.0001
+dice_weight = 1.0
+patience = 15
+min_improvement = 0.001
+log_every = 20
+
+[evaluation]
+thresholds = [0.3, 0.5, 0.7]
+decision_threshold = 0.5
+bootstrap_resamples = 1000
+bootstrap_seed = 0
+
+[export]
+opset = 17
+input_size = 512
+calibration_patches = 256
+max_logit_difference = 0.01
+min_argmax_agreement = 0.999
