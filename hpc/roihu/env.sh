@@ -80,6 +80,15 @@ if [[ "${tiefer_status}" != "0" ]]; then
 fi
 unset tiefer_module tiefer_status
 
+# GPU jobs: expandable segments in the PyTorch CUDA allocator reduce memory
+# fragmentation. On 3 October 2026 this setting did not by itself avoid the
+# out-of-memory error of l2_flex_1m with 13 bands at batch 128 (job 2000941);
+# halving the batch size did (configs/l2_flex_1m.toml). A value set before the
+# job is kept.
+if [[ "${TIEFER_ARCH}" == "aarch64" ]]; then
+  export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+fi
+
 if [[ -f "${TIEFER_VENV}/bin/activate" ]]; then
   # shellcheck disable=SC1091
   source "${TIEFER_VENV}/bin/activate"

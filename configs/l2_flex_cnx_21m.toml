@@ -12,7 +12,12 @@ name = "l2_flex_cnx_21m"
 [data]
 cache_name = "cloudsen12-l1c-all"
 crop_size = 256
-batch_size = 128
+# Batch 64 and learning rate 0.004 (0.008 x 64 / 128, the linear scaling of
+# l1_base). With 13 bands, batch 128 ran out of GPU memory on one GH200 on
+# 3 October 2026 (jobs 2000912 and 2000941); l2_flex_1m ran to the end with
+# batch 64 and learning rate 0.004 (job 2000949). Every L2 config uses the
+# same values so that the L2 results stay comparable (docs/ASSUMPTIONS.md).
+batch_size = 64
 eval_batch_size = 8
 num_workers = 16
 load_mode = "auto"
@@ -29,7 +34,7 @@ flexible_design = "placeholder"
 [train]
 seed = 0
 epochs = 150
-learning_rate = 0.008
+learning_rate = 0.004
 weight_decay = 0.0001
 dice_weight = 1.0
 patience = 150
