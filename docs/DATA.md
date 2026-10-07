@@ -171,7 +171,7 @@ Add `--limit <n>` for a small subset. The build is resumable: run the same comma
 
 ## 11. Data sheet
 
-Short answers to the usual data sheet questions, pointing to the section that holds the detail. Anything the card does not state is `TODO(verify)`.
+Short answers to the usual data sheet questions, pointing to the section that holds the detail.
 
 | Question | Answer |
 | :--- | :---: |
@@ -185,8 +185,8 @@ Short answers to the usual data sheet questions, pointing to the section that ho
 | Are labels complete? | high quality labels are dense; scribble labels are partial and nolabel patches have none (section 5A) |
 | Is there personal or sensitive data? | none known; satellite images at 10 m do not show individuals |
 | **Collection and labelling** | |
-| How were images selected and labelled? | TODO(verify) from the Scientific Data paper (section 9) |
-| Human agreement on thin cloud and shadow | TODO(verify) from the Scientific Data paper (section 9) |
+| How were images selected and labelled? | image patches were selected by the authors' cloud detection expert group and labelled by hand with the IRIS active learning tool, after a calibration phase for the labellers and followed by quality control (Scientific Data paper, Methods, opened on 7 October 2026: [PMC9789947](https://pmc.ncbi.nlm.nih.gov/articles/PMC9789947/)) |
+| Human agreement on thin cloud and shadow | the paper compares the manual labels before and after its quality control: median BOA 0.99 for cloud and 0.99 for cloud shadow on its 975 test patches (Table 6); producer's accuracy 0.991 clear, 0.966 thick cloud, 0.780 thin cloud and 0.918 cloud shadow (Methods, quality control phase). These values are for the labels of the 2022 release and its test set, not for this repository's revision, whose labels were refined in version 1.1.0 (card 1.1.2) |
 | **Preprocessing in this repository** | |
 | What is done to the data? | selection, band selection at load time, reflectance scale, normalisation from the training split (sections 3, 6 and 10) |
 | **Uses** | |
@@ -211,6 +211,7 @@ Other metadata fields are listed by name only. Their meaning is not verified fro
 
 ## Changelog
 
+- 7 October 2026: section 11, how the images were selected and labelled and the human agreement, from the CloudSEN12 paper (Table 6 and Technical Validation); two `TODO(verify)` resolved.
 - 7 October 2026: one table of the caches built on CSC Roihu, with the cache of `l2_spec_1m` seed 0 recorded as pending.
 - 7 October 2026: L2 also reads all 13 bands (sections 1, 2, 3 and 10); the 13-band cache, its size and its build in shards; the dataset revision and the kept counts per split; a first measurement of geographic bias by `equi_zone` (section 7).
 - 2 October 2026: data sheet (section 11) and richness report (section 12).

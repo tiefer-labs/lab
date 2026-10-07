@@ -464,7 +464,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 - Training and validation data is Sentinel-2 Level-1C at 10 m ground sampling only; no data from Tiefer's target sensors was used. Tiefer's target sensors are very high resolution, where clouds and shadows look different.
 - Sensor robustness is simulated on Sentinel-2 (rescaling, gain, offset, noise and blur); a robustness result is evidence about those perturbations, not about a real sensor.
 - Every result holds for the band set and model size stated next to it. The L1 models use four bands (blue, green, red, near infrared); the band-flexible L2 model is scored per band set.
-- Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the human agreement reported for CloudSEN12+ is not yet verified from the dataset paper (docs/DATA.md, section 11).
+- Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the CloudSEN12 paper reports a human-level median BOA of 0.99 for cloud and 0.99 for cloud shadow, and a producer's accuracy of 0.780 for thin cloud between the labels before and after its quality control, on its 975 test patches and the labels of the 2022 release, not on this repository's revision (docs/DATA.md, section 11).
 - The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, sensor and processing level (docs/DATASETS.md).
 - Only 509 x 509 patches are used; the 2000 x 2000 patches are left out (docs/DATA.md, section 5A).
 - The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with its own calibration, noise and compression.
@@ -603,6 +603,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: section 18 gives the human agreement of the CloudSEN12 paper (Table 6) instead of "not yet verified".
 - 7 October 2026: section 3 lists the l1_base runs of 2 October 2026 (training-loop values, reports pending), the reason for l1_full; section 17 links them.
 - 7 October 2026: correction: l1_base has two seeds; the summary and the limitations give their difference (0.042 on validation, 0.044 on test) instead of "every run is a single seed".
 - 7 October 2026: correction: section 12 applies the product rule on validation only; no decision is recorded until `x-val-4` is read, and the test values are informational.
