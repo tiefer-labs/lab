@@ -33,7 +33,7 @@ Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` see
    (cd runs/<run-id>/export && sha256sum cloud_filter_*.onnx) > models/cloud-filter/<version>/SHA256SUMS
    ```
 
-4. Copy `models/cloud-filter/MODEL_CARD_TEMPLATE.md` to `MODEL_CARD.md` in the release folder and fill it following `docs/STYLE.md`, section 7, with every number taken from a report file and the same value as in `docs/RESULTS.md`. Put the INT8 file size next to its loss in mean IoU.
+4. Copy `models/cloud-filter/MODEL_CARD_TEMPLATE.md` to `MODEL_CARD.md` in the release folder and fill it following `docs/STYLE.md`, section 12.11, with every number taken from a report file and the same value as in `docs/RESULTS.md`. Put the INT8 file size next to its loss in mean IoU.
 
 ---
 
@@ -65,4 +65,5 @@ Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` see
 
 ## Changelog
 
+- 7 October 2026: step 4 links docs/STYLE.md, section 12.11, after the sections of STYLE.md were renumbered.
 - 7 October 2026: v0.1.0 is a draft; the folder for `l2_spec_1m` waits for its export report; values match `docs/RESULTS.md`, which is written by hand.

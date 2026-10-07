@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""Markdown tables in the house format (docs/STYLE.md, section 9), from one shared helper.
+"""Markdown tables in the house format (docs/STYLE.md, section 10), from one shared helper.
 
 Every generated table goes through `markdown_table`, so they are identical:
 plain GitHub Markdown, first column left-aligned, all other columns centred,
@@ -57,7 +57,7 @@ def markdown_table(headers: Sequence[str], groups: Sequence[Group]) -> str:
 
 
 def header_block(title: str, status: str, purpose: str, image_path: str) -> str:
-    """The standard Markdown header (docs/STYLE.md, section 1)."""
+    """The standard Markdown header (docs/STYLE.md, section 2)."""
     return (
         f'<img alt="Tiefer Lab" src="{image_path}" width="100%">\n\n'
         f"# {title}\n\n"
