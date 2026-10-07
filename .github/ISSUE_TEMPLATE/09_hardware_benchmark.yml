@@ -1,0 +1,570 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: "Jetson or other hardware measurement"
+description: "A measurement on a Jetson or other hardware, or a problem with the scripts in jetson/."
+title: "[Hardware]: "
+labels:
+  - "hardware"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to report a measurement or a problem with `jetson/`. A value measured on a board enters docs/RESULTS.md only under POLICY.md, gate 1. The steps are in jetson/README.md.
+
+        Only the questions marked required must be answered; answer the others when they apply.
+
+        Do not paste secrets, tokens, passwords, keys or personal data other than your GitHub handle. Security problems never go into an issue: report them privately as [SECURITY.md](https://github.com/tiefer-labs/lab/blob/main/SECURITY.md) describes.
+  - type: markdown
+    attributes:
+      value: |
+        ### 1. Summary
+  - type: textarea
+    id: hw_summary
+    attributes:
+      label: "What did you measure, or what went wrong?"
+      description: "One or two sentences. Describe here any Other answer of this form."
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ### 2. Board
+  - type: dropdown
+    id: hw_board
+    attributes:
+      label: "Board"
+      description: "The module or developer kit, printed by `bash jetson/device_info.sh`."
+      options:
+        - "Jetson AGX Orin Developer Kit"
+        - "Jetson AGX Orin 64GB"
+        - "Jetson AGX Orin 32GB"
+        - "Jetson AGX Orin Industrial"
+        - "Jetson Orin NX 16GB"
+        - "Jetson Orin NX 8GB"
+        - "Jetson Orin Nano Super Developer Kit"
+        - "Jetson Orin Nano Developer Kit"
+        - "Jetson Orin Nano 8GB"
+        - "Jetson Orin Nano 4GB"
+        - "Another Jetson module"
+        - "Other hardware (describe in the summary)"
+  - type: input
+    id: hw_jetpack_l4t
+    attributes:
+      label: "JetPack and L4T versions"
+      description: "Printed by `bash jetson/device_info.sh`."
+      placeholder: "JetPack <version>, L4T <version>"
+  - type: input
+    id: hw_tensorrt
+    attributes:
+      label: "TensorRT version"
+      description: "Printed by `bash jetson/device_info.sh`."
+      placeholder: "<version>"
+  - type: input
+    id: hw_power_mode
+    attributes:
+      label: "Power mode and clocks"
+      description: "The `nvpmodel` mode and whether `jetson_clocks` was set, printed by `bash jetson/device_info.sh`."
+      placeholder: "MAXN, jetson_clocks on"
+  - type: markdown
+    attributes:
+      value: |
+        ### 3. Measurement
+  - type: dropdown
+    id: hw_precision
+    attributes:
+      label: "Engine precision"
+      description: "The engine measured, built by `jetson/build_engines.sh`."
+      options:
+        - "FP16 engine"
+        - "INT8 engine from the QDQ ONNX file"
+        - "INT8 engine from a calibration cache"
+        - "Other (describe in the summary)"
+  - type: dropdown
+    id: hw_dry_run
+    attributes:
+      label: "Real run or dry run"
+      description: "The scripts print a plan only with `--dry-run` or when they do not run on a Jetson; a dry run measures nothing."
+      options:
+        - "Real run on the board"
+        - "Dry run"
+        - "Not sure"
+  - type: textarea
+    id: hw_command
+    attributes:
+      label: "Script and arguments"
+      description: "The exact commands of `build_engines.sh` and `bench.py`, with every option."
+      placeholder: "python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16"
+      render: bash
+  - type: textarea
+    id: hw_latency
+    attributes:
+      label: "Latency"
+      description: "p50, p95, p99, mean, minimum and maximum latency per tile in ms, and the number of runs, from the report of `bench.py`."
+  - type: textarea
+    id: hw_power
+    attributes:
+      label: "Power and energy"
+      description: "The input rail name, idle power, mean power and energy per tile, from the report of `bench.py`."
+  - type: input
+    id: hw_temperature
+    attributes:
+      label: "Temperatures at start and end"
+      description: "Board temperatures from the report of `bench.py`."
+      placeholder: "<start> C, <end> C"
+  - type: input
+    id: hw_frame
+    attributes:
+      label: "Frame size and overlap"
+      description: "The values of `--frame-pixels` and `--overlap`, if used."
+      placeholder: "<pixels>, 64"
+  - type: input
+    id: hw_report_file
+    attributes:
+      label: "Report file"
+      description: "The JSON file written to `reports/jetson/`."
+      placeholder: "reports/jetson/<file>.json"
+  - type: markdown
+    attributes:
+      value: |
+        ### 4. Reporter context
+  - type: dropdown
+    id: reporter_role
+    attributes:
+      label: "Your role"
+      description: "Which role fits you best for this issue. It tells the maintainer which documents you are likely to have read and what kind of answer helps."
+      options:
+        - "Contributor"
+        - "Evaluator or reviewer"
+        - "Researcher"
+        - "Satellite operator"
+        - "Space agency"
+        - "Integrator"
+        - "Student"
+        - "Tiefer maintainer"
+        - "Other (describe in the last question of this section)"
+  - type: dropdown
+    id: reporter_experience
+    attributes:
+      label: "Experience with this repository"
+      description: "How much you have used Tiefer Lab so far. It sets the level of detail of the answer."
+      options:
+        - "First time"
+        - "Read the documentation only"
+        - "Ran `make smoke` or the tests"
+        - "Trained or evaluated a model with it"
+        - "Contributed before"
+        - "Maintain it"
+  - type: dropdown
+    id: reporter_found
+    attributes:
+      label: "How you found it"
+      description: "What you were doing when you met the problem or the question. It helps to reproduce the context."
+      options:
+        - "Running a command"
+        - "Reading the documentation"
+        - "Reviewing a pull request"
+        - "In CI"
+        - "Reproducing a published result"
+        - "Reading a report file"
+        - "Told by someone else"
+        - "Other (describe in the last question of this section)"
+  - type: textarea
+    id: reporter_other
+    attributes:
+      label: "Other answers in this section"
+      description: "If you chose Other above, describe it here. Leave it empty otherwise."
+  - type: markdown
+    attributes:
+      value: |
+        ### 5. Repository state
+  - type: input
+    id: repo_commit
+    attributes:
+      label: "Commit"
+      description: "The short hash of the commit you used, printed by `git rev-parse --short HEAD`. Behaviour and results are tied to a commit, not to a branch name."
+      placeholder: "74a1c68"
+  - type: input
+    id: repo_branch
+    attributes:
+      label: "Branch"
+      description: "The branch you used, printed by `git branch --show-current`. Write the name of your fork as well if you used one."
+      placeholder: "main"
+  - type: dropdown
+    id: repo_clean
+    attributes:
+      label: "Working tree clean"
+      description: "Whether `git status --porcelain` printed nothing. A run from a working tree with uncommitted changes cannot be traced to a commit (docs/RESULTS.md, section 4)."
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+  - type: textarea
+    id: repo_local_changes
+    attributes:
+      label: "Local changes"
+      description: "If the working tree was not clean, describe the changes, or paste `git diff --stat`. Do not paste secrets or `.env` content."
+  - type: markdown
+    attributes:
+      value: |
+        ### 6. Evidence
+  - type: textarea
+    id: evidence_logs
+    attributes:
+      label: "Logs"
+      description: "The lines of the terminal or job log that show the problem, from the first error onwards. Remove project numbers, user names and absolute paths first."
+      render: text
+  - type: textarea
+    id: evidence_reports
+    attributes:
+      label: "Report files involved"
+      description: "The paths of the report files involved, for example under `reports/` or in the run folder, and whether they are in the repository."
+      placeholder: "reports/evaluation/<file>.json"
+  - type: textarea
+    id: evidence_links
+    attributes:
+      label: "Screenshots or links"
+      description: "Links to CI runs, commits, documents or screenshots that show the problem. Drag an image into this field to attach it."
+  - type: markdown
+    attributes:
+      value: |
+        ### 7. Impact and urgency
+  - type: checkboxes
+    id: impact_who
+    attributes:
+      label: "Who is affected"
+      description: "Choose all that apply. It sets the priority."
+      options:
+        - label: "Only me"
+        - label: "Other contributors"
+        - label: "Evaluators or reviewers reading results"
+        - label: "Users on CSC Roihu"
+        - label: "Users on a Jetson"
+        - label: "Every pull request (CI)"
+        - label: "Readers of public statements"
+        - label: "Not sure"
+  - type: dropdown
+    id: impact_severity
+    attributes:
+      label: "Severity"
+      description: "Choose the level by its definition; the maintainer may change it after triage."
+      options:
+        - "Blocker: work cannot continue and there is no workaround"
+        - "High: a published number, a result or a main command is wrong or fails"
+        - "Medium: a feature or a document is wrong, and a workaround exists"
+        - "Low: wording, layout or a rare edge case"
+        - "Not sure"
+  - type: dropdown
+    id: impact_frequency
+    attributes:
+      label: "Frequency"
+      description: "How often it happens when you repeat the same steps."
+      options:
+        - "Every time"
+        - "Often"
+        - "Sometimes"
+        - "Once so far"
+        - "Not sure"
+  - type: dropdown
+    id: impact_workaround
+    attributes:
+      label: "Workaround known"
+      description: "Whether you found a way to continue. A known workaround lowers the urgency."
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+  - type: textarea
+    id: impact_workaround_text
+    attributes:
+      label: "Workaround"
+      description: "If you know a workaround, describe it so that others can use it until the fix."
+  - type: markdown
+    attributes:
+      value: |
+        ### 8. AI assistance disclosure
+
+        If any AI-assisted system was used to write, change, review, translate or analyse anything in this issue or pull request, every such system must be disclosed below. This is this repository's policy ([AI_ASSISTANCE.md](https://github.com/tiefer-labs/lab/blob/main/AI_ASSISTANCE.md)).
+  - type: dropdown
+    id: ai_used
+    attributes:
+      label: "Was any AI-assisted system used?"
+      description: "Any system that writes, changes, reviews, translates, summarises or analyses content with a machine-learning model counts (AI_ASSISTANCE.md, section 1). If you answer No, write n/a in the required fields below."
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+  - type: checkboxes
+    id: ai_purposes
+    attributes:
+      label: "What was it used for?"
+      description: "Choose all that apply. The purpose tells the reviewer which parts to check most closely."
+      options:
+        - label: "Code generation"
+        - label: "Code completion"
+        - label: "Refactoring"
+        - label: "Test generation"
+        - label: "Debugging"
+        - label: "Code review"
+        - label: "Documentation or prose writing"
+        - label: "Translation"
+        - label: "Summarising"
+        - label: "Commit or pull request text"
+        - label: "Issue text"
+        - label: "Data analysis"
+        - label: "Figures or images"
+        - label: "Configuration"
+        - label: "Shell commands"
+        - label: "Research or literature search"
+        - label: "Other (describe under further AI-assisted systems)"
+  - type: input
+    id: ai_provider
+    attributes:
+      label: "Provider"
+      description: "The company or organisation that operates the service you used. Write n/a if no system was used."
+      placeholder: "n/a"
+    validations:
+      required: true
+  - type: input
+    id: ai_developer
+    attributes:
+      label: "Developer of the model"
+      description: "The organisation that trained the model, if different from the provider; otherwise repeat the provider. Write n/a if no system was used."
+      placeholder: "n/a"
+    validations:
+      required: true
+  - type: input
+    id: ai_product_version
+    attributes:
+      label: "Product or tool name and version"
+      description: "The name and version of the product or tool, as its About page or `--version` output shows it. Write n/a if no system was used."
+      placeholder: "n/a"
+    validations:
+      required: true
+  - type: input
+    id: ai_model
+    attributes:
+      label: "Model name"
+      description: "The name of the model as the product shows it. Write n/a if no system was used."
+      placeholder: "n/a"
+    validations:
+      required: true
+  - type: input
+    id: ai_model_version_date
+    attributes:
+      label: "Exact model version or identifier, and date used"
+      description: "The exact version or identifier of the model, and the date or dates you used it. Write not known for a value the product does not show, and n/a if no system was used."
+      placeholder: "<model identifier>, 7 October 2026"
+    validations:
+      required: true
+  - type: dropdown
+    id: ai_access
+    attributes:
+      label: "How it was accessed"
+      description: "The way you used the system. It tells the reviewer where your content went."
+      options:
+        - "Web chat"
+        - "IDE extension"
+        - "Command-line agent"
+        - "API"
+        - "Self-hosted model"
+        - "Model inside another product"
+        - "Other (describe under further AI-assisted systems)"
+  - type: dropdown
+    id: ai_location
+    attributes:
+      label: "Where the model ran"
+      description: "Where the model processed your content, as the provider's terms or settings state it. It matters for data rules (AI_ASSISTANCE.md, section 4)."
+      options:
+        - "Provider's cloud"
+        - "Provider's cloud in the EU or EEA"
+        - "Provider's cloud outside the EU or EEA"
+        - "Self-hosted on own hardware"
+        - "Not known"
+  - type: textarea
+    id: ai_further
+    attributes:
+      label: "Further AI-assisted systems"
+      description: "If you used more than one system, write one line per further system in the form shown. Also describe any Other answer of this section here."
+      placeholder: "provider; developer; product and version; model; model version; purpose"
+  - type: checkboxes
+    id: ai_content_given
+    attributes:
+      label: "What content was given to the system?"
+      description: "Choose all that apply. Credentials, personal data and confidential partner material must never be given to such a system (AI_ASSISTANCE.md, section 4)."
+      options:
+        - label: "None"
+        - label: "Public code of this repository"
+        - label: "Unpublished code"
+        - label: "Report files"
+        - label: "Configuration"
+        - label: "Logs"
+        - label: "Data samples"
+        - label: "Personal data"
+        - label: "Credentials or tokens"
+        - label: "Confidential partner material"
+        - label: "Other (describe under further AI-assisted systems)"
+  - type: dropdown
+    id: ai_share
+    attributes:
+      label: "How much of the contribution did the system produce?"
+      description: "An estimate of the share of the submitted text, code or data that came from the system before your edits."
+      options:
+        - "None of it"
+        - "Less than a quarter"
+        - "A quarter to a half"
+        - "A half to three quarters"
+        - "More than three quarters"
+        - "Not known"
+  - type: dropdown
+    id: ai_review
+    attributes:
+      label: "Human review of every AI-produced line"
+      description: "The person submitting is responsible for every line, whoever or whatever wrote it (AI_ASSISTANCE.md, section 3)."
+      options:
+        - "Every line reviewed and understood by me"
+        - "Partly reviewed"
+        - "Not reviewed"
+  - type: textarea
+    id: ai_verification
+    attributes:
+      label: "How the AI-produced parts were verified"
+      description: "What you did to check the output: tests run, sources opened, numbers recomputed from report files."
+      placeholder: "tests run, sources checked, numbers recomputed"
+  - type: dropdown
+    id: ai_terms
+    attributes:
+      label: "Do the tool's terms let you contribute its output under MPL 2.0?"
+      description: "Contributions are licensed under MPL 2.0 (CONTRIBUTING.md, section 9). Read the terms of the tool before you submit its output."
+      options:
+        - "Yes, checked"
+        - "Not checked"
+        - "No"
+        - "Not sure"
+  - type: dropdown
+    id: ai_reproduction
+    attributes:
+      label: "Could the output reproduce third-party code or text?"
+      description: "Search for distinctive lines of the output. A match keeps its original notice and licence, or is removed (AI_ASSISTANCE.md, section 5)."
+      options:
+        - "Checked, no match found"
+        - "Checked, match found and attributed"
+        - "Not checked"
+  - type: markdown
+    attributes:
+      value: |
+        ### 9. Data protection and AI regulation acknowledgement
+
+        Issues and pull requests on GitHub are public: anyone can read them, and search engines can index them. GitHub's privacy statement applies to the platform (https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement). This repository's rules on personal data and AI-assisted systems are in [AI_ASSISTANCE.md](https://github.com/tiefer-labs/lab/blob/main/AI_ASSISTANCE.md), which lists the articles named below. This text is not legal advice.
+  - type: dropdown
+    id: dp_personal_data
+    attributes:
+      label: "Does this contain personal data of any person, including yourself beyond your GitHub handle?"
+      description: "Personal data has the meaning of GDPR Article 4(1): any information relating to an identified or identifiable person. Remove someone else's personal data before you submit."
+      options:
+        - "No"
+        - "Yes, only my own, and I want it public"
+        - "Yes, someone else's"
+    validations:
+      required: true
+  - type: dropdown
+    id: dp_special_categories
+    attributes:
+      label: "Are special categories of personal data present?"
+      description: "GDPR Article 9 lists the special categories, such as health data, political opinions or biometric data that identify a person. They must never be posted here."
+      options:
+        - "No"
+        - "Yes"
+  - type: dropdown
+    id: dp_ai_personal_data
+    attributes:
+      label: "Was personal data given to an AI-assisted system while preparing this?"
+      description: "GDPR Article 5(1)(c) (data minimisation) and Article 5(1)(f) (integrity and confidentiality) apply, and Chapter V (Articles 44 to 49) when the system runs outside the EU or EEA."
+      options:
+        - "No"
+        - "Yes, my own only"
+        - "Yes, someone else's"
+        - "Not sure"
+  - type: dropdown
+    id: dp_ai_system_scope
+    attributes:
+      label: "Does this touch training data, labels, evaluation, model behaviour or a model card of an AI system Tiefer may place on the market or put into service?"
+      description: "\"AI system\", \"provider\" and \"placing on the market\" are defined in EU AI Act Article 3. Such changes need the documentation that POLICY.md asks for."
+      options:
+        - "No"
+        - "Training data"
+        - "Labels"
+        - "Evaluation or metrics"
+        - "Model behaviour"
+        - "Model card or documentation"
+        - "Several of these"
+        - "Not sure"
+  - type: dropdown
+    id: dp_ai_content_public
+    attributes:
+      label: "Will any AI-generated text, image, audio or video from this be published?"
+      description: "EU AI Act Article 50 sets transparency obligations for providers and deployers of certain AI systems, including the marking of generated content. This repository labels AI-generated content in all cases (AI_ASSISTANCE.md, section 6)."
+      options:
+        - "No"
+        - "Yes, and it is labelled as AI-generated"
+        - "Yes, not labelled"
+        - "Not sure"
+  - type: dropdown
+    id: dp_ai_act_article5
+    attributes:
+      label: "Does this involve any AI practice listed in EU AI Act Article 5?"
+      description: "Article 5 lists prohibited AI practices. ACCEPTABLE_USE.md also applies."
+      options:
+        - "No"
+        - "Yes"
+        - "Not sure"
+  - type: dropdown
+    id: dp_tdm_reservation
+    attributes:
+      label: "For a new dataset, or text and data used to train a model: has the rightholder reserved text and data mining?"
+      description: "Directive (EU) 2019/790, Article 4, allows text and data mining unless the rightholder has expressly reserved it, for example by machine-readable means online."
+      options:
+        - "No reservation found"
+        - "Reservation found"
+        - "Not checked"
+        - "Does not apply (no new dataset, text or data)"
+  - type: checkboxes
+    id: dp_acknowledgement
+    attributes:
+      label: "Acknowledgement"
+      description: "Confirm each statement. They follow this repository's policy in AI_ASSISTANCE.md."
+      options:
+        - label: "I have read AI_ASSISTANCE.md and disclosed every AI-assisted system I used"
+          required: true
+        - label: "I have not posted personal data of anyone else, nor any special category of personal data (GDPR Articles 4(1) and 9)"
+          required: true
+        - label: "I have not given credentials, personal data or confidential partner material to an AI-assisted system"
+          required: true
+        - label: "I have read the transparency rule for AI-generated content in AI_ASSISTANCE.md, which follows the purpose of EU AI Act Article 50"
+          required: true
+        - label: "I understand that I am responsible for every line I submit"
+          required: true
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ### 10. Closing checklist
+  - type: checkboxes
+    id: closing_checklist
+    attributes:
+      label: "Before you submit"
+      description: "Confirm each point. They keep the issue tracker useful and safe."
+      options:
+        - label: "I searched the existing issues and pull requests for the same topic"
+          required: true
+        - label: "I read the document that owns this topic (START-HERE.md names it)"
+          required: true
+        - label: "I have not pasted secrets, tokens, passwords or keys"
+          required: true
+        - label: "I follow the code of conduct (CODE_OF_CONDUCT.md)"
+          required: true
+    validations:
+      required: true
