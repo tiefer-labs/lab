@@ -67,7 +67,7 @@ Published cloud and cloud shadow BOA from the CloudSEN12 paper [13], Table 6: th
 | SEnSeI v2 | not stated in [15] | none published here | none published here | extra-table mask `cloudmask_sensei_v2` | [15] |
 | dtacs4bands | NIR, red, green and blue of Level-1C | none published here | none published here | run the model; licence CC BY-NC 4.0 | [14] |
 
-The extra-table masks are those of the dataset variant `tacofoundation:cloudsen12-extra`, which the dataset card says are not normalised to the CloudSEN12 class schema [15]. `build_cache --references` adds them to a split once their link and encodings are verified ([DATA.md](DATA.md), section 2); until then it stops with a clear message. CD-FCNN-RGBI and dtacs4bands use the same four bands as the L1 models and `l2_spec_1m`.
+The extra-table masks are those of the dataset variant `tacofoundation:cloudsen12-extra`, which the dataset card says are not normalised to the CloudSEN12 class schema [15]. `build_cache --references` adds them to a split once their link and encodings are verified ([DATA.md](DATA.md), section 9); until then it stops with a clear message. CD-FCNN-RGBI and dtacs4bands use the same four bands as the L1 models and `l2_spec_1m`.
 
 ---
 
@@ -110,5 +110,6 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 7 October 2026: links to docs/DATA.md follow its new section numbers.
 - 7 October 2026: correction: l2_spec_1m s0 has no export report yet, and three export jobs are not matched to a run.
 - 7 October 2026: first version: onboard cloud detection systems, onboard AI platforms, reference algorithms on CloudSEN12 with their published values, and the measurements that would decide each comparison.

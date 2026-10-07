@@ -82,7 +82,8 @@ LABEL_CODES: Mapping[int, int] = {0: CLEAR, 1: THICK_CLOUD, 2: THIN_CLOUD, 3: CL
 # Metadata fields. From the card: label quality `label_type` (high, scribble,
 # nolabel), patch identifier `roi_id` (also `old_roi_id`) and patch size
 # `real_proj_shape` (509 or 2000). The split field is not named on the card;
-# TODO(verify) on the first real build (the reader stops if it is missing).
+# the cache builds of 2 October 2026 on CSC Roihu found it with these values
+# (docs/DATA.md, section 9). The reader stops if it is missing.
 SPLIT_FIELD = "tortilla:data_split"
 SPLIT_VALUES: Mapping[str, str] = {"train": "train", "val": "validation", "test": "test"}
 QUALITY_FIELD = "label_type"

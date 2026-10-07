@@ -104,7 +104,7 @@ The measurements that would decide the comparisons of [docs/LANDSCAPE.md](../../
 
 | Item | Decides | Where | Acceptance target | Status |
 | :--- | :---: | :---: | :---: | :---: |
-| Score the extra-table reference masks (QA60, Sen2Cor, s2cloudless, CloudScore+ cs and cs_cdf, UNetMobV2 v1 and v2, SEnSeI v2) on the 975 test patches with this repository's code | references on the same CloudSEN12+ test pixels | CSC Roihu, CPU job; needs the verified link and encodings of `build_cache --references` (docs/DATA.md, section 2) | `ACC-04` | not started |
+| Score the extra-table reference masks (QA60, Sen2Cor, s2cloudless, CloudScore+ cs and cs_cdf, UNetMobV2 v1 and v2, SEnSeI v2) on the 975 test patches with this repository's code | references on the same CloudSEN12+ test pixels | CSC Roihu, CPU job; needs the verified link and encodings of `build_cache --references` (docs/DATA.md, section 9) | `ACC-04` | not started |
 | Run Fmask 4.0, KappaMask L1C and L2A, CD-FCNN-RGBI and CD-FCNN-RGBISWIR on the same test patches | references not in the extra table | CSC Roihu | `ACC-04` | not started |
 | Run dtacs4bands on the test split with B02, B03, B04, B08 | dtacs4bands on the same pixels and bands | CSC Roihu, GPU job; first check that its CC BY-NC 4.0 licence allows this use | none | not started |
 | Threshold sweep of `l2_spec_1m` s0 on test: false send rate at a false discard rate of 0.01, with usefulness fixed at 70 percent cloud | CloudScout false positives against our false discard rate | CSC Roihu, GPU job; needs a decision threshold separate from the usefulness threshold, because `evaluate` uses one threshold for both today | `FRM-01`, `FRM-02` | not started |
@@ -115,6 +115,7 @@ The measurements that would decide the comparisons of [docs/LANDSCAPE.md](../../
 
 ## Changelog
 
+- 7 October 2026: links to docs/DATA.md follow its new section numbers.
 - 7 October 2026: correction: 2002028, 2002101 and 2002148 are three export jobs whose run is not identified.
 - 7 October 2026: correction: the GPU maintenance began on 6 October 2026, 05:00 UTC, and has not passed; no GPU job has run since.
 - 7 October 2026: section 6, the open measurements that would decide the comparisons of docs/LANDSCAPE.md.

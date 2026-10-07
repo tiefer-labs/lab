@@ -30,7 +30,7 @@ import numpy as np
 from tiefer_lab.data import cache, source
 from tiefer_lab.utils import paths
 
-# Fields of docs/DATA.md, section 2, checked against the dataset card 1.1.2.
+# Fields of docs/DATA.md, section 9, checked against the dataset card 1.1.2.
 VERIFIED_FIELDS = ("roi_id", "label_type", "real_proj_shape")
 COVER_BINS = (0.0, 0.1, 0.3, 0.7, 0.9, 1.0)
 CHUNK = 64

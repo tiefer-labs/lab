@@ -14,11 +14,11 @@ A dataset has exactly one role per experiment. The validation split chooses mode
 
 | Dataset | Role | Status |
 | :--- | :---: | :---: |
-| CloudSEN12+ Level-1C, training split, high quality labels | training | facts checked against card 1.1.2 (DATA.md, section 2) |
+| CloudSEN12+ Level-1C, training split, high quality labels | training | facts checked against card 1.1.2 (DATA.md, section 9) |
 | CloudSEN12+ Level-1C, validation split | model and setting selection | facts checked against card 1.1.2 |
 | CloudSEN12+ Level-1C, test split | independent test: never used for selection | facts checked against card 1.1.2 |
-| CloudSEN12+ scribble and nolabel patches, training split, away from val and test locations | extra training data only | TODO(verify) from the survey (DATA.md, section 5A) |
-| CloudSEN12+ extra variant, reference masks | comparison algorithms on the same patches, not ground truth | TODO(verify) from the survey (DATA.md, section 2) |
+| CloudSEN12+ scribble and nolabel patches, training split, away from val and test locations | extra training data only | TODO(verify) from the survey (DATA.md, section 11) |
+| CloudSEN12+ extra variant, reference masks | comparison algorithms on the same patches, not ground truth | TODO(verify) from the survey (DATA.md, section 9) |
 | Any other dataset | none until its row in section 2 is checked | not checked |
 
 The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, the sensor and the processing level. A result on it says nothing about other sensors (section 2 and [RESULTS.md](RESULTS.md), section 18).
@@ -76,6 +76,7 @@ How varied each built split is (class shares, cloud cover bins, shadow, verified
 
 ## Changelog
 
+- 7 October 2026: links to docs/DATA.md follow its new section numbers.
 - 7 October 2026: published values appear only in docs/LANDSCAPE.md, in published columns with their source, never in docs/RESULTS.md.
 - 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy into `reports/test_log.md`.
 - 7 October 2026: the link to the limitations follows the new section numbers of RESULTS.md.

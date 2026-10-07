@@ -4,139 +4,168 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What data milestones L1 and L2 train and evaluate on, which facts about it the code depends on, how each fact was checked, and what the data does not represent.
+What data milestones L1 and L2 train and evaluate on, answered in the order of the usual datasheet questions, followed by the facts the code depends on and the caches built on CSC Roihu.
 
 ---
 
-## 1. Source
+## 1. Motivation
 
-|  | Value |
-| :--- | :---: |
-| Dataset | CloudSEN12+, Level-1C variant, labels of quality high only, 509 x 509 patches only |
-| Publisher | TACO Foundation on Hugging Face: [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Licence | CC0 1.0 |
-| Dataset card version | 1.1.2 |
-| Reader | `tacoreader` 0.5.6 (v1 API) and `rasterio`; the card example uses 0.5.3, and 0.5.6 works on CSC Roihu |
-| Revision used | `f9490f7de11b4f387f72ef800e73ccbb754711de`, written by the builder to `index.json` and copied into every evaluation report ([RESULTS.md](RESULTS.md), section 4) |
-| Included in this repository | no; patches are read at run time and cached outside git |
-
-The dataset is not part of this repository. `python -m tiefer_lab.data.build_cache` reads only the bands it is asked for and the label of each selected patch: the four L1 bands by default, or all 13 Level-1C bands with `--bands all` (section 10). The full dataset (about 248 GB according to the specification) is never downloaded.
-
-> [!NOTE]
-> The facts below were checked against the dataset card, version 1.1.2, on 1 October 2026. Two facts are still marked `TODO(verify)`: the split field, which the card does not name, and the revision field of the Hugging Face API, which was not checked. The reader prints the metadata columns once per build and stops with a clear message when the split field or another field it needs is missing.
-
----
-
-## 2. Facts the code depends on
-
-All of these are defined once, in `src/tiefer_lab/data/source.py`.
-
-| Fact | Value in the code | How it was checked |
+| Question | Answer | Source |
 | :--- | :---: | :---: |
-| **Access** | | |
-| Reader API | `tacoreader.load(name)` returns a metadata table; `table.read(i)` returns the sample; `sample.read(k)` returns a GDAL virtual file path for item `k` | verified by reading the source of `tacoreader` 0.5.6 ([PyPI](https://pypi.org/project/tacoreader/0.5.6/)); 2.x rejects `tacofoundation:` names and refers to 0.x for them |
-| Level-1C variant name | `tacofoundation:cloudsen12-l1c` | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Variant with the reference masks | `tacofoundation:cloudsen12-extra` | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Dataset format | TACO v1 (`.taco` files), read by `tacoreader` 0.5 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12): its example uses `tacoreader` 0.5.3; 0.5.6 works on CSC Roihu |
-| Dataset revision | `sha` field of the Hugging Face dataset API, recorded at build time | TODO(verify) the [API response](https://huggingface.co/api/datasets/tacofoundation/cloudsen12) |
-| **Image** | | |
-| Band order of the image item | B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: 13 bands, and band descriptions when present |
-| Bands used | L1 and the four-band specialist: B02, B03, B04, B08 (rasterio indexes 2, 3, 4, 8); the band-flexible L2 model: any of the 13 | follows from the band order; tested in `tests/test_bands_and_labels.py` and `tests/test_cache.py` |
-| Scale factor | reflectance = DN x 0.0001, no offset | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Data type | uint16 | checked at run time |
-| Patch size | field `real_proj_shape`, 509 or 2000; only 509 is kept, as the export input is 512 x 512 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); kept and dropped counts are written to `index.json` |
-| **Labels and metadata** | | |
-| Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: any other code stops the build |
-| Item positions in a sample | `read(0)` image, `read(1)` label | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | TODO(verify): the [card](https://huggingface.co/datasets/tacofoundation/cloudsen12) does not name it; checked at run time, and the reader prints the metadata columns to find it |
-| Quality field and value | `label_type` = `high` (values high, scribble, nolabel) | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time |
-| Patch ID field | `roi_id` (also `old_roi_id`), used in every report | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
-| Row key | `tortilla:id`, used only to sort rows and to resume a build | `tacoreader` source |
-| Reference masks: how a row of the extra table links to a Level-1C row, the item name of each mask, and how each mask is encoded (four classes, or cloud against non-cloud) | `REFERENCE_LINK_FIELD`, `REFERENCE_MASK_ITEMS`, `REFERENCE_ENCODINGS` | TODO(verify) from the survey; until then `build_cache --references` stops with a clear message |
-| Reference masks | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2`, in the extra variant | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); added to a complete split by `build_cache --references` once their encodings are verified |
+| Why does this repository use the data? | to train and evaluate a cloud and cloud shadow filter that decides on board whether a frame is worth sending | [SPEC.md](SPEC.md) |
+| Who created the dataset? | the CloudSEN12 and CloudSEN12+ authors; published by the TACO Foundation on Hugging Face | [1], [3] |
+| What does the dataset card say it is? | "The largest dataset of expert-labeled pixels for cloud and cloud shadow detection in Sentinel-2" (version 1.1.2) | [1] |
+| Why this dataset? | it has dense labels of the four classes this repository predicts, on Sentinel-2 Level-1C, under CC0 1.0 | [1] |
 
 ---
 
-## 3. Bands used and why
+## 2. Composition
 
-Milestone L1 uses only blue, green, red and near infrared (Sentinel-2 B02, B03, B04 and B08, all at 10 m). Very high resolution optical satellites, the sensors Tiefer targets, typically carry these four bands plus panchromatic, and not the shortwave infrared bands that classic cloud algorithms rely on. Milestone L2 also reads all 13 Level-1C bands: the band-flexible model is trained on band sets drawn from them and scored per band set (3, 4, 6 and 13 bands), and the four-band specialist keeps the four L1 bands. The data is Level-1C (top-of-atmosphere reflectance) because there is no atmospheric correction on board. See [ASSUMPTIONS.md](ASSUMPTIONS.md), sections 1 and 7.
+One instance is one Sentinel-2 Level-1C patch with 13 bands and one label item. This repository keeps only patches with high quality labels and an original size of 509 x 509 pixels (section 5).
 
----
+### 2.1 Bands
 
-## 4. Classes
+The 13 bands of the Level-1C image item, in the order of the card [1]. The centre wavelengths are those of the card; the scale factor is 0.0001 for every band except B10, for which the card gives "N/A".
 
-| Class index | Name | Meaning |
-| :--- | :---: | :---: |
-| 0 | clear | no cloud and no cloud shadow |
-| 1 | thick cloud | cloud that hides the surface |
-| 2 | thin cloud | semi-transparent cloud through which the surface is still visible |
-| 3 | cloud shadow | surface in the shadow of a cloud |
+| Band | Name on the card | Resolution | Centre wavelength | Used by |
+| :--- | :---: | :---: | :---: | :---: |
+| B01 | Coastal aerosol | 60 m | 443.5 nm | L2 band-flexible model |
+| B02 | Blue | 10 m | 496.5 nm | L1, L2 |
+| B03 | Green | 10 m | 560.0 nm | L1, L2 |
+| B04 | Red | 10 m | 664.5 nm | L1, L2 |
+| B05 | Red edge 1 | 20 m | 704.5 nm | L2 band-flexible model |
+| B06 | Red edge 2 | 20 m | 740.5 nm | L2 band-flexible model |
+| B07 | Red edge 3 | 20 m | 783.0 nm | L2 band-flexible model |
+| B08 | NIR | 10 m | 840.0 nm | L1, L2 |
+| B8A | Red edge 4 | 20 m | 864.5 nm | L2 band-flexible model |
+| B09 | Water vapor | 60 m | 945.0 nm | L2 band-flexible model |
+| B10 | Cirrus | 60 m | 1375.5 nm | L2 band-flexible model |
+| B11 | SWIR 1 | 20 m | 1613.5 nm | L2 band-flexible model |
+| B12 | SWIR 2 | 20 m | 2199.5 nm | L2 band-flexible model |
 
-The codes and names are those of the [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); the meanings column is this repository's short description. The cloud fraction of a frame counts thick and thin cloud; cloud shadow is reported separately.
+Milestone L1 and the four-band L2 specialist use B02, B03, B04 and B08 (rasterio indexes 2, 3, 4 and 8). Very high resolution optical satellites, the sensors Tiefer targets, carry these four bands and often a panchromatic band, and not the shortwave infrared bands that classic cloud algorithms rely on ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 1). The band-flexible L2 model is trained on band sets drawn from all 13 bands and scored per band set (3, 4, 6 and 13 bands). The data is Level-1C, top-of-atmosphere reflectance, because there is no atmospheric correction on board.
 
----
+### 2.2 Classes
 
-## 5. Split sizes
+| Class index | Name | Meaning | Source |
+| :--- | :---: | :---: | :---: |
+| 0 | clear | no cloud and no cloud shadow | [1] |
+| 1 | thick cloud | cloud that hides the surface | [1] |
+| 2 | thin cloud | semi-transparent cloud through which the surface is still visible | [1] |
+| 3 | cloud shadow | surface in the shadow of a cloud | [1] |
+| 255 | no label | pixel without a label; the loss ignores it (`IGNORE_INDEX`) | `src/tiefer_lab/data/source.py` |
 
-The dataset's own train, validation and test splits are used. Of the high quality patches of a split, only those with `real_proj_shape` 509 are kept; the 2000 x 2000 patches are dropped. The cache builder prints both counts and writes them to `index.json` (`splits.<split>.selection`: `high_quality`, `kept_509`, `dropped_other_shape`); the number of cached patches is `splits.<split>.count` and is copied into every evaluation report.
+The codes 0 to 3 and their names are those of the card; the meanings are this repository's short description of the card's definitions. Class 255 is this repository's own and appears only in the extra training patches (section 11), never in high quality labels. The cloud fraction of a frame counts thick and thin cloud; cloud shadow is reported separately.
+
+### 2.3 Split sizes
+
+The dataset's own train, validation and test splits are used. The kept counts are those of the caches built on CSC Roihu on 2 October 2026 ([RESULTS.md](RESULTS.md), section 5). The cache builder writes the number of high quality patches, the number kept and the number dropped per split to `index.json` (`splits.<split>.selection`: `high_quality`, `kept_509`, `dropped_other_shape`).
 
 | Split | High quality patches | Kept (509 x 509) | Dropped (other size) |
 | :--- | :---: | :---: | :---: |
-| train | pending | 8490 | pending |
+| train | pending | 8,490 | pending |
 | validation | pending | 535 | pending |
 | test | pending | 975 | pending |
+| total | pending | 10,000 | pending |
 
-The kept counts are those of the caches built on CSC Roihu on 2 October 2026 ([RESULTS.md](RESULTS.md), section 5); the high quality and dropped counts are in `index.json` of the cache and are pending until it is read.
+The high quality and dropped counts are pending until `index.json` of the cache is read.
 
----
+### 2.4 Metadata fields
 
-## 5A. Extra training patches
+Every patch keeps its scalar metadata in the cache index. The fields this repository relies on, with the card's description [1]:
 
-Besides the high quality patches, the card lists the label types `scribble` and `nolabel`. They can add training data, never evaluation data, under three rules, each checked by the code:
-
-- Only 509 x 509 patches of the training split are used.
-- A patch is dropped when its location appears in any row of the validation or test split, of any label type. `python -m tiefer_lab.data.cache overlap <cache> <field>` proves it on a built cache: it reads the metadata in the index and exits with an error when a training patch shares a location with val or test, or lacks the field.
-- Scribble labels are partial: unlabelled pixels get class index 255 and the loss ignores them. Nolabel patches have no label; every pixel is 255.
-
-Two facts are still `TODO(verify)` and must be read from the survey (`hpc/roihu/survey.sbatch`) before these patches are built; until they are set in `src/tiefer_lab/data/source.py`, the build of the `train_extra` split stops with a clear message:
-
-| Fact | Where it is set | Status |
+| Field | Meaning | Used for |
 | :--- | :---: | :---: |
-| The field that identifies a patch's location (candidates in the metadata: `roi_id`, `stac:centroid`) | `LOCATION_FIELD` | TODO(verify) from the survey |
-| The code of unlabelled pixels in scribble labels | `SCRIBBLE_UNLABELLED_CODE` | TODO(verify) from the survey |
-| How many scribble and nolabel patches there are, and whether they carry a split | survey report | TODO(verify) from the survey |
-| Whether `tacofoundation:cloudsen12-extra` has reference masks for them | survey report | TODO(verify) from the survey |
+| `roi_id` | unique identifier of the region of interest (also `old_roi_id`, the previous identifier) | patch ID in every report |
+| `label_type` | `high`, `scribble` or `nolabel` | selection of high quality patches |
+| `real_proj_shape` | original size of the patch before padding: 509 or 2000 | selection of 509 x 509 patches |
+| `equi_id` | identifier in the Equi7Grid system | breakdown in reports |
+| `equi_zone` | zone of the Equi7Grid system | breakdown in reports |
+| `thick_percentage`, `thin_percentage`, `cloud_shadow_percentage`, `clear_percentage` | share of each class estimated by the annotator for high quality labels; derived from UNetMobV2-V1 predictions for scribble and nolabel patches | breakdown in reports |
 
-The high quality 2000 x 2000 patches stay out. Whether they show new locations and whether tiling them to 509 x 509 is sound cannot be decided from the facts verified so far; the survey reports their counts and locations.
-
----
-
-## 6. Normalisation
-
-Per-band mean and standard deviation of top-of-atmosphere reflectance are computed on the training split only, over all pixels of the cached patches, and stored in `index.json` (`normalisation`). Validation and test use the same statistics.
+The Equi7Grid has seven continental zones, each with its own projection: AF Africa, AN Antarctica, AS Asia, EU Europe, NA North America, OC Oceania and SA South America [4]. The validation split has patches in six of them (section 6.3).
 
 ---
 
-## 7. Known biases
+## 3. Collection and labelling
 
-Every patch keeps its scalar metadata in the cache index, and evaluation reports break results down by every metadata field with a small number of distinct values, with sample counts, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
+| Question | Answer | Source |
+| :--- | :---: | :---: |
+| How were the patches selected and labelled? | image patches were selected by the authors' cloud detection expert group and labelled by hand with the IRIS active learning tool, after a calibration phase for the labellers and followed by quality control | [3], Methods |
+| How well do labels agree? | the paper compares the manual labels before and after its quality control: median balanced overall accuracy (BOA) 0.99 for cloud and 0.99 for cloud shadow on its 975 test patches | [3], Table 6 |
+| Agreement per class | producer's accuracy 0.991 clear, 0.966 thick cloud, 0.780 thin cloud and 0.918 cloud shadow | [3], Methods, quality control phase |
+| Are the labels complete? | high quality labels are dense; scribble labels are partial; nolabel patches have none | [1] |
+| Is there personal or sensitive data? | none known; Sentinel-2 images at 10 m do not show individuals | this card |
 
-First measurement: the validation split by the field `equi_zone` has EU 105, SA 40, AS 100, NA 160, AF 80 and OC 50 patches (535 in all), and the mean IoU of `l1_base` seed 0 ranges from 0.685 (EU) to 0.561 (OC) over these groups ([RESULTS.md](RESULTS.md), section 9). The meaning of the codes is not verified from the card (section 12), and the causes of the difference are not analysed. The seasonal and land cover distribution has not yet been analysed.
+The agreement values are for the labels of the 2022 release and its test set, not for the revision this repository reads: the card says that all labels of the previous version were curated and refined in version 1.1.0 [1].
 
 ---
 
-## 8. What the data does not represent
+## 4. Preprocessing by the dataset authors
 
-- Very high resolution sensors: CloudSEN12+ is Sentinel-2 at 10 m; Tiefer's target sensors have much finer ground sampling, different spectral responses and different noise.
-- Onboard radiometry: the patches are processed Level-1C products (radiometric and geometric corrections, orthorectification), not raw onboard data.
+- The `cloudsen12-l1c` variant holds Sentinel-2 Level-1C patches, stored as digital numbers with a scale factor of 0.0001 [1]; the builder checks at run time that they are uint16.
+- The card says that the images are padded from 509 x 509 to 512 x 512 and from 2000 x 2000 to 2048 x 2048, with zeros on the left and bottom sides, so that the patch size is divisible by 32; `real_proj_shape` keeps the original size [1].
+- The card gives 99 as the no-data value, and says that scribble and nolabel patches contain it [1].
+- The Level-2A variant of the dataset was processed by Google Earth Engine [1]; this repository does not use it.
+
+---
+
+## 5. Preprocessing in this repository
+
+| Step | What the code does | Where |
+| :--- | :---: | :---: |
+| Selection | keeps `label_type` = `high` and `real_proj_shape` = 509; the 2000 x 2000 patches are left out, as they do not fit the fixed 512 x 512 export input | `src/tiefer_lab/data/source.py` |
+| Bands | stores the four L1 bands, or all 13 with `--bands all`; a model selects its bands from the cache when it loads it | `src/tiefer_lab/data/build_cache.py`, `src/tiefer_lab/data/cache.py` |
+| Labels | maps the label codes 0 to 3 to the class indexes 0 to 3; any other code stops the build | `src/tiefer_lab/data/source.py` |
+| Reflectance | reflectance = DN x 0.0001 | `src/tiefer_lab/data/source.py` |
+| Normalisation | per-band mean and standard deviation of reflectance, computed on the training split only over all pixels of the cached patches, stored in `index.json` (`normalisation`) and used for every split | `src/tiefer_lab/data/build_cache.py` |
+| Training crops | random crops with flips and rescaling | `src/tiefer_lab/data/dataset.py` |
+| Evaluation padding | each full patch is reflect-padded at the bottom and right to a multiple of 32, and the prediction is cropped back to the label's size | `src/tiefer_lab/data/dataset.py`, `src/tiefer_lab/data/transforms.py` |
+
+The builder reads each raster as it is stored and does not remove the card's zero padding (section 4). The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`) and are pending until it is read. If they are 512, the padded rows and columns are part of every cached patch, of the normalisation statistics and of every metric; this is an open fact (section 13).
+
+The normalisation values of each cache are pending until `index.json` is read (section 10).
+
+---
+
+## 6. Uses and limits
+
+### 6.1 Intended use
+
+Training and evaluation of the cloud filter of milestones L1 and L2, and scoring of other cloud masks on the same test pixels ([LANDSCAPE.md](LANDSCAPE.md), section 5).
+
+### 6.2 What the data does not represent
+
+- Very high resolution sensors: CloudSEN12+ is Sentinel-2 at 10 m to 60 m; Tiefer's target sensors have much finer ground sampling, different spectral responses and different noise.
+- Onboard radiometry: the patches are processed Level-1C products (section 4), not raw onboard data.
 - Compression artefacts: the patches do not show the compression an onboard pipeline may apply before or after the filter.
 - Space environment effects: radiation, thermal and vacuum effects on the sensor or the computer are not in the data.
 
+### 6.3 Known biases
+
+Evaluation reports break results down by every scalar metadata field with between 2 and 30 distinct values (`MAX_GROUPS` = 30 in `src/tiefer_lab/evaluate.py`), with the patch count of each group, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
+
+First measurement: the validation split by `equi_zone` has EU 105, SA 40, AS 100, NA 160, AF 80 and OC 50 patches (535 in all), and the mean IoU of `l1_base s0` ranges from 0.685 (EU) to 0.561 (OC) over these groups ([RESULTS.md](RESULTS.md), section 9). The causes of the difference are not analysed. The seasonal and land cover distribution is not analysed.
+
+### 6.4 Leakage between splits
+
+The splits are the dataset's own. Whether a training patch shares its location with a validation or test patch has not been checked on the built high quality caches: the check `python -m tiefer_lab.data.cache overlap <cache> <field>` needs the location field, which is an open fact (section 13). The extra training patches are built only once that check can run (section 11).
+
 ---
 
-## 9. Citation
+## 7. Distribution
 
-CloudSEN12+ is CC0 1.0, so no citation is required, but the work behind it is cited here. These are the citations of the [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12):
+| Question | Answer | Source |
+| :--- | :---: | :---: |
+| Publisher | TACO Foundation on Hugging Face: [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) | [1] |
+| Licence | CC0 1.0 | [1] |
+| Total size | 248 GB, as the Hugging Face page states it | [1] |
+| Format | TACO v1 (`.taco` files), read by `tacoreader` 0.5.6 and `rasterio`; the card's example uses `tacoreader` 0.5.3 | [1], `uv.lock` |
+| Included in this repository | no; patches are read at run time and cached outside git | `src/tiefer_lab/data/build_cache.py` |
+
+`python -m tiefer_lab.data.build_cache` reads only the bands it is asked for and the label of each selected patch; the full dataset is never downloaded.
+
+CloudSEN12+ is CC0 1.0, so no citation is required, but the work behind it is cited here. These are the citations of the card [1]:
 
 - Scientific Data, 2022: [10.1038/s41597-022-01878-2](https://doi.org/10.1038/s41597-022-01878-2)
 - Data in Brief, 2024: [10.1016/j.dib.2024.110852](https://doi.org/10.1016/j.dib.2024.110852)
@@ -146,7 +175,48 @@ Titles and authors are listed at the DOI links; this repository names no individ
 
 ---
 
-## 10. Building the cache
+## 8. Maintenance
+
+| Question | Answer | Source |
+| :--- | :---: | :---: |
+| Dataset card version | 1.1.2 | [1] |
+| Revision read | `f9490f7de11b4f387f72ef800e73ccbb754711de`, the `sha` field of the Hugging Face dataset API, last modified 5 January 2025, 14:47:21 UTC | [2] |
+| How the revision is recorded | the builder writes the `sha` field to `index.json` at build time, and every evaluation report copies it ([RESULTS.md](RESULTS.md), section 4) | `src/tiefer_lab/data/source.py` |
+| What changes when the dataset changes | a new revision means a new cache; the facts of section 9 are checked again against the card | this card |
+
+---
+
+## 9. Facts the code depends on
+
+Each fact is defined once, in `src/tiefer_lab/data/source.py`, and checked at run time where the last column says so.
+
+| Fact | Value in the code | Source | Checked at run time |
+| :--- | :---: | :---: | :---: |
+| **Access** | | | |
+| Reader API | `tacoreader.load(name)` returns a metadata table; `table.read(i)` returns the sample; `sample.read(k)` returns a GDAL virtual file path for item `k` | source of `tacoreader` 0.5.6 (`uv.lock`); 2.x rejects `tacofoundation:` names | no |
+| Level-1C variant name | `tacofoundation:cloudsen12-l1c` | [1] | no |
+| Variant with the reference masks | `tacofoundation:cloudsen12-extra` | [1] | no |
+| Dataset revision | `sha` field of the Hugging Face dataset API | [2] | recorded at build time |
+| **Image** | | | |
+| Band order of the image item | B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12 | [1] | yes: 13 bands, and band descriptions when present |
+| Scale factor | reflectance = DN x 0.0001, no offset | [1] | no |
+| Data type | uint16 | run-time check | yes |
+| Patch size field | `real_proj_shape`, 509 or 2000; only 509 is kept | [1] | yes: kept and dropped counts in `index.json` |
+| **Labels and metadata** | | | |
+| Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | [1] | yes: any other code stops the build |
+| Item positions in a sample | `read(0)` image, `read(1)` label | [1] | yes: label shape equals image shape |
+| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | builds of 2 October 2026 ([RESULTS.md](RESULTS.md), section 5) | yes: the reader stops when the field is missing |
+| Quality field and value | `label_type` = `high` | [1] | yes |
+| Patch ID field | `roi_id` | [1] | no |
+| Row key | `tortilla:id`, used only to sort rows and to resume a build | source of `tacoreader` 0.5.6 | no |
+| Reference mask names | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2` | [1] | no |
+| Reference mask link, item names and encodings | `REFERENCE_LINK_FIELD`, `REFERENCE_MASK_ITEMS`, `REFERENCE_ENCODINGS`: not set | open fact (section 13) | `build_cache --references` stops with a clear message |
+
+The card does not name the split field. The caches of 2 October 2026 were built with `tortilla:data_split` and the values `train`, `validation` and `test`, and gave 8,490, 535 and 975 kept patches; the reader stops when the field is missing, so the builds confirm the field and its values for revision `f9490f7de11b`.
+
+---
+
+## 10. Caches built
 
 ```bash
 python -m tiefer_lab.data.build_cache --split train
@@ -154,46 +224,41 @@ python -m tiefer_lab.data.build_cache --split val
 python -m tiefer_lab.data.build_cache --split test
 ```
 
-`--bands all` stores all 13 Level-1C bands instead of the four L1 bands; models select their bands from the cache when they load it, so one cache serves every band set. A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, about 6.7 MiB, with all bands, and about 2.2 MiB with four; the builder prints the estimate for each split before it starts. `--shard I/N` builds part I of N of a split in its own folder and `--merge N` joins the shards; `--max-rate P` caps the reads per minute of the whole split.
+| Option | Effect |
+| :--- | :---: |
+| `--bands used` (default) or `--bands all` | stores the four L1 bands or all 13 Level-1C bands |
+| `--limit <n>` | builds only `n` patches per split |
+| `--name <name>` | cache folder name in `$TIEFER_DATA_DIR` |
+| `--shard I/N` | builds part I of N of a split in its own folder |
+| `--merge N` | merges the N complete shards of a split into the cache |
+| `--max-rate P` | caps the reads at P patches per minute for the whole split, shared between shards |
+| `--workers <n>` | parallel readers; default `SLURM_CPUS_PER_TASK`, else 4 |
+| `--revision <sha>` | records this dataset revision |
+| `--references` | adds the reference masks of the extra variant to a complete split |
+| `--restart` | replaces a split built or being built with another selection |
+
+A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, 6.67 MiB, with all bands, and 4 x 509 x 509 x 2 + 509 x 509 bytes, 2.22 MiB, with four; the builder prints the estimate for each split before it starts. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart`. On CSC Roihu use `hpc/roihu/data.sbatch` ([hpc/roihu/README.md](../hpc/roihu/README.md)).
 
 The caches built on CSC Roihu:
 
 | Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | validation split built 2 October 2026, 05:42 UTC; jobs pending | about 22 GiB (notes) | `l1_base`, `l1_full`; `l2_spec_1m` seed 0: pending (notes say this cache; its config names `cloudsen12-l1c-all`) | pending (`index.json`) |
-| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split in 4 shards, then merged (jobs in [RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m` seed 0: pending | pending (`index.json`) |
+| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | validation split built 2 October 2026, 05:42 UTC; jobs pending | about 22 GiB (notes) | `l1_base`, `l1_full`; `l2_spec_1m s0`: pending | pending (`index.json`) |
+| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split in 4 shards, then merged (jobs in [RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m s0`: pending | pending (`index.json`) |
 
-The cache that `l2_spec_1m` seed 0 read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. Its run `config.toml` decides it; the config file is not changed until then. The training split of `cloudsen12-l1c-all` was built in 4 shards and merged; shard 0 failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped.
-
-Add `--limit <n>` for a small subset. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection (for example `--limit`) into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart` to replace it on purpose. On CSC Roihu use `hpc/roihu/data.sbatch` (see [hpc/roihu/README.md](../hpc/roihu/README.md)).
+The cache that `l2_spec_1m s0` read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. The run's `config.toml` decides it; the config file is not changed until then. Shard 0 of the training split of `cloudsen12-l1c-all` failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped.
 
 ---
 
-## 11. Data sheet
+## 11. Extra training patches
 
-Short answers to the usual data sheet questions, pointing to the section that holds the detail.
+Besides the high quality patches, the card lists the label types `scribble` and `nolabel` [1]. They can add training data, never evaluation data, under three rules, each checked by the code:
 
-| Question | Answer |
-| :--- | :---: |
-| **Motivation** | |
-| Why is the data used? | to train and evaluate a cloud and shadow filter that decides on board whether a frame is worth sending |
-| Who created the dataset? | the CloudSEN12+ authors, published by the TACO Foundation (section 1, section 9) |
-| **Composition** | |
-| What is one instance? | one Sentinel-2 Level-1C patch of 509 x 509 pixels with 13 bands and a four-class label (section 2) |
-| How many instances? | 8490 training, 535 validation and 975 test patches kept (section 5) |
-| Is it a sample of a larger set? | yes: high quality labels and 509 x 509 patches only (sections 1 and 5) |
-| Are labels complete? | high quality labels are dense; scribble labels are partial and nolabel patches have none (section 5A) |
-| Is there personal or sensitive data? | none known; satellite images at 10 m do not show individuals |
-| **Collection and labelling** | |
-| How were images selected and labelled? | image patches were selected by the authors' cloud detection expert group and labelled by hand with the IRIS active learning tool, after a calibration phase for the labellers and followed by quality control (Scientific Data paper, Methods, opened on 7 October 2026: [PMC9789947](https://pmc.ncbi.nlm.nih.gov/articles/PMC9789947/)) |
-| Human agreement on thin cloud and shadow | the paper compares the manual labels before and after its quality control: median BOA 0.99 for cloud and 0.99 for cloud shadow on its 975 test patches (Table 6); producer's accuracy 0.991 clear, 0.966 thick cloud, 0.780 thin cloud and 0.918 cloud shadow (Methods, quality control phase). These values are for the labels of the 2022 release and its test set, not for this repository's revision, whose labels were refined in version 1.1.0 (card 1.1.2) |
-| **Preprocessing in this repository** | |
-| What is done to the data? | selection, band selection at load time, reflectance scale, normalisation from the training split (sections 3, 6 and 10) |
-| **Uses** | |
-| What should it not be used for? | conclusions about other sensors, raw onboard data, compression or space environment effects (section 8) |
-| **Distribution and maintenance** | |
-| Licence | CC0 1.0 (section 1) |
-| Revision used | recorded in `index.json` at build time (section 2) |
+- Only 509 x 509 patches of the training split are used.
+- A patch is dropped when its location appears in any row of the validation or test split, of any label type. `python -m tiefer_lab.data.cache overlap <cache> <field>` proves it on a built cache: it reads the metadata in the index and exits with an error when a training patch shares a location with validation or test, or lacks the field.
+- Scribble labels are partial: unlabelled pixels get class index 255 and the loss ignores them. Nolabel patches have no label; every pixel is 255.
+
+Until `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` are set in `src/tiefer_lab/data/source.py`, the build of the `train_extra` split stops with a clear message. The facts that set them come from the survey (`hpc/roihu/survey.sbatch`) and are listed in section 13. The high quality 2000 x 2000 patches stay out: whether they show new locations, and whether tiling them to 509 x 509 is sound, is not decided by the facts verified so far; the survey reports their counts and locations.
 
 ---
 
@@ -203,14 +268,48 @@ Short answers to the usual data sheet questions, pointing to the section that ho
 
 - patch count and the pixel share of each class;
 - patches per cloud cover bin (thick plus thin cloud as a share of labelled pixels: below 0.1, 0.1 to 0.3, 0.3 to 0.7, 0.7 to 0.9, 0.9 and above) and patches that contain shadow;
-- distinct values of the verified fields `roi_id`, `label_type` and `real_proj_shape`.
+- distinct values of the fields `roi_id`, `label_type` and `real_proj_shape`.
 
-Other metadata fields are listed by name only. Their meaning is not verified from the card, so the report draws no conclusion about geography, season or land cover from them; section 7 stays open until such a field is verified.
+Other metadata fields are listed by name only, and the report draws no conclusion about geography, season or land cover from them.
+
+---
+
+## 13. Open facts
+
+| Fact | What resolves it | Where it is used |
+| :--- | :---: | :---: |
+| Stored height and width of the cached patches (509 or 512) | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5; every metric |
+| High quality and dropped counts per split | `index.json` (`splits.<split>.selection`) | section 2.3 |
+| Normalisation values of each cache | `index.json` (`normalisation`) | sections 5 and 10 |
+| Field that identifies a patch's location (candidates: `roi_id`, `stac:centroid`) | survey report (`overlap_with_val_test`) | sections 6.4 and 11; `LOCATION_FIELD` |
+| Code of unlabelled pixels in scribble labels: the card gives 99 as the no-data value [1]; the code is set after the survey's label histograms confirm it | survey report | section 11; `SCRIBBLE_UNLABELLED_CODE` |
+| Number of scribble and nolabel patches, and whether they carry a split | survey report | section 11 |
+| Whether `tacofoundation:cloudsen12-extra` has reference masks for the scribble and nolabel patches | survey report | section 11 |
+| Link field between a Level-1C row and its row in the extra variant, item name and encoding of each reference mask | survey report (`extra.link_to_l1c`, `extra.samples[*].items[*].name`, value histograms) | section 9; `build_cache --references` |
+
+---
+
+## 14. Sources
+
+1. CloudSEN12+ dataset card, version 1.1.2, TACO Foundation, Hugging Face, https://huggingface.co/datasets/tacofoundation/cloudsen12, accessed 7 October 2026.
+2. Hugging Face dataset API, `tacofoundation/cloudsen12`, https://huggingface.co/api/datasets/tacofoundation/cloudsen12, accessed 7 October 2026.
+3. CloudSEN12, a global dataset for semantic understanding of cloud and cloud shadow in Sentinel-2, Scientific Data, 2022, https://doi.org/10.1038/s41597-022-01878-2, full text at https://pmc.ncbi.nlm.nih.gov/articles/PMC9789947/, accessed 7 October 2026.
+4. Equi7Grid, README, TUW-GEO, GitHub, https://github.com/TUW-GEO/Equi7Grid, accessed 7 October 2026.
 
 ---
 
 ## Changelog
 
+- 7 October 2026: restructured to the data card of docs/STYLE.md: the sections follow the datasheet questions, then the facts the code depends on, the caches, the extra training patches, the richness report, open facts and sources. Section 5A is now section 11, and links from other files are updated.
+- 7 October 2026: the split field `tortilla:data_split` is confirmed by the cache builds of 2 October 2026; one `TODO(verify)` resolved.
+- 7 October 2026: the dataset revision is checked against the Hugging Face API (`sha` field, accessed 7 October 2026); one `TODO(verify)` resolved.
+- 7 October 2026: a table of the 13 bands with the card's names, resolutions and centre wavelengths.
+- 7 October 2026: class 255 (no label) in the class table, and the split total of 10,000 kept patches.
+- 7 October 2026: the meaning of `equi_zone` (continental zone of the Equi7Grid) from the Equi7Grid README.
+- 7 October 2026: the card's zero padding to 512 x 512 and no-data value 99, and the open fact of whether the cached patches hold the padding.
+- 7 October 2026: the breakdown rule of the evaluation reports (fields with 2 to 30 distinct values) and the leakage check between splits, which has not run.
+- 7 October 2026: the total size of 248 GB is sourced to the Hugging Face page instead of the specification; the reader version is stated once.
+- 7 October 2026: the remaining `TODO(verify)` facts are listed in one open facts table (section 13).
 - 7 October 2026: section 11, how the images were selected and labelled and the human agreement, from the CloudSEN12 paper (Table 6 and Technical Validation); two `TODO(verify)` resolved.
 - 7 October 2026: one table of the caches built on CSC Roihu, with the cache of `l2_spec_1m` seed 0 recorded as pending.
 - 7 October 2026: L2 also reads all 13 bands (sections 1, 2, 3 and 10); the 13-band cache, its size and its build in shards; the dataset revision and the kept counts per split; a first measurement of geographic bias by `equi_zone` (section 7).
