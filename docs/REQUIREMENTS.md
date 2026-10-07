@@ -160,7 +160,7 @@ Further evidence: `REQ-OBD-05`: the tests pass in dry-run mode; nothing is measu
 | `STD-01` | Worst stratum, cloud BOA | at least 0.75 | at least 0.85 | pending | l2_flex_1m s0, 4 bands | pending | in the evaluation reports, not yet transcribed ([RESULTS.md](RESULTS.md), section 20) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-02` | Invalid or out-of-domain input that ends in a discarded frame | at most 0 | at most 0 | 0 | n/a | met | `tiefer_lab.onboard.failsafe_check` discards no frame (`tests/test_onboard.py`) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-03` | Requirements without a linked verification | at most 0 | at most 0 | 0 | n/a | met | `tests/test_requirements_doc.py` | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `STD-04` | Rows of the standards matrix with status "not read" | reported | at most 0 | 6 | n/a | not met against the target | [STANDARDS.md](STANDARDS.md) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `STD-04` | Rows of the standards matrix with status "not read" | reported | at most 0 | 8 | n/a | not met against the target | [STANDARDS.md](STANDARDS.md) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 
 Notes:
 
@@ -189,6 +189,7 @@ The thin cloud PA and UA, the expected calibration error, the false send rate an
 
 ## Changelog
 
+- 7 October 2026: `STD-04` counts 8 rows `not read` in the revised standards matrix.
 - 7 October 2026: restructured to the requirements matrix of docs/STYLE.md: the acceptance targets have columns Minimum, Target, Measured value, Run, Status and Evidence, with the bounds of `src/tiefer_lab/acceptance.py`, and category rows for the target groups.
 - 7 October 2026: section 1 states once that the statuses were set by hand and that `make check` of 7 October 2026 is the evidence for every code requirement; the repeated evidence cells are removed and further evidence is listed below each table.
 - 7 October 2026: section 9 assesses the targets for l2_spec_1m s0, for information.
