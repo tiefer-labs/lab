@@ -570,7 +570,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
   file, You can obtain one at https://mozilla.org/MPL/2.0/.
   ```
 
-- `NOTICE.md`: the repository is MPL 2.0; trained models are not distributed here; the Tiefer name and logo are trademarks and are not licensed (MPL 2.0 section 2.3 grants no trademark rights); CloudSEN12+ is a third-party dataset under CC0 1.0 (with citation) and is not included in the repository; every dependency with its licence.
+- [LICENSING.md](../LICENSING.md) states the licence of every part of the repository and what is not licensed (trained models, `docs/assets/`, the Tiefer name and logo); [TRADEMARK.md](../TRADEMARK.md) the use of the name and logo; [NOTICE.md](../NOTICE.md) the attributions (CloudSEN12+ with its citations and the Copernicus notice, the typeface, the dependencies).
 
 ---
 
@@ -587,6 +587,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 16 names LICENSING.md, TRADEMARK.md and NOTICE.md for what each states.
 - 7 October 2026: section 14 lists the root documents added on 7 October 2026 and `tests/test_docs_index.py`; the community files of this repository override the organisation versions; principle 1 points to POLICY.md and CLAIMS.md.
 - 7 October 2026: the purpose names milestones L1 and L2 and a Jetson milestone; section 3 names REQUIREMENTS.md, section 8, as the single source of the acceptance targets, and says when milestone L2 and the Jetson milestone are done, with the provisional product decision.
 - 7 October 2026: the principles of four bands and of at most 1.0 million parameters apply to milestone L1; section 8 gives the class weights of L1 (median frequency) and L2 (none by default), the patience per config, the complete configs and options of `train`, and the input 1 x N x 512 x 512 of the L2 exports.
