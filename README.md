@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-Tiefer Lab is where Tiefer trains, compresses and measures the models that run on board Earth observation satellites.
+Tiefer Lab is where Tiefer trains, compresses and measures the models that run on board Earth observation satellites. It is not flight software: nothing here has flown, the trained models are not distributed, and no hardware measurement has been made yet.
 
 [Website](https://tiefer.space) | [Specification](docs/SPEC.md) | [Results](docs/RESULTS.md) | [Licence](LICENSE)
 
@@ -12,72 +12,65 @@ Tiefer Lab is where Tiefer trains, compresses and measures the models that run o
 
 ## About
 
-Tiefer builds software that lets an Earth observation satellite analyse its own images in orbit. Instead of sending every raw frame to the ground, the onboard pipeline works in four stages: filter (keep frames that are not useful on board), detect (run event models on the useful frames), alert (send a small packet through the first available link) and update (replace models in orbit with small, signed updates). Each model is trained, compressed and measured in this repository before it is considered for flight.
+Tiefer builds software that lets an Earth observation satellite analyse its own images in orbit. The onboard pipeline Tiefer describes has four stages: filter (keep frames that are not useful on board), detect (run event models on the useful frames), alert (send a small packet through the first available link) and update (replace models in orbit with small, signed updates). Tiefer Lab builds and measures the first stage, the cloud filter; what exists of each stage is recorded in [CLAIMS.md](CLAIMS.md).
 
-The repository is public because results are published with their method: measured, not claimed. [docs/RESULTS.md](docs/RESULTS.md) is written by hand. Every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. Trained models are not published here.
+The repository is public because results are published with their method: measured, not claimed. [docs/RESULTS.md](docs/RESULTS.md) is written by hand; every value names the report file it was copied from, and the report file records the git commit, configuration and platform.
+
+### What Lab is not
+
+- Not flight software, and not flight-proven: every model ran on GPUs on CSC Roihu, never on a satellite.
+- Not a model distribution: trained models are not published here and no licence is granted for them ([LICENSING.md](LICENSING.md)).
+- Not measured on hardware: the Jetson Orin scripts exist, but no latency, power or energy has been measured ([docs/RESULTS.md](docs/RESULTS.md), section 15).
+- Not measured on a target sensor: every result is on Sentinel-2 Level-1C data from CloudSEN12+.
+- Not a detector, alert system or update system: those stages have no code in this repository ([CLAIMS.md](CLAIMS.md)).
 
 ---
 
 ## Status
 
-Milestone L1 is the first stage, the onboard cloud filter: a small network that labels every pixel of a four-band frame as clear, thick cloud, thin cloud or cloud shadow, and decides per frame whether it is worth sending to the ground. Milestone L2 measures model size, a band-flexible model that reads any of the 13 Sentinel-2 Level-1C bands, and a four-band specialist as its control. The code, tests and guides of both are done. Training and evaluation ran on CSC Roihu on 2 and 3 October 2026; the Jetson Orin is not measured yet.
-
-| Component | Code | Measured |
+| Milestone or component | Status | Evidence |
 | :--- | :---: | :---: |
-| **Milestone L1** | | |
-| Data cache (CloudSEN12+, Level-1C, four bands) | done | n/a |
-| Training and evaluation on CSC Roihu | done | measured: `l1_base` seeds 0 and 1, `l1_full` seed 0 |
-| ONNX export and INT8 quantisation | done | measured; INT8 loses more mean IoU than the one-point limit |
-| Model card and checksums | done | draft, v0.1.0 (`l1_base` seed 0) |
-| Jetson Orin benchmark | done | not measured |
-| **Milestone L2** | | |
-| 13-band cache | done | n/a |
-| Training and evaluation on CSC Roihu | done | measured: `l2_flex_1m` and `l2_spec_1m`, seed 0 |
-| Export of the L2 models | done | not measured |
-| Seeds 1 and 2 of the L2 pair | n/a | not run |
+| **Milestone L1: four-band cloud filter** | | |
+| Data cache (CloudSEN12+, Level-1C, four bands) | done | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu (`l1_base` seeds 0 and 1, `l1_full` seed 0) | measured | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
+| ONNX export and INT8 quantisation | measured | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Model card and checksums (v0.1.0, `l1_base` seed 0) | draft | [models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md) |
+| **Milestone L2: band-flexible model and four-band specialist** | | |
+| 13-band data cache | done | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu (`l2_flex_1m` and `l2_spec_1m`, seed 0) | measured | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
+| Export of the L2 models | not measured | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Seeds 1 and 2 of the L2 pair | not run | [hpc/roihu/plan.md](hpc/roihu/plan.md), section 1 |
+| Product decision between the two L2 models | pending | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), section 7 |
+| **Jetson milestone** | | |
+| Benchmark scripts, dry-run mode | done | [jetson/README.md](jetson/README.md) |
+| Latency, power and energy on a Jetson Orin | not measured | [docs/RESULTS.md](docs/RESULTS.md), section 15 |
 
-On the test split, the four-band specialist `l2_spec_1m` (seed 0) has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; `l1_base` (seed 0), the model of the v0.1.0 model card, has 0.635 [0.621, 0.649] and 0.039 [0.024, 0.055]. On four bands, the band-flexible `l2_flex_1m` (seed 0) has a test mean IoU of 0.609. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. `l1_base` has two seeds (validation mean IoU 0.649 and 0.691); `l1_full` and every L2 run are single seeds. Values, sources and what is still pending: [docs/RESULTS.md](docs/RESULTS.md).
+Headline numbers, as [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) lists them: on the test split, the four-band specialist `l2_spec_1m` seed 0 has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. Caveats: single seeds, L2 settings not in the committed configs, report files still on CSC Roihu, and padded pixels counted in every metric ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3).
+
+---
+
+## Where to go next
+
+| You want to | Read |
+| :--- | :---: |
+| Find the one document that answers your question | [START-HERE.md](START-HERE.md) |
+| Run Lab on your computer in minutes, offline | [GETTING-STARTED.md](GETTING-STARTED.md) |
+| Check what is real before anything else | [CLAIMS.md](CLAIMS.md) |
+| Find the number to quote and how to cite it | [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) |
 
 ---
 
 ## Quick start
-
-### Run locally
-
-Requirements: Python 3.12 and [uv](https://docs.astral.sh/uv/). The code runs on CUDA, Apple MPS or CPU, chosen automatically; every command accepts `--device` to override the choice.
 
 ```bash
 git clone https://github.com/tiefer-labs/lab.git
 cd lab
 make setup
 make check
-make smoke
+make smoke SMOKE_SOURCE=synthetic
 ```
 
-- `make setup` installs the locked environment from `uv.lock`.
-- `make check` runs `ruff`, `mypy --strict` on `src/` and `pytest`. Tests use small synthetic arrays only and run on CPU.
-- `make smoke` runs the whole pipeline on a tiny subset in a few minutes on CPU: data cache, training, evaluation, ONNX export, INT8 quantisation and the Jetson scripts in dry-run mode. It uses real CloudSEN12+ patches when the dataset is reachable and synthetic scenes otherwise, writes only to `runs/smoke/`, and its outputs are never results.
-
-The full pipeline, one command per step:
-
-```bash
-uv run python -m tiefer_lab.data.build_cache --split all
-uv run python -m tiefer_lab.train --config configs/l1_base.toml
-uv run python -m tiefer_lab.evaluate --run <run-id> --split val --baselines
-uv run python -m tiefer_lab.export --run <run-id>
-```
-
-Locations come from three environment variables, documented in [.env.example](.env.example):
-
-| Variable | Default | Contents |
-| :--- | :---: | :---: |
-| `TIEFER_DATA_DIR` | `./data` | the data cache |
-| `TIEFER_RUNS_DIR` | `./runs` | training runs: configuration, metadata, metrics, checkpoints, ONNX files |
-| `TIEFER_REPORTS_DIR` | `./reports` | evaluation, export, Jetson and compute reports |
-
-### Run on CSC Roihu
-
-Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step-by-step guide, including setup, the data cache, Slurm jobs and copying results back, is in [hpc/roihu/README.md](hpc/roihu/README.md).
+Requirements, durations, the expected output and troubleshooting are in [GETTING-STARTED.md](GETTING-STARTED.md). Installation on CSC Roihu, on a Jetson and from a source archive is in [INSTALL.md](INSTALL.md); training on CSC Roihu is in [hpc/roihu/README.md](hpc/roihu/README.md).
 
 ---
 
@@ -98,26 +91,19 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 
 ## Documentation
 
+Every Markdown file of the repository, with its purpose, audience and status, is listed in [INDEX.md](INDEX.md); [START-HERE.md](START-HERE.md) routes a task to the document that owns it. The five most used:
+
+- [docs/RESULTS.md](docs/RESULTS.md): measured results; every value names the report file it was copied from.
 - [docs/SPEC.md](docs/SPEC.md): the specification for milestones L1 and L2.
-- [docs/DATA.md](docs/DATA.md): the data card for CloudSEN12+, with every dataset fact the code depends on.
-- [docs/DATASETS.md](docs/DATASETS.md): every dataset used or considered, its role per split, and how metrics compare with published ones.
-- [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md): sensor, data, decision and hardware assumptions to revisit.
-- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md): every requirement and acceptance target, its status and the test or report that verifies it.
-- [docs/STANDARDS.md](docs/STANDARDS.md): the standards, handbooks and formats, the clauses read and the status of each.
-- [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md): every dependency, why it is needed, and its licence.
-- [docs/RESULTS.md](docs/RESULTS.md): measured results, written by hand; every value names the report file it was copied from.
-- [docs/LANDSCAPE.md](docs/LANDSCAPE.md): related onboard cloud detection systems, onboard AI platforms and reference algorithms, their published values, and the measurements that would decide a comparison.
-- [docs/STYLE.md](docs/STYLE.md): the documentation standard for Tiefer repositories.
-- [NOTICE.md](NOTICE.md): what the licence covers and what it does not, third-party data, the typeface and the dependencies.
-- [hpc/roihu/plan.md](hpc/roihu/plan.md): what ran on CSC Roihu against the plan, and the next steps.
-- [hpc/roihu/README.md](hpc/roihu/README.md), [jetson/README.md](jetson/README.md), [reports/README.md](reports/README.md) and [models/cloud-filter/README.md](models/cloud-filter/README.md): guides for each folder.
-- Security policy, contributing guide, code of conduct and support: [tiefer-labs/.github](https://github.com/tiefer-labs/.github).
+- [docs/DATA.md](docs/DATA.md): the data card for CloudSEN12+.
+- [hpc/roihu/README.md](hpc/roihu/README.md): the guide for training on CSC Roihu.
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute.
 
 ---
 
 ## Principles
 
-1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19. Not every number can be reproduced from a commit yet: `l1_base s0` ran from a working tree with uncommitted changes, the L2 runs used a batch size and learning rate that are not in their committed configs, and the report files of 2 and 3 October 2026 are still on CSC Roihu (docs/RESULTS.md, section 4).
+1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The gates a number must pass are in [POLICY.md](POLICY.md). The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19. Not every number can be reproduced from a commit yet: `l1_base s0` ran from a working tree with uncommitted changes, the L2 runs used a batch size and learning rate that are not in their committed configs, and the report files of 2 and 3 October 2026 are still on CSC Roihu (docs/RESULTS.md, section 4).
 2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
 3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
 4. Reproducible: fixed seeds, versioned configurations, a locked environment, and the dataset revision and the git commit in every result file, with a flag when the working tree had uncommitted changes.
@@ -127,20 +113,19 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 
 ## Licence
 
-The repository (code, scripts, configurations, documentation and reports) is licensed under the Mozilla Public License 2.0, see [LICENSE](LICENSE). Trained models are not part of the repository and are not covered by any licence here. The Tiefer name and logo are trademarks and are not licensed.
-
-Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is not included in the repository; every dependency and its licence is listed in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md). Details are in [NOTICE.md](NOTICE.md).
+The repository is licensed under the Mozilla Public License 2.0, see [LICENSE](LICENSE). What each part is licensed under, and what is not licensed (trained models, the images in `docs/assets/`, the Tiefer name and logo), is in [LICENSING.md](LICENSING.md); attributions are in [NOTICE.md](NOTICE.md), and the use of the name and logo in [TRADEMARK.md](TRADEMARK.md).
 
 ---
 
 ## Contact
 
-`hello@tiefer.space`
+`hello@tiefer.space`. Security reports follow [SECURITY.md](SECURITY.md); help is described in [SUPPORT.md](SUPPORT.md).
 
 ---
 
 ## Changelog
 
+- 7 October 2026: the first screen says what Lab is and what it is not; "What Lab is not", a status table with evidence, "Where to go next", a minimal quick start that defers to GETTING-STARTED.md and INSTALL.md, and a documentation section that points to INDEX.md and START-HERE.md; the community files of this repository replace the links to tiefer-labs/.github.
 - 7 October 2026: the documentation list adds DATASETS.md, REQUIREMENTS.md, STANDARDS.md, NOTICE.md and hpc/roihu/plan.md; principles 1 and 4 say what holds now and what is pending.
 - 7 October 2026: correction: `l1_base` has two seeds; the other runs are single seeds.
 - 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy.
