@@ -40,8 +40,8 @@ body:
   - type: input
     id: ds_provider
     attributes:
-      label: "Provider"
-      description: "The organisation or authors who publish it."
+      label: "Dataset provider"
+      description: "The organisation or authors who publish the dataset."
   - type: input
     id: ds_url
     attributes:
