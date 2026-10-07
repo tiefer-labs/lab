@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What data milestone L1 trains and evaluates on, which facts about it the code depends on, how each fact was checked, and what the data does not represent.
+What data milestones L1 and L2 train and evaluate on, which facts about it the code depends on, how each fact was checked, and what the data does not represent.
 
 ---
 
@@ -17,10 +17,10 @@ What data milestone L1 trains and evaluates on, which facts about it the code de
 | Licence | CC0 1.0 |
 | Dataset card version | 1.1.2 |
 | Reader | `tacoreader` 0.5.6 (v1 API) and `rasterio`; the card example uses 0.5.3, and 0.5.6 works on CSC Roihu |
-| Revision used | not yet recorded: the builder writes it to `index.json` |
+| Revision used | `f9490f7de11b4f387f72ef800e73ccbb754711de`, written by the builder to `index.json` and copied into every evaluation report ([RESULTS.md](RESULTS.md), section 4) |
 | Included in this repository | no; patches are read at run time and cached outside git |
 
-The dataset is not part of this repository. `python -m tiefer_lab.data.build_cache` reads only the four used bands and the label of each selected patch; the full dataset (about 248 GB according to the specification) is never downloaded.
+The dataset is not part of this repository. `python -m tiefer_lab.data.build_cache` reads only the bands it is asked for and the label of each selected patch: the four L1 bands by default, or all 13 Level-1C bands with `--bands all` (section 10). The full dataset (about 248 GB according to the specification) is never downloaded.
 
 > [!NOTE]
 > The facts below were checked against the dataset card, version 1.1.2, on 1 October 2026. Two facts are still marked `TODO(verify)`: the split field, which the card does not name, and the revision field of the Hugging Face API, which was not checked. The reader prints the metadata columns once per build and stops with a clear message when the split field or another field it needs is missing.
@@ -41,7 +41,7 @@ All of these are defined once, in `src/tiefer_lab/data/source.py`.
 | Dataset revision | `sha` field of the Hugging Face dataset API, recorded at build time | TODO(verify) the [API response](https://huggingface.co/api/datasets/tacofoundation/cloudsen12) |
 | **Image** | | |
 | Band order of the image item | B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); checked at run time: 13 bands, and band descriptions when present |
-| Bands used | B02, B03, B04, B08 (rasterio indexes 2, 3, 4, 8) | follows from the band order; tested in `tests/test_bands_and_labels.py` |
+| Bands used | L1 and the four-band specialist: B02, B03, B04, B08 (rasterio indexes 2, 3, 4, 8); the band-flexible L2 model: any of the 13 | follows from the band order; tested in `tests/test_bands_and_labels.py` and `tests/test_cache.py` |
 | Scale factor | reflectance = DN x 0.0001, no offset | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) |
 | Data type | uint16 | checked at run time |
 | Patch size | field `real_proj_shape`, 509 or 2000; only 509 is kept, as the export input is 512 x 512 | [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12); kept and dropped counts are written to `index.json` |
@@ -59,7 +59,7 @@ All of these are defined once, in `src/tiefer_lab/data/source.py`.
 
 ## 3. Bands used and why
 
-Only blue, green, red and near infrared (Sentinel-2 B02, B03, B04 and B08, all at 10 m) are used. Very high resolution optical satellites, the sensors Tiefer targets, typically carry these four bands plus panchromatic, and not the shortwave infrared bands that classic cloud algorithms rely on. The data is Level-1C (top-of-atmosphere reflectance) because there is no atmospheric correction on board. See [ASSUMPTIONS.md](ASSUMPTIONS.md).
+Milestone L1 uses only blue, green, red and near infrared (Sentinel-2 B02, B03, B04 and B08, all at 10 m). Very high resolution optical satellites, the sensors Tiefer targets, typically carry these four bands plus panchromatic, and not the shortwave infrared bands that classic cloud algorithms rely on. Milestone L2 also reads all 13 Level-1C bands: the band-flexible model is trained on band sets drawn from them and scored per band set (3, 4, 6 and 13 bands), and the four-band specialist keeps the four L1 bands. The data is Level-1C (top-of-atmosphere reflectance) because there is no atmospheric correction on board. See [ASSUMPTIONS.md](ASSUMPTIONS.md), sections 1 and 7.
 
 ---
 
@@ -82,9 +82,11 @@ The dataset's own train, validation and test splits are used. Of the high qualit
 
 | Split | High quality patches | Kept (509 x 509) | Dropped (other size) |
 | :--- | :---: | :---: | :---: |
-| train | not yet measured | not yet measured | not yet measured |
-| validation | not yet measured | not yet measured | not yet measured |
-| test | not yet measured | not yet measured | not yet measured |
+| train | pending | 8490 | pending |
+| validation | pending | 535 | pending |
+| test | pending | 975 | pending |
+
+The kept counts are those of the caches built on CSC Roihu on 2 October 2026 ([RESULTS.md](RESULTS.md), section 5); the high quality and dropped counts are in `index.json` of the cache and are pending until it is read.
 
 ---
 
@@ -117,7 +119,9 @@ Per-band mean and standard deviation of top-of-atmosphere reflectance are comput
 
 ## 7. Known biases
 
-The geographic, seasonal and land cover distribution of the high quality patches has not yet been analysed in this repository. Every patch keeps its scalar metadata in the cache index, and evaluation reports break results down by every metadata field with a small number of distinct values, with sample counts, so imbalances become visible in the results. Any statement about bias in this card will cite such a report.
+Every patch keeps its scalar metadata in the cache index, and evaluation reports break results down by every metadata field with a small number of distinct values, with sample counts, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
+
+First measurement: the validation split by the field `equi_zone` has EU 105, SA 40, AS 100, NA 160, AF 80 and OC 50 patches (535 in all), and the mean IoU of `l1_base` seed 0 ranges from 0.685 (EU) to 0.561 (OC) over these groups ([RESULTS.md](RESULTS.md), section 9). The meaning of the codes is not verified from the card (section 12), and the causes of the difference are not analysed. The seasonal and land cover distribution has not yet been analysed.
 
 ---
 
@@ -150,7 +154,9 @@ python -m tiefer_lab.data.build_cache --split val
 python -m tiefer_lab.data.build_cache --split test
 ```
 
-`--bands all` stores all 13 Level-1C bands instead of the four used bands; models select their bands from the cache when they load it, so one cache serves every band set. A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, about 6.7 MiB, with all bands, and about 2.2 MiB with four; the builder prints the estimate for each split before it starts. `--shard I/N` builds part I of N of a split in its own folder and `--merge N` joins the shards; `--max-rate P` caps the reads per minute of the whole split.
+`--bands all` stores all 13 Level-1C bands instead of the four L1 bands; models select their bands from the cache when they load it, so one cache serves every band set. A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, about 6.7 MiB, with all bands, and about 2.2 MiB with four; the builder prints the estimate for each split before it starts. `--shard I/N` builds part I of N of a split in its own folder and `--merge N` joins the shards; `--max-rate P` caps the reads per minute of the whole split.
+
+The 13-band cache `cloudsen12-l1c-all` was built on CSC Roihu and takes about 66 GB; the four-band cache `cloudsen12-l1c-high` takes about 22 GB (both sizes from the session notes, [RESULTS.md](RESULTS.md), section 5). Its training split was built in 4 shards and merged; shard 0 failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped ([RESULTS.md](RESULTS.md), section 16).
 
 Add `--limit <n>` for a small subset. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection (for example `--limit`) into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart` to replace it on purpose. On CSC Roihu use `hpc/roihu/data.sbatch` (see [hpc/roihu/README.md](../hpc/roihu/README.md)).
 
@@ -167,7 +173,7 @@ Short answers to the usual data sheet questions, pointing to the section that ho
 | Who created the dataset? | the CloudSEN12+ authors, published by the TACO Foundation (section 1, section 9) |
 | **Composition** | |
 | What is one instance? | one Sentinel-2 Level-1C patch of 509 x 509 pixels with 13 bands and a four-class label (section 2) |
-| How many instances? | per split in `index.json` and the richness report; not yet measured here (section 5) |
+| How many instances? | 8490 training, 535 validation and 975 test patches kept (section 5) |
 | Is it a sample of a larger set? | yes: high quality labels and 509 x 509 patches only (sections 1 and 5) |
 | Are labels complete? | high quality labels are dense; scribble labels are partial and nolabel patches have none (section 5A) |
 | Is there personal or sensitive data? | none known; satellite images at 10 m do not show individuals |
@@ -198,6 +204,7 @@ Other metadata fields are listed by name only. Their meaning is not verified fro
 
 ## Changelog
 
+- 7 October 2026: L2 also reads all 13 bands (sections 1, 2, 3 and 10); the 13-band cache, its size and its build in shards; the dataset revision and the kept counts per split; a first measurement of geographic bias by `equi_zone` (section 7).
 - 2 October 2026: data sheet (section 11) and richness report (section 12).
 - 2 October 2026: reference masks from the extra table, added to a split once their link and encodings are verified.
 - 2 October 2026: extra training patches (scribble and nolabel) away from val and test, with the facts still to verify; 2000 x 2000 patches stay out.
