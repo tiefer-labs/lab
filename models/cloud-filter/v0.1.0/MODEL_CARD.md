@@ -24,7 +24,7 @@ Draft model card of the milestone L1 cloud filter `l1_base s0` for four-band Lev
 | Dataset revision and cache | `f9490f7de11b4f387f72ef800e73ccbb754711de`, cache `cloudsen12-l1c-high` | evaluation report; [DATA.md](../../../docs/DATA.md), section 10 |
 | Selected model | no; the selected model of [RESULTS.md](../../../docs/RESULTS.md), section 7, is `l2_spec_1m s0` | [RESULTS.md](../../../docs/RESULTS.md), section 7 |
 | Pretrained weights | none; trained from random initialisation | `NOTICE.md` |
-| Weight licence | not distributed; no licence is granted for the model files | `NOTICE.md` |
+| Weight licence | not distributed; no licence is granted for the model files | `LICENSING.md` |
 | Date | 3 October 2026 | `metadata.json`: end of the last session |
 
 ---
@@ -140,6 +140,7 @@ Excluded: `best.pt`. Its SHA-256 (`bd6767cb5e06f489f81a6a5e79cc826f8b3437a127307
 
 ## Changelog
 
+- 7 October 2026: the weight licence row cites LICENSING.md, which now states it.
 - 7 October 2026: the sources of the file sizes and FP16 values are the session notes; the difference between 0.042 (PyTorch) and 0.039 (ONNX Runtime) is explained; the cloud BOA changes of INT8 and FP16 have no source in the committed code yet.
 - 7 October 2026: `best.pt` is excluded from the file table, since its hash is not in `SHA256SUMS`.
 - 7 October 2026: the rows the template requires: cloud and shadow BOA (validation pending, test not measured), calibration error and worst stratum (pending), the fail-safe count, and latency p99 and energy (not measured); the human agreement of the CloudSEN12 paper.
