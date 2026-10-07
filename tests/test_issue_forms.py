@@ -254,6 +254,8 @@ def test_form_follows_the_schema_and_the_question_rules(path: Path) -> None:
     assert 50 <= len(items) <= 60, f"{len(items)} questions"
     ids = [item["id"] for item in items]
     assert len(ids) == len(set(ids)), "ids are not unique"
+    labels = [item["attributes"]["label"] for item in items]
+    assert len(labels) == len(set(labels)), "labels are not unique"
     for item in items:
         attributes = item["attributes"]
         where = item["id"]
