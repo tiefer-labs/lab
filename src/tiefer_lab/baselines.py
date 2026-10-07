@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from tiefer_lab.data.source import CLEAR, NUM_CLASSES, THICK_CLOUD, THIN_CLOUD
+from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, NUM_CLASSES, THICK_CLOUD, THIN_CLOUD
 from tiefer_lab.metrics import mean_iou
 
 FloatArray = NDArray[np.float32]
@@ -118,9 +118,12 @@ class RuleHistogram:
         )
 
     def add(self, reflectance: FloatArray, label: NDArray[np.integer[Any]]) -> None:
-        b = _bin(visible_brightness(reflectance), BRIGHTNESS_STEP, BRIGHTNESS_BINS)
-        w = _bin(whiteness(reflectance), WHITENESS_STEP, WHITENESS_BINS)
-        flat = (label.astype(np.int64) * (BRIGHTNESS_BINS + 1) + b) * (WHITENESS_BINS + 1) + w
+        """Add the labelled pixels; IGNORE_INDEX (no label, or padding) is left out."""
+        valid = label != IGNORE_INDEX
+        b = _bin(visible_brightness(reflectance), BRIGHTNESS_STEP, BRIGHTNESS_BINS)[valid]
+        w = _bin(whiteness(reflectance), WHITENESS_STEP, WHITENESS_BINS)[valid]
+        classes = label[valid].astype(np.int64)
+        flat = (classes * (BRIGHTNESS_BINS + 1) + b) * (WHITENESS_BINS + 1) + w
         self.counts += np.bincount(flat.ravel(), minlength=self.counts.size).reshape(
             self.counts.shape
         )

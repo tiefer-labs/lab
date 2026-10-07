@@ -34,7 +34,7 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
-from tiefer_lab.data import cache, sensor
+from tiefer_lab.data import cache, padding, sensor
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
@@ -67,7 +67,9 @@ class Scores:
     """Per-patch confusion matrices and cloud fractions, for metrics and intervals.
 
     Pixels marked IGNORE_INDEX in the reference or the prediction (no label,
-    or no data in a reference mask) are left out and counted. With
+    the dataset's padding of a cached patch, or no data in a reference mask)
+    are left out of every confusion matrix and fraction, and counted. The
+    reference and predicted fractions of a frame use the same pixels. With
     `binary_only`, only the cloud against non-cloud measures are reported
     (for masks that do not separate the four classes).
     """
@@ -84,13 +86,14 @@ class Scores:
         self, prediction: NDArray[np.integer[Any]], reference: NDArray[np.integer[Any]]
     ) -> None:
         valid = (reference != IGNORE_INDEX) & (prediction != IGNORE_INDEX)
+        fractions = decisions.frame_fractions(prediction, reference)
         if not valid.all():
             self.ignored_pixels += int((~valid).sum())
             prediction, reference = prediction[valid], reference[valid]
         self.confusions.append(metrics.confusion_matrix(prediction, reference))
-        self.true_fraction.append(decisions.cloud_fraction(reference))
-        self.pred_fraction.append(decisions.cloud_fraction(prediction))
-        self.pred_shadow.append(decisions.shadow_fraction(prediction))
+        self.true_fraction.append(fractions.true_cloud)
+        self.pred_fraction.append(fractions.predicted_cloud)
+        self.pred_shadow.append(fractions.predicted_shadow)
 
     def __len__(self) -> int:
         return len(self.confusions)
@@ -465,6 +468,9 @@ def evaluate_run(
             "dataset": index.get("dataset"),
             "split_count": len(data),
             "split_build_date": index["splits"][split].get("build_date"),
+            # The dataset's padding, set to IGNORE_INDEX in the labels (data/padding.py).
+            "padding_sides": list(padding.PADDING_SIDES),
+            "padded_pixels_masked": data.padded_pixels(),
         },
         "model": scores.report(config.evaluation),
         "breakdown": strata,

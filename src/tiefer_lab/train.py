@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import metrics
 from tiefer_lab.config import Config, dump_toml, load_config
-from tiefer_lab.data import cache, sensor
+from tiefer_lab.data import cache, padding, sensor
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
 from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
@@ -97,7 +97,20 @@ def subset(data: cache.SplitData, limit: int | None) -> cache.SplitData:
         metadata=data.metadata[:limit],
         reference={k: v[:limit] for k, v in data.reference.items()},
         reference_kinds=dict(data.reference_kinds),
+        padding=data.padding[:limit],
     )
+
+
+def training_class_pixels(data: cache.SplitData, index: dict[str, Any]) -> list[int]:
+    """Pixels per class of the training split for the class weights.
+
+    The counts in the index include the dataset's padding; when the split is
+    padded, they are counted again over the masked labels, so the padding
+    never weighs in (data/padding.py).
+    """
+    if not data.padding:
+        return [int(c) for c in index["splits"]["train"]["class_pixels"]]
+    return cache.count_class_pixels(data.labels)
 
 
 def open_cache(config: Config, allow_synthetic: bool) -> tuple[Path, dict[str, Any]]:
@@ -248,10 +261,8 @@ def train(
     bands = config.data.bands
     mean, std = cache.normalisation(index, bands)
     load_started = time.monotonic()
-    train_data = subset(
-        cache.load_split(directory, "train", config.data.load_mode, bands=bands),
-        config.data.max_train_patches,
-    )
+    full_train = cache.load_split(directory, "train", config.data.load_mode, bands=bands)
+    train_data = subset(full_train, config.data.max_train_patches)
     val_data = subset(
         cache.load_split(directory, "val", config.data.load_mode, bands=bands),
         config.data.max_val_patches,
@@ -279,6 +290,12 @@ def train(
                 "source": index.get("source"),
                 "dataset": index.get("dataset"),
                 "train_patches": len(train_data),
+                # The dataset's padding, set to IGNORE_INDEX in the labels (data/padding.py).
+                "padding_sides": list(padding.PADDING_SIDES),
+                "padded_pixels_masked": {
+                    "train": train_data.padded_pixels(),
+                    "val": val_data.padded_pixels(),
+                },
                 "val_patches": len(val_data),
                 "train_in_memory": train_data.in_memory,
                 "data_workers": workers,
@@ -313,7 +330,7 @@ def train(
         model = model.to(memory_format=torch.channels_last)
         torch.backends.cudnn.benchmark = True
     weights = (
-        class_weights(index["splits"]["train"]["class_pixels"]).to(device)
+        class_weights(training_class_pixels(full_train, index)).to(device)
         if config.train.class_weighting == "median_frequency"
         else None
     )

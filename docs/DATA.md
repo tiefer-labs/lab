@@ -121,12 +121,15 @@ The agreement values are for the labels of the 2022 release and its test set, no
 | Bands | stores the four L1 bands, or all 13 with `--bands all`; a model selects its bands from the cache when it loads it | `src/tiefer_lab/data/build_cache.py`, `src/tiefer_lab/data/cache.py` |
 | Labels | maps the label codes 0 to 3 to the class indexes 0 to 3; any other code stops the build | `src/tiefer_lab/data/source.py` |
 | Reflectance | reflectance = DN x 0.0001 | `src/tiefer_lab/data/source.py` |
-| Normalisation | per-band mean and standard deviation of reflectance, computed on the training split only over all pixels of the cached patches, stored in `index.json` (`normalisation`) and used for every split | `src/tiefer_lab/data/build_cache.py` |
-| Class weights | the pixels per class of the training split (`class_pixels` in `index.json`) give median-frequency weights for the loss; L1 configs use them (the default), every L2 config except `l2_flex_1m_classweights` sets `class_weighting = "none"` | `src/tiefer_lab/train.py`; [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6 |
+| Normalisation | per-band mean and standard deviation of reflectance, computed on the training split only over all pixels of the cached patches, the padding included, stored in `index.json` (`normalisation`) and used for every split | `src/tiefer_lab/data/build_cache.py` |
+| Class weights | the pixels per class of the training split give median-frequency weights for the loss; since 7 October 2026 they are counted over the masked labels when the split is padded, otherwise taken from `class_pixels` in `index.json`, which includes the padding; L1 configs use them (the default), every L2 config except `l2_flex_1m_classweights` sets `class_weighting = "none"` | `src/tiefer_lab/train.py`; [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6 |
 | Training crops | random crops with flips and rescaling | `src/tiefer_lab/data/dataset.py` |
+| Dataset padding | every padded label pixel is set to `IGNORE_INDEX` when a split is loaded, since 7 October 2026; the loss, the class weights, every metric and every cloud fraction leave it out; images and the cache files are not changed | `src/tiefer_lab/data/padding.py`, `src/tiefer_lab/data/cache.py` |
 | Evaluation padding | each full patch is reflect-padded at the bottom and right to a multiple of 32, and the prediction is cropped back to the label's size | `src/tiefer_lab/data/dataset.py`, `src/tiefer_lab/data/transforms.py` |
 
 The builder reads each raster as it is stored and does not remove the card's padding (section 4). The confusion matrix of `l1_base s0` on the validation split counts 140,247,040 labelled pixels ([RESULTS.md](RESULTS.md), section 5), which is 535 x 512 x 512; a 509 x 509 patch has 259,081 pixels. So the cached validation patches are 512 x 512, and the 3 padded rows and 3 padded columns, 3,063 pixels per patch, are part of every cached patch, of the normalisation statistics and of every metric. What label code the padded label pixels hold is an open fact (section 13); if it is 0, they count as clear. The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`).
+
+Masked at load time since 7 October 2026: `load_split` sets every padded label pixel to `IGNORE_INDEX` (255), from the width given by `real_proj_shape` and the stored size of each patch and the sides in `PADDING_SIDES`. No rebuild is needed; the cache files are not changed. The images keep their zero pixels, so the model still sees them as input, and the normalisation statistics of each cache still include them. Every value measured before this change counts the padded pixels; they are evaluated again ([RESULTS.md](RESULTS.md)).
 
 A read-only check shows what a cache holds on each side of its patches:
 
@@ -331,6 +334,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 ## Changelog
 
+- 7 October 2026: section 5, the padding is masked in the labels at load time; the class weights are counted over the masked labels; the normalisation statistics still include the padding.
 - 7 October 2026: section 5 adds the read-only padding check, `python -m tiefer_lab.data.cache padding`; section 13 lists the padding sides as an open fact until it runs on CSC Roihu.
 - 7 October 2026: restructured to the data card of docs/STYLE.md: the sections follow the datasheet questions, then the facts the code depends on, the caches, the extra training patches, the richness report, open facts and sources. Section 5A is now section 11, and links from other files are updated.
 - 7 October 2026: the split field `tortilla:data_split` is confirmed by the cache builds of 2 October 2026; one `TODO(verify)` resolved.

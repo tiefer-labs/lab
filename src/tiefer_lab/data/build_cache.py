@@ -117,12 +117,12 @@ COUNT_CHUNK = 64
 
 
 def class_pixels(labels: np.ndarray, chunk: int = COUNT_CHUNK) -> list[int]:
-    """Pixels per class, counted in chunks so a memory-mapped split is never loaded whole."""
-    counts = np.zeros(4, dtype=np.int64)
-    for start in range(0, labels.shape[0], chunk):
-        block = np.asarray(labels[start : start + chunk]).ravel()
-        counts += np.bincount(block, minlength=4)[:4]
-    return [int(c) for c in counts]
+    """Pixels per class, counted in chunks so a memory-mapped split is never loaded whole.
+
+    The index keeps the counts of the stored arrays, padding included; training
+    counts the masked labels instead (train.py, `training_class_pixels`).
+    """
+    return cache.count_class_pixels(labels, chunk)
 
 
 def _finish_split(

@@ -219,6 +219,9 @@ class OnboardFilter:
                 tile=self.tile,
                 overlap=self.overlap,
             )
+            # A real frame has no dataset padding and a prediction never holds
+            # IGNORE_INDEX, so these fractions count every pixel of the frame;
+            # the masking of data/padding.py applies to cached patches only.
             cloud = decisions.cloud_fraction(mask)
             shadow = decisions.shadow_fraction(mask)
             if not (math.isfinite(cloud) and math.isfinite(shadow)):

@@ -97,7 +97,7 @@ def score_onnx(
     input_type = sess.get_inputs()[0].type
     dtype = np.float16 if "float16" in input_type else np.float32
     scores = Scores()
-    for batch, size, i in padded_patches(data, mean, std, input_size):
+    for batch, size, i, _ in padded_patches(data, mean, std, input_size):
         logits = sess.run(None, {INPUT_NAME: batch.astype(dtype)})[0]
         pred = crop_back(np.asarray(logits).argmax(axis=1)[0].astype(np.uint8), size)
         scores.add(pred, np.asarray(data.labels[i]))

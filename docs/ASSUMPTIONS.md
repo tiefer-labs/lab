@@ -67,6 +67,7 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-5.2` | The CSC PyTorch module on Roihu provides Python 3.12 or newer | the package requires Python 3.12 or newer | observed on Roihu on 1 October 2026: `python-pytorch/2.10` gives Python 3.12.12 on a GPU node [4] | the module is updated or `python-pytorch/2.10` is removed | confirmed | 1 October 2026 |
 | `A-5.3` | Results do not depend on the PyTorch version: the lock holds torch 2.14.1 for local checks and CI, while the jobs on Roihu use the CSC module, torch 2.10.0+cu130 | the CSC module is built for the GH200 nodes; `hpc/roihu/env.sh` loads it for every job | `b0-val` records PyTorch 2.10.0+cu130 ([RESULTS.md](RESULTS.md), section 4); the training and export jobs load the same module through `env.sh`, and their reports, which record the version, are pending | a result is reproduced with another PyTorch version | open | 7 October 2026 |
 | `A-5.4` | The legacy TorchScript ONNX exporter (`dynamo=False`) is available in the PyTorch versions used | it needs no extra dependency | `tests/test_export.py` passes with torch 2.14.1 (with a deprecation warning); the exports on Roihu with 2.10.0+cu130 completed ([RESULTS.md](RESULTS.md), section 14) | PyTorch removes it; then `onnxscript` would be needed, which requires the team's agreement | confirmed | 7 October 2026 |
+| `A-5.5` | The dataset padded each 509 x 509 patch to 512 x 512 on the left and bottom sides, so the left 3 columns and the bottom 3 rows of a cached patch are padding (`PADDING_SIDES` in `src/tiefer_lab/data/padding.py`) | the labels are masked at load time on these sides; the width comes from `real_proj_shape` and the stored size of each patch | dataset card 1.1.2 [3]; not yet checked on a cache | `python -m tiefer_lab.data.cache padding` runs on `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, validation and test ([DATA.md](DATA.md), section 13) | open | 7 October 2026 |
 
 ---
 
@@ -131,6 +132,7 @@ Status on 7 October 2026: no decision is recorded yet. The rule is applied on va
 
 ## Changelog
 
+- 7 October 2026: `A-5.5`, the sides of the dataset's padding, an assumption until the padding check runs on CSC Roihu.
 - 7 October 2026: every row has an ID, evidence, a status and the date it was last checked; rows without a source say "none, design choice".
 - 7 October 2026: one band statement in `A-1.1`, checked against the SPOT-6 and SPOT-7 page of eoPortal (a `TODO(verify)` resolved); the row on target sensors moved from section 7 to section 1 (`A-1.7`).
 - 7 October 2026: new rows: B11 and B12 (`A-1.3`), normalisation transfer (`A-2.3`), input shapes (`A-2.4`), tile overlap (`A-2.5`), operational design domain (`A-2.6`), PyTorch versions (`A-5.3`), labels as ground truth (`A-6.1`), split independence (`A-6.2`), patch size (`A-6.3`), one seed (`A-6.8`), input design (`A-6.9`) and class weighting (`A-6.10`).

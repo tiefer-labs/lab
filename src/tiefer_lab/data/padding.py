@@ -13,6 +13,11 @@ the sides come from the card, in PADDING_SIDES.
 `python -m tiefer_lab.data.cache padding <cache-name>` reads a sample of
 patches of a real cache and reports what the strips on each side hold; it
 exits with 1 when the zero strips are not on PADDING_SIDES.
+
+Labels are masked when a split is loaded (data/cache.py, since 7 October
+2026): every padded label pixel becomes IGNORE_INDEX, so the loss, the class
+weights, every metric and every cloud fraction leave it out. Images are not
+changed. Frames on board (onboard.py) are real frames without this padding.
 """
 
 from __future__ import annotations
@@ -22,8 +27,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
-from tiefer_lab.data.source import SHAPE_FIELD
+from tiefer_lab.data.source import IGNORE_INDEX, SHAPE_FIELD
 
 # The sides of each patch that hold the padding. From the dataset card;
 # TODO(verify) with `python -m tiefer_lab.data.cache padding` on the caches on
@@ -116,10 +122,96 @@ def padding_of(
 def paddings(
     metadata: Sequence[Mapping[str, Any]], count: int, stored: tuple[int, int]
 ) -> list[Padding]:
-    """The padding of each of `count` patches; none when the metadata has no real size."""
+    """The padding of each of `count` patches.
+
+    None when the metadata has no real size, and none for a patch stored
+    smaller than its real size: it was cropped or resampled, so the dataset's
+    padding is not in it.
+    """
     if len(metadata) != count:
         return [NO_PADDING] * count
-    return [padding_of(stored, real_shape(m)) for m in metadata]
+    out = []
+    for m in metadata:
+        real = real_shape(m)
+        smaller = real is not None and (stored[0] < real[0] or stored[1] < real[1])
+        out.append(NO_PADDING if smaller else padding_of(stored, real))
+    return out
+
+
+def valid_area(height: int, width: int, padding: Padding) -> NDArray[np.bool_]:
+    """True on the pixels of the real image, False on the padding."""
+    valid = np.ones((height, width), dtype=bool)
+    if padding.top:
+        valid[: padding.top] = False
+    if padding.bottom:
+        valid[height - padding.bottom :] = False
+    if padding.left:
+        valid[:, : padding.left] = False
+    if padding.right:
+        valid[:, width - padding.right :] = False
+    return valid
+
+
+def mask_label(label: NDArray[np.uint8], padding: Padding) -> NDArray[np.uint8]:
+    """`label` with every padded pixel set to IGNORE_INDEX, in place; returns it."""
+    if padding:
+        label[~valid_area(label.shape[-2], label.shape[-1], padding)] = IGNORE_INDEX
+    return label
+
+
+def mask_labels(labels: NDArray[np.uint8], pads: Sequence[Padding]) -> NDArray[np.uint8]:
+    """Mask a (patches, height, width) block in place, one padding per patch."""
+    if len(pads) != labels.shape[0]:
+        raise ValueError(f"{len(pads)} paddings for {labels.shape[0]} patches")
+    groups: dict[Padding, list[int]] = {}
+    for i, pad in enumerate(pads):
+        if pad:
+            groups.setdefault(pad, []).append(i)
+    height, width = labels.shape[-2:]
+    for pad, rows in groups.items():
+        invalid = ~valid_area(height, width, pad)
+        for start in range(0, len(rows), 256):
+            chunk = rows[start : start + 256]
+            block = labels[chunk]
+            block[:, invalid] = IGNORE_INDEX
+            labels[chunk] = block
+    return labels
+
+
+class MaskedLabels:
+    """Memory-mapped labels whose padding reads as IGNORE_INDEX; nothing is written.
+
+    Indexing works like a (patches, height, width) array; the first index
+    selects patches. A slice of patches alone gives another MaskedLabels.
+    """
+
+    def __init__(self, base: Any, pads: Sequence[Padding]) -> None:
+        if len(pads) != base.shape[0]:
+            raise ValueError(f"{len(pads)} paddings for {base.shape[0]} patches")
+        self.base = base
+        self.pads = list(pads)
+        self.shape = tuple(base.shape)
+        self.dtype = base.dtype
+        self.ndim = base.ndim
+
+    def __len__(self) -> int:
+        return int(self.shape[0])
+
+    def __getitem__(self, key: Any) -> Any:
+        parts = key if isinstance(key, tuple) else (key,)
+        first, rest = parts[0], parts[1:]
+        if isinstance(first, int | np.integer):
+            label = mask_label(np.array(self.base[first]), self.pads[int(first)])
+            return label[rest] if rest else label
+        if isinstance(first, slice) and not rest:
+            return MaskedLabels(self.base[first], self.pads[first])
+        positions = np.arange(len(self))[first]
+        block = mask_labels(np.array(self.base[first]), [self.pads[p] for p in positions])
+        return block[(slice(None), *rest)] if rest else block
+
+    def __array__(self, dtype: Any = None, copy: Any = None) -> NDArray[np.uint8]:
+        out = mask_labels(np.array(self.base), self.pads)
+        return out.astype(dtype) if dtype is not None else out
 
 
 # The check -----------------------------------------------------------------

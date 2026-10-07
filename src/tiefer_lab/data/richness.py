@@ -27,7 +27,7 @@ from typing import Any
 
 import numpy as np
 
-from tiefer_lab.data import cache, source
+from tiefer_lab.data import cache, padding, source
 from tiefer_lab.utils import paths
 
 # Fields of docs/DATA.md, section 9, checked against the dataset card 1.1.2.
@@ -74,11 +74,17 @@ def field_summary(metadata: Sequence[dict[str, Any]]) -> dict[str, Any]:
 
 
 def split_report(directory: Path, split: str, entry: dict[str, Any]) -> dict[str, Any]:
-    labels = np.load(cache.labels_path(directory, split), mmap_mode="r", allow_pickle=False)
-    bins, shadow = patch_statistics(labels)
-    pixels = [int(p) for p in entry.get("class_pixels", [])]
-    total = sum(pixels)
+    stored = np.load(cache.labels_path(directory, split), mmap_mode="r", allow_pickle=False)
     metadata = list(entry.get("metadata", []))
+    # The dataset's padding is left out, as in training and evaluation (data/padding.py).
+    pads = padding.paddings(metadata, int(stored.shape[0]), tuple(stored.shape[1:3]))
+    labels: Any = padding.MaskedLabels(stored, pads) if any(pads) else stored
+    bins, shadow = patch_statistics(labels)
+    if any(pads):
+        pixels = cache.count_class_pixels(labels)
+    else:
+        pixels = [int(p) for p in entry.get("class_pixels", [])]
+    total = sum(pixels)
     names = sorted({k for m in metadata for k in m} - set(VERIFIED_FIELDS))
     return {
         "patches": int(entry["count"]),

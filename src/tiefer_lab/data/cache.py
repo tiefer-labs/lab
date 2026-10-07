@@ -8,7 +8,9 @@ Layout of `$TIEFER_DATA_DIR/<cache-name>/`:
 - `<split>_images.npy`: uint16 digital numbers, shape (patches, bands, height, width);
   the stored bands are listed by name in the index (`bands`), and a model's
   band set is selected from them at load time
-- `<split>_labels.npy`: uint8 class indexes, shape (patches, height, width)
+- `<split>_labels.npy`: uint8 class indexes, shape (patches, height, width);
+  `load_split` sets the dataset's padding of each patch to IGNORE_INDEX
+  (data/padding.py), the file itself is never changed
 - `<split>_ref_<name>.npy`: optional reference masks, same shape as labels
 - `index.json`: patch IDs, metadata, dataset revision, build dates, counts and
   the normalisation statistics of the training split
@@ -31,6 +33,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from tiefer_lab.data import padding
+from tiefer_lab.data.source import NUM_CLASSES
 from tiefer_lab.tables import Group, markdown_table
 from tiefer_lab.utils import paths
 
@@ -121,9 +124,23 @@ class SplitData:
     in_memory: bool = False
     # "four_class" or "cloud" per reference mask (build_cache --references).
     reference_kinds: dict[str, str] = field(default_factory=dict)
+    # The dataset's padding of each patch, masked in `labels` (data/padding.py);
+    # empty when no patch is padded.
+    padding: list[padding.Padding] = field(default_factory=list)
 
     def __len__(self) -> int:
         return int(self.images.shape[0])
+
+    def valid_area(self, index: int) -> NDArray[np.bool_]:
+        """True on the real image pixels of patch `index`, False on its padding."""
+        height, width = int(self.labels.shape[-2]), int(self.labels.shape[-1])
+        pad = self.padding[index] if self.padding else padding.NO_PADDING
+        return padding.valid_area(height, width, pad)
+
+    def padded_pixels(self) -> int:
+        """Padded pixels over the whole split, all masked in `labels`."""
+        height, width = int(self.labels.shape[-2]), int(self.labels.shape[-1])
+        return sum(p.pixels(height, width) for p in self.padding)
 
 
 def band_positions(index: dict[str, Any], bands: Sequence[str] | None) -> list[int]:
@@ -217,7 +234,7 @@ def load_split(
             ]
     else:
         images = BandSelection(stored, positions)
-    labels = np.load(files[1], mmap_mode=mmap, allow_pickle=False)
+    labels: Any = np.load(files[1], mmap_mode=mmap, allow_pickle=False)
     reference = {
         n: np.load(reference_path(directory, split, n), mmap_mode=mmap, allow_pickle=False)
         for n in names
@@ -234,18 +251,40 @@ def load_split(
         raise CacheError(
             f"images have shape {stored.shape}, expected (N, {len(index['bands'])}, H, W)"
         )
+    metadata = list(entry.get("metadata", []))
+    pads = padding.paddings(metadata, count, (int(labels.shape[1]), int(labels.shape[2])))
+    if not any(pads):
+        pads = []
+    elif in_memory:
+        padding.mask_labels(labels, pads)
+    else:
+        labels = padding.MaskedLabels(labels, pads)
     return SplitData(
         split=split,
         images=images,
         labels=labels,
         patch_ids=list(entry["patch_ids"]),
-        metadata=list(entry.get("metadata", [])),
+        metadata=metadata,
         reference=reference,
         in_memory=in_memory,
         reference_kinds={
             n: str(entry.get("reference_kinds", {}).get(n, "four_class")) for n in names
         },
+        padding=pads,
     )
+
+
+# Patches per chunk when pixels are counted.
+COUNT_CHUNK = 64
+
+
+def count_class_pixels(labels: Any, chunk: int = COUNT_CHUNK) -> list[int]:
+    """Pixels per class in chunks; IGNORE_INDEX and the masked padding are left out."""
+    counts = np.zeros(NUM_CLASSES, dtype=np.int64)
+    for start in range(0, labels.shape[0], chunk):
+        block = np.asarray(labels[start : start + chunk]).ravel()
+        counts += np.bincount(block, minlength=NUM_CLASSES)[:NUM_CLASSES]
+    return [int(c) for c in counts]
 
 
 def normalisation(

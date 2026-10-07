@@ -93,3 +93,17 @@ def test_export_command_writes_files_and_report(tiefer_env: dict[str, Path]) -> 
     assert "test" not in report["quantisation"]
     assert str(tiefer_env["TIEFER_RUNS_DIR"]) not in text
     assert not cache.is_synthetic({"source": "cloudsen12"})
+
+
+def test_agreement_counts_only_the_real_image_area(tmp_path: Path) -> None:
+    model = _tiny_model()
+    path = onnx_export.export_fp32(model, tmp_path / "m.onnx", 64, 17)
+    x = np.random.default_rng(4).normal(size=(1, 4, 64, 64)).astype(np.float32)
+    area = np.ones((64, 64), dtype=bool)
+    area[:, :3] = False  # three padded columns on the left
+    area[61:] = False  # three padded rows at the bottom
+    agreement = verify.compare(path, model, [(x, (64, 64), 0, area)])
+    assert agreement.pixels == 61 * 61
+    assert agreement.argmax_agreement == 1.0
+    whole = verify.compare(path, model, [(x, (64, 64), 0)])
+    assert whole.pixels == 64 * 64

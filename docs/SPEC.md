@@ -180,6 +180,7 @@ Evaluated with the same code and splits as the model:
 - **False discard rate:** frames that are actually useful (cloud fraction below the threshold) but would be kept on board. The most important error for an operator; report it prominently.
 - 95 percent confidence intervals by bootstrap over patches (1,000 resamples, fixed seed).
 - Breakdown by available metadata (for example region or land cover) with sample counts.
+- **Padding:** the dataset pads each 509 x 509 patch to 512 x 512 ([DATA.md](DATA.md), section 5). When a split is loaded, every padded label pixel is set to `IGNORE_INDEX` (`src/tiefer_lab/data/padding.py`, since 7 October 2026); the width comes from `real_proj_shape` and the stored size, the sides from `PADDING_SIDES`. Every pixel metric, cloud fraction, frame metric, bootstrap interval, breakdown, baseline, export check, the loss and the class weights then count only labelled pixels of the real image area; the predicted cloud fraction of a frame is taken over the same pixels as the reference. Images are not changed. Values computed before this change count the padded pixels.
 - Output: JSON in `$TIEFER_REPORTS_DIR` with all provenance fields from section 8.
 - **Test guard:** `--split test` requires the flag `--final` and appends an entry to `reports/test_log.md` (date, run ID, git commit, reason) before the test data is read; `python -m tiefer_lab.export --final` does the same. Without `--final` it refuses to run. A test checks this.
 
@@ -589,6 +590,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 9, the dataset's padding is masked in the labels at load time, and every metric and fraction counts only the real image area.
 - 7 October 2026: section 14 lists `data/padding.py` and `tests/test_padding.py`.
 - 7 October 2026: section 16 names LICENSING.md, TRADEMARK.md and NOTICE.md for what each states.
 - 7 October 2026: section 14 lists the root documents added on 7 October 2026 and `tests/test_docs_index.py`; the community files of this repository override the organisation versions; principle 1 points to POLICY.md and CLAIMS.md.

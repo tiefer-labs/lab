@@ -31,7 +31,7 @@ import onnx
 import torch
 
 from tiefer_lab.config import load_config
-from tiefer_lab.data import cache
+from tiefer_lab.data import cache, padding
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, log_test_evaluation
 from tiefer_lab.export import onnx_export, quantise, verify
 from tiefer_lab.models import flexible
@@ -137,6 +137,9 @@ def export_run(
         "operators": {k: onnx_export.operator_types(p) for k, p in files.items() if p.exists()},
         "verification": checks,
         "verification_note": "FP16 agreement is reported, not enforced",
+        # Agreement and every metric leave out the dataset's padding (data/padding.py).
+        "padding_sides": list(padding.PADDING_SIDES),
+        "val_padded_pixels_masked": val.padded_pixels(),
     }
 
     if with_int8:
