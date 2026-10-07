@@ -10,7 +10,7 @@ For a new contributor or researcher who wants to understand and change Tiefer La
 
 ## 1. How to use this path
 
-The path has 11 tracks and 33 concepts. Work through the tracks in order; within a track, a concept lists its prerequisites by ID. "What it is" is a short orientation, not a definition to quote; the reference is where to read it properly. Every reference was opened on 7 October 2026 and is listed in section 13.
+The path has 11 tracks and 38 concepts. Work through the tracks in order; within a track, a concept lists its prerequisites by ID. "What it is" is a short orientation, not a definition to quote; the reference is where to read it properly. Every reference was opened on 7 October 2026 and is listed in section 13.
 
 ---
 
@@ -164,4 +164,4 @@ All accessed 7 October 2026.
 
 ## Changelog
 
-- 7 October 2026: first version: 11 tracks and 33 concepts, each with its place in the repository and one primary reference.
+- 7 October 2026: first version: 11 tracks and 38 concepts, each with its place in the repository and one primary reference.
