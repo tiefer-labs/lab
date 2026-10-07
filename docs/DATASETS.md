@@ -64,7 +64,7 @@ Published cloud mask comparisons, such as the CloudSEN12+ paper and the CEOS Clo
 | User's accuracy (UA) | TP / (TP + FP) per patch, median over patches | TODO(verify) |
 | Overall accuracy (OA) | (TP + TN) / all valid pixels per patch, median over patches | TODO(verify) |
 
-The cloud problem is thick plus thin cloud against the rest; the shadow problem is cloud shadow against the rest (`src/tiefer_lab/binary_metrics.py`). Published values are never placed next to these measurements until the definitions are verified (`PAPER_DEFINITION_VERIFIED` and `PUBLISHED` in the code); [STANDARDS.md](STANDARDS.md) lists the comparison exercise as not read.
+The cloud problem is thick plus thin cloud against the rest; the shadow problem is cloud shadow against the rest (`src/tiefer_lab/binary_metrics.py`). Published values of other systems appear only in [LANDSCAPE.md](LANDSCAPE.md), in columns labelled "published" with their source; they are never placed in [RESULTS.md](RESULTS.md) or in any table of this repository's own measurements. [STANDARDS.md](STANDARDS.md) lists the comparison exercise as not read.
 
 ---
 
@@ -76,6 +76,7 @@ How varied each built split is (class shares, cloud cover bins, shadow, verified
 
 ## Changelog
 
+- 7 October 2026: published values appear only in docs/LANDSCAPE.md, in published columns with their source, never in docs/RESULTS.md.
 - 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy into `reports/test_log.md`.
 - 7 October 2026: the link to the limitations follows the new section numbers of RESULTS.md.
 - 2 October 2026: first version; only CloudSEN12+ is checked, other candidates are listed as not checked.

@@ -21,12 +21,15 @@ PA and BOA on a patch with no reference cloud); undefined values are left out
 of the median, and their number is reported next to it.
 
 These are the definitions of this repository. The dataset paper
-(https://doi.org/10.1038/s41597-022-01878-2) reports the median per-patch BOA,
-PA and UA for cloud and for cloud shadow; whether its definitions match these
-(which classes count as cloud, how patches without a class are handled) is
-TODO(verify) against its methods section. Until it is verified,
-`PAPER_DEFINITION_VERIFIED` is False and published values are never placed
-next to these measurements.
+(https://doi.org/10.1038/s41597-022-01878-2, Technical Validation, read on
+7 October 2026 in its Europe PMC full text) defines PA = TP / (TP + FN),
+UA = TP / (TP + FP) and BOA = 0.5 (PA + TN / (TN + FP)) per patch, with cloud
+as thick plus thin cloud, and sets PA and UA of cloudless patches to NaN. It
+reports the median of BOA over patches, but summarises PA and UA as the share
+of patches below 0.1, between 0.1 and 0.9 and above 0.9, not as a median.
+`PAPER_DEFINITION_VERIFIED` stays False because of that difference. Published
+values are placed only in docs/LANDSCAPE.md, never next to these measurements
+in docs/RESULTS.md.
 """
 
 from __future__ import annotations
