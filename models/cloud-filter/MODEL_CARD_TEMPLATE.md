@@ -48,7 +48,7 @@ CloudSEN12+ Level-1C, training split, as described in `docs/DATA.md`; the select
 
 ## Evaluation
 
-Validation unless a row says test; every test result has an entry in `reports/test_log.md`.
+Validation unless a row says test. Every test evaluation appends an entry to `reports/test_log.md` on the machine that runs it; say whether the entry of each test row is in the repository yet.
 
 | Metric | Value | 95 percent interval | Source |
 | :--- | :---: | :---: | :---: |
@@ -99,4 +99,5 @@ Validation unless a row says test; every test result has an entry in `reports/te
 
 ## Changelog
 
+- 7 October 2026: a test row says whether its entry in `reports/test_log.md` is in the repository yet.
 - 2 October 2026: template.

@@ -255,12 +255,13 @@ def test_log_header() -> str:
         header_block(
             "Test split log",
             "in use",
-            "Every evaluation on the test split, appended by `python -m tiefer_lab.evaluate "
-            "--split test --final` before the test data is read. Entries are never edited "
-            "or removed.",
+            "Every use of the test split, appended by `python -m tiefer_lab.evaluate "
+            "--split test --final` and by `python -m tiefer_lab.export --final` before the "
+            "test data is read. Entries are never edited or removed.",
             "../docs/assets/header.png",
         )
-        + "\n## Entries\n\n"
+        + "\nEntries made on CSC Roihu are appended to the log there and copied into this "
+        "file together with the report files.\n" + "\n## Entries\n\n"
     )
 
 

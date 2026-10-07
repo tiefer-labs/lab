@@ -10,7 +10,7 @@ Which datasets the cloud filter uses or may use, the role each one plays, how la
 
 ## 1. Roles
 
-A dataset has exactly one role per experiment. The validation split chooses models and settings; the test split is only read with `--final`, and every such read is logged in `reports/test_log.md`.
+A dataset has exactly one role per experiment. The validation split chooses models and settings; the test split is only read with `--final`, and every such read is logged where it runs. At least eight test evaluations ran on 3 October 2026 (`b0-test`, `b1-test`, `f0-test`, `s-test`, `x-test-3`, `x-test-4`, `x-test-6`, `x-test-13` in docs/RESULTS.md, Appendix A); their log entries are on CSC Roihu and pending a copy into `reports/test_log.md`, which has no entries yet.
 
 | Dataset | Role | Status |
 | :--- | :---: | :---: |
@@ -76,5 +76,6 @@ How varied each built split is (class shares, cloud cover bins, shadow, verified
 
 ## Changelog
 
+- 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy into `reports/test_log.md`.
 - 7 October 2026: the link to the limitations follows the new section numbers of RESULTS.md.
 - 2 October 2026: first version; only CloudSEN12+ is checked, other candidates are listed as not checked.

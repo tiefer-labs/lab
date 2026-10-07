@@ -55,7 +55,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 | ID | Requirement | Status | Evidence | Verified by |
 | :--- | :---: | :---: | :---: | :---: |
-| `REQ-EVL-01` | The test split is used only with FINAL=1 and a reason, and every use is logged | met | its tests pass; the test log entries of the evaluations of 3 October are on CSC Roihu and pending in `reports/test_log.md` | `tests/test_test_guard.py::test_test_split_refuses_without_final`, `tests/test_test_guard.py::test_final_test_evaluation_is_logged_first` |
+| `REQ-EVL-01` | The test split is used only with FINAL=1 and a reason, and every use is logged | pending | the guard's tests pass; at least eight test evaluations ran on 3 October 2026 and their log entries are on CSC Roihu, pending a copy into `reports/test_log.md`, which has no entries yet | `tests/test_test_guard.py::test_test_split_refuses_without_final`, `tests/test_test_guard.py::test_final_test_evaluation_is_logged_first` |
 | `REQ-EVL-02` | BOA, PA, UA and OA per patch for cloud and shadow, with the median and bootstrap intervals | met | its tests pass (`make check`, 7 October 2026) | `tests/test_binary_metrics.py::test_cloud_problem_by_hand`, `tests/test_binary_metrics.py::test_scores_leave_ignored_pixels_out_and_report_intervals` |
 | `REQ-EVL-03` | Reference algorithms are scored by this repository's code on the same patches | met | its tests pass (`make check`, 7 October 2026) | `tests/test_binary_metrics.py::test_binary_only_scores_report_the_cloud_problem_only`, `tests/test_references.py::test_references_are_linked_encoded_and_resumable` |
 | `REQ-EVL-04` | Expected calibration error and the worst stratum are reported | met | its tests pass (`make check`, 7 October 2026) | `tests/test_binary_metrics.py::test_expected_calibration_error_by_hand`, `tests/test_binary_metrics.py::test_worst_stratum_is_named` |
@@ -144,6 +144,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: correction: `REQ-EVL-01` is pending, not met, until the test log entries of 3 October 2026 are copied in.
 - 7 October 2026: correction: `REQ-TRN-07`, commit 81ab34b03bcc is in the history of this repository.
 - 7 October 2026: a status and its evidence for every requirement and acceptance target, from RESULTS.md.
 - 7 October 2026: `REQ-EVL-06` is verified by the report loader tests in `tests/test_reports.py`; the results generator and its tests are removed.

@@ -116,7 +116,7 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
 3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
 4. Reproducible: fixed seeds, versioned configurations, a locked environment, the dataset revision and the git commit in every result file.
-5. The test split is used only for final evaluation, and every use is logged in [reports/test_log.md](reports/test_log.md).
+5. The test split is used only for final evaluation, and every use is logged where it runs. The entries of the test evaluations of 3 October 2026 are on CSC Roihu and pending a copy into [reports/test_log.md](reports/test_log.md), which has no entries yet.
 
 ---
 
@@ -136,6 +136,7 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 
 ## Changelog
 
+- 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy.
 - 7 October 2026: the documentation list links docs/LANDSCAPE.md.
 - 7 October 2026: the status describes milestones L1 and L2 as measured on CSC Roihu, with the headline results; principles and layout mention the L2 band sets and sizes.
 - 7 October 2026: docs/RESULTS.md is written by hand; the command of the results generator is removed.

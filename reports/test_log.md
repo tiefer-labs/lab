@@ -4,9 +4,11 @@
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-Every evaluation on the test split, appended by `python -m tiefer_lab.evaluate --split test --final` before the test data is read. Entries are never edited or removed.
+Every use of the test split, appended by `python -m tiefer_lab.evaluate --split test --final` and by `python -m tiefer_lab.export --final` before the test data is read. Entries are never edited or removed.
 
 ---
+
+Entries made on CSC Roihu are appended to the log there and copied into this file together with the report files.
 
 ## Entries
 

@@ -52,7 +52,7 @@ CloudSEN12+ Level-1C, training split (8,490 patches), as described in `docs/DATA
 
 ## Evaluation
 
-Validation unless a row says test; every test result has an entry in `reports/test_log.md`.
+Validation unless a row says test. Every test evaluation appends an entry to the test log on the machine that runs it; the entry for the test evaluation of this model was made on CSC Roihu and is pending a copy into [reports/test_log.md](../../../reports/test_log.md).
 
 | Metric | Value | 95 percent interval | Source |
 | :--- | :---: | :---: | :---: |
@@ -121,6 +121,7 @@ FP16 kept the mean IoU (0.649) and the false discard rate at 50 percent (0.039) 
 
 ## Changelog
 
+- 7 October 2026: correction: the test log entry of this model is on CSC Roihu and pending a copy; `reports/test_log.md` has no entries yet.
 - 7 October 2026: correction: commit 81ab34b03bcc is in the history of this repository; only the uncommitted diff is lost.
 - 7 October 2026: status draft instead of release; file sizes, the FP16 result, the best epoch, the region breakdown and limitations on INT8, later runs and provenance added.
 - 3 October 2026: model card v0.1.0 from CSC Roihu GH200 training run `l1_base-seed0-20261003T093922Z-81ab34b`.
