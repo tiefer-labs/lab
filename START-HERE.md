@@ -34,6 +34,7 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 | see every dependency and its licence | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | users, evaluators |
 | write documentation | [docs/STYLE.md](docs/STYLE.md) | contributors |
 | contribute | [CONTRIBUTING.md](CONTRIBUTING.md) | contributors |
+| use an AI-assisted system for an issue or a pull request | [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | contributors |
 | report a vulnerability | [SECURITY.md](SECURITY.md) | security researchers |
 | answer a licence question | [LICENSING.md](LICENSING.md) | users, contributors |
 | know who decides what | [GOVERNANCE.md](GOVERNANCE.md) | contributors |
@@ -54,4 +55,5 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 
 ## Changelog
 
+- 7 October 2026: section 1 routes the use of AI-assisted systems to AI_ASSISTANCE.md.
 - 7 October 2026: first version: a route from each task to the document that owns it, and reading lists for 5, 30 and 120 minutes.
