@@ -20,23 +20,23 @@ The repository is public because results are published with their method: measur
 
 ## Status
 
-Milestone L1 is the first stage, the onboard cloud filter: a small network that labels every pixel of a four-band frame as clear, thick cloud, thin cloud or cloud shadow, and decides per frame whether it is worth sending to the ground. Part A (the code, tests and guides) is done; Part B (training and measurement on CSC Roihu and a Jetson Orin) has not started.
+Milestone L1 is the first stage, the onboard cloud filter: a small network that labels every pixel of a four-band frame as clear, thick cloud, thin cloud or cloud shadow, and decides per frame whether it is worth sending to the ground. Milestone L2 measures model size, a band-flexible model that reads any of the 13 Sentinel-2 Level-1C bands, and a four-band specialist as its control. The code, tests and guides of both are done. Training and evaluation ran on CSC Roihu on 2 and 3 October 2026; the Jetson Orin is not measured yet.
 
-| Milestone L1 component | Code | Measured |
+| Component | Code | Measured |
 | :--- | :---: | :---: |
-| **Part A: repository** | | |
+| **Milestone L1** | | |
 | Data cache (CloudSEN12+, Level-1C, four bands) | done | n/a |
-| Metrics and baselines | done | not yet measured |
-| Model and training | done | not yet measured |
-| Evaluation with test split guard | done | not yet measured |
-| ONNX export and INT8 quantisation | done | not yet measured |
-| Jetson Orin benchmark scripts | done | not yet measured |
-| CSC Roihu job scripts and guide | done | n/a |
-| **Part B: results** | | |
-| Training and evaluation on CSC Roihu | n/a | not yet measured |
-| Model card and checksums | n/a | not yet measured |
+| Training and evaluation on CSC Roihu | done | measured: `l1_base` seeds 0 and 1, `l1_full` seed 0 |
+| ONNX export and INT8 quantisation | done | measured; INT8 loses more mean IoU than the one-point limit |
+| Model card and checksums | done | draft, v0.1.0 (`l1_base` seed 0) |
+| Jetson Orin benchmark | done | not measured |
+| **Milestone L2** | | |
+| 13-band cache | done | n/a |
+| Training and evaluation on CSC Roihu | done | measured: `l2_flex_1m` and `l2_spec_1m`, seed 0 |
+| Export of the L2 models | done | not measured |
+| Seeds 1 and 2 of the L2 pair | n/a | not run |
 
-Results: [docs/RESULTS.md](docs/RESULTS.md). Every value there is "not yet measured" until the runs of Part B.
+On the test split, the four-band specialist `l2_spec_1m` (seed 0) has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; `l1_base` (seed 0), the model of the v0.1.0 model card, has 0.635 [0.621, 0.649] and 0.039 [0.024, 0.055]. On four bands, the band-flexible `l2_flex_1m` (seed 0) has a test mean IoU of 0.609. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. Every run is a single seed. Values, sources and what is still pending: [docs/RESULTS.md](docs/RESULTS.md).
 
 ---
 
@@ -86,7 +86,7 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 | Path | Contents |
 | :--- | :---: |
 | `src/tiefer_lab/` | data access, model, training, evaluation, export and results code |
-| `configs/` | training configurations in TOML: `smoke.toml` and `l1_base.toml` |
+| `configs/` | training configurations in TOML: `smoke.toml`, the L1 configs and the L2 family |
 | `tests/` | unit tests on synthetic data, text rules and public hygiene |
 | `hpc/roihu/` | Slurm jobs, setup and guide for CSC Roihu |
 | `jetson/` | benchmark scripts for an NVIDIA Jetson Orin |
@@ -112,8 +112,8 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 ## Principles
 
 1. Measured, not claimed: every number is reproducible with one command, and anything not measured is written as "not measured".
-2. Think like the sensor on board: four bands (blue, green, red, near infrared) and top-of-atmosphere Level-1C data only.
-3. Small and friendly to the hardware: at most 1.0 million parameters and only operators that TensorRT handles well in INT8.
+2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
+3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
 4. Reproducible: fixed seeds, versioned configurations, a locked environment, the dataset revision and the git commit in every result file.
 5. The test split is used only for final evaluation, and every use is logged in [reports/test_log.md](reports/test_log.md).
 
@@ -135,4 +135,5 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 
 ## Changelog
 
+- 7 October 2026: the status describes milestones L1 and L2 as measured on CSC Roihu, with the headline results; principles and layout mention the L2 band sets and sizes.
 - 7 October 2026: docs/RESULTS.md is written by hand; the command of the results generator is removed.
