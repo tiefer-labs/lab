@@ -70,7 +70,7 @@ The acceptance targets of milestone L2, with their minimum and target values, ar
 
 ## 4. Principles
 
-1. **Measured, not claimed.** Every number names the report file, configuration and commit behind it, and the commands to reproduce it are in [RESULTS.md](RESULTS.md), section 19.
+1. **Measured, not claimed.** Every number names the report file, configuration and commit behind it, and the commands to reproduce it are in [RESULTS.md](RESULTS.md), section 19. The gates a number, a model card or a public statement must pass are in [POLICY.md](../POLICY.md); the status of every capability Tiefer states in public is in [CLAIMS.md](../CLAIMS.md).
 2. **Think like the sensor on board.**
    - Milestone L1 uses **only four bands: blue, green, red and near infrared** (Sentinel-2 B02, B03, B04, B08 at 10 m); milestone L2 also reads the other Level-1C bands (section 8). Very high resolution optical satellites, the kind Tiefer targets, typically carry these four bands plus panchromatic, not the shortwave infrared bands classic cloud algorithms rely on. Record this in `docs/ASSUMPTIONS.md`, to be revisited when a customer's exact sensor is known.
    - Use **Level-1C** (top-of-atmosphere reflectance), not Level-2A. On board there is no atmospheric correction.
@@ -491,6 +491,7 @@ lab/
     test_quantise.py
     test_jetson_dry_run.py
     test_markdown_style.py        every Markdown file follows docs/STYLE.md
+    test_docs_index.py            INDEX.md lists every Markdown file, and every listed file exists
     test_reports.py               report loading: smoke reports left out, provenance required
     test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch and sacct
     test_tables.py                Markdown table helper
@@ -499,18 +500,36 @@ lab/
   .gitattributes                  line endings, *.sh and *.sbatch as LF
   .gitignore                      data/, runs/, .venv/, *.onnx, *.pt, *.engine, *.calib, *.npy, *.tar.gz, .env, caches
   .python-version                 3.12
+  ACCEPTABLE_USE.md               Lab copy of the organisation's acceptable use policy
+  BENCHMARK-AUTHORITY.md          which result answers which question; how to cite
   CITATION.cff                    how to cite Tiefer Lab (author: Tiefer)
+  CLA.md                          contributor licence agreement, a draft not in force
+  CLAIMS.md                       ledger of every public capability statement
+  CODE_OF_CONDUCT.md              Lab copy of the organisation's code of conduct
+  CONTRIBUTING.md                 Lab contributor contract
+  EXTENDING.md                    golden paths to extend Lab
+  GETTING-STARTED.md              first run and the offline proof
+  GOVERNANCE.md                   roles, decision classes, versions, continuity
+  INDEX.md                        every Markdown file with purpose, owner topic and status
+  INSTALL.md                      every way to install, and provenance checks
+  LEARNING-PATH.md                concepts in prerequisite order
   LICENSE                         MPL 2.0, official text
+  LICENSING.md                    the licence of every part of the repository
   Makefile
-  NOTICE.md                       licence notes: repository MPL 2.0, data, dependencies, trademarks
+  NOTICE.md                       attributions: data, Copernicus notice, typeface, dependencies
+  POLICY.md                       measurement and release gates
   README.md                       public README in English
+  SECURITY.md                     Lab security policy and private reporting
+  START-HERE.md                   route from a task to the document that owns it
+  SUPPORT.md                      Lab copy of the organisation's support page
+  TRADEMARK.md                    use of the Tiefer name and logo
   pyproject.toml                  project metadata (license MPL-2.0), dependencies, ruff, mypy, pytest
   uv.lock
 ```
 
 Created at runtime and never committed: `data/`, `runs/`, `.venv/`, `*.onnx`, `*.pt`, `*.engine`, `*.calib`, `*.npy`, `*.tar.gz`, `.env`. Written at run time and committed only when copied in from CSC Roihu or a Jetson: `reports/acceptance.md`, `reports/experiments.md`, `reports/data/survey.json`, and the report files under `reports/`.
 
-`SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` and `SUPPORT.md` are not repeated here: GitHub shows the organisation-wide versions from `tiefer-labs/.github` automatically. Link to them from `README.md`.
+`SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md` and `ACCEPTABLE_USE.md` at the repository root override the organisation-wide versions of `tiefer-labs/.github` for this repository; they keep the organisation's process, addresses and times and add what is specific to Lab. Every Markdown file is listed in [INDEX.md](../INDEX.md).
 
 `Makefile` targets: `setup`, `lint`, `typecheck`, `test`, `coverage` (the tests under coverage, with the report and its floor), `check` (lint, typecheck, test), `smoke` (the full local smoke pipeline on a tiny subset), `requirements` (regenerate `hpc/roihu/requirements.txt`), `shellcheck` (every script under `hpc/` and `jetson/`). The `results` target was removed with the generator on 7 October 2026.
 
@@ -568,6 +587,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 14 lists the root documents added on 7 October 2026 and `tests/test_docs_index.py`; the community files of this repository override the organisation versions; principle 1 points to POLICY.md and CLAIMS.md.
 - 7 October 2026: the purpose names milestones L1 and L2 and a Jetson milestone; section 3 names REQUIREMENTS.md, section 8, as the single source of the acceptance targets, and says when milestone L2 and the Jetson milestone are done, with the provisional product decision.
 - 7 October 2026: the principles of four bands and of at most 1.0 million parameters apply to milestone L1; section 8 gives the class weights of L1 (median frequency) and L2 (none by default), the patience per config, the complete configs and options of `train`, and the input 1 x N x 512 x 512 of the L2 exports.
 - 7 October 2026: the options of `build_cache`, `evaluate` and `export` are complete; `export --final` also writes to the test log.
