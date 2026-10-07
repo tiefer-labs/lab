@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="profile/tiefer-logo-white.svg">
-  <img alt="Tiefer" src="profile/tiefer-logo.svg" width="200">
-</picture>
+<img alt="Tiefer Lab" src="docs/assets/header.png" width="100%">
 
 # Security policy
 
