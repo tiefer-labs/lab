@@ -22,6 +22,8 @@ Every gate has a rule, the evidence that shows it is met, who checks it, and wha
 | 6 | a new dataset |
 | 7 | compute spend on CSC Roihu |
 
+Content produced with an AI-assisted system passes the same gates as any other content; the disclosure and data rules for such systems are in [AI_ASSISTANCE.md](AI_ASSISTANCE.md).
+
 ---
 
 ## 2. Gate 1: a number on a results page
@@ -115,4 +117,5 @@ The L2 runs of 3 October 2026 used a batch size and learning rate that are not i
 
 ## Changelog
 
+- 7 October 2026: section 1 links AI_ASSISTANCE.md: content produced with an AI-assisted system passes the same gates.
 - 7 October 2026: first version: seven gates for results, public quotes, the test split, model cards, comparisons, datasets and compute spend.
