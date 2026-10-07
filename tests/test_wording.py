@@ -54,7 +54,8 @@ def test_standards_matrix_rows_have_a_valid_status(repo_root: Path) -> None:
     assert body
     for row in body:
         cells = [c.strip() for c in row.strip().strip("|").split("|")]
-        assert len(cells) == 5, row
+        assert len(cells) == 10, row
         assert cells[-1] in STATUSES, row
         if cells[-1] in {"met", "partly"}:
-            assert "not read" not in cells[1], f"a met row must cite a read clause: {row}"
+            assert cells[4] not in {"not read", "n/a"}, f"a met row must cite a read clause: {row}"
+            assert cells[6] not in {"not read", "n/a"}, f"a met row must give the date read: {row}"
