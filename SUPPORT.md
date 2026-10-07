@@ -4,7 +4,7 @@
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-Where to ask for help with a Tiefer repository, what to include, and what response to expect.
+Where to ask for help with Tiefer Lab, what to include, and what response to expect. This is the Lab copy of the organisation's support page; the channels and times are the same.
 
 ---
 
@@ -14,7 +14,7 @@ Where to ask for help with a Tiefer repository, what to include, and what respon
 | :--- | :---: |
 | A question about how to use or run a repository | an issue in that repository |
 | A bug | an issue with the bug report form |
-| A question about a number, a source or a method in the documentation | an issue with the documentation and results form |
+| A question about a number, a source or a method in the documentation | an issue that names the document, the section and the value |
 | An idea or a feature request | an issue with the feature request form |
 | A security problem | not an issue; follow [SECURITY.md](SECURITY.md) |
 | A conduct problem | [hello@tiefer.space](mailto:hello@tiefer.space), subject "Code of conduct"; see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
@@ -25,9 +25,10 @@ Where to ask for help with a Tiefer repository, what to include, and what respon
 
 ## 2. Before you ask
 
-1. Read the repository's `README.md`, including its troubleshooting table if it has one.
-2. For Tiefer Lab, check the folder guide of the part you use (for example `hpc/roihu/README.md` or `jetson/README.md`) and the documents in `docs/`.
-3. Search the open and closed issues.
+1. Find the document that owns your question in [START-HERE.md](START-HERE.md).
+2. For a first run, read [GETTING-STARTED.md](GETTING-STARTED.md); for installation, [INSTALL.md](INSTALL.md). Both have a troubleshooting table.
+3. Check the folder guide of the part you use: [hpc/roihu/README.md](hpc/roihu/README.md), [jetson/README.md](jetson/README.md), [reports/README.md](reports/README.md) or [models/cloud-filter/README.md](models/cloud-filter/README.md).
+4. Search the open and closed issues.
 
 ---
 
@@ -55,7 +56,7 @@ Public issues are written in English so that everyone can follow them. By e-mail
 
 ## 5. What is not supported
 
-- Trained models are not distributed in the public repositories, and no support is given for obtaining them outside an agreement.
+- Trained models are not distributed in this repository ([LICENSING.md](LICENSING.md)), and no support is given for obtaining them outside an agreement.
 - Running jobs on your behalf, or on computing resources Tiefer does not control.
 - Uses that break the [acceptable use policy](ACCEPTABLE_USE.md).
 
@@ -63,6 +64,7 @@ Public issues are written in English so that everyone can follow them. By e-mail
 
 ## Changelog
 
+- 7 October 2026: this copy is the Lab version of the organisation file: it points to START-HERE.md, GETTING-STARTED.md, INSTALL.md and the folder guides of this repository; a question about a number is an ordinary issue, since no documentation and results form exists. The channels and times are unchanged.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; table of channels, what to include, response times, languages and what is not supported added.
 - 27 September 2026: first version.
