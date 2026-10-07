@@ -28,6 +28,16 @@ HYPE = re.compile(
 HYPE_EXEMPT = {"docs/SPEC.md", "docs/STYLE.md"}
 
 
+def is_pull_request_template(rel: Path) -> bool:
+    """Pull request templates are bodies of pull requests, not documents (docs/STYLE.md, 12.33).
+
+    They have no header image, title, status line or changelog; every other rule applies.
+    """
+    return rel == Path(".github/pull_request_template.md") or rel.parent == Path(
+        ".github/PULL_REQUEST_TEMPLATE"
+    )
+
+
 def _markdown_files(tracked_files: list[Path]) -> list[Path]:
     return [p for p in tracked_files if p.suffix == ".md"]
 
@@ -64,7 +74,7 @@ def check_header(rel: Path, lines: list[str]) -> list[str]:
     return problems
 
 
-def check_structure(text: str) -> list[str]:
+def check_structure(text: str, title_required: bool = True) -> list[str]:
     problems = []
     levels = []
     for number, line in _prose_lines(text):
@@ -73,7 +83,7 @@ def check_structure(text: str) -> list[str]:
             levels.append((number, len(match.group(1)), line))
         if re.search(r"<table|<div style|style=\"", line):
             problems.append(f"line {number}: HTML table or inline style; use a Markdown table")
-    if sum(1 for _, level, _ in levels if level == 1) != 1:
+    if title_required and sum(1 for _, level, _ in levels if level == 1) != 1:
         problems.append("exactly one # heading is required")
     for (_, previous, _), (number, level, _) in itertools.pairwise(levels):
         if level > previous + 1:
@@ -161,6 +171,13 @@ def test_checks_catch_examples() -> None:
     assert check_tables(good.replace("| r | 1 |", "| r | 1 | 2 |"))
     assert check_tables(good.replace("\n\ny", "\ny"))
     assert not check_tables("x\n\n| a \\| b | c |\n| :--- | :---: |\n| d | e |\n")
+    template = "## 1. Summary\n\n### 1. What changes?\nOne or two sentences.\n"
+    assert not check_structure(template, title_required=False)
+    assert check_structure(template)
+    assert check_structure("## 1. A\n\n#### 1. B\n", title_required=False)
+    assert is_pull_request_template(Path(".github/PULL_REQUEST_TEMPLATE/code.md"))
+    assert is_pull_request_template(Path(".github/pull_request_template.md"))
+    assert not is_pull_request_template(Path("docs/STYLE.md"))
 
 
 def test_markdown_files_follow_the_standard(repo_root: Path, tracked_files: list[Path]) -> None:
@@ -169,7 +186,9 @@ def test_markdown_files_follow_the_standard(repo_root: Path, tracked_files: list
     problems = []
     for rel in files:
         text = (repo_root / rel).read_text(encoding="utf-8")
-        found = check_header(rel, text.split("\n")) + check_structure(text) + check_tables(text)
+        template = is_pull_request_template(rel)
+        found = [] if template else check_header(rel, text.split("\n"))
+        found += check_structure(text, title_required=not template) + check_tables(text)
         if rel.as_posix() not in HYPE_EXEMPT:
             found += [f"hype word '{m.group()}'" for m in HYPE.finditer(text)]
         problems += [f"{rel}: {p}" for p in found]
