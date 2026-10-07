@@ -98,13 +98,18 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 
 ## Documentation
 
-- [docs/SPEC.md](docs/SPEC.md): the specification for milestone L1.
+- [docs/SPEC.md](docs/SPEC.md): the specification for milestones L1 and L2.
 - [docs/DATA.md](docs/DATA.md): the data card for CloudSEN12+, with every dataset fact the code depends on.
+- [docs/DATASETS.md](docs/DATASETS.md): every dataset used or considered, its role per split, and how metrics compare with published ones.
 - [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md): sensor, data, decision and hardware assumptions to revisit.
+- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md): every requirement and acceptance target, its status and the test or report that verifies it.
+- [docs/STANDARDS.md](docs/STANDARDS.md): the standards, handbooks and formats, the clauses read and the status of each.
 - [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md): every dependency, why it is needed, and its licence.
 - [docs/RESULTS.md](docs/RESULTS.md): measured results, written by hand; every value names the report file it was copied from.
 - [docs/LANDSCAPE.md](docs/LANDSCAPE.md): related onboard cloud detection systems, onboard AI platforms and reference algorithms, their published values, and the measurements that would decide a comparison.
-- [docs/STYLE.md](docs/STYLE.md): the Markdown standard for Tiefer repositories.
+- [docs/STYLE.md](docs/STYLE.md): the documentation standard for Tiefer repositories.
+- [NOTICE.md](NOTICE.md): what the licence covers and what it does not, third-party data, the typeface and the dependencies.
+- [hpc/roihu/plan.md](hpc/roihu/plan.md): what ran on CSC Roihu against the plan, and the next steps.
 - [hpc/roihu/README.md](hpc/roihu/README.md), [jetson/README.md](jetson/README.md), [reports/README.md](reports/README.md) and [models/cloud-filter/README.md](models/cloud-filter/README.md): guides for each folder.
 - Security policy, contributing guide, code of conduct and support: [tiefer-labs/.github](https://github.com/tiefer-labs/.github).
 
@@ -112,10 +117,10 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 
 ## Principles
 
-1. Measured, not claimed: every number is reproducible with one command, and anything not measured is written as "not measured".
+1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19. Not every number can be reproduced from a commit yet: `l1_base s0` ran from a working tree with uncommitted changes, the L2 runs used a batch size and learning rate that are not in their committed configs, and the report files of 2 and 3 October 2026 are still on CSC Roihu (docs/RESULTS.md, section 4).
 2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
 3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
-4. Reproducible: fixed seeds, versioned configurations, a locked environment, the dataset revision and the git commit in every result file.
+4. Reproducible: fixed seeds, versioned configurations, a locked environment, and the dataset revision and the git commit in every result file, with a flag when the working tree had uncommitted changes.
 5. The test split is used only for final evaluation, and every use is logged where it runs. The entries of the test evaluations of 3 October 2026 are on CSC Roihu and pending a copy into [reports/test_log.md](reports/test_log.md), which has no entries yet.
 
 ---
@@ -136,6 +141,7 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 
 ## Changelog
 
+- 7 October 2026: the documentation list adds DATASETS.md, REQUIREMENTS.md, STANDARDS.md, NOTICE.md and hpc/roihu/plan.md; principles 1 and 4 say what holds now and what is pending.
 - 7 October 2026: correction: `l1_base` has two seeds; the other runs are single seeds.
 - 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy.
 - 7 October 2026: the documentation list links docs/LANDSCAPE.md.
