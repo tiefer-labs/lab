@@ -72,6 +72,15 @@ The threshold of a frame metric is the cloud fraction above which a frame is kep
 | l2_flex_1m s0 | 64 | 0.004 | 150 | 35 | 2000949 | batch and rate: log (section 17); best epoch: notes |
 | l2_spec_1m s0 | 64 | pending | pending | pending | 2001425 | batch: notes; job: page |
 
+Earlier runs of 2 October 2026, training-loop values only; their reports are pending and they are not used elsewhere on this page:
+
+| Run | Stop | Best epoch | Best validation mean IoU, training loop | Source |
+| :--- | :---: | :---: | :---: | :---: |
+| l1_base seed 0 of 2 October 2026 | early stopped at epoch 72 | 57 | 0.678 | log (training log of 2 October 2026) |
+| l1_base seed 1 of 2 October 2026 | early stopped at epoch 36 | 21 | 0.626 | log (training log of 2 October 2026) |
+
+These two stops are the reason for l1_full given in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6; section 17 adds the stop of l1_base s0 on 3 October 2026.
+
 The configuration of l1_base s0 in its report: crop 256, batch 128, learning rate 0.008, weight decay 0.0001, Dice weight 1.0, patience 15, minimum improvement 0.001, brightness and contrast augmentation 0.1. The training job of l1_base s0 ran on node rg2128 and started on 3 October 2026 at 09:39 UTC.
 
 L1 and L2 were not trained with the same settings. The L1 runs used batch 128 and learning rate 0.008. l2_flex_1m s0 ran out of GPU memory at batch 128 with 13 bands and was trained with batch 64 and learning rate 0.004, both halved together; l2_spec_1m s0 was then trained with batch 64 as well (section 17). A difference between an L1 and an L2 result is therefore not caused by the model alone.
@@ -443,7 +452,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 ## 17. Training notes
 
 - l2_flex_1m with 13 bands: attempt 1 (job 2000912, batch 128) ran out of GPU memory after 55 s. Attempt 2 (job 2000941) with `load_mode` "memory" and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` also ran out of memory after 55 s. Attempt 3 (job 2000949) with batch 64 and learning rate 0.004, both halved together, ran to the end. The batch size, not the allocator setting, was the fix (log). l2_spec_1m was then trained with batch 64 as well (notes); its learning rate is pending until its `config.toml` is read.
-- l1_base s0 stopped early with its best epoch at 32 while the training loss was still falling; this is why l1_full runs the whole 150-epoch cosine schedule (patience 150, docs/ASSUMPTIONS.md, section 6). The best epoch of l1_full s0 was 129 (notes).
+- l1_base s0 stopped early with its best epoch at 32 while the training loss was still falling; this is the third early stop of l1_base, after the two runs of 2 October 2026 in section 3, which are the reason why l1_full runs the whole 150-epoch cosine schedule (patience 150, docs/ASSUMPTIONS.md, section 6). The best epoch of l1_full s0 was 129 (notes).
 - l2_flex_1m s0 reached its best validation checkpoint at epoch 35. Its validation mean IoU in the training log then stayed between about 0.53 and 0.55 until epoch 150; this is the value of the training loop, not of the evaluation report (notes). An epoch took about 34.4 s (notes).
 - Building the 13-band cache: shard 0 failed with HTTP 404 and was submitted again; the build resumed where it had stopped (section 16).
 - ONNX Runtime printed `pthread_setaffinity_np` errors during export on the GH200 nodes. The exports completed; the effect on timing has not been investigated.
@@ -594,6 +603,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: section 3 lists the l1_base runs of 2 October 2026 (training-loop values, reports pending), the reason for l1_full; section 17 links them.
 - 7 October 2026: correction: l1_base has two seeds; the summary and the limitations give their difference (0.042 on validation, 0.044 on test) instead of "every run is a single seed".
 - 7 October 2026: correction: section 12 applies the product rule on validation only; no decision is recorded until `x-val-4` is read, and the test values are informational.
 - 7 October 2026: correction: the L2 runs have no export report yet, and three export jobs are not matched to a run; the l2_spec_1m s0 quantisation row is pending, not `not measured` (section 14).
