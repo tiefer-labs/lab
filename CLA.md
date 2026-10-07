@@ -26,6 +26,8 @@ The founder chooses one of two options, or keeps the current terms.
 | Effort | a signing process and a record of who signed | a check in CI that every commit carries a sign-off |
 | Legal review | needed before it is used | the text is fixed by its authors; the choice to use it still needs the founder's approval |
 
+Neither option replaces the disclosure of AI-assisted systems, which [AI_ASSISTANCE.md](AI_ASSISTANCE.md) requires in every issue and pull request now.
+
 ---
 
 ## 3. Option A: contributor licence agreement (draft for legal review)
@@ -77,4 +79,5 @@ The certificate does not grant Tiefer any right beyond the licence of the reposi
 
 ## Changelog
 
+- 7 October 2026: section 2 says that neither option replaces the disclosure of AI-assisted systems in AI_ASSISTANCE.md.
 - 7 October 2026: first version, a draft that is not in force: the decision between a contributor licence agreement and the Developer Certificate of Origin, the draft clauses for legal review, and how signing would work.
