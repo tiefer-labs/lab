@@ -1,26 +1,18 @@
 <img alt="Tiefer Lab" src="docs/assets/header.png" width="100%">
 
-# Licence notes
+# Notices and attributions
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-What is licensed in this repository, under which terms, and what is not.
+The attributions of third-party work used by this repository: data, the Copernicus notice, the typeface and the dependencies.
 
 ---
 
-## Repository
+## Licences and marks
 
-Everything in this repository (code, scripts, configurations, documentation and reports) is licensed under the Mozilla Public License 2.0, except the files listed under "What the licence does not cover". The full text is in [LICENSE](LICENSE). Every source file starts with the MPL 2.0 notice.
+The licence of every part of this repository, and what is not licensed (trained models, the images in `docs/assets/`, the Tiefer name and logo), is in [LICENSING.md](LICENSING.md). The use of the name and logo is in [TRADEMARK.md](TRADEMARK.md). This file holds the attributions only.
 
----
-
-## What the licence does not cover
-
-- **Trained models.** Model weights, checkpoints and ONNX files are not part of this repository, are not distributed from it, and no licence is granted for them. They are excluded from git, are not attached to GitHub Releases and stay with Tiefer. Release folders under `models/cloud-filter/` hold only a model card, a configuration and SHA-256 checksums, so that Tiefer can show which model produced which result.
-- **Images in `docs/assets/`.** The header image (`header.png`) and the logos (`tiefer-logo.svg`, `tiefer-logo-white.svg`) are excluded from the MPL 2.0 licence of this repository; all rights are reserved by Tiefer.
-- **Trademarks.** The Tiefer name and logo are trademarks of Tiefer and are not licensed. MPL 2.0 section 2.3 grants no rights to trademarks, service marks or logos.
-
-No pretrained weights are used. Every model is trained from random initialisation on the data in [docs/DATA.md](docs/DATA.md), so no third-party model licence applies to a trained model.
+No pretrained weights are used. Every model is trained from random initialisation on the data in [docs/DATA.md](docs/DATA.md), so no third-party model needs attribution.
 
 ---
 
@@ -58,6 +50,7 @@ On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvi
 
 ## Changelog
 
+- 7 October 2026: the licence of each part, what is not licensed and the trademarks move to LICENSING.md and TRADEMARK.md; this file keeps the attributions and links both.
 - 7 October 2026: this changelog added. The images of `docs/assets/` are excluded from the MPL 2.0 licence, all rights reserved by Tiefer; the header typeface Mozilla Headline is named with its licence, SIL Open Font License 1.1.
 - 7 October 2026: the Copernicus Sentinel data notice and the years of the imagery; the CloudSEN12+ citations; the reference masks of the extra variant are third-party products under the dataset's terms.
 - 7 October 2026: the dependency table is replaced by a summary and a link to docs/DEPENDENCIES.md; the packages that `torch` installs on Linux include `cuda-bindings`, `cuda-pathfinder` and `triton`; no licence is granted for model weights.
