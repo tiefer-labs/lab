@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What each report file is and which script writes it. [docs/RESULTS.md](../docs/RESULTS.md) is written by hand. Every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform.
+What each report file is and which script writes it. [docs/RESULTS.md](../docs/RESULTS.md) is written by hand. Every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. How a report file is added is in [CONTRIBUTING.md](../CONTRIBUTING.md), section 7; the gates for its values and for the test split are in [POLICY.md](../POLICY.md), gates 1 to 3; how to check the commit a report records is in [INSTALL.md](../INSTALL.md), section 3.
 
 ---
 
@@ -48,5 +48,6 @@ The report files of the runs of 2 and 3 October 2026 are still on CSC Roihu: 23 
 
 ## Changelog
 
+- 7 October 2026: the purpose links CONTRIBUTING.md, POLICY.md and INSTALL.md.
 - 7 October 2026: the report files of 2 and 3 October are still on CSC Roihu and are pending in docs/RESULTS.md.
 - 7 October 2026: docs/RESULTS.md is written by hand from these files; the results generator and `make results` are removed.
