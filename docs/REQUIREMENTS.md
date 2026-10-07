@@ -16,6 +16,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 - A code requirement (`REQ-...`) is met when its tests pass. Every test passed in `make check` on 7 October 2026; that run is the evidence for every `REQ-...` row marked met. Further evidence of a row is given below its table.
 - The statuses of the acceptance targets were set by hand on 7 October 2026 from [RESULTS.md](RESULTS.md). `python -m tiefer_lab.acceptance` writes `reports/acceptance.md` from the report files; that file is not committed, because the report files of 2 and 3 October 2026 are still on CSC Roihu. Its GPU maintenance began on 6 October 2026 at 08:00 Finnish time (05:00 UTC), and no GPU job of this repository has run since.
 - `acceptance.py` defines the accuracy, frame and compression targets on the final test evaluation of the 1 M band-flexible model (`l2_flex_1m`) with the four bands B02, B03, B04 and B08; section 8 assesses `l2_flex_1m s0` on that basis. Section 9 gives the same targets for the four-band specialist `l2_spec_1m s0` for information, because the product decision between the two is not recorded yet ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 7).
+- A status of this page says whether a target is met; whether a value may be quoted, and in which form, is decided by [POLICY.md](../POLICY.md), gate 2, and [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md).
 - A minimum or target written "above" is strict; "at least" and "at most" include the bound. Values are rounded to 3 decimals, half up, as in RESULTS.md; a value from the session notes is marked so in the evidence.
 
 ---
@@ -189,6 +190,7 @@ The thin cloud PA and UA, the expected calibration error, the false send rate an
 
 ## Changelog
 
+- 7 October 2026: section 1 links POLICY.md and BENCHMARK-AUTHORITY.md for how values may be quoted.
 - 7 October 2026: `STD-04` counts 8 rows `not read` in the revised standards matrix.
 - 7 October 2026: restructured to the requirements matrix of docs/STYLE.md: the acceptance targets have columns Minimum, Target, Measured value, Run, Status and Evidence, with the bounds of `src/tiefer_lab/acceptance.py`, and category rows for the target groups.
 - 7 October 2026: section 1 states once that the statuses were set by hand and that `make check` of 7 October 2026 is the evidence for every code requirement; the repeated evidence cells are removed and further evidence is listed below each table.
