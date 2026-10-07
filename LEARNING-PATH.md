@@ -164,4 +164,5 @@ All accessed 7 October 2026.
 
 ## Changelog
 
-- 7 October 2026: first version: 11 tracks and 38 concepts, each with its place in the repository and one primary reference.
+- 7 October 2026: correction: the path has 38 concepts; the first version said 33.
+- 7 October 2026: first version: 11 tracks and 33 concepts, each with its place in the repository and one primary reference.
