@@ -81,6 +81,15 @@ One word for each state, defined here once. Other documents link to this table i
 | `done`, `not run`, `changed` | changed: ran with settings other than planned | plan |
 | **Component status** | | |
 | `done`, `measured`, `not measured`, `not run`, `draft` | state of a component of the repository | README status tables |
+| **Claim status** | | |
+| `MEASURED` | a number in `docs/RESULTS.md` backed by a named report file | claims ledger |
+| `IMPLEMENTED` | code and tests exist; not measured | claims ledger |
+| `SIMULATED` | works only on synthetic or perturbed data, or in dry-run mode | claims ledger |
+| `PLANNED` | in a plan or a specification; no code | claims ledger |
+| `NOT STARTED` | stated somewhere public; nothing exists in any public repository | claims ledger |
+| `WITHDRAWN` | a statement Tiefer no longer makes | claims ledger |
+| **Result authority** | | |
+| `current`, `provisional`, `superseded` | provisional: current, but from a single seed or before an open decision; superseded: replaced by a later value | benchmark authority page |
 
 "Not yet measured" and "not applicable" outside the standards matrix are not used; write `not measured` or `n/a`.
 
@@ -89,7 +98,7 @@ One word for each state, defined here once. Other documents link to this table i
 ## 5. Structure, numbering and changelog
 
 - One `#` heading per file; `##` for sections, `###` for subsections; never skip a level.
-- Numbered sections (`## 1. Title`) in every file in `docs/`, in plans and in model cards; not in README files and not in `NOTICE.md`. Sections are numbered 1, 2, 3; a lettered section (`2A`, `5A`) is not used: renumber instead and fix every link to the renumbered sections.
+- Numbered sections (`## 1. Title`) in every file in `docs/`, in every Markdown file at the repository root (the route map, guides, ledgers and policies of sections 12.15 to 12.31), in plans and in model cards; not in README files and not in `NOTICE.md`. Sections are numbered 1, 2, 3; a lettered section (`2A`, `5A`) is not used: renumber instead and fix every link to the renumbered sections.
 - Appendices come after the numbered sections and are headed `## Appendix A. <name>`.
 - Separate major parts with `---`.
 - Every Markdown file ends with `## Changelog`, except `LICENSE` and append-only logs such as `reports/test_log.md`. Each line is exactly `- D Month YYYY: text`, one change per line, newest first; several lines on the same day are allowed, the most recent first. Old lines are never edited; a correction is a new line.
@@ -239,9 +248,77 @@ Each document type has required sections, in this order. A document may add sect
 
 ### 12.14 README files
 
-The root `README.md`: header image, one sentence saying what the repository is, a plain link row (website, specification, results, licence; no badges loaded from third-party services), then About, Status, Quick start, Repository layout, Documentation, Principles, Licence, Contact, Changelog. Security and contributing link to `https://github.com/tiefer-labs/.github`.
+The root `README.md`: header image, one sentence saying what the repository is, a plain link row (website, specification, results, licence; no badges loaded from third-party services), then About (with a subsection "What <repository> is not"), Status (a table with status words and evidence, and the headline numbers as the benchmark authority page lists them), Where to go next, Quick start (deferring to the getting-started guide), Repository layout, Documentation (pointing to the index and the route map), Principles, Licence, Contact, Changelog. The first sentence says what the repository is, and the second what it is not. Security, contributing and support link to the repository's own files when it has them, otherwise to `https://github.com/tiefer-labs/.github`.
 
 A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `reports/`, `reports/jetson/`): header image, title, status line, purpose, Requirements, Steps (copy-ready commands), Files (table), Troubleshooting (table: symptom, cause, fix) where useful, Changelog. Extra sections are allowed after Steps.
+
+### 12.15 Route map
+
+`START-HERE.md`: a table from "I want to" to the one document (and section) that owns the answer, with its audience; then reading lists by time available. It answers nothing itself.
+
+### 12.16 Getting started
+
+`GETTING-STARTED.md`: what you need and do not need; steps with commands, measured durations (or `not measured`), the files written and the lines that show success; the offline proof; what the outputs are not; next steps; troubleshooting table.
+
+### 12.17 Index
+
+`INDEX.md`: one table of every tracked Markdown file (file, purpose, audience, owned topic, status, last changed) in category groups, then the lifecycle states with their files. A test keeps it complete.
+
+### 12.18 Learning path
+
+`LEARNING-PATH.md`: how to use the path, then one section per track; each concept has an ID, what it is, why it matters in the repository, prerequisites, where it appears, and one primary reference listed at the end.
+
+### 12.19 Install guide
+
+`INSTALL.md`: platform matrix with what is tested and where; installation methods; provenance checks with commands; uninstall and clean-up; troubleshooting table.
+
+### 12.20 Claims ledger
+
+`CLAIMS.md`: the claim status vocabulary (section 4) and the sources scanned; the rule for public statements; the ledger (ID, claim as stated, where it is stated as `<repository>:<file>:<line>`, status, evidence, caveats, last checked); the statements that need correction at their source.
+
+### 12.21 Benchmark authority
+
+`BENCHMARK-AUTHORITY.md`: how to read the page (result authority words, section 4); a table from question to authoritative value, run, split, source and status; the caveats that apply to every number; how to cite; what supersedes what.
+
+### 12.22 Policy
+
+`POLICY.md`: how the gates work, then one section per gate, each with its rule, evidence, who checks it and what happens when it is broken.
+
+### 12.23 Extending guide
+
+`EXTENDING.md`: what to do before any extension, then one section per golden path, each with files, tests, documents and the evidence required for a result.
+
+### 12.24 Contributing
+
+`CONTRIBUTING.md`: ways to contribute, before you start, set-up and checks, branches and commits, pull requests, writing, results and data, documents to update, terms of contributions, trademarks, code of conduct.
+
+### 12.25 Contributor licence agreement
+
+`CLA.md`: whether it is in force; the options and their effects; the draft clauses; how signing works; sources.
+
+### 12.26 Security policy
+
+`SECURITY.md`: supported versions, reporting routes, what happens next, coordinated disclosure, scope, safe harbour, then the repository's own measures (secrets, supply chain, model integrity).
+
+### 12.27 Licensing
+
+`LICENSING.md`: the licence of each part of the repository in one table; the licence in plain words with "this is not legal advice"; data, models and marks; contributions; sources. Attributions stay in `NOTICE.md`.
+
+### 12.28 Governance
+
+`GOVERNANCE.md`: roles; decision classes (change class, examples, who decides, how it is proposed, where it is recorded); versions and releases; continuity; changes to the document.
+
+### 12.29 Trademark policy
+
+`TRADEMARK.md`: the marks and their registration status as stated by the founder (never a registered mark symbol); what is allowed; what needs written permission; forks; how to ask.
+
+### 12.30 Code of conduct, support and acceptable use
+
+`CODE_OF_CONDUCT.md`, `SUPPORT.md`, `ACCEPTABLE_USE.md`: copies of the organisation files in `tiefer-labs/.github`, identical in substance, with links adapted to the repository; the changelog records that the copy is the repository's version.
+
+### 12.31 One owner per fact
+
+Every fact lives in one document, named in the "Owns" column of `INDEX.md`; every other document links to it. Before writing a section, check whether another document owns the topic.
 
 ---
 
@@ -251,12 +328,13 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 - **Dependency table:** `src/tiefer_lab/sbom.py` reads the licence of every locked package from the section headed exactly `## 3. All locked packages` of `docs/DEPENDENCIES.md`, from rows of three cells (package, version, licence). The heading and the row format change only together with `sbom.py` and `tests/test_sbom.py`.
 - **Assets:** `docs/assets/` holds the header image and the logos (section 11). They are excluded from the character checks and from the MPL 2.0 grant ([NOTICE.md](../NOTICE.md)).
 - **Report folders:** `reports/evaluation/`, `reports/export/`, `reports/compute/`, `reports/jetson/` and `reports/data/` hold report files copied unchanged from the machine that wrote them; `docs/RESULTS.md` names each one by a source key in its Appendix A.
-- **Checks:** `tests/test_markdown_style.py` checks headers, status lines, heading levels, changelog lines and table layout; `tests/test_text_rules.py` checks characters and the forbidden hyphenated spelling of "onboard"; `tests/test_wording.py` checks compliance wording and the statuses of the standards matrix.
+- **Checks:** `tests/test_markdown_style.py` checks headers, status lines, heading levels, changelog lines and table layout; `tests/test_docs_index.py` checks that `INDEX.md` lists every Markdown file; `tests/test_text_rules.py` checks characters and the forbidden hyphenated spelling of "onboard"; `tests/test_wording.py` checks compliance wording and the statuses of the standards matrix.
 
 ---
 
 ## Changelog
 
+- 7 October 2026: section 12 adds the document types of the root documents (sections 12.15 to 12.30) and the rule of one owner per fact (12.31); the README skeleton adds "What <repository> is not" and "Where to go next"; root documents use numbered sections; section 4 adds the claim statuses and the result authority words.
 - 7 October 2026: section 12.3 gives the columns of the code requirements; section 12.9 puts the status of the standards matrix last, where the code reads it.
 - 7 October 2026: section 12, the required sections of every document type.
 - 7 October 2026: sections 8 and 9, source kinds and their syntax, cited documents, run names, identifiers and `TODO(verify)` only outside table cells.
