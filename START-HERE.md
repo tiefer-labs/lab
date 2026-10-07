@@ -40,6 +40,14 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 | know who decides what | [GOVERNANCE.md](GOVERNANCE.md) | contributors |
 | use the Tiefer name or logo | [TRADEMARK.md](TRADEMARK.md) | everyone |
 | get help | [SUPPORT.md](SUPPORT.md) | everyone |
+| report a bug | [`01_bug_report.yml`](https://github.com/tiefer-labs/lab/issues/new?template=01_bug_report.yml) | everyone |
+| question a published number | [`02_results_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=02_results_question.yml) | evaluators, researchers |
+| report a result I could not reproduce | [`03_reproducibility_failure.yml`](https://github.com/tiefer-labs/lab/issues/new?template=03_reproducibility_failure.yml) | researchers, evaluators |
+| challenge a public claim | [`05_claim_challenge.yml`](https://github.com/tiefer-labs/lab/issues/new?template=05_claim_challenge.yml) | evaluators, partners |
+| propose a feature or a change of method | [`10_feature_request.yml`](https://github.com/tiefer-labs/lab/issues/new?template=10_feature_request.yml); [`11_method_change.yml`](https://github.com/tiefer-labs/lab/issues/new?template=11_method_change.yml) | contributors |
+| ask a question the documents do not answer | [`19_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=19_question.yml) | everyone |
+| open any other kind of issue | [CONTRIBUTING.md](CONTRIBUTING.md), section 1, lists every form | everyone |
+| open a pull request | [CONTRIBUTING.md](CONTRIBUTING.md), section 5, lists every template | contributors |
 
 ---
 
@@ -55,5 +63,6 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 
 ## Changelog
 
+- 7 October 2026: section 1 routes each kind of issue to its form by file name, and pull requests to the templates.
 - 7 October 2026: section 1 routes the use of AI-assisted systems to AI_ASSISTANCE.md.
 - 7 October 2026: first version: a route from each task to the document that owns it, and reading lists for 5, 30 and 120 minutes.
