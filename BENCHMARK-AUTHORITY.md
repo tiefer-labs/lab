@@ -26,20 +26,20 @@ Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) name
 
 | Question | Authoritative value | Run | Split | Source | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Best four-band result, mean IoU | 0.720 [0.707, 0.732] | l2_spec_1m s0 | test, 975 patches | RESULTS.md, section 7; `s-test` | provisional |
-| False discard rate of that model at 50 percent | 0.042 [0.026, 0.059] | l2_spec_1m s0 | test | RESULTS.md, section 7; `s-test` | provisional |
-| Selected model and why | l2_spec_1m s0: highest validation mean IoU, 0.732 [0.714, 0.749] | l2_spec_1m s0 | validation, 535 patches | RESULTS.md, section 7; `s-val` | provisional |
-| Smallest model size (0.24 M parameters), best result | 0.689 [0.676, 0.701] mean IoU | l1_full s0 | test | RESULTS.md, section 6; `f0-test` | provisional |
-| Band-flexible model against the specialist, four bands | no decision; the rule is applied on validation and `x-val-4` is not in the repository | l2_flex_1m s0, l2_spec_1m s0 | validation | RESULTS.md, section 12 | pending |
-| Band-flexible model per band set | test values from session notes only | l2_flex_1m s0 | test | RESULTS.md, section 12 | pending |
-| INT8 effect | mean IoU change of -0.070, -0.060 and -0.154 | l1_base s0, l1_base s1, l1_full s0 | validation | RESULTS.md, section 14 | current |
-| FP16 effect | 0.000 change in mean IoU, from session notes | l1_base s0 | validation | RESULTS.md, section 14 | pending |
-| Seed spread | mean IoU of 0.649 and 0.691 (difference 0.042) on validation; 0.635 and 0.679 (0.044) on test | l1_base s0 and s1 | validation, test | RESULTS.md, sections 6 and 18 | current |
-| Regional spread | mean IoU from 0.685 (EU) to 0.561 (OC) | l1_base s0 | validation | RESULTS.md, section 9; `b0-val` | current |
-| Sensor robustness | blur of 1 pixel: mean IoU 0.468 [0.447, 0.491] against 0.649 without | l1_base s0 | validation, simulated on Sentinel-2 | RESULTS.md, section 13 | current |
-| Best baseline | threshold rule, mean IoU 0.296 [0.285, 0.308] | baseline | test | RESULTS.md, section 6; `s-test` | current |
-| Compute cost | 1,510.389 GPU BU or more for 19 GPU jobs (7.552 GPU hours or more); l2_spec_1m s0 training: 124.833 GPU BU | all runs | n/a | RESULTS.md, section 16 | current (lower bound) |
-| Latency, power and energy per tile on a Jetson Orin | not measured | n/a | n/a | RESULTS.md, section 15 | not measured |
+| Best four-band result, mean IoU | 0.720 [0.707, 0.732] | l2_spec_1m s0 | test, 975 patches | docs/RESULTS.md, section 7; `s-test` | provisional |
+| False discard rate of that model at 50 percent | 0.042 [0.026, 0.059] | l2_spec_1m s0 | test | docs/RESULTS.md, section 7; `s-test` | provisional |
+| Selected model and why | l2_spec_1m s0: highest validation mean IoU, 0.732 [0.714, 0.749] | l2_spec_1m s0 | validation, 535 patches | docs/RESULTS.md, section 7; `s-val` | provisional |
+| Smallest model size (0.24 M parameters), best result | 0.689 [0.676, 0.701] mean IoU | l1_full s0 | test | docs/RESULTS.md, section 6; `f0-test` | provisional |
+| Band-flexible model against the specialist, four bands | no decision; the rule is applied on validation and `x-val-4` is not in the repository | l2_flex_1m s0, l2_spec_1m s0 | validation | docs/RESULTS.md, section 12 | pending |
+| Band-flexible model per band set | test values from session notes only | l2_flex_1m s0 | test | docs/RESULTS.md, section 12 | pending |
+| INT8 effect | mean IoU change of -0.070, -0.060 and -0.154 | l1_base s0, l1_base s1, l1_full s0 | validation | docs/RESULTS.md, section 14 | current |
+| FP16 effect | 0.000 change in mean IoU, from session notes | l1_base s0 | validation | docs/RESULTS.md, section 14 | pending |
+| Seed spread | mean IoU of 0.649 and 0.691 (difference 0.042) on validation; 0.635 and 0.679 (0.044) on test | l1_base s0 and s1 | validation, test | docs/RESULTS.md, sections 6 and 18 | current |
+| Regional spread | mean IoU from 0.685 (EU) to 0.561 (OC) | l1_base s0 | validation | docs/RESULTS.md, section 9; `b0-val` | current |
+| Sensor robustness | blur of 1 pixel: mean IoU 0.468 [0.447, 0.491] against 0.649 without | l1_base s0 | validation, simulated on Sentinel-2 | docs/RESULTS.md, section 13 | current |
+| Best baseline | threshold rule, mean IoU 0.296 [0.285, 0.308] | baseline | test | docs/RESULTS.md, section 6; `s-test` | current |
+| Compute cost | 1,510.389 GPU BU or more for 19 GPU jobs (7.552 GPU hours or more); l2_spec_1m s0 training: 124.833 GPU BU | all runs | n/a | docs/RESULTS.md, section 16 | current (lower bound) |
+| Latency, power and energy per tile on a Jetson Orin | not measured | n/a | n/a | docs/RESULTS.md, section 15 | not measured |
 | Comparison with other systems | no comparison is decided; published values are not results of this repository | n/a | n/a | [docs/LANDSCAPE.md](docs/LANDSCAPE.md), section 5 | not measured |
 
 ---
@@ -86,10 +86,10 @@ Never cite:
 
 | Superseded | By | Why | Where |
 | :--- | :---: | :---: | :---: |
-| l1_base s0 as the best L1 result (test mean IoU 0.635) | l1_full s0 (0.689) | l1_full runs the whole 150-epoch schedule with warm-up and a moving average; l1_base s0 stopped early at its best epoch 32. l1_full s0 has a higher test false discard rate (0.069 against 0.039) | RESULTS.md, sections 6 and 17 |
-| Every L1 run as the selected model | l2_spec_1m s0 | highest validation mean IoU of the runs measured so far | RESULTS.md, section 7 |
-| The l1_base runs of 2 October 2026 | the runs of 3 October 2026 | the earlier runs stopped early; only training-loop values exist and they are not results | RESULTS.md, section 3 |
-| The generated results pages of commits c3e861a, 5ba4585 and 0f0984d | the hand-written [docs/RESULTS.md](docs/RESULTS.md) | the generator was removed on 7 October 2026; values from those pages are kept with source kinds `h-<commit>` | RESULTS.md, section 2 |
+| l1_base s0 as the best L1 result (test mean IoU 0.635) | l1_full s0 (0.689) | l1_full runs the whole 150-epoch schedule with warm-up and a moving average; l1_base s0 stopped early at its best epoch 32. l1_full s0 has a higher test false discard rate (0.069 against 0.039) | docs/RESULTS.md, sections 6 and 17 |
+| Every L1 run as the selected model | l2_spec_1m s0 | highest validation mean IoU of the runs measured so far | docs/RESULTS.md, section 7 |
+| The l1_base runs of 2 October 2026 | the runs of 3 October 2026 | the earlier runs stopped early; only training-loop values exist and they are not results | docs/RESULTS.md, section 3 |
+| The generated results pages of commits c3e861a, 5ba4585 and 0f0984d | the hand-written [docs/RESULTS.md](docs/RESULTS.md) | the generator was removed on 7 October 2026; values from those pages are kept with source kinds `h-<commit>` | docs/RESULTS.md, section 2 |
 
 The v0.1.0 model card describes l1_base s0 and stays as its record; it is not the selected model ([models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md)).
 
