@@ -44,7 +44,7 @@ The EU AI Act defines "AI system" in its own words (section 7); the term of this
 Never give an AI-assisted system:
 
 1. credentials, tokens, keys or the content of a `.env` file ([SECURITY.md](SECURITY.md), section 7);
-2. personal data of anyone other than yourself, or any special category of personal data (section 7, GDPR Articles 4(1) and 9);
+2. personal data, your own included, or any special category of personal data (section 7, GDPR Articles 4(1) and 9);
 3. confidential material of a partner, a customer or another third party;
 4. an unreported security problem ([SECURITY.md](SECURITY.md), section 2).
 
@@ -53,7 +53,7 @@ Further rules:
 - Remove CSC project identifiers, user names and absolute paths from logs and report files before you give them to an AI-assisted system; `tests/test_public_hygiene.py` lists the patterns that must not appear in the repository.
 - Give a system only the content it needs for the task.
 - For code that is not yet public, prefer a system that runs on your own hardware or with a provider in the EU or EEA, and say where it ran in the disclosure.
-- Personal data sent to a system that runs outside the EU or EEA is a transfer under Chapter V of the GDPR (Articles 44 to 49). Rule 2 above avoids such transfers of other people's data.
+- Personal data sent to a system that runs outside the EU or EEA is a transfer under Chapter V of the GDPR (Articles 44 to 49). Rule 2 above avoids such transfers.
 
 ---
 
@@ -166,4 +166,5 @@ Open decisions of the founder:
 
 ## Changelog
 
+- 7 October 2026: section 4, rule 2 covers all personal data, the contributor's own included, as the acknowledgement in the issue forms and pull request templates states it.
 - 7 October 2026: first version: scope, disclosure rule, responsibility, data rules, licence and provenance, labelling, the regulatory references read on EUR-Lex, breaches and review.
