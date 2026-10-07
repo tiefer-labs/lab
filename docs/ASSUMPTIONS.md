@@ -77,15 +77,16 @@ The assumptions behind milestones L1 and L2 about the target sensor, the data, t
 
 | Assumption | Reason | Revisit when |
 | :--- | :---: | :---: |
-| The band-flexible model is the product if, on the four-band set (blue, green, red, near infrared), its result is within the confidence interval of the four-band specialist of the same size; otherwise specialists are shipped per sensor | One model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation |
+| Product rule: the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor | One model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation |
 | Target sensors are optical satellites whose bands differ; high resolution satellites usually carry blue, green, red and near infrared only, for example SPOT-7 NAOMI ([eoPortal](https://directory.eoportal.org/web/eoportal/satellite-missions/s/spot-6-7), TODO(verify) the page) | Specifications of newer target satellites are not public, so nothing about them is assumed | a target sensor's specification is available |
 
-Outcome so far (7 October 2026, provisional). On the test split, the four-band mean IoU of `l2_flex_1m` seed 0 is 0.609, 0.111 below the 0.720 of `l2_spec_1m` seed 0 and outside its interval [0.707, 0.732] ([RESULTS.md](RESULTS.md), section 12). The rule is defined on validation, and the validation value of the flexible model is not yet transcribed, so the decision is recorded as: specialists per sensor, to be confirmed on validation. Both runs are a single seed.
+Status on 7 October 2026: no decision is recorded yet. The rule is applied on validation, and the four-band validation mean IoU of `l2_flex_1m` seed 0 (`x-val-4`) is pending ([RESULTS.md](RESULTS.md), section 12). The test split never selects a model or a setting ([SPEC.md](SPEC.md), section 2, rule 5), so the test values (0.609 for `l2_flex_1m` seed 0, a session-notes value, against 0.720 [0.707, 0.732] for `l2_spec_1m` seed 0) are informational only. Both runs are a single seed.
 
 ---
 
 ## Changelog
 
+- 7 October 2026: correction: section 7 states the product rule completely (mean IoU, validation, B02 B03 B04 B08, 1 M, seeds as available, the specialist's interval); no decision is recorded until `x-val-4` is read, and the test values are informational only.
 - 7 October 2026: section 1 points to the cache table of DATA.md for the cache of `l2_spec_1m` seed 0, which is pending.
 - 7 October 2026: correction: the learning rate of the `l2_spec_1m` run is pending; only `l2_flex_1m` is known to have used 0.004.
 - 7 October 2026: section 1 says that L1 uses four bands and L2 also all 13; section 6 adds batch 64 and learning rate 0.004 for the L2 family, with the out-of-memory error that caused it; section 7 records the provisional outcome of the product decision.

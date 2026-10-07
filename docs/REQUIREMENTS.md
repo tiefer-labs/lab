@@ -125,7 +125,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `CMP-01` | ONNX FP32 against PyTorch, argmax agreement | not measured | l2_flex_1m s0 has no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run; the three exported L1 runs passed the check at 0.999 ([RESULTS.md](RESULTS.md), section 14) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `CMP-02` | FP16 against FP32, cloud BOA loss | not measured | l2_flex_1m s0 has no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run; for l1_base s0 the FP16 change is 0.000 ([RESULTS.md](RESULTS.md), section 14) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `CMP-03` | INT8 against FP32, cloud BOA loss | not met | l2_flex_1m s0 has no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run; INT8 loses 0.060 to 0.154 mean IoU on every exported L1 run, above the one point of docs/SPEC.md, section 10 ([RESULTS.md](RESULTS.md), section 14) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | pending | cloud BOA of the four-band set not yet transcribed; on test, the four-band mean IoU is outside the specialist's interval ([RESULTS.md](RESULTS.md), section 12) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | pending | cloud BOA of the four-band set not yet transcribed; the product rule is applied on validation (`x-val-4` pending), and the test values are informational only ([RESULTS.md](RESULTS.md), section 12) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `CMP-05` | Rescaling 0.5x to 2x, cloud BOA loss | not measured | no rescaling evaluation of l2_flex_1m s0; l1_base s0 is in [RESULTS.md](RESULTS.md), section 13 | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `CMP-06` | Other sensors against Sentinel-2, cloud BOA loss | not measured | no other-sensor dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `CMP-07` | Red, green and blue only, cloud BOA | pending | `x-test-3` not yet transcribed ([RESULTS.md](RESULTS.md), section 12) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
@@ -144,6 +144,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: correction: `CMP-04` no longer cites the test split for the product decision.
 - 7 October 2026: correction: `CMP-01`, `CMP-02`, `CMP-03` and `OBD-03`: the L2 runs have no export report yet, and three export jobs are not matched to a run.
 - 7 October 2026: section 1 says why the report files of 2 and 3 October 2026 are not yet committed.
 - 7 October 2026: correction: `REQ-EVL-01` is pending, not met, until the test log entries of 3 October 2026 are copied in.

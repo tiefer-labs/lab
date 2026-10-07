@@ -314,7 +314,7 @@ The l1_base s0 validation row of the generated page took its values from `b0-bl1
 | **l2_spec_1m s0** | | | | | |
 | 4 bands | B02 B03 B04 B08 | 0.732 [0.714, 0.749] | 0.720 [0.707, 0.732] | 0.042 [0.026, 0.059] | `s-val`, `s-test`: page |
 
-Product decision. Under the rule of docs/ASSUMPTIONS.md, section 7, the band-flexible model is the product only if its four-band result is within the confidence interval of the four-band specialist of the same size. On test, the four-band result of l2_flex_1m s0 (0.609) is 0.111 below l2_spec_1m s0 and outside its interval [0.707, 0.732]. The rule is defined on validation, so the decision is recorded as: specialists per sensor, to be confirmed on validation when the value of `x-val-4` is transcribed.
+Product decision. Under the rule of [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7, the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor. The rule is applied on validation, and `x-val-4` is pending, so no decision is recorded yet. The test values above (0.609 for l2_flex_1m s0 with four bands, a notes value, against 0.720 [0.707, 0.732] for l2_spec_1m s0) are informational only: the test split never selects a model or a setting ([SPEC.md](SPEC.md), section 2, rule 5).
 
 With 13 bands, l2_flex_1m s0 scored a lower test mean IoU than with 6 bands (0.501 against 0.642); this is not yet explained. Its test false discard rate with 13 bands (0.003) goes with the lowest mean IoU of the four band sets and a cloud PA of 0.760 (section 11): the model marks fewer pixels as cloud, which keeps fewer frames on board without deciding better.
 
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: correction: section 12 applies the product rule on validation only; no decision is recorded until `x-val-4` is read, and the test values are informational.
 - 7 October 2026: correction: the L2 runs have no export report yet, and three export jobs are not matched to a run; the l2_spec_1m s0 quantisation row is pending, not `not measured` (section 14).
 - 7 October 2026: the cache of l2_spec_1m s0 is pending and recorded in the cache table of docs/DATA.md, section 10.
 - 7 October 2026: correction: l2_spec_1m s0 ran with batch 64 (notes) and a learning rate that is pending; only l2_flex_1m s0 is known to have used 0.004 (sections 3, 4, 17, 18, 19).
