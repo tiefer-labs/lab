@@ -10,55 +10,55 @@ What is licensed in this repository, under which terms, and what is not.
 
 ## Repository
 
-Everything in this repository (code, scripts, configurations, documentation and reports) is licensed under the Mozilla Public License 2.0. The full text is in [LICENSE](LICENSE). Every source file starts with the MPL 2.0 notice.
+Everything in this repository (code, scripts, configurations, documentation and reports) is licensed under the Mozilla Public License 2.0, except the files listed under "What the licence does not cover". The full text is in [LICENSE](LICENSE). Every source file starts with the MPL 2.0 notice.
 
 ---
 
-## Trained models
+## What the licence does not cover
 
-Trained models are not part of this repository and are not covered by any licence here. Checkpoints and ONNX files are excluded from git, are not attached to GitHub Releases and stay with Tiefer. Release folders under `models/cloud-filter/` hold only a model card, a configuration and SHA-256 checksums, so that Tiefer can show which model produced which result.
-
----
-
-## Pretrained weights
+- **Trained models.** Model weights, checkpoints and ONNX files are not part of this repository, are not distributed from it, and no licence is granted for them. They are excluded from git, are not attached to GitHub Releases and stay with Tiefer. Release folders under `models/cloud-filter/` hold only a model card, a configuration and SHA-256 checksums, so that Tiefer can show which model produced which result.
+- **Images in `docs/assets/`.** The header image (`header.png`) and the logos (`tiefer-logo.svg`, `tiefer-logo-white.svg`) are excluded from the MPL 2.0 licence of this repository; all rights are reserved by Tiefer.
+- **Trademarks.** The Tiefer name and logo are trademarks of Tiefer and are not licensed. MPL 2.0 section 2.3 grants no rights to trademarks, service marks or logos.
 
 No pretrained weights are used. Every model is trained from random initialisation on the data in [docs/DATA.md](docs/DATA.md), so no third-party model licence applies to a trained model.
 
 ---
 
-## Trademarks
+## Third-party data
 
-The Tiefer name and logo (`docs/assets/`) are trademarks of Tiefer and are not licensed. MPL 2.0 section 2.3 grants no rights to trademarks, service marks or logos.
+CloudSEN12+ is a third-party dataset published by the TACO Foundation on Hugging Face as [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) under CC0 1.0. It is not included in this repository; the scripts read the needed patches at run time and cache them outside git. Its dataset card asks for no attribution, and the work behind it is cited as the card lists it:
+
+- Scientific Data, 2022: [10.1038/s41597-022-01878-2](https://doi.org/10.1038/s41597-022-01878-2)
+- Data in Brief, 2024: [10.1016/j.dib.2024.110852](https://doi.org/10.1016/j.dib.2024.110852)
+- IGARSS 2023: [10.1109/IGARSS52108.2023.10282381](https://doi.org/10.1109/IGARSS52108.2023.10282381)
+
+The extra variant of the dataset ships cloud masks made by third-party algorithms (QA60, Sen2Cor, s2cloudless, CloudScore+, UNetMobV2 and SEnSeI v2). The card publishes them as part of the dataset, under the dataset's CC0 1.0 terms, and names the source of each; this repository does not include them.
+
+The patches are Copernicus Sentinel-2 data. The legal notice on the use of Copernicus Sentinel data asks that adapted or modified data communicated to the public carries the notice "Contains modified Copernicus Sentinel data [Year]" ([legal notice](https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice), accessed 7 October 2026). For the values derived from CloudSEN12+ in this repository:
+
+Contains modified Copernicus Sentinel data 2018–2020.
+
+The years are those of the 2022 release, as its paper states for the Sentinel-2 images (2018 to 2020); the CloudSEN12+ card, version 1.1.2, does not state the years of the patches it added.
 
 ---
 
-## Data
+## Typeface
 
-CloudSEN12+ is a third-party dataset published on Hugging Face as [tacofoundation/cloudsen12](https://huggingface.co/datasets/tacofoundation/cloudsen12) under CC0 1.0. It is not included in this repository; the scripts read the needed patches at run time. Citations are in [docs/DATA.md](docs/DATA.md).
+The header image uses the typeface Mozilla Headline, Copyright 2025 The Mozilla Headline Project Authors, licensed under the SIL Open Font License, Version 1.1 ([Google Fonts](https://fonts.google.com/specimen/Mozilla+Headline/license), accessed 7 October 2026). The font files are not part of this repository.
 
 ---
 
 ## Dependencies
 
-Direct dependencies and their licences, as declared in their package metadata for the versions in `uv.lock`. The complete list of locked packages, with the reason for each direct dependency, is in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md).
+The dependencies are not distributed with this repository; `uv sync` installs them from PyPI on the user's machine. Their versions and licences, as declared in their package metadata, are listed in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md), which is the source of truth: the direct dependencies, the tools outside the lock, and every locked package. The licences of the direct runtime dependencies (`torch`, `numpy`, `tacoreader`, `fsspec` with `aiohttp`, `rasterio`, `onnx`, `onnxruntime`) combine Apache-2.0, BSD-2-Clause, BSD-3-Clause, BSL-1.0, MIT, 0BSD, Zlib and CC0-1.0, as listed there.
 
-| Package | Use | Licence |
-| :--- | :---: | :---: |
-| **Runtime** | | |
-| `torch` | model, training | Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT |
-| `numpy` | arrays, cache files | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
-| `tacoreader` | CloudSEN12+ access | MIT |
-| `fsspec` with `aiohttp` | HTTPS reads for `tacoreader` | BSD-3-Clause; Apache-2.0 AND MIT |
-| `rasterio` | reading patch rasters | BSD-3-Clause |
-| `onnx` | model export format | Apache-2.0 |
-| `onnxruntime` | export check and INT8 quantisation | MIT |
-| **Development** | | |
-| `pytest` | tests | MIT |
-| `ruff` | lint and format | MIT |
-| `mypy` | type check | MIT |
-| `regex` | text rule test | Apache-2.0 AND CNRI-Python |
-| `coverage` | test coverage | Apache-2.0 |
-| **Build** | | |
-| `hatchling` | builds the package | MIT |
+On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvidia-*`, `cuda-toolkit`, `cuda-bindings`, `cuda-pathfinder`) and `triton`, under their own licence terms, some of them proprietary NVIDIA terms. They are installed by `uv sync` on the user's machine and are not distributed by this repository.
 
-On Linux, `torch` from PyPI also installs NVIDIA CUDA runtime packages (`nvidia-*`, `cuda-toolkit`) under NVIDIA's proprietary licence terms. They are installed by `uv sync` on the user's machine and are not distributed by this repository.
+---
+
+## Changelog
+
+- 7 October 2026: this changelog added. The images of `docs/assets/` are excluded from the MPL 2.0 licence, all rights reserved by Tiefer; the header typeface Mozilla Headline is named with its licence, SIL Open Font License 1.1.
+- 7 October 2026: the Copernicus Sentinel data notice and the years of the imagery; the CloudSEN12+ citations; the reference masks of the extra variant are third-party products under the dataset's terms.
+- 7 October 2026: the dependency table is replaced by a summary and a link to docs/DEPENDENCIES.md; the packages that `torch` installs on Linux include `cuda-bindings`, `cuda-pathfinder` and `triton`; no licence is granted for model weights.
+- 1 October 2026: first version.
