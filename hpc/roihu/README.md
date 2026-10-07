@@ -25,7 +25,7 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
    csc-projects
    ```
 
-2. Before each new kind of job, check its request without submitting it (from the repository folder, after step 1, on the login node of section 2.3). `submit.sh` passes options written before the job script on to `sbatch`; `--test-only` validates the request and prints when it would start:
+2. Before each new kind of job, check its request without submitting it (from the repository folder, after step 1, on the login node of item 3 below). `submit.sh` passes options written before the job script on to `sbatch`; `--test-only` validates the request and prints when it would start:
 
    ```bash
    bash hpc/roihu/submit.sh --test-only hpc/roihu/smoke.sbatch
@@ -311,6 +311,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 7 October 2026: item 2 of section 2 points to item 3 below instead of a section 2.3.
 - 7 October 2026: the troubleshooting table points to section 2, item 3, which has no section number of its own.
 - 7 October 2026: the purpose links GETTING-STARTED.md, INSTALL.md and the gates of POLICY.md for the test split and compute spend.
 - 7 October 2026: troubleshooting rows for out of GPU memory with 13 bands, jobs submitted from the wrong login host, HTTP 404 in a shard and ONNX Runtime affinity messages; GPU jobs set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `env.sh`.
