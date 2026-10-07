@@ -39,7 +39,7 @@ How to measure latency, throughput, power and energy of the cloud filter on an N
    python3 jetson/bench.py --engine engines/cloud_filter_int8.engine --label int8
    ```
 
-4. Copy the JSON files from `reports/jetson/` into the repository, so `python -m tiefer_lab.results` can use them.
+4. Copy the JSON files from `reports/jetson/` into the same folder of the repository unchanged, and copy their values by hand into [docs/RESULTS.md](../docs/RESULTS.md), section 15, naming each file.
 
 Every script has a dry run that validates the inputs and prints the plan without running anything. It is used automatically on a machine that is not a Jetson:
 
@@ -79,3 +79,9 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 | `no known input rail` | the module names its input rail differently | check `tegrastats --interval 1000` and pass `--rail <name>` |
 | `no latency field` in trtexec times | the TensorRT version writes other field names | check the times file and extend `LATENCY_FIELDS` in `bench.py` (TODO(verify) on the board) |
 | `nvpmodel` or `jetson_clocks` show permission errors | they need root on some JetPack versions | run `device_info.sh` with `sudo` (TODO(verify) on the board) |
+
+---
+
+## Changelog
+
+- 7 October 2026: step 4 copies the values into docs/RESULTS.md by hand; the results generator is removed.

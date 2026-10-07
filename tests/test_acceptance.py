@@ -12,7 +12,7 @@ from typing import Any
 from tests.test_markdown_style import check_header, check_structure
 from tiefer_lab import acceptance, requirements
 from tiefer_lab.data.source import USED_BANDS
-from tiefer_lab.results import Report, Reports
+from tiefer_lab.reports import Report, Reports
 
 
 def _evaluation(config: str, cloud: float, shadow: float, seed: int = 0) -> Report:

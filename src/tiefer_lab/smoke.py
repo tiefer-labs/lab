@@ -8,7 +8,7 @@
 Steps: data cache, training with configs/smoke.toml (minutes on CPU),
 evaluation on validation with the baselines, ONNX export with the check
 against PyTorch, INT8 quantisation, the Jetson scripts in dry-run mode, and a
-check that the results generator ignores smoke reports.
+check that the report loader leaves smoke reports out.
 
 Everything is written to `$TIEFER_RUNS_DIR/smoke/` (its own data, runs and
 reports folders), never to `data/` or `reports/`. Every report is marked
@@ -30,7 +30,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from tiefer_lab import evaluate, results, train
+from tiefer_lab import evaluate, reports, train
 from tiefer_lab.data import build_cache, cache, source
 from tiefer_lab.export import __main__ as export_cli
 from tiefer_lab.utils import paths
@@ -157,12 +157,12 @@ def run(source_name: str, device: str) -> dict[str, Any]:
     summary["jetson_dry_runs"] = jetson_dry_runs(dirs[paths.RUNS_ENV] / run_id / "export")
     summary["steps"]["jetson"] = round(time.monotonic() - t, 1)
 
-    t = _step("results generator ignores smoke reports")
-    code = results.main(["--output", str(base / "RESULTS.smoke.md")])
-    if code == 0:
-        raise SmokeError("the results generator accepted smoke reports")
-    summary["results_generator_refused"] = True
-    summary["steps"]["results"] = round(time.monotonic() - t, 1)
+    t = _step("report loader leaves smoke reports out")
+    loaded = reports.load_reports(dirs[paths.REPORTS_ENV])
+    if loaded.evaluation or loaded.export or not loaded.skipped_smoke:
+        raise SmokeError("the report loader accepted smoke reports")
+    summary["smoke_reports_left_out"] = loaded.skipped_smoke
+    summary["steps"]["reports"] = round(time.monotonic() - t, 1)
 
     summary.update(
         {

@@ -206,7 +206,7 @@ bash hpc/roihu/usage.sh <job-id>
 bash hpc/roihu/collect.sh <run-id>
 ```
 
-On your own computer, copy the archive and unpack it into the repository. The results are processed there (`make results`):
+On your own computer, copy the archive and unpack it into the repository. There the report files are committed unchanged and their values are copied by hand into [docs/RESULTS.md](../../docs/RESULTS.md):
 
 ```bash
 scp <user>@roihu-cpu.csc.fi:/scratch/<project>/tiefer-lab/collect/tiefer-<run-id>.tar.gz .

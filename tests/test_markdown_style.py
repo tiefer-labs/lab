@@ -176,6 +176,6 @@ def test_markdown_files_follow_the_standard(repo_root: Path, tracked_files: list
     assert not problems, "\n".join(problems)
 
 
-@pytest.mark.parametrize("rel", ["docs/RESULTS.md", "reports/test_log.md"])
+@pytest.mark.parametrize("rel", ["reports/test_log.md"])
 def test_generated_files_are_tracked(repo_root: Path, rel: str) -> None:
     assert (repo_root / rel).is_file()

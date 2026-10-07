@@ -36,7 +36,7 @@ from typing import Any
 
 from tiefer_lab import onboard
 from tiefer_lab.data.source import L1C_BAND_NAMES, THIN_CLOUD, USED_BANDS
-from tiefer_lab.results import Report, Reports, load_reports
+from tiefer_lab.reports import Report, Reports, load_reports
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 

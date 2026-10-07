@@ -59,7 +59,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-EVL-03` | Reference algorithms are scored by this repository's code on the same patches | `tests/test_binary_metrics.py::test_binary_only_scores_report_the_cloud_problem_only`, `tests/test_references.py::test_references_are_linked_encoded_and_resumable` |
 | `REQ-EVL-04` | Expected calibration error and the worst stratum are reported | `tests/test_binary_metrics.py::test_expected_calibration_error_by_hand`, `tests/test_binary_metrics.py::test_worst_stratum_is_named` |
 | `REQ-EVL-05` | Sensor perturbations are measured as fixed perturbations on validation | `tests/test_sensor.py::test_perturbations_parse_and_apply`, `tests/test_flexible_pipeline.py::test_specialist_reads_four_bands_from_the_13_band_cache` |
-| `REQ-EVL-06` | Results come only from report files, never from typed numbers | `tests/test_results.py::test_refuses_without_real_reports`, `tests/test_results.py::test_real_report_values_appear_with_source` |
+| `REQ-EVL-06` | Report files are read only with their git provenance, and smoke reports are never read as results | `tests/test_reports.py::test_smoke_reports_are_never_loaded`, `tests/test_reports.py::test_a_report_without_git_provenance_is_refused` |
 | `REQ-EVL-07` | Evaluation and export cover every band set of a run when asked for all of them | `tests/test_flexible_pipeline.py::test_flexible_model_trains_evaluates_and_exports_per_band_set`, `tests/test_roihu_scripts.py::test_evaluate_and_export_cover_every_band_set` |
 
 ---
@@ -143,6 +143,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: `REQ-EVL-06` is verified by the report loader tests in `tests/test_reports.py`; the results generator and its tests are removed.
 - 2 October 2026: shellcheck, accepted vulnerability findings and the coverage floor.
 - 2 October 2026: richness report, every band set, software bill of materials, wording and pretrained weights requirements.
 - 2 October 2026: first version, with the requirements and acceptance targets of milestone L2.

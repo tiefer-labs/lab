@@ -28,7 +28,7 @@ One or two sentences that say what this document is for.
 ---
 ```
 
-Exceptions: `LICENSE` has no header. Files that a script generates (for example `docs/RESULTS.md`) get the header from the generator.
+Exceptions: `LICENSE` has no header. Files that a script generates (for example `reports/acceptance.md` and `reports/experiments.md`) get the header from the generator.
 
 ---
 
@@ -73,7 +73,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 ## 6. Numbers and results
 
-- Every result table names its source file in `reports/` and the git commit that produced it.
+- Every result table names its source file in `reports/` and the git commit that produced it. A table may name its source with a short key instead, when the full path of each report file and its commit are listed once in an appendix of the same document.
 - A space between number and unit (`12.4 ms`). Confidence intervals in brackets: `0.83 [0.81, 0.85]`. State the rounding rule once per document; never round to flatter a result.
 
 ---
@@ -81,7 +81,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 ## 7. Model cards and results pages
 
 - `models/cloud-filter/<version>/MODEL_CARD.md`: Summary table (task, input, output, parameters, operations, formats, training run and commit, date), Intended use, Out of scope, Training data, Evaluation (table with sources), Quantisation (table), Hardware measurements (table, "not measured" where empty), Limitations, Files (table of SHA-256 hashes), Changelog. A note says the model files are not distributed in this repository.
-- `docs/RESULTS.md` (generated): Summary, Environment, Data, Model, Baselines and model (table with sources), Pixel and frame metrics, Quantisation, Hardware, Compute used, Limitations, How to reproduce, Changelog.
+- `docs/RESULTS.md` (written by hand): Summary, Environment, Data, Model, Baselines and model (table with sources), Pixel and frame metrics, Quantisation, Hardware, Compute used, Limitations, How to reproduce, Changelog.
 
 ---
 
@@ -97,7 +97,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 Every table is a plain GitHub Markdown table. It renders the same on github.com, on Hugging Face and on the website, in light and dark mode, and it stays readable as plain text. HTML tables, inline styles and colours are not used: GitHub removes inline styles, so a styled table looks different on every site.
 
-Tables written by scripts (for example `docs/RESULTS.md` and model cards) are produced by one shared helper, `markdown_table` in `src/tiefer_lab/tables.py`, so every generated table is identical.
+Tables written by scripts (for example `reports/acceptance.md` and `reports/experiments.md`) are produced by one shared helper, `markdown_table` in `src/tiefer_lab/tables.py`, so every generated table is identical. Tables written by hand, such as those of `docs/RESULTS.md` and the model cards, follow the same pattern.
 
 Pattern (one category row and one data row shown; repeat as needed):
 
@@ -113,7 +113,7 @@ Rules:
 - The first column is left-aligned (`:---`), all other columns are centred (`:---:`).
 - The top-left header cell is empty when the first column holds row names; otherwise it names the column.
 - Category rows are optional and group the rows below them: the category in bold in the first cell, the other cells empty. Leave them out when a table has no groups.
-- A missing value is written `not measured` (or `n/a` when the measure does not apply), never left empty. Category rows are the only rows with empty cells.
+- A missing value is written `not measured` (never measured), `pending` (measured, but the report file is not yet in the repository) or `n/a` (the measure does not apply), never left empty. Category rows are the only rows with empty cells.
 - Cells hold one line each. Inline code and links are allowed; a `|` inside a cell is written `\|`.
 - No bold numbers and no highlighting of "best" values.
 - Leave one empty line before and after a table.
@@ -122,5 +122,6 @@ Rules:
 
 ## Changelog
 
+- 7 October 2026: `docs/RESULTS.md` is written by hand; a table may use short source keys listed in an appendix (section 6); `pending` marks a measured value whose report file is not yet in the repository (section 9).
 - 1 October 2026: tables are plain Markdown tables; the HTML house table style with inline colours is removed, because GitHub removes inline styles.
 - 1 October 2026: first version, written for milestone L1 of Tiefer Lab.

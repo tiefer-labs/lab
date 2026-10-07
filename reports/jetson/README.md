@@ -18,11 +18,7 @@ Where the Jetson Orin benchmark results land. Each file is written by `jetson/be
 
 1. Run the benchmark on the board; it writes `reports/jetson/<label>_<UTC time>.json`.
 2. Copy the files into this folder of the repository and commit them.
-3. Regenerate the results page:
-
-   ```bash
-   make results
-   ```
+3. Copy the values by hand into [docs/RESULTS.md](../../docs/RESULTS.md), section 15, naming the file of each value.
 
 ---
 
@@ -40,5 +36,11 @@ No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../.
 
 | Symptom | Cause | Fix |
 | :--- | :---: | :---: |
-| A Jetson report is missing from `docs/RESULTS.md` | the file is not in `reports/jetson/` of the repository | copy it from the board unchanged and run `make results` |
+| A Jetson report is missing from `docs/RESULTS.md` | the file is not in `reports/jetson/` of the repository, or its values were not copied | copy it from the board unchanged and copy its values into `docs/RESULTS.md`, section 15, by hand |
 | The commit in a report is `unknown` | the scripts ran from a copy without git history | run them from a `git clone` of the repository on the board |
+
+---
+
+## Changelog
+
+- 7 October 2026: Jetson values are copied into docs/RESULTS.md by hand; `make results` is removed.

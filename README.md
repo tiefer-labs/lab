@@ -14,7 +14,7 @@ Tiefer Lab is where Tiefer trains, compresses and measures the models that run o
 
 Tiefer builds software that lets an Earth observation satellite analyse its own images in orbit. Instead of sending every raw frame to the ground, the onboard pipeline works in four stages: filter (keep frames that are not useful on board), detect (run event models on the useful frames), alert (send a small packet through the first available link) and update (replace models in orbit with small, signed updates). Each model is trained, compressed and measured in this repository before it is considered for flight.
 
-The repository is public because results are published with their method: measured, not claimed. Every number in [docs/RESULTS.md](docs/RESULTS.md) is generated from a report file written by a script in this repository, and every report records the git commit, configuration and platform that produced it. Trained models are not published here.
+The repository is public because results are published with their method: measured, not claimed. [docs/RESULTS.md](docs/RESULTS.md) is written by hand. Every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. Trained models are not published here.
 
 ---
 
@@ -65,7 +65,6 @@ uv run python -m tiefer_lab.data.build_cache --split all
 uv run python -m tiefer_lab.train --config configs/l1_base.toml
 uv run python -m tiefer_lab.evaluate --run <run-id> --split val --baselines
 uv run python -m tiefer_lab.export --run <run-id>
-uv run python -m tiefer_lab.results
 ```
 
 Locations come from three environment variables, documented in [.env.example](.env.example):
@@ -103,7 +102,7 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 - [docs/DATA.md](docs/DATA.md): the data card for CloudSEN12+, with every dataset fact the code depends on.
 - [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md): sensor, data, decision and hardware assumptions to revisit.
 - [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md): every dependency, why it is needed, and its licence.
-- [docs/RESULTS.md](docs/RESULTS.md): results, generated from report files.
+- [docs/RESULTS.md](docs/RESULTS.md): measured results, written by hand; every value names the report file it was copied from.
 - [docs/STYLE.md](docs/STYLE.md): the Markdown standard for Tiefer repositories.
 - [hpc/roihu/README.md](hpc/roihu/README.md), [jetson/README.md](jetson/README.md), [reports/README.md](reports/README.md) and [models/cloud-filter/README.md](models/cloud-filter/README.md): guides for each folder.
 - Security policy, contributing guide, code of conduct and support: [tiefer-labs/.github](https://github.com/tiefer-labs/.github).
@@ -131,3 +130,9 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 ## Contact
 
 `hello@tiefer.space`
+
+---
+
+## Changelog
+
+- 7 October 2026: docs/RESULTS.md is written by hand; the command of the results generator is removed.
