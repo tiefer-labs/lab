@@ -240,7 +240,7 @@ Each document type has required sections, in this order. A document may add sect
 
 ### 12.12 Notice
 
-`NOTICE.md`: licence of the repository, what the licence does not cover, third-party data and software, trademarks, changelog. No numbered sections.
+`NOTICE.md`: attributions only: a pointer to the licensing and trademark documents, third-party data with its notices, typefaces, dependencies, changelog. No numbered sections.
 
 ### 12.13 Append-only log
 
@@ -326,7 +326,7 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 
 - **Table helper:** tables written by scripts (`reports/acceptance.md`, `reports/experiments.md`, the entries of `reports/test_log.md`) are produced by one shared helper, `markdown_table` in `src/tiefer_lab/tables.py`, so every generated table is identical. Tables written by hand follow the same pattern.
 - **Dependency table:** `src/tiefer_lab/sbom.py` reads the licence of every locked package from the section headed exactly `## 3. All locked packages` of `docs/DEPENDENCIES.md`, from rows of three cells (package, version, licence). The heading and the row format change only together with `sbom.py` and `tests/test_sbom.py`.
-- **Assets:** `docs/assets/` holds the header image and the logos (section 11). They are excluded from the character checks and from the MPL 2.0 grant ([NOTICE.md](../NOTICE.md)).
+- **Assets:** `docs/assets/` holds the header image and the logos (section 11). They are excluded from the character checks and from the MPL 2.0 grant ([LICENSING.md](../LICENSING.md)).
 - **Report folders:** `reports/evaluation/`, `reports/export/`, `reports/compute/`, `reports/jetson/` and `reports/data/` hold report files copied unchanged from the machine that wrote them; `docs/RESULTS.md` names each one by a source key in its Appendix A.
 - **Checks:** `tests/test_markdown_style.py` checks headers, status lines, heading levels, changelog lines and table layout; `tests/test_docs_index.py` checks that `INDEX.md` lists every Markdown file; `tests/test_text_rules.py` checks characters and the forbidden hyphenated spelling of "onboard"; `tests/test_wording.py` checks compliance wording and the statuses of the standards matrix.
 
@@ -334,6 +334,7 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 
 ## Changelog
 
+- 7 October 2026: section 12.12, the notice holds attributions only; section 13 cites LICENSING.md for the exclusion of `docs/assets/`.
 - 7 October 2026: section 12 adds the document types of the root documents (sections 12.15 to 12.30) and the rule of one owner per fact (12.31); the README skeleton adds "What <repository> is not" and "Where to go next"; root documents use numbered sections; section 4 adds the claim statuses and the result authority words.
 - 7 October 2026: section 12.3 gives the columns of the code requirements; section 12.9 puts the status of the standards matrix last, where the code reads it.
 - 7 October 2026: section 12, the required sections of every document type.
