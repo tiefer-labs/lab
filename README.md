@@ -36,7 +36,7 @@ Milestone L1 is the first stage, the onboard cloud filter: a small network that 
 | Export of the L2 models | done | not measured |
 | Seeds 1 and 2 of the L2 pair | n/a | not run |
 
-On the test split, the four-band specialist `l2_spec_1m` (seed 0) has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; `l1_base` (seed 0), the model of the v0.1.0 model card, has 0.635 [0.621, 0.649] and 0.039 [0.024, 0.055]. On four bands, the band-flexible `l2_flex_1m` (seed 0) has a test mean IoU of 0.609. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. Every run is a single seed. Values, sources and what is still pending: [docs/RESULTS.md](docs/RESULTS.md).
+On the test split, the four-band specialist `l2_spec_1m` (seed 0) has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; `l1_base` (seed 0), the model of the v0.1.0 model card, has 0.635 [0.621, 0.649] and 0.039 [0.024, 0.055]. On four bands, the band-flexible `l2_flex_1m` (seed 0) has a test mean IoU of 0.609. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. `l1_base` has two seeds (validation mean IoU 0.649 and 0.691); `l1_full` and every L2 run are single seeds. Values, sources and what is still pending: [docs/RESULTS.md](docs/RESULTS.md).
 
 ---
 
@@ -136,6 +136,7 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 
 ## Changelog
 
+- 7 October 2026: correction: `l1_base` has two seeds; the other runs are single seeds.
 - 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy.
 - 7 October 2026: the documentation list links docs/LANDSCAPE.md.
 - 7 October 2026: the status describes milestones L1 and L2 as measured on CSC Roihu, with the headline results; principles and layout mention the L2 band sets and sizes.

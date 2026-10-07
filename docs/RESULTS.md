@@ -10,7 +10,7 @@ Measured results of milestones L1 (four-band cloud filter) and L2 (model size, b
 
 ## 1. Summary
 
-On the test split (975 patches), l2_spec_1m s0 has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]. The best baseline, the threshold rule, has a test mean IoU of 0.296 [0.285, 0.308]. On four bands, the band-flexible l2_flex_1m s0 has a test mean IoU of 0.609 against 0.720 for the four-band specialist l2_spec_1m s0. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on each of the three exported runs, more than the one point (0.010) set in docs/SPEC.md, section 10. The Jetson Orin is not measured, and every run is a single seed.
+On the test split (975 patches), l2_spec_1m s0 has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]. The best baseline, the threshold rule, has a test mean IoU of 0.296 [0.285, 0.308]. On four bands, the band-flexible l2_flex_1m s0 has a test mean IoU of 0.609 against 0.720 for the four-band specialist l2_spec_1m s0. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on each of the three exported runs, more than the one point (0.010) set in docs/SPEC.md, section 10. The Jetson Orin is not measured. l1_base has two seeds, whose mean IoU differs by 0.042 on validation and 0.044 on test; l1_full and every L2 run are single seeds.
 
 ---
 
@@ -462,7 +462,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 - No space environment effects are covered: radiation, vacuum and thermal behaviour of the onboard computer are not tested.
 - Hardware measurements, when present, come from an NVIDIA Jetson Orin, which is flight-like reference hardware, not flight hardware.
 - No agency or operator standard is claimed to be met; docs/STANDARDS.md lists every document as not read.
-- Every run is a single seed; the run plan asked for three seeds for the final pair (hpc/roihu/plan.md). No spread over seeds is known, so a difference between two runs may be within it.
+- l1_base has two seeds: validation mean IoU 0.649 (s0) and 0.691 (s1), a difference of 0.042; test 0.635 and 0.679, a difference of 0.044 (differences of the rounded values). s0 ran from a working tree with uncommitted changes at commit 81ab34b, s1 at commit 5ba4585, so the difference mixes the seed and the code. l1_full and every L2 run are single seeds. The run plan asked for three seeds for the final pair (hpc/roihu/plan.md). A difference between two single-seed runs smaller than the seed difference of l1_base is not evidence of a better model.
 - INT8 loses more mean IoU than the one point of docs/SPEC.md, section 10, on every exported run (section 14).
 - The L2 results were produced with batch 64 (l2_flex_1m s0 with learning rate 0.004; l2_spec_1m s0 with a learning rate that is pending), the L1 results with batch 128 and learning rate 0.008 (section 3).
 - Results differ by region (section 9), and only one run has a regional breakdown so far.
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: correction: l1_base has two seeds; the summary and the limitations give their difference (0.042 on validation, 0.044 on test) instead of "every run is a single seed".
 - 7 October 2026: correction: section 12 applies the product rule on validation only; no decision is recorded until `x-val-4` is read, and the test values are informational.
 - 7 October 2026: correction: the L2 runs have no export report yet, and three export jobs are not matched to a run; the l2_spec_1m s0 quantisation row is pending, not `not measured` (section 14).
 - 7 October 2026: the cache of l2_spec_1m s0 is pending and recorded in the cache table of docs/DATA.md, section 10.

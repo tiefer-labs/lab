@@ -115,7 +115,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `ACC-06` | Thin cloud producer's and user's accuracy | pending | thin cloud PA and UA of l2_flex_1m s0 not yet transcribed; references not measured ([RESULTS.md](RESULTS.md), sections 10 and 11) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `ACC-07` | Cloud cover per patch, mean absolute error | pending | l2_flex_1m s0, four bands, not yet transcribed ([RESULTS.md](RESULTS.md), section 8) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `ACC-08` | Expected calibration error | pending | in the evaluation reports, not yet transcribed | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | not measured | every run is a single seed ([RESULTS.md](RESULTS.md), section 18) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | not measured | the target is defined on three seeds of the 1 M model; l2_flex_1m has one seed. l1_base has two seeds, with validation mean IoU 0.649 and 0.691 (s0 from a working tree with uncommitted changes at 81ab34b, s1 at 5ba4585); their cloud BOA spread is pending ([RESULTS.md](RESULTS.md), section 18) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `IND-01` | Independent datasets evaluated | not measured | no independent dataset evaluated (docs/DATASETS.md, section 2) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `IND-02` | Each independent Sentinel-2 dataset, cloud BOA | not measured | no independent dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `IND-03` | Each other-sensor dataset, cloud BOA | not measured | no independent dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
@@ -144,6 +144,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: correction: `ACC-09` no longer says that every run is a single seed; l1_base has two.
 - 7 October 2026: correction: `CMP-04` no longer cites the test split for the product decision.
 - 7 October 2026: correction: `CMP-01`, `CMP-02`, `CMP-03` and `OBD-03`: the L2 runs have no export report yet, and three export jobs are not matched to a run.
 - 7 October 2026: section 1 says why the report files of 2 and 3 October 2026 are not yet committed.
