@@ -34,11 +34,11 @@ This document is not legal advice.
 The Mozilla Public License 2.0 [1] is a file-level copyleft licence [2]:
 
 - **Use.** Anyone may use, copy, modify and distribute the covered files, for any purpose, including commercially.
-- **What must stay open.** If you distribute a covered file, changed or not, its source code must be available under MPL 2.0, and you may not remove its licence notice (sections 3.1 and 3.2 of the licence). The copyleft applies per file: your own files keep the licence you choose.
-- **Larger Work.** You may combine covered files with other code, under other licences, in a Larger Work, provided the covered files stay under MPL 2.0 (section 3.3).
+- **What must stay open.** If you distribute a covered file, changed or not, its source code must be available under MPL 2.0, and you may not remove its licence notice (MPL 2.0, sections 3.1 and 3.2). The copyleft applies per file: your own files keep the licence you choose.
+- **Larger Work.** You may combine covered files with other code, under other licences, in a Larger Work, provided the covered files stay under MPL 2.0 (MPL 2.0, section 3.3).
 - **Secondary Licenses.** MPL 2.0 allows combination with the GNU GPL, LGPL and AGPL, unless a file carries the "Incompatible With Secondary Licenses" notice of Exhibit B. No file in this repository carries Exhibit B.
-- **Patents.** Each contributor grants a patent licence for its contributions (section 2.1). The grant ends for anyone who sues claiming that a contributor version infringes a patent (section 5.2).
-- **No warranty and no liability** (sections 6 and 7).
+- **Patents.** Each contributor grants a patent licence for its contributions (MPL 2.0, section 2.1). The grant ends for anyone who sues claiming that a contributor version infringes a patent (MPL 2.0, section 5.2).
+- **No warranty and no liability** (MPL 2.0, sections 6 and 7).
 
 The licence text is in [LICENSE](LICENSE); Mozilla's answers to common questions are in its FAQ [2].
 
@@ -69,5 +69,6 @@ No commercial licence is offered in this repository. For a commercial agreement,
 
 ## Changelog
 
+- 7 October 2026: references to sections of the licence name MPL 2.0, so that they are not read as sections of this document.
 - 7 October 2026: this table is the place that states the exclusion of `docs/assets/` and of trained models; NOTICE.md keeps the attributions only.
 - 7 October 2026: first version: the licence of each part of the repository, MPL 2.0 in plain words, and the terms of contributions.
