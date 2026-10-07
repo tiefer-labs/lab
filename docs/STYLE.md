@@ -195,7 +195,7 @@ Each document type has required sections, in this order. A document may add sect
 
 ### 12.3 Requirements matrix
 
-`docs/REQUIREMENTS.md`: every requirement and acceptance target with columns ID, Requirement, Minimum, Target, Measured value, Run, Status, Evidence, and the verification that the traceability check reads. The meaning of each status is stated once.
+`docs/REQUIREMENTS.md`: every acceptance target with columns ID, Requirement, Minimum, Target, Measured value, Run, Status, Evidence, and the verification that the traceability check reads, last. Code requirements have columns ID, Requirement, Status and the verification, with further evidence below their table. The meaning of each status is stated once.
 
 ### 12.4 Assumptions log
 
@@ -219,7 +219,7 @@ Each document type has required sections, in this order. A document may add sect
 
 ### 12.9 Standards matrix
 
-`docs/STANDARDS.md`: columns Identifier and revision, Title, Issue date, URL, Clause, Status, Evidence, Date read, Owner, Next review, and the status definitions of section 4.
+`docs/STANDARDS.md`: columns Identifier and revision, Title, Issue date, URL, Clause, Evidence, Date read, Owner, Next review and Status, with Status last because `src/tiefer_lab/acceptance.py` and `tests/test_wording.py` read it there, and the status definitions of section 4.
 
 ### 12.10 Plan
 
@@ -257,6 +257,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 ## Changelog
 
+- 7 October 2026: section 12.3 gives the columns of the code requirements; section 12.9 puts the status of the standards matrix last, where the code reads it.
 - 7 October 2026: section 12, the required sections of every document type.
 - 7 October 2026: sections 8 and 9, source kinds and their syntax, cited documents, run names, identifiers and `TODO(verify)` only outside table cells.
 - 7 October 2026: section 7, numbers and units: rounding half up, fractions, "percent", thousands separators, binary data sizes, UTC and durations.
