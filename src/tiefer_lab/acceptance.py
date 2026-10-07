@@ -436,7 +436,9 @@ TARGETS: tuple[Target, ...] = (
         "report",
         thin_cloud_reported,
         minimum_text="reported",
-        target_text="above every reference except UNetMobV2 (compared in docs/RESULTS.md)",
+        target_text=(
+            "above every reference except UNetMobV2 (compared in docs/LANDSCAPE.md, section 5)"
+        ),
     ),
     Target(
         "ACC-07",
