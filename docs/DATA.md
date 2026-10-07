@@ -25,25 +25,27 @@ One instance is one Sentinel-2 Level-1C patch with 13 bands and one label item. 
 
 ### 2.1 Bands
 
-The 13 bands of the Level-1C image item, in the order of the card [1]. The centre wavelengths are those of the card; the scale factor is 0.0001 for every band except B10, for which the card gives "N/A".
+The 13 bands of the Level-1C image item, in the order of the card [1]. The resolutions are those of the card and of ESA [5], which agree. The card gives a centre wavelength per band; ESA gives the equivalent wavelength of each band of Sentinel-2A [5]. The scale factor is 0.0001 for every band except B10, for which the card gives "N/A".
 
-| Band | Name on the card | Resolution | Centre wavelength | Used by |
-| :--- | :---: | :---: | :---: | :---: |
-| B01 | Coastal aerosol | 60 m | 443.5 nm | L2 band-flexible model |
-| B02 | Blue | 10 m | 496.5 nm | L1, L2 |
-| B03 | Green | 10 m | 560.0 nm | L1, L2 |
-| B04 | Red | 10 m | 664.5 nm | L1, L2 |
-| B05 | Red edge 1 | 20 m | 704.5 nm | L2 band-flexible model |
-| B06 | Red edge 2 | 20 m | 740.5 nm | L2 band-flexible model |
-| B07 | Red edge 3 | 20 m | 783.0 nm | L2 band-flexible model |
-| B08 | NIR | 10 m | 840.0 nm | L1, L2 |
-| B8A | Red edge 4 | 20 m | 864.5 nm | L2 band-flexible model |
-| B09 | Water vapor | 60 m | 945.0 nm | L2 band-flexible model |
-| B10 | Cirrus | 60 m | 1375.5 nm | L2 band-flexible model |
-| B11 | SWIR 1 | 20 m | 1613.5 nm | L2 band-flexible model |
-| B12 | SWIR 2 | 20 m | 2199.5 nm | L2 band-flexible model |
+| Band | Name on the card | Resolution | Centre wavelength, card | Equivalent wavelength, Sentinel-2A | Used by |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| B01 | Coastal aerosol | 60 m | 443.5 nm | 442.7 nm | L2 set of 13 |
+| B02 | Blue | 10 m | 496.5 nm | 492.7 nm | L1; L2 sets of 3, 4, 6 and 13 |
+| B03 | Green | 10 m | 560.0 nm | 559.9 nm | L1; L2 sets of 3, 4, 6 and 13 |
+| B04 | Red | 10 m | 664.5 nm | 664.6 nm | L1; L2 sets of 3, 4, 6 and 13 |
+| B05 | Red edge 1 | 20 m | 704.5 nm | 704.1 nm | L2 set of 13 |
+| B06 | Red edge 2 | 20 m | 740.5 nm | 740.5 nm | L2 set of 13 |
+| B07 | Red edge 3 | 20 m | 783.0 nm | 782.8 nm | L2 set of 13 |
+| B08 | NIR | 10 m | 840.0 nm | 832.8 nm | L1; L2 sets of 4, 6 and 13 |
+| B8A | Red edge 4 | 20 m | 864.5 nm | 864.7 nm | L2 set of 13 |
+| B09 | Water vapor | 60 m | 945.0 nm | 945.1 nm | L2 set of 13 |
+| B10 | Cirrus | 60 m | 1375.5 nm | 1373.5 nm | L2 set of 13 |
+| B11 | SWIR 1 | 20 m | 1613.5 nm | 1613.7 nm | L2 sets of 6 and 13 |
+| B12 | SWIR 2 | 20 m | 2199.5 nm | 2202.4 nm | L2 sets of 6 and 13 |
 
-Milestone L1 and the four-band L2 specialist use B02, B03, B04 and B08 (rasterio indexes 2, 3, 4 and 8). Very high resolution optical satellites, the sensors Tiefer targets, carry these four bands and often a panchromatic band, and not the shortwave infrared bands that classic cloud algorithms rely on ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 1). The band-flexible L2 model is trained on band sets drawn from all 13 bands and scored per band set (3, 4, 6 and 13 bands). The data is Level-1C, top-of-atmosphere reflectance, because there is no atmospheric correction on board.
+The four band sets of the band-flexible L2 model (`train.band_sets` in the `l2_flex_*` configs): 3 bands B02, B03, B04; 4 bands B02, B03, B04, B08; 6 bands B02, B03, B04, B08, B11, B12; and all 13 bands.
+
+Milestone L1 and the four-band L2 specialist use B02, B03, B04 and B08 (rasterio indexes 2, 3, 4 and 8). Very high resolution optical satellites, the sensors Tiefer targets, carry these four bands and often a panchromatic band, and not the shortwave infrared bands that classic cloud algorithms rely on ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 1). The band-flexible L2 model is trained on these band sets and scored per band set. The data is Level-1C, top-of-atmosphere reflectance, because there is no atmospheric correction on board.
 
 ### 2.2 Classes
 
@@ -59,16 +61,16 @@ The codes 0 to 3 and their names are those of the card; the meanings are this re
 
 ### 2.3 Split sizes
 
-The dataset's own train, validation and test splits are used. The kept counts are those of the caches built on CSC Roihu on 2 October 2026 ([RESULTS.md](RESULTS.md), section 5). The cache builder writes the number of high quality patches, the number kept and the number dropped per split to `index.json` (`splits.<split>.selection`: `high_quality`, `kept_509`, `dropped_other_shape`).
+The dataset's own train, validation and test splits are used. The cache builder writes the number of high quality patches, the number kept and the number dropped per split to `index.json` (`splits.<split>.selection`: `high_quality`, `kept_509`, `dropped_other_shape`).
 
-| Split | High quality patches | Kept (509 x 509) | Dropped (other size) |
-| :--- | :---: | :---: | :---: |
-| train | pending | 8,490 | pending |
-| validation | pending | 535 | pending |
-| test | pending | 975 | pending |
-| total | pending | 10,000 | pending |
+| Split | High quality patches | Kept (509 x 509) | Dropped (other size) | Class shares | Source |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| train | pending | 8,490 | pending | pending | kept: builds of 2 October 2026 |
+| validation | pending | 535 | pending | [RESULTS.md](RESULTS.md), section 5 | kept and shares: `b0-val` (report) |
+| test | pending | 975 | pending | pending | kept: `b0-test` (h-c3e861a) |
+| total | pending | 10,000 | pending | pending | sum of the rows |
 
-The high quality and dropped counts are pending until `index.json` of the cache is read.
+The source keys are those of [RESULTS.md](RESULTS.md), section 2. The high quality and dropped counts and the training class shares are pending until `index.json` of the cache is read; the test class shares are pending until `b0-test` is copied into the repository.
 
 ### 2.4 Metadata fields
 
@@ -106,6 +108,7 @@ The agreement values are for the labels of the 2022 release and its test set, no
 - The `cloudsen12-l1c` variant holds Sentinel-2 Level-1C patches, stored as digital numbers with a scale factor of 0.0001 [1]; the builder checks at run time that they are uint16.
 - The card says that the images are padded from 509 x 509 to 512 x 512 and from 2000 x 2000 to 2048 x 2048, with zeros on the left and bottom sides, so that the patch size is divisible by 32; `real_proj_shape` keeps the original size [1].
 - The card gives 99 as the no-data value, and says that scribble and nolabel patches contain it [1].
+- The card says that the cloud masks of the `cloudsen12-extra` variant, which come from several sources, have not been normalised to the CloudSEN12 class schema [1].
 - The Level-2A variant of the dataset was processed by Google Earth Engine [1]; this repository does not use it.
 
 ---
@@ -114,15 +117,18 @@ The agreement values are for the labels of the 2022 release and its test set, no
 
 | Step | What the code does | Where |
 | :--- | :---: | :---: |
-| Selection | keeps `label_type` = `high` and `real_proj_shape` = 509; the 2000 x 2000 patches are left out, as they do not fit the fixed 512 x 512 export input | `src/tiefer_lab/data/source.py` |
+| Selection | keeps `label_type` = `high` and `real_proj_shape` = 509; the 2000 x 2000 patches are left out (below) | `src/tiefer_lab/data/source.py` |
 | Bands | stores the four L1 bands, or all 13 with `--bands all`; a model selects its bands from the cache when it loads it | `src/tiefer_lab/data/build_cache.py`, `src/tiefer_lab/data/cache.py` |
 | Labels | maps the label codes 0 to 3 to the class indexes 0 to 3; any other code stops the build | `src/tiefer_lab/data/source.py` |
 | Reflectance | reflectance = DN x 0.0001 | `src/tiefer_lab/data/source.py` |
 | Normalisation | per-band mean and standard deviation of reflectance, computed on the training split only over all pixels of the cached patches, stored in `index.json` (`normalisation`) and used for every split | `src/tiefer_lab/data/build_cache.py` |
+| Class weights | the pixels per class of the training split (`class_pixels` in `index.json`) give median-frequency weights for the loss; L1 configs use them (the default), every L2 config except `l2_flex_1m_classweights` sets `class_weighting = "none"` | `src/tiefer_lab/train.py`; [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6 |
 | Training crops | random crops with flips and rescaling | `src/tiefer_lab/data/dataset.py` |
 | Evaluation padding | each full patch is reflect-padded at the bottom and right to a multiple of 32, and the prediction is cropped back to the label's size | `src/tiefer_lab/data/dataset.py`, `src/tiefer_lab/data/transforms.py` |
 
-The builder reads each raster as it is stored and does not remove the card's zero padding (section 4). The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`) and are pending until it is read. If they are 512, the padded rows and columns are part of every cached patch, of the normalisation statistics and of every metric; this is an open fact (section 13).
+The builder reads each raster as it is stored and does not remove the card's padding (section 4). The confusion matrix of `l1_base s0` on the validation split counts 140,247,040 labelled pixels ([RESULTS.md](RESULTS.md), section 5), which is 535 x 512 x 512; a 509 x 509 patch has 259,081 pixels. So the cached validation patches are 512 x 512, and the 3 padded rows and 3 padded columns, 3,063 pixels per patch, are part of every cached patch, of the normalisation statistics and of every metric. What label code the padded label pixels hold is an open fact (section 13); if it is 0, they count as clear. The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`).
+
+The 2000 x 2000 patches are left out: the export input is fixed at 512 x 512, and a 2000 x 2000 patch holds 15.4 times the pixels of a 509 x 509 patch.
 
 The normalisation values of each cache are pending until `index.json` is read (section 10).
 
@@ -145,7 +151,7 @@ Training and evaluation of the cloud filter of milestones L1 and L2, and scoring
 
 Evaluation reports break results down by every scalar metadata field with between 2 and 30 distinct values (`MAX_GROUPS` = 30 in `src/tiefer_lab/evaluate.py`), with the patch count of each group, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
 
-First measurement: the validation split by `equi_zone` has EU 105, SA 40, AS 100, NA 160, AF 80 and OC 50 patches (535 in all), and the mean IoU of `l1_base s0` ranges from 0.685 (EU) to 0.561 (OC) over these groups ([RESULTS.md](RESULTS.md), section 9). The causes of the difference are not analysed. The seasonal and land cover distribution is not analysed.
+First measurement: the breakdown of `l1_base s0` on the validation split by `equi_zone`, in six zones, is in [RESULTS.md](RESULTS.md), section 9. The causes of the difference are not analysed. The seasonal and land cover distribution is not analysed.
 
 ### 6.4 Leakage between splits
 
@@ -182,6 +188,8 @@ Titles and authors are listed at the DOI links; this repository names no individ
 | Dataset card version | 1.1.2 | [1] |
 | Revision read | `f9490f7de11b4f387f72ef800e73ccbb754711de`, the `sha` field of the Hugging Face dataset API, last modified 5 January 2025, 14:47:21 UTC | [2] |
 | How the revision is recorded | the builder writes the `sha` field to `index.json` at build time, and every evaluation report copies it ([RESULTS.md](RESULTS.md), section 4) | `src/tiefer_lab/data/source.py` |
+| Is the revision pinned? | no; it is recorded, not pinned: the reader reads the current revision, so a rebuild, a resumed build or a merge of shards can read a newer revision than the one recorded first | `src/tiefer_lab/data/source.py` |
+| Revision of the 13-band cache | pending until its `index.json` is read | section 10 |
 | What changes when the dataset changes | a new revision means a new cache; the facts of section 9 are checked again against the card | this card |
 
 ---
@@ -218,14 +226,23 @@ The card does not name the split field. The caches of 2 October 2026 were built 
 
 ## 10. Caches built
 
+The four-band cache (the default name):
+
 ```bash
 python -m tiefer_lab.data.build_cache --split train
 python -m tiefer_lab.data.build_cache --split val
 python -m tiefer_lab.data.build_cache --split test
 ```
 
+The 13-band cache:
+
+```bash
+python -m tiefer_lab.data.build_cache --split all --bands all --name cloudsen12-l1c-all
+```
+
 | Option | Effect |
 | :--- | :---: |
+| `--split train`, `val`, `test`, `train_extra` or `all` | the split to build; `all` builds train, validation and test; `train_extra` holds the extra training patches (section 11) |
 | `--bands used` (default) or `--bands all` | stores the four L1 bands or all 13 Level-1C bands |
 | `--limit <n>` | builds only `n` patches per split |
 | `--name <name>` | cache folder name in `$TIEFER_DATA_DIR` |
@@ -233,9 +250,11 @@ python -m tiefer_lab.data.build_cache --split test
 | `--merge N` | merges the N complete shards of a split into the cache |
 | `--max-rate P` | caps the reads at P patches per minute for the whole split, shared between shards |
 | `--workers <n>` | parallel readers; default `SLURM_CPUS_PER_TASK`, else 4 |
-| `--revision <sha>` | records this dataset revision |
+| `--taco <name>` | dataset file, URL or catalogue name; default `tacofoundation:cloudsen12-l1c`; repeatable |
+| `--revision <sha>` | records this dataset revision; it does not select the revision that is read |
 | `--references` | adds the reference masks of the extra variant to a complete split |
 | `--restart` | replaces a split built or being built with another selection |
+| `--synthetic`, `--patch-size <n>`, `--seed <n>` | writes synthetic scenes instead of reading the dataset; needs `--limit` |
 
 A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, 6.67 MiB, with all bands, and 4 x 509 x 509 x 2 + 509 x 509 bytes, 2.22 MiB, with four; the builder prints the estimate for each split before it starts. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart`. On CSC Roihu use `hpc/roihu/data.sbatch` ([hpc/roihu/README.md](../hpc/roihu/README.md)).
 
@@ -244,9 +263,9 @@ The caches built on CSC Roihu:
 | Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | validation split built 2 October 2026, 05:42 UTC; jobs pending | about 22 GiB (notes) | `l1_base`, `l1_full`; `l2_spec_1m s0`: pending | pending (`index.json`) |
-| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split in 4 shards, then merged (jobs in [RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m s0`: pending | pending (`index.json`) |
+| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split: shards 1 to 3 in jobs 1999650, 1999651 and 1999652, shard 0 in job 2000731, merge in job 2000814 ([RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m s0`: pending | pending (`index.json`) |
 
-The cache that `l2_spec_1m s0` read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. The run's `config.toml` decides it; the config file is not changed until then. Shard 0 of the training split of `cloudsen12-l1c-all` failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped.
+The cache that `l2_spec_1m s0` read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. The run's `config.toml` decides it; the config file is not changed until then. The training split of `cloudsen12-l1c-all` was built in 4 shards of 2,122 or 2,123 patches. Shard 0 failed in job 1999649 with HTTP 404 from the dataset host, and job 2000731 ran it again with `--max-rate 120` and resumed where it had stopped.
 
 ---
 
@@ -278,7 +297,9 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 | Fact | What resolves it | Where it is used |
 | :--- | :---: | :---: |
-| Stored height and width of the cached patches (509 or 512) | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5; every metric |
+| Label code of the padded pixels of a cached patch | label histogram of the padded rows and columns, or the survey | section 5; every metric |
+| Stored height and width of the training and test patches | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5 |
+| Dataset revision of the 13-band cache | `index.json` of `cloudsen12-l1c-all` | sections 8 and 10 |
 | High quality and dropped counts per split | `index.json` (`splits.<split>.selection`) | section 2.3 |
 | Normalisation values of each cache | `index.json` (`normalisation`) | sections 5 and 10 |
 | Field that identifies a patch's location (candidates: `roi_id`, `stac:centroid`) | survey report (`overlap_with_val_test`) | sections 6.4 and 11; `LOCATION_FIELD` |
@@ -295,6 +316,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 2. Hugging Face dataset API, `tacofoundation/cloudsen12`, https://huggingface.co/api/datasets/tacofoundation/cloudsen12, accessed 7 October 2026.
 3. CloudSEN12, a global dataset for semantic understanding of cloud and cloud shadow in Sentinel-2, Scientific Data, 2022, https://doi.org/10.1038/s41597-022-01878-2, full text at https://pmc.ncbi.nlm.nih.gov/articles/PMC9789947/, accessed 7 October 2026.
 4. Equi7Grid, README, TUW-GEO, GitHub, https://github.com/TUW-GEO/Equi7Grid, accessed 7 October 2026.
+5. S2 Mission, spectral and spatial resolution, ESA SentiWiki, https://sentiwiki.copernicus.eu/web/s2-mission, accessed 7 October 2026.
 
 ---
 
@@ -303,7 +325,9 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 - 7 October 2026: restructured to the data card of docs/STYLE.md: the sections follow the datasheet questions, then the facts the code depends on, the caches, the extra training patches, the richness report, open facts and sources. Section 5A is now section 11, and links from other files are updated.
 - 7 October 2026: the split field `tortilla:data_split` is confirmed by the cache builds of 2 October 2026; one `TODO(verify)` resolved.
 - 7 October 2026: the dataset revision is checked against the Hugging Face API (`sha` field, accessed 7 October 2026); one `TODO(verify)` resolved.
-- 7 October 2026: a table of the 13 bands with the card's names, resolutions and centre wavelengths.
+- 7 October 2026: a table of the 13 bands with the card's names, resolutions and centre wavelengths, the Sentinel-2A equivalent wavelengths from ESA, and the four L2 band sets.
+- 7 October 2026: the cached validation patches are 512 x 512 and hold the card's padding (140,247,040 labelled pixels in `b0-val`, 535 x 512 x 512); the label code of the padded pixels is an open fact.
+- 7 October 2026: the dataset revision is recorded, not pinned; the extra-variant masks are not normalised to the class schema (card); class weights from the training class pixels; every build option.
 - 7 October 2026: class 255 (no label) in the class table, and the split total of 10,000 kept patches.
 - 7 October 2026: the meaning of `equi_zone` (continental zone of the Equi7Grid) from the Equi7Grid README.
 - 7 October 2026: the card's zero padding to 512 x 512 and no-data value 99, and the open fact of whether the cached patches hold the padding.
