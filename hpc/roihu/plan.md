@@ -23,7 +23,7 @@ The GPU maintenance of CSC Roihu began on 6 October 2026 at 08:00 Finnish time (
 | 7 | seeds 1 and 2 of the 1 M pair | not run | n/a | n/a | 1660 | n/a |
 | 8 | `l2_flex_4m`, seed 0 | not run | n/a | n/a | up to 1971 | n/a |
 
-Also run, outside the steps above: `l1_base` seed 1 (training job pending; evaluations 2000417 and 2000418; export 2000438, 01:28:24, 294.667 GPU BU), the evaluations of every trained run, the exports of the three L1 runs and of three runs not yet identified (2002028, 2002101, 2002148), and the robustness evaluations of `l1_base` seed 0. All GPU jobs with a known elapsed time add up to at least 1510.389 GPU BU (7.552 GPU hours); the total is a lower bound, because the elapsed times of three export jobs were read while they ran and several jobs have no elapsed time yet. The 13-band cache was built in CPU jobs on `small` (RESULTS.md, section 16); their CPU billing units are pending.
+Also run, outside the steps above: `l1_base` seed 1 (training job pending; evaluations 2000417 and 2000418; export 2000438, 01:28:24, 294.667 GPU BU), the evaluations of every trained run, the exports of the three L1 runs, three export jobs whose run is not identified (2002028, 2002101, 2002148), and the robustness evaluations of `l1_base` seed 0. All GPU jobs with a known elapsed time add up to at least 1510.389 GPU BU (7.552 GPU hours); the total is a lower bound, because the elapsed times of three export jobs were read while they ran and several jobs have no elapsed time yet. The 13-band cache was built in CPU jobs on `small` (RESULTS.md, section 16); their CPU billing units are pending.
 
 Remaining budget: pending until the CSC usage report is read in MyCSC.
 
@@ -115,6 +115,7 @@ The measurements that would decide the comparisons of [docs/LANDSCAPE.md](../../
 
 ## Changelog
 
+- 7 October 2026: correction: 2002028, 2002101 and 2002148 are three export jobs whose run is not identified.
 - 7 October 2026: correction: the GPU maintenance began on 6 October 2026, 05:00 UTC, and has not passed; no GPU job has run since.
 - 7 October 2026: section 6, the open measurements that would decide the comparisons of docs/LANDSCAPE.md.
 - 7 October 2026: section 1, what ran before the maintenance, with job IDs, elapsed times and GPU BU; the plan of 2 October 2026 stays below as the record of what was planned.

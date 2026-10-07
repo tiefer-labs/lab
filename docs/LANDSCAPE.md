@@ -82,7 +82,7 @@ The extra-table masks are those of the dataset variant `tacofoundation:cloudsen1
 | CloudScout false positives against our false discard rate | useful frames discarded | l2_spec_1m s0, test: false discard rate 0.042 [0.026, 0.059] at 50 percent and 0.042 [0.029, 0.056] at 70 percent, the threshold CloudScout uses (RESULTS.md, section 7) | published: 1 percent false positives with respect to the authors' dataset, at 70 percent | open: different data and definitions; the deciding measurement is a threshold sweep that reports the false send rate at a false discard rate of 0.01 |
 | CloudScout accuracy against our decision accuracy | frames decided correctly at 70 percent | l2_spec_1m s0, test: 0.944 [0.928, 0.958] (RESULTS.md, section 7) | published: 92 percent on the authors' test set | open: different data, bands and resolution; deciding: both models on the same frames |
 | Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (RESULTS.md, section 15) | published: 325 ms and 1.8 W per inference on Myriad 2, for 512 x 512 x 3; 0.585 J, computed here from those two values | open: `jetson/bench.py` on a Jetson Orin, FP16 and INT8, with the input rail power |
-| Model size | bytes | l1_base s0: FP32 993,280; INT8 455,680 with a mean IoU loss of 0.070 (RESULTS.md, section 14); l2_spec_1m s0: not measured | published: 2.1 MB memory footprint | open: different models and measures (file size against memory footprint on the device); deciding: file size and memory during inference of the selected model on a Jetson Orin |
+| Model size | bytes | l1_base s0: FP32 993,280; INT8 455,680 with a mean IoU loss of 0.070 (RESULTS.md, section 14); l2_spec_1m s0: no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run | published: 2.1 MB memory footprint | open: different models and measures (file size against memory footprint on the device); deciding: file size and memory during inference of the selected model on a Jetson Orin |
 
 ---
 
@@ -110,4 +110,5 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 7 October 2026: correction: l2_spec_1m s0 has no export report yet, and three export jobs are not matched to a run.
 - 7 October 2026: first version: onboard cloud detection systems, onboard AI platforms, reference algorithms on CloudSEN12 with their published values, and the measurements that would decide each comparison.

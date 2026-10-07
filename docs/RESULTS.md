@@ -358,7 +358,7 @@ INT8 change against FP32 for every exported run, on the validation split:
 | l1_base s0 | 0.649 | 0.579 | -0.070 | 0.039 | 0.030 | `b0-exp`: page; change: h-c3e861a, `card` |
 | l1_base s1 | 0.690 | 0.631 | -0.060 | 0.048 | 0.079 | `b1-exp`: page; change: h-0f0984d |
 | l1_full s0 | 0.696 | 0.542 | -0.154 | 0.057 | 0.027 | `f0-exp`: page |
-| l2_spec_1m s0 | not measured | not measured | not measured | not measured | not measured | n/a |
+| l2_spec_1m s0 | pending | pending | pending | pending | pending | n/a |
 
 The change is the value of the export report, computed before rounding; for l1_base s1 the difference of the two rounded values in this table is 0.059.
 
@@ -367,7 +367,7 @@ The change is the value of the export report, computed before rounding; for l1_b
 - For l1_base s0 and l1_full s0 the INT8 false discard rate is lower than FP32 while mean IoU falls; this is not an improvement, the INT8 model calls fewer frames cloudy. For l1_base s1 it rises from 0.048 to 0.079.
 - The FP32 values here come from ONNX Runtime in the export report and differ slightly from the PyTorch evaluation reports: mean IoU 0.696 against 0.697 for l1_full s0 and 0.690 against 0.691 for l1_base s1; false discard rate 0.039 against 0.042 for l1_base s0 and 0.048 against 0.045 for l1_base s1. The cause is not yet investigated.
 - An export passes when the ONNX FP32 logits differ from PyTorch by at most 0.01 and the predicted class agrees on at least 0.999 of the pixels (`[export]` of the config). The FP16 values of l1_base s1 and l1_full s0 are pending.
-- l2_spec_1m s0: the report files of 3 October hold export reports only for l1_base s0, l1_base s1 and l1_full s0, so its quantisation is not measured. The export jobs 2002028, 2002101 and 2002148 are listed in section 16 with their run pending.
+- l2_spec_1m s0 and l2_flex_1m s0: no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run (section 16). The report files of 3 October hold export reports only for l1_base s0, l1_base s1 and l1_full s0. The l2_spec_1m s0 row is pending: it is filled if one of the three jobs exported this run, and is `not measured` otherwise.
 
 ---
 
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: correction: the L2 runs have no export report yet, and three export jobs are not matched to a run; the l2_spec_1m s0 quantisation row is pending, not `not measured` (section 14).
 - 7 October 2026: the cache of l2_spec_1m s0 is pending and recorded in the cache table of docs/DATA.md, section 10.
 - 7 October 2026: correction: l2_spec_1m s0 ran with batch 64 (notes) and a learning rate that is pending; only l2_flex_1m s0 is known to have used 0.004 (sections 3, 4, 17, 18, 19).
 - 7 October 2026: Appendix A says why the report files are not yet committed: the GPU maintenance of CSC Roihu that began on 6 October 2026.
