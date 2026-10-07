@@ -539,6 +539,7 @@ CPU jobs on the partition `small`, building the 13-band cache `cloudsen12-l1c-al
 - Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the CloudSEN12 paper reports a human-level median BOA of 0.99 for cloud and 0.99 for cloud shadow, and a producer's accuracy of 0.780 for thin cloud between the labels before and after its quality control, on its 975 test patches and the labels of the 2022 release, not on this repository's revision (docs/DATA.md, section 3).
 - The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, sensor and processing level (docs/DATASETS.md).
 - Only 509 x 509 patches are used; the 2000 x 2000 patches are left out (docs/DATA.md, section 5).
+- The cached patches are 512 x 512 and hold the dataset's padding of 3 rows and 3 columns: the 140,247,040 labelled pixels of `b0-val` are 535 x 512 x 512. Every metric on this page counts the padded pixels; which label code they hold is pending (docs/DATA.md, section 5).
 - The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with its own calibration, noise and compression.
 - No space environment effects are covered: radiation, vacuum and thermal behaviour of the onboard computer are not tested.
 - Hardware measurements, when present, come from an NVIDIA Jetson Orin, which is flight-like reference hardware, not flight hardware.
@@ -705,6 +706,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: section 18 says that every metric counts the padded pixels of the 512 x 512 cached patches.
 - 7 October 2026: restructured to the results page of docs/STYLE.md: source cells as `key (kind)` with a source column in every table, the source-key grammar, half-up rounding, UTC times, thousands separators and GiB stated once.
 - 7 October 2026: wide tables split by topic: metrics by split, reference algorithms, cloud and shadow accuracy, sensor robustness and calibration.
 - 7 October 2026: section 10 lists every reference algorithm of the dataset with its status, all not measured.
