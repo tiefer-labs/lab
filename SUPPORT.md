@@ -11,7 +11,7 @@ Where to ask for help with a Tiefer repository, what to include, and what respon
 ## 1. Where to ask
 
 | You have | Go to |
-| :--- | :--- |
+| :--- | :---: |
 | A question about how to use or run a repository | an issue in that repository |
 | A bug | an issue with the bug report form |
 | A question about a number, a source or a method in the documentation | an issue with the documentation and results form |
@@ -34,7 +34,7 @@ Where to ask for help with a Tiefer repository, what to include, and what respon
 ## 3. What to include
 
 | Information | Why |
-| :--- | :--- |
+| :--- | :---: |
 | Repository and commit (`git rev-parse --short HEAD`) | the code changes often |
 | The exact command you ran | so it can be repeated |
 | The full error message or log, as text in a code block | screenshots of text cannot be searched |
@@ -63,5 +63,6 @@ Public issues are written in English so that everyone can follow them. By e-mail
 
 ## Changelog
 
+- 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; table of channels, what to include, response times, languages and what is not supported added.
 - 27 September 2026: first version.

@@ -13,7 +13,7 @@ How to report a security vulnerability in any repository of the `tiefer-labs` or
 Tiefer's public repositories do not publish versioned releases yet. Security fixes are made on the default branch only.
 
 | Asset | Supported |
-| :--- | :--- |
+| :--- | :---: |
 | Default branch (`main`) of every public `tiefer-labs` repository | yes |
 | Older commits, forks and archived repositories | no |
 | The website at [tiefer.space](https://tiefer.space), as deployed | yes |
@@ -32,7 +32,7 @@ Report it privately, by one of these routes:
 Include, as far as you can:
 
 | Information | Example |
-| :--- | :--- |
+| :--- | :---: |
 | What and where | repository, file and line, commit, URL or endpoint |
 | Type of problem | for example exposed credential, injection, unsafe deserialisation, supply chain |
 | Steps to reproduce | commands or requests, with the exact inputs |
@@ -47,7 +47,7 @@ Include, as far as you can:
 ## 3. What happens next
 
 | Step | Target time |
-| :--- | :--- |
+| :--- | :---: |
 | Confirm that the report was received | within 3 working days |
 | Say whether the problem is reproduced, its severity and the plan to fix it | within 10 working days |
 | Fix a critical or high severity problem | within 30 days of confirmation |
@@ -118,5 +118,6 @@ If a credential is found anywhere in a repository or its history, it is revoked 
 
 ## Changelog
 
+- 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; supported versions, e-mail route, report contents, fix times by severity, coordinated disclosure, scope details and the measures in place added.
 - 27 September 2026: first version.

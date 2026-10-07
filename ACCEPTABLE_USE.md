@@ -11,7 +11,7 @@ What Tiefer's products and services may not be used for, how Tiefer applies thes
 ## 1. Scope
 
 | Covered | Not covered |
-| :--- | :--- |
+| :--- | :---: |
 | Tiefer's software, models, model updates, alerts and data products delivered to customers and partners | the open-source code in the public repositories, which anyone may use under its licence (section 5) |
 | Services Tiefer provides, such as pilots, integration and support | third-party data, models and tools that Tiefer does not provide |
 
@@ -35,7 +35,7 @@ Tiefer's products and services may not be used to:
 ## 3. How Tiefer applies this policy
 
 | Measure | What it means |
-| :--- | :--- |
+| :--- | :---: |
 | Customer screening | customers and end users are checked against applicable sanctions lists and export control rules before any agreement |
 | Purpose statement | each agreement states the intended use; a material change of use needs Tiefer's agreement |
 | Public authorities | work for public authorities is done only under the laws of the country concerned and for a clear, lawful purpose |
@@ -76,5 +76,6 @@ This policy is reviewed at least once a year, and whenever the product, Tiefer's
 
 ## Changelog
 
+- 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; scope, international humanitarian law, target selection, purpose statement, the relation to the open-source licence, a reporting time and the review cycle added; the product rules are stated as design commitments whose implementation each product documents.
 - 27 September 2026: first version.

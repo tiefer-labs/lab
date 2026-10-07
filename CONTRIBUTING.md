@@ -11,7 +11,7 @@ How to contribute to any repository of the `tiefer-labs` organisation: what to d
 ## 1. Ways to contribute
 
 | Contribution | Where |
-| :--- | :--- |
+| :--- | :---: |
 | Report a bug | an issue with the bug report form |
 | Question a number or a source in the documentation | an issue with the documentation and results form |
 | Propose a feature or a change of method | an issue with the feature request form, before any code |
@@ -37,7 +37,7 @@ Tiefer is an early-stage company with a small team, and its public repositories 
 Each repository's `README.md` has the exact steps. In short:
 
 | Repository | Language and tools | Set up | Checks before a pull request |
-| :--- | :--- | :--- | :--- |
+| :--- | :---: | :---: | :---: |
 | [lab](https://github.com/tiefer-labs/lab) | Python 3.12, [uv](https://docs.astral.sh/uv/), make | `make setup` | `make check` (ruff, mypy in strict mode, pytest); `make smoke` when you change the pipeline |
 | [web](https://github.com/tiefer-labs/web) | Go | see its README | `gofmt`, `go vet`, `go test ./...` |
 | [.github](https://github.com/tiefer-labs/.github) | Markdown and YAML | none | read the rendered file on GitHub |
@@ -57,7 +57,7 @@ Do not commit environment files, credentials, tokens, datasets, trained models o
 Types used in Tiefer repositories:
 
 | Type | Use |
-| :--- | :--- |
+| :--- | :---: |
 | `feat` | new behaviour |
 | `fix` | a bug fix |
 | `docs` | documentation only |
@@ -86,7 +86,7 @@ Use the author name and e-mail address you want to be public. GitHub's no-reply 
 What CI runs in Tiefer Lab, as an example of what to expect:
 
 | Check | What it does |
-| :--- | :--- |
+| :--- | :---: |
 | Lint and type check | ruff and mypy in strict mode on `src/` |
 | Tests | pytest on x86 and ARM, with a coverage floor |
 | Text rules | forbidden characters, spelling forms and document structure in every tracked text file |
@@ -108,7 +108,7 @@ Every Markdown file follows the Tiefer Markdown standard, [docs/STYLE.md](https:
 - Plain, precise English with British spelling (licence, quantise, analyse). Short sentences.
 - No emoji and no decorative symbols.
 - No em dash (U+2014) and no U+2015. The en dash (U+2013) only in a range, without spaces (`2026–2028`). Use a comma, colon or full stop instead of a dash in a sentence.
-- Facts over adjectives. No marketing words such as revolutionary, cutting-edge, seamless or AI-powered.
+- Facts over adjectives. No marketing words; the list is in [docs/STYLE.md](docs/STYLE.md), section 3.
 - "On board" is the adverb, "onboard" the adjective. Dates are written `7 October 2026`.
 - Every file starts with the header, the title and a status line, and ends with a changelog, newest line first.
 - Tables are plain Markdown tables; a missing value is `not measured`, `pending` or `n/a`, never an empty cell.
@@ -166,5 +166,6 @@ Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Changelog
 
+- 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; set-up per repository, commit and branch rules, CI checks, writing rules aligned with the en dash rule of docs/STYLE.md, rules for results and data, dependencies and the terms of contribution added.
 - 27 September 2026: first version.

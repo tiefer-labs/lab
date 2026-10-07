@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="profile/tiefer-logo-white.svg">
-  <img alt="Tiefer" src="profile/tiefer-logo.svg" width="200">
-</picture>
+<img alt="Tiefer Lab" src="docs/assets/header.png" width="100%">
 
 # Code of conduct
 
@@ -64,7 +61,7 @@ Write to [hello@tiefer.space](mailto:hello@tiefer.space) with the subject line "
 Please include, as far as you can:
 
 | Information | Example |
-| :--- | :--- |
+| :--- | :---: |
 | What happened | a description in your own words |
 | Where | a link to the issue, pull request, comment or channel |
 | When | date and time, with time zone |
@@ -84,7 +81,7 @@ If you believe someone is in immediate danger, contact the local emergency servi
 ## 6. How reports are handled
 
 | Step | Target time |
-| :--- | :--- |
+| :--- | :---: |
 | Acknowledge the report | within 3 working days |
 | Review the facts and, where needed, hear the people involved | within 14 days of the report |
 | Decide on an action and tell the person who reported it | at the end of the review |
@@ -98,7 +95,7 @@ Working days are Monday to Friday in Baku, Azerbaijan (UTC+4), excluding public 
 Maintainers may edit, hide or remove comments, commits, issues, pull requests and other contributions that break this code, and may lock conversations. Actions follow the impact of the behaviour; the steps below are a guide, not a fixed sequence.
 
 | Step | When it is used | Consequence |
-| :--- | :--- | :--- |
+| :--- | :---: | :---: |
 | 1. Correction | inappropriate language or other behaviour seen as unprofessional | a private written note explaining what was wrong; a public apology may be requested |
 | 2. Warning | a single serious incident or a series of minor ones | a written warning; no interaction with the people involved for a stated period |
 | 3. Temporary ban | a serious incident or sustained inappropriate behaviour | no interaction of any kind with Tiefer's spaces for a stated period |
@@ -120,5 +117,6 @@ This code draws on the structure and enforcement guidelines of the [Contributor 
 
 ## Changelog
 
+- 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; scope, reporting details, response times, enforcement steps, appeals and attribution added.
 - 27 September 2026: first version.
