@@ -1,0 +1,19 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Every issue uses a form; the links below lead to the other routes.
+blank_issues_enabled: false
+contact_links:
+  - name: "Report a security vulnerability"
+    url: "https://github.com/tiefer-labs/lab/security/advisories/new"
+    about: "Never in a public issue. If private vulnerability reporting is not available, write to hello@tiefer.space with the subject line Security (SECURITY.md, section 2)."
+  - name: "Get help"
+    url: "https://github.com/tiefer-labs/lab/blob/main/SUPPORT.md"
+    about: "Where to ask, what to include and the response times."
+  - name: "Report a code of conduct problem"
+    url: "https://github.com/tiefer-labs/lab/blob/main/CODE_OF_CONDUCT.md#5-reporting"
+    about: "Write to hello@tiefer.space with the subject line Code of conduct. Reports are handled confidentially."
+  - name: "Pilots and partnerships"
+    url: "https://tiefer.space"
+    about: "Pilots, integration and commercial agreements with Tiefer."
