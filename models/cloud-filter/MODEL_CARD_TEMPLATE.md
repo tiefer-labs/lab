@@ -26,7 +26,7 @@ The model files are not distributed in this repository, and no licence is grante
 | Dataset revision and cache | `<revision>`, cache `<cache-name>` | evaluation report; `index.json` of the cache |
 | Selected model | `<yes or no>`, with the reason | `docs/RESULTS.md` |
 | Pretrained weights | none; trained from random initialisation | `NOTICE.md` |
-| Weight licence | not distributed; no licence is granted for the model files | `NOTICE.md` |
+| Weight licence | not distributed; no licence is granted for the model files | `LICENSING.md` |
 | Date | `<date>` | `metadata.json`: end of the last session |
 
 ---
@@ -110,6 +110,7 @@ Every file named here has its SHA-256 in `SHA256SUMS`; a file that is not in it 
 
 ## Changelog
 
+- 7 October 2026: the weight licence row cites LICENSING.md, which now states it.
 - 7 October 2026: status `in use`; placeholders in angle brackets and the words of docs/STYLE.md, section 4, instead of "not yet measured" and `TODO(verify)`; the rounding rule and the licence statement.
 - 7 October 2026: new fields: training settings, dataset revision and cache, selected model, weight licence; a split column and a commit per evaluation table; FP32 row and file sizes in quantisation; latency p99 and energy per tile in hardware; BOA, calibration error, worst stratum and fail-safe rows; every file hashed or excluded.
 - 7 October 2026: a test row says whether its entry in `reports/test_log.md` is in the repository yet.
