@@ -269,14 +269,14 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export; 
 
 ## 13. Results document
 
-`python -m tiefer_lab.results` builds `docs/RESULTS.md` **only from JSON files in `reports/`**, never from typed numbers. Sections: summary (three sentences, no adjectives), environment, data, model, baselines, pixel and frame metrics with confidence intervals, quantisation impact, Jetson measurements (or "not yet measured"), compute used on Roihu, limitations, how to reproduce, changelog.
+The results generator (removed on 7 October 2026, note below) builds `docs/RESULTS.md` **only from JSON files in `reports/`**, never from typed numbers. Sections: summary (three sentences, no adjectives), environment, data, model, baselines, pixel and frame metrics with confidence intervals, quantisation impact, Jetson measurements (or "not yet measured"), compute used on Roihu, limitations, how to reproduce, changelog.
 
 Limitations must include: 10 m training data versus very high resolution target sensors, four bands only, public Level-1C data versus onboard raw data, no space environment effects.
 
 In Part A, `docs/RESULTS.md` exists with every value "not yet measured". Smoke outputs never appear in it.
 
 > [!NOTE]
-> The generator `tiefer_lab.results` was removed on 7 October 2026. Since then `docs/RESULTS.md` is written by hand: every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. Reasons: the generated page was hard to read, and the results of milestones L1 and L2 had to be combined in tables the generator could not lay out. The rule above still holds: no value without a report file, the dataset revision and a commit behind it.
+> The results generator was removed on 7 October 2026. Since then `docs/RESULTS.md` is written by hand: every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. Reasons: the generated page was hard to read, and the results of milestones L1 and L2 had to be combined in tables the generator could not lay out. The rule above still holds: no value without a report file, the dataset revision and a commit behind it.
 
 ---
 
@@ -537,7 +537,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
-- 7 October 2026: the results generator `tiefer_lab.results`, its test and the `make results` target are removed; `docs/RESULTS.md` is written by hand from the report files (note in section 13). Reasons: readability, and the page had to combine the results of milestones L1 and L2 in tables the generator could not lay out. The report loader used by `tiefer_lab.acceptance` moves to `src/tiefer_lab/reports.py`. Sections 13, 14, 15 and 17 keep their original text next to the change.
+- 7 October 2026: the results generator, its test and the `make results` target are removed; `docs/RESULTS.md` is written by hand from the report files (note in section 13). Reasons: readability, and the page had to combine the results of milestones L1 and L2 in tables the generator could not lay out. The report loader used by `tiefer_lab.acceptance` moves to `src/tiefer_lab/reports.py`. Sections 13, 14, 15 and 17 keep their original text next to the change.
 - 2 October 2026: section 15 and the tree describe the new CI: separate jobs, tests on x86 and ARM, coverage with a floor, shellcheck, the smoke job, the SBOM artifact, the secret scan and the weekly vulnerability audit. Before, one CI job ran lint, type check and tests, with `permissions: contents: read` at the workflow level.
 - 2 October 2026: section 9 adds the operational design domain and the fail-safe behaviour of `tiefer_lab.onboard`. Before, the specification did not say which inputs the filter is designed for or what happens outside them.
 - 2 October 2026: section 8 adds milestone L2, one band-flexible model family (input with availability flags in two designs, band sets drawn per batch, self-distillation, a size ladder from 0.5 M to about 22 M parameters, four-band specialists as control, export per band set). The 1.0 million parameter budget now applies to the L1 configs only. Before, the model took four bands only and the budget applied to every model.
