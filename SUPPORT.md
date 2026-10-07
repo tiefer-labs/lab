@@ -12,11 +12,12 @@ Where to ask for help with Tiefer Lab, what to include, and what response to exp
 
 | You have | Go to |
 | :--- | :---: |
-| A question about how to use or run a repository | an issue in that repository |
-| A bug | an issue with the bug report form |
-| A question about a number, a source or a method in the documentation | an issue that names the document, the section and the value |
-| An idea or a feature request | an issue with the feature request form |
+| A question about how to use or run Tiefer Lab | an issue with [`19_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=19_question.yml) |
+| A bug | an issue with [`01_bug_report.yml`](https://github.com/tiefer-labs/lab/issues/new?template=01_bug_report.yml) |
+| A question about a number, a source or a method in the documentation | an issue with [`02_results_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=02_results_question.yml), or [`11_method_change.yml`](https://github.com/tiefer-labs/lab/issues/new?template=11_method_change.yml) for a method |
+| An idea or a feature request | an issue with [`10_feature_request.yml`](https://github.com/tiefer-labs/lab/issues/new?template=10_feature_request.yml) |
 | A security problem | not an issue; follow [SECURITY.md](SECURITY.md) |
+| Any other kind of issue | the form for it, listed in [CONTRIBUTING.md](CONTRIBUTING.md), section 1 |
 | A conduct problem | [hello@tiefer.space](mailto:hello@tiefer.space), subject "Code of conduct"; see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
 | Interest in a pilot, a partnership or a commercial licence | [hello@tiefer.space](mailto:hello@tiefer.space) or the contact form on [tiefer.space](https://tiefer.space) |
 | A press or event enquiry | [hello@tiefer.space](mailto:hello@tiefer.space) |
@@ -64,6 +65,7 @@ Public issues are written in English so that everyone can follow them. By e-mail
 
 ## Changelog
 
+- 7 October 2026: section 1 links the issue form for each kind of question by its file name, and CONTRIBUTING.md for the full list of forms.
 - 7 October 2026: this copy is the Lab version of the organisation file: it points to START-HERE.md, GETTING-STARTED.md, INSTALL.md and the folder guides of this repository; a question about a number is an ordinary issue, since no documentation and results form exists. The channels and times are unchanged.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; table of channels, what to include, response times, languages and what is not supported added.
