@@ -36,7 +36,7 @@ One or two sentences that say what this document is for.
 ---
 ```
 
-Exceptions: `LICENSE` has no header. Files that a script generates (for example `reports/acceptance.md`, `reports/experiments.md` and `reports/test_log.md`) get the header from the generator.
+Exceptions: `LICENSE` and the pull request templates (section 12.33) have no header. Files that a script generates (for example `reports/acceptance.md`, `reports/experiments.md` and `reports/test_log.md`) get the header from the generator.
 
 ---
 
@@ -101,7 +101,7 @@ One word for each state, defined here once. Other documents link to this table i
 - Numbered sections (`## 1. Title`) in every file in `docs/`, in every Markdown file at the repository root (the route map, guides, ledgers and policies of sections 12.15 to 12.32), in plans and in model cards; not in README files and not in `NOTICE.md`. Sections are numbered 1, 2, 3; a lettered section (`2A`, `5A`) is not used: renumber instead and fix every link to the renumbered sections.
 - Appendices come after the numbered sections and are headed `## Appendix A. <name>`.
 - Separate major parts with `---`.
-- Every Markdown file ends with `## Changelog`, except `LICENSE` and append-only logs such as `reports/test_log.md`. Each line is exactly `- D Month YYYY: text`, one change per line, newest first; several lines on the same day are allowed, the most recent first. Old lines are never edited; a correction is a new line.
+- Every Markdown file ends with `## Changelog`, except `LICENSE`, the pull request templates (section 12.33) and append-only logs such as `reports/test_log.md`. Each line is exactly `- D Month YYYY: text`, one change per line, newest first; several lines on the same day are allowed, the most recent first. Old lines are never edited; a correction is a new line.
 
 ---
 
@@ -262,7 +262,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 ### 12.17 Index
 
-`INDEX.md`: one table of every tracked Markdown file (file, purpose, audience, owned topic, status, last changed) in category groups, then the lifecycle states with their files. A test keeps it complete.
+`INDEX.md`: one table of every tracked Markdown file (file, purpose, audience, owned topic, status, last changed) in category groups, with one row each for the folders of issue forms and pull request templates, then the lifecycle states with their files. A test keeps it complete.
 
 ### 12.18 Learning path
 
@@ -324,6 +324,22 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 
 `AI_ASSISTANCE.md`: scope, disclosure rule, responsibility, data rules, licence and provenance, labelling, regulatory references (article, official title, plain meaning, source, date read, with the dates from which each part applies), breaches, review with the open decisions, sources. The plain meaning never states an obligation more strongly than the legal text, and the page never says that a rule of the repository makes anyone meet a law.
 
+### 12.33 Issue forms and pull request templates
+
+`.github/ISSUE_TEMPLATE/*.yml`, `.github/pull_request_template.md` and `.github/PULL_REQUEST_TEMPLATE/*.md`. Pull request templates are bodies of pull requests, not documents: they have no header image, title, status line or changelog, and [INDEX.md](../INDEX.md) lists each folder in one row. The character and spelling rules of section 3 apply to forms and templates alike.
+
+1. Each form and each template has 50 to 60 questions. A question is a field the reporter fills in; markdown blocks of a form are not questions.
+2. A closed question lists every option that applies, in a logical order, with "Not sure" and an "Other" option that says where to describe it, where an honest answer could need them. In a form it is a `dropdown` (`multiple: true` where several apply) or `checkboxes`; in a template it is a list of `- [ ]` options under a description that says "Choose one." or "Choose all that apply."
+3. An open question has no options: an `input` or `textarea` in a form, an empty answer line in a template. A placeholder may show the expected format.
+4. Every question has a description of one or two sentences: what is asked, why it matters, and where to find the answer.
+5. Labels are short; ids are lower_snake_case, unique in the file and stable.
+6. Only the questions without which an issue or pull request cannot be handled are required, about 6 to 11. The first block says: "Only the questions marked required must be answered; answer the others when they apply." Templates mark required questions with "(required)" and list their numbers in the first line.
+7. Questions are grouped in numbered sections: a markdown block headed `### <n>. <title>` in a form, a `## <n>. <title>` heading in a template, where each question is a `### <n>. <question>` heading numbered without gaps.
+8. No question asks for a secret, a token, a password or personal data beyond a GitHub handle. The first block warns against pasting them and says that security problems go to [SECURITY.md](../SECURITY.md), never into an issue or a pull request.
+9. Questions use the repository's own words, commands and paths.
+10. The last two sections before the closing checklist are "AI assistance disclosure" and "Data protection and AI regulation acknowledgement", with the same ids, questions and options everywhere ([AI_ASSISTANCE.md](../AI_ASSISTANCE.md)).
+11. A form starts with the MPL 2.0 notice as comments and uses only the YAML subset that `tests/test_issue_forms.py` reads. Every label a form applies is listed in `.github/labels.yml`.
+
 ---
 
 ## 13. This repository
@@ -332,12 +348,13 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 - **Dependency table:** `src/tiefer_lab/sbom.py` reads the licence of every locked package from the section headed exactly `## 3. All locked packages` of `docs/DEPENDENCIES.md`, from rows of three cells (package, version, licence). The heading and the row format change only together with `sbom.py` and `tests/test_sbom.py`.
 - **Assets:** `docs/assets/` holds the header image and the logos (section 11). They are excluded from the character checks and from the MPL 2.0 grant ([LICENSING.md](../LICENSING.md)).
 - **Report folders:** `reports/evaluation/`, `reports/export/`, `reports/compute/`, `reports/jetson/` and `reports/data/` hold report files copied unchanged from the machine that wrote them; `docs/RESULTS.md` names each one by a source key in its Appendix A.
-- **Checks:** `tests/test_markdown_style.py` checks headers, status lines, heading levels, changelog lines and table layout; `tests/test_docs_index.py` checks that `INDEX.md` lists every Markdown file; `tests/test_text_rules.py` checks characters and the forbidden hyphenated spelling of "onboard"; `tests/test_wording.py` checks compliance wording and the statuses of the standards matrix.
+- **Checks:** `tests/test_markdown_style.py` checks headers, status lines, heading levels, changelog lines and table layout; `tests/test_docs_index.py` checks that `INDEX.md` lists every Markdown file; `tests/test_text_rules.py` checks characters and the forbidden hyphenated spelling of "onboard"; `tests/test_wording.py` checks compliance wording and the statuses of the standards matrix. `tests/test_issue_forms.py` and `tests/test_pr_templates.py` check the rules of section 12.33.
 
 ---
 
 ## Changelog
 
+- 7 October 2026: section 12.33, the rules of issue forms and pull request templates; templates are exempt from the header, title, status line and changelog; section 13 names their tests.
 - 7 October 2026: section 12.32, the document type of the AI assistance policy.
 - 7 October 2026: section 12.12, the notice holds attributions only; section 13 cites LICENSING.md for the exclusion of `docs/assets/`.
 - 7 October 2026: section 12 adds the document types of the root documents (sections 12.15 to 12.30) and the rule of one owner per fact (12.31); the README skeleton adds "What <repository> is not" and "Where to go next"; root documents use numbered sections; section 4 adds the claim statuses and the result authority words.
