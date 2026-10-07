@@ -2,9 +2,9 @@
 
 # Model card: cloud filter v0.1.0
 
-Status: in use. Owner: Tiefer. Licence: MPL 2.0.
+Status: draft. Owner: Tiefer. Licence: MPL 2.0.
 
-Official release of milestone L1 onboard cloud filter for four-band Level-1C imagery. Checkpoints and ONNX files stay with Tiefer; checksums below verify provenance against CSC Roihu training and evaluation runs.
+Draft model card of the milestone L1 cloud filter `l1_base` seed 0 for four-band Level-1C imagery. The model files are not distributed in this repository: checkpoints and ONNX files stay with Tiefer, and the checksums below identify them.
 
 ---
 
@@ -19,9 +19,10 @@ Official release of milestone L1 onboard cloud filter for four-band Level-1C ima
 | Output | 4 class logits per pixel | export report |
 | Operations | 2,190,082,048 multiply-accumulates (1 x 4 x 512 x 512) | `metadata.json`: `model.macs_512x512` |
 | Formats | FP32, FP16, INT8 | export report: FP32, FP16, INT8 |
-| Training run and commit | `l1_base-seed0-20261003T093922Z-81ab34b`, `81ab34b03bcc` | `metadata.json`: run ID, `git_commit` |
+| Training run and commit | `l1_base-seed0-20261003T093922Z-81ab34b`, `81ab34b03bcc`, made with uncommitted changes; the commit is not in the history of this repository | `metadata.json`: run ID, `git_commit`; [RESULTS.md](../../../docs/RESULTS.md), section 4 |
+| Training | batch 128, learning rate 0.008, best epoch 32, early stopped (patience 15 of a 150-epoch schedule) | `config.toml`; evaluation report: `run.best_epoch`, `run.status` |
 | Pretrained weights | none; trained from random initialisation | `NOTICE.md` |
-| Date | 2026-10-03 | `metadata.json`: end of the last session |
+| Date | 3 October 2026 | `metadata.json`: end of the last session |
 
 ---
 
@@ -63,14 +64,21 @@ Validation unless a row says test; every test result has an entry in `reports/te
 | Decision accuracy at 50% (test) | 0.927 | [0.910, 0.943] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` |
 | Cloud fraction MAE (test) | 0.062 | [0.055, 0.070] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` |
 
+Results by region (`equi_zone`) on the validation split range from a mean IoU of 0.685 (EU, 105 patches) to 0.561 (OC, 50 patches); see [RESULTS.md](../../../docs/RESULTS.md), section 9. Every value of this model on one page: [RESULTS.md](../../../docs/RESULTS.md), sections 6, 8, 9, 13 and 14.
+
 ---
 
 ## Quantisation
 
-| Format | Mean IoU change against FP32 | Cloud BOA change | Source |
-| :--- | :---: | :---: | :---: |
-| FP16 | 0.000 | 0.000 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json` |
-| INT8 | -0.070 | -0.009 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json` |
+Validation split, ONNX Runtime, INT8 calibrated on 256 training patches.
+
+| Format | File size in bytes | Mean IoU change against FP32 | Cloud BOA change | Source |
+| :--- | :---: | :---: | :---: | :---: |
+| FP32 | 993,280 | n/a | n/a | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json` |
+| FP16 | 518,144 | 0.000 | 0.000 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json` |
+| INT8 | 455,680 | -0.070 | -0.009 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json` |
+
+FP16 kept the mean IoU (0.649) and the false discard rate at 50 percent (0.039) unchanged at 3 decimals. INT8 is 62,464 bytes smaller than FP16 and loses 0.070 mean IoU (0.649 to 0.579). The file sizes and the FP16 values come from the session notes and are checked against the export report when it is in `reports/` ([RESULTS.md](../../../docs/RESULTS.md), section 20).
 
 ---
 
@@ -91,6 +99,10 @@ Validation unless a row says test; every test result has an entry in `reports/te
 
 - Results hold for the band set and size in the summary only.
 
+- INT8 loses 0.070 mean IoU, more than the one point of `docs/SPEC.md`, section 10; the INT8 file is not yet usable for flight.
+- Later runs score higher on test: `l1_full` seed 0 0.689 and `l2_spec_1m` seed 0 0.720 mean IoU against 0.635 here ([RESULTS.md](../../../docs/RESULTS.md), section 6).
+- One seed only, trained from a working tree with uncommitted changes.
+- Mean IoU differs by region, from 0.685 to 0.561 on validation ([RESULTS.md](../../../docs/RESULTS.md), section 9).
 - Standards: no agency or operator standard is claimed; see `docs/STANDARDS.md`.
 
 ---
@@ -109,4 +121,5 @@ Validation unless a row says test; every test result has an entry in `reports/te
 
 ## Changelog
 
-- 3 October 2026: official release v0.1.0 from CSC Roihu GH200 training run `l1_base-seed0-20261003T093922Z-81ab34b`.
+- 7 October 2026: status draft instead of release; file sizes, the FP16 result, the best epoch, the region breakdown and limitations on INT8, later runs and provenance added.
+- 3 October 2026: model card v0.1.0 from CSC Roihu GH200 training run `l1_base-seed0-20261003T093922Z-81ab34b`.
