@@ -14,7 +14,7 @@ The onboard cloud detection systems, onboard AI platforms and reference algorith
 - A value from another system is labelled "published": it was measured by its authors, on their data, hardware and definitions. Published values are kept apart from the values this repository measured ([RESULTS.md](RESULTS.md)).
 - "none published" means the sources listed here state no number for that system.
 - Values of this repository are rounded to 3 decimals, half up, as in RESULTS.md; published values are written as their source wrote them.
-- This page makes no claim that Tiefer's filter is better or worse than another system. Such a claim needs both to be measured by this repository on the same data or the same hardware; section 5 lists the measurement that would decide each comparison.
+- This page makes no claim that Tiefer's filter is better or worse than another system. Such a claim needs both to be measured by this repository on the same data or the same hardware ([POLICY.md](../POLICY.md), gate 5); section 5 lists the measurement that would decide each comparison. Which value of this repository to quote is in [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md).
 
 ---
 
@@ -121,6 +121,7 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 7 October 2026: section 1 links POLICY.md, gate 5, and BENCHMARK-AUTHORITY.md.
 - 7 October 2026: status `in development`, like the other pages that change with the work.
 - 7 October 2026: correction: the EDGX Sterna demonstration launched on SpaceX Transporter-16 (press release of 9 April 2026); the page no longer says that whether it flew is not checked.
 - 7 October 2026: CloudScout's 1.8 W is its average power during inference, as the paper states; 0.585 J is derived here, not published.
