@@ -70,7 +70,7 @@ The threshold of a frame metric is the cloud fraction above which a frame is kep
 | l1_base s1 | 128 | 0.008 | pending | 76 | pending | config at 5ba4585; best epoch: notes |
 | l1_full s0 | 128 | 0.008 | 150, early stopping off (patience 150) | 129 | 2001000 | config at 5ba4585; job: log; best epoch: notes |
 | l2_flex_1m s0 | 64 | 0.004 | 150 | 35 | 2000949 | batch and rate: log (section 17); best epoch: notes |
-| l2_spec_1m s0 | 64 | pending | pending | pending | 2001425 | batch: log (section 17); job: page |
+| l2_spec_1m s0 | 64 | pending | pending | pending | 2001425 | batch: notes; job: page |
 
 The configuration of l1_base s0 in its report: crop 256, batch 128, learning rate 0.008, weight decay 0.0001, Dice weight 1.0, patience 15, minimum improvement 0.001, brightness and contrast augmentation 0.1. The training job of l1_base s0 ran on node rg2128 and started on 3 October 2026 at 09:39 UTC.
 
@@ -99,7 +99,7 @@ All 23 evaluation reports were made on the same platform. The library versions b
 
 The commit of each report and whether it was made from a clean working tree are listed in appendix A.
 
-Provenance, stated plainly. The training run and the evaluation reports of l1_base s0 record git commit `81ab34b03bcc` with `"dirty": true`: the working tree on Roihu had uncommitted changes when they were made. The base commit `81ab34b03bcc` is in the history of this repository (2 October 2026, 04:09 UTC, "fix(hpc): smoke job reads the full cache..."); only the uncommitted diff of that working tree is lost. `configs/l1_base.toml` at that commit matches `models/cloud-filter/v0.1.0/config.toml`, the resolved configuration of the run, key for key (checked on 7 October 2026). The first generated page (h-c3e861a) shows the l1_base s0 validation report with that commit; the last one shows a file of the same name with commit `4ce677d1811b`, written again when the robustness evaluations ran, since `hpc/roihu/evaluate.sbatch` evaluates without perturbation first (section 13). The L2 runs used a batch size and learning rate that were never committed: the configs at their commits (5ba4585 and 0f0984d) say batch 128 and learning rate 0.008 (section 17). These runs are therefore not reproducible from a commit alone; section 18 lists this as a limitation.
+Provenance, stated plainly. The training run and the evaluation reports of l1_base s0 record git commit `81ab34b03bcc` with `"dirty": true`: the working tree on Roihu had uncommitted changes when they were made. The base commit `81ab34b03bcc` is in the history of this repository (2 October 2026, 04:09 UTC, "fix(hpc): smoke job reads the full cache..."); only the uncommitted diff of that working tree is lost. `configs/l1_base.toml` at that commit matches `models/cloud-filter/v0.1.0/config.toml`, the resolved configuration of the run, key for key (checked on 7 October 2026). The first generated page (h-c3e861a) shows the l1_base s0 validation report with that commit; the last one shows a file of the same name with commit `4ce677d1811b`, written again when the robustness evaluations ran, since `hpc/roihu/evaluate.sbatch` evaluates without perturbation first (section 13). The L2 runs used settings that were never committed: l2_flex_1m s0 ran with batch 64 and learning rate 0.004 (log, jobs 2000912, 2000941, 2000949), l2_spec_1m s0 with batch 64 (notes) and a learning rate that is pending until its `config.toml` is read, while the configs at their commits (5ba4585 and 0f0984d) say batch 128 and learning rate 0.008 (section 17). These runs are therefore not reproducible from a commit alone; section 18 lists this as a limitation.
 
 ---
 
@@ -442,7 +442,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 
 ## 17. Training notes
 
-- l2_flex_1m with 13 bands: attempt 1 (job 2000912, batch 128) ran out of GPU memory after 55 s. Attempt 2 (job 2000941) with `load_mode` "memory" and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` also ran out of memory after 55 s. Attempt 3 (job 2000949) with batch 64 and learning rate 0.004, both halved together, ran to the end. The batch size, not the allocator setting, was the fix (log). l2_spec_1m was then trained with batch 64 as well; its learning rate is pending until its `config.toml` is read.
+- l2_flex_1m with 13 bands: attempt 1 (job 2000912, batch 128) ran out of GPU memory after 55 s. Attempt 2 (job 2000941) with `load_mode` "memory" and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` also ran out of memory after 55 s. Attempt 3 (job 2000949) with batch 64 and learning rate 0.004, both halved together, ran to the end. The batch size, not the allocator setting, was the fix (log). l2_spec_1m was then trained with batch 64 as well (notes); its learning rate is pending until its `config.toml` is read.
 - l1_base s0 stopped early with its best epoch at 32 while the training loss was still falling; this is why l1_full runs the whole 150-epoch cosine schedule (patience 150, docs/ASSUMPTIONS.md, section 6). The best epoch of l1_full s0 was 129 (notes).
 - l2_flex_1m s0 reached its best validation checkpoint at epoch 35. Its validation mean IoU in the training log then stayed between about 0.53 and 0.55 until epoch 150; this is the value of the training loop, not of the evaluation report (notes). An epoch took about 34.4 s (notes).
 - Building the 13-band cache: shard 0 failed with HTTP 404 and was submitted again; the build resumed where it had stopped (section 16).
@@ -464,7 +464,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 - No agency or operator standard is claimed to be met; docs/STANDARDS.md lists every document as not read.
 - Every run is a single seed; the run plan asked for three seeds for the final pair (hpc/roihu/plan.md). No spread over seeds is known, so a difference between two runs may be within it.
 - INT8 loses more mean IoU than the one point of docs/SPEC.md, section 10, on every exported run (section 14).
-- The L2 results were produced with batch 64 and learning rate 0.004, the L1 results with batch 128 and learning rate 0.008 (section 3).
+- The L2 results were produced with batch 64 (l2_flex_1m s0 with learning rate 0.004; l2_spec_1m s0 with a learning rate that is pending), the L1 results with batch 128 and learning rate 0.008 (section 3).
 - Results differ by region (section 9), and only one run has a regional breakdown so far.
 - At least one run was made from a working tree with uncommitted changes, and the L2 runs used configuration values that were never committed (section 4).
 
@@ -504,7 +504,7 @@ bash hpc/roihu/usage.sh <job-id>
 bash hpc/roihu/collect.sh <run-id>
 ```
 
-Then copy the report files into `reports/` unchanged and their values into this page by hand. The L2 runs above used batch 64 and learning rate 0.004, which the configs hold since 7 October 2026; with the configs of their own commits a run uses batch 128 (section 4).
+Then copy the report files into `reports/` unchanged and their values into this page by hand. l2_flex_1m s0 ran with batch 64 and learning rate 0.004, which the configs hold since 7 October 2026; l2_spec_1m s0 ran with batch 64 and a learning rate that is pending. With the configs of their own commits a run uses batch 128 (section 4).
 
 ---
 
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: correction: l2_spec_1m s0 ran with batch 64 (notes) and a learning rate that is pending; only l2_flex_1m s0 is known to have used 0.004 (sections 3, 4, 17, 18, 19).
 - 7 October 2026: Appendix A says why the report files are not yet committed: the GPU maintenance of CSC Roihu that began on 6 October 2026.
 - 7 October 2026: correction: commit 81ab34b03bcc is in the history of this repository; only the uncommitted diff of the l1_base s0 run is lost (section 4). The earlier check ran on a shallow clone.
 - 7 October 2026: section 10 links docs/LANDSCAPE.md for the published values of other systems.
