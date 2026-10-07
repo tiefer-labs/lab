@@ -71,6 +71,24 @@ The assumptions behind milestones L1 and L2 about the target sensor, the data, t
 | `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | The GPU budget before the maintenance on 6 October 2026 favours one run that fixes the known problems; separating the three effects needs extra runs | the budget allows ablation runs |
 | Every L2 config trains with batch 64 and learning rate 0.004; the L1 configs keep batch 128 and learning rate 0.008 | With 13 bands, `l2_flex_1m` ran out of GPU memory at batch 128 on one GH200 on 3 October 2026 (jobs 2000912 and 2000941; expandable segments in the allocator did not help). Batch and learning rate were halved together, following the linear scaling of the L1 configs (0.008 x 64 / 128), and that run finished (job 2000949). The whole L2 family uses the same values so that its results stay comparable; a difference between an L1 and an L2 result is therefore not caused by the model alone. `l2_spec_1m` seed 0 ran with batch 64 (session notes); its learning rate is pending until its run `config.toml` is read, so the configs hold 0.004 to be confirmed | an L2 run with batch 128 fits in memory, or the L1 and L2 results are compared at the same settings |
 
+Every setting in which the L1 and L2 configs differ, as the configs and the defaults of `src/tiefer_lab/config.py` resolve them on 7 October 2026:
+
+| Setting | `l1_base` | `l1_full` | L2 band-flexible (`l2_flex_*`) | L2 specialists (`l2_spec_*`) |
+| :--- | :---: | :---: | :---: | :---: |
+| Input bands | 4, fixed | 4, fixed | 13, one band set drawn per batch | 4, fixed |
+| Cache (`data.cache_name`) | `cloudsen12-l1c-high` | `cloudsen12-l1c-high` | `cloudsen12-l1c-all` | `cloudsen12-l1c-all` (the `l2_spec_1m` seed 0 run: pending, [DATA.md](DATA.md), section 10) |
+| Widths of the network | 16 to 256 | 16 to 256 | 24 to 384 (0.5 M), 32 to 512 (1 M), 64 to 1024 (4 M), larger for 21 M and 22 M | 32 to 512 (1 M), 160 to 2560 (22 M) |
+| Batch size | 128 | 128 | 64 | 64 |
+| Learning rate | 0.008 | 0.008 | 0.004 | 0.004 in the configs; the `l2_spec_1m` seed 0 run: pending |
+| Warm-up epochs | 0 | 5 | 5 | 5 |
+| Moving average of the weights (`ema_decay`) | none (0.0) | 0.999 | 0.999 | 0.999 |
+| Patience | 15 | 150 | 150 | 150 |
+| Class weighting | `median_frequency`, the default of `config.py`; not set in the file | `median_frequency`, the default; not set in the file | `none`, except `l2_flex_1m_classweights`: `median_frequency` | `none` |
+| Self-distillation (`distill_weight`) | 0.0 | 0.0 | 1.0, except `l2_flex_1m_nodistill`: 0.0 | 0.0 |
+| `load_mode` | `auto` | `auto` | `memory` for `l2_flex_1m` and its single-change variants; `auto` for the other sizes | `auto` |
+
+Settings not listed are the same in every config (crop 256, weight decay 0.0001, Dice weight 1.0, minimum improvement 0.001, 150 epochs, brightness and contrast augmentation 0.1). A difference between an L1 and an L2 result can come from any row of this table, not from the model alone.
+
 ---
 
 ## 7. Product decision
@@ -86,6 +104,7 @@ Status on 7 October 2026: no decision is recorded yet. The rule is applied on va
 
 ## Changelog
 
+- 7 October 2026: section 6 lists every setting in which the L1 and L2 configs differ, as resolved by the configs and the defaults of `config.py`.
 - 7 October 2026: section 6 names the source of the early stops of 2 October 2026 (training log) and adds the stop of `l1_base` seed 0 on 3 October 2026.
 - 7 October 2026: correction: section 7 states the product rule completely (mean IoU, validation, B02 B03 B04 B08, 1 M, seeds as available, the specialist's interval); no decision is recorded until `x-val-4` is read, and the test values are informational only.
 - 7 October 2026: section 1 points to the cache table of DATA.md for the cache of `l2_spec_1m` seed 0, which is pending.

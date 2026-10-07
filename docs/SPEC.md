@@ -148,6 +148,7 @@ Evaluated with the same code and splits as the model:
 - **Self-distillation:** on a batch that draws a smaller band set, the prediction with all 13 bands (no gradient) is a soft target for the prediction with the drawn set, next to the label loss (`train.distill_weight`).
 - **Size ladder:** about 0.5 M, 1 M, 4 M and 20 to 30 M parameters with otherwise identical settings; two architectures at the largest size (the separable U-Net and a U-Net with ConvNeXt-style encoder blocks). No pretrained weights.
 - **Control:** four-band specialists (blue, green, red, near infrared) at 1 M and at the largest size, same data and schedule. The decision rule is in docs/ASSUMPTIONS.md.
+- **Settings:** every setting in which the L1 and L2 configs differ (batch, learning rate, warm-up, moving average, patience, class weighting and others) is listed in [docs/ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
 - **Loss:** cross-entropy plus Dice without class weights as the baseline; class weights and a focal term as separate runs. Pixels without a label (scribble gaps, nolabel patches) are ignored.
 - **Export:** one ONNX file per band set and size; the exported model takes only the bands of its set, with the availability flags fixed. FP32, FP16 and INT8, each checked against PyTorch.
 
@@ -537,6 +538,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 8 links the table of every L1 and L2 setting difference in docs/ASSUMPTIONS.md, section 6.
 - 7 October 2026: section 8, the band set table names B02, B03, B04 as blue, green, red, and B11 and B12 as the short-wave infrared bands, from ESA SentiWiki; a `TODO(verify)` resolved.
 - 7 October 2026: the results generator, its test and the `make results` target are removed; `docs/RESULTS.md` is written by hand from the report files (note in section 13). Reasons: readability, and the page had to combine the results of milestones L1 and L2 in tables the generator could not lay out. The report loader used by `tiefer_lab.acceptance` moves to `src/tiefer_lab/reports.py`. Sections 13, 14, 15 and 17 keep their original text next to the change.
 - 2 October 2026: section 15 and the tree describe the new CI: separate jobs, tests on x86 and ARM, coverage with a floor, shellcheck, the smoke job, the SBOM artifact, the secret scan and the weekly vulnerability audit. Before, one CI job ran lint, type check and tests, with `permissions: contents: read` at the workflow level.

@@ -83,7 +83,7 @@ These two stops are the reason for l1_full given in [ASSUMPTIONS.md](ASSUMPTIONS
 
 The configuration of l1_base s0 in its report: crop 256, batch 128, learning rate 0.008, weight decay 0.0001, Dice weight 1.0, patience 15, minimum improvement 0.001, brightness and contrast augmentation 0.1. The training job of l1_base s0 ran on node rg2128 and started on 3 October 2026 at 09:39 UTC.
 
-L1 and L2 were not trained with the same settings. The L1 runs used batch 128 and learning rate 0.008. l2_flex_1m s0 ran out of GPU memory at batch 128 with 13 bands and was trained with batch 64 and learning rate 0.004, both halved together; l2_spec_1m s0 was then trained with batch 64 as well (section 17). A difference between an L1 and an L2 result is therefore not caused by the model alone.
+L1 and L2 were not trained with the same settings. The L1 runs used batch 128 and learning rate 0.008. l2_flex_1m s0 ran out of GPU memory at batch 128 with 13 bands and was trained with batch 64 and learning rate 0.004, both halved together; l2_spec_1m s0 was then trained with batch 64 as well (section 17). A difference between an L1 and an L2 result is therefore not caused by the model alone; every setting in which the L1 and L2 configs differ (bands, cache, widths, batch, learning rate, warm-up, moving average, patience, class weighting, self-distillation, `load_mode`) is listed in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
 
 ---
 
@@ -474,7 +474,7 @@ The CPU billing units of these jobs, and the jobs that built the validation and 
 - No agency or operator standard is claimed to be met; docs/STANDARDS.md lists every document as not read.
 - l1_base has two seeds: validation mean IoU 0.649 (s0) and 0.691 (s1), a difference of 0.042; test 0.635 and 0.679, a difference of 0.044 (differences of the rounded values). s0 ran from a working tree with uncommitted changes at commit 81ab34b, s1 at commit 5ba4585, so the difference mixes the seed and the code. l1_full and every L2 run are single seeds. The run plan asked for three seeds for the final pair (hpc/roihu/plan.md). A difference between two single-seed runs smaller than the seed difference of l1_base is not evidence of a better model.
 - INT8 loses more mean IoU than the one point of docs/SPEC.md, section 10, on every exported run (section 14).
-- The L2 results were produced with batch 64 (l2_flex_1m s0 with learning rate 0.004; l2_spec_1m s0 with a learning rate that is pending), the L1 results with batch 128 and learning rate 0.008 (section 3).
+- The L2 results were produced with batch 64 (l2_flex_1m s0 with learning rate 0.004; l2_spec_1m s0 with a learning rate that is pending), the L1 results with batch 128 and learning rate 0.008; L1 and L2 also differ in class weighting, warm-up, moving average and other settings ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6).
 - Results differ by region (section 9), and only one run has a regional breakdown so far.
 - At least one run was made from a working tree with uncommitted changes, and the L2 runs used configuration values that were never committed (section 4).
 
@@ -604,6 +604,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: sections 3 and 18 link the table of every L1 and L2 setting difference in docs/ASSUMPTIONS.md, section 6.
 - 7 October 2026: the validation useful frames (259, 331 and 422 of 535) are filled in for every run, since they depend only on the labels; the test useful frames stay pending.
 - 7 October 2026: correction: job 2001268 used 0.008 GPU hours (27 s, 0.0075 rounded half up), not 0.007; every other derived value of section 16 was rechecked with the rule.
 - 7 October 2026: section 18 gives the human agreement of the CloudSEN12 paper (Table 6) instead of "not yet verified".
