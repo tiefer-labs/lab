@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-How to measure latency, throughput, power and energy of the cloud filter on an NVIDIA Jetson Orin, the flight-like reference hardware for milestone L1. The Jetson Orin is not flight hardware, and radiation, vacuum and thermal effects are out of scope.
+How to measure latency, throughput, power and energy of the cloud filter on an NVIDIA Jetson Orin, the flight-like reference hardware for milestone L1. The Jetson Orin is not flight hardware, and radiation, vacuum and thermal effects are out of scope. What is installed on the board is in [INSTALL.md](../INSTALL.md), section 2.5; a value measured here appears in [docs/RESULTS.md](../docs/RESULTS.md) only under [POLICY.md](../POLICY.md), gate 1; another hardware target follows [EXTENDING.md](../EXTENDING.md), section 9.
 
 ---
 
@@ -84,4 +84,5 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 
 ## Changelog
 
+- 7 October 2026: the purpose links INSTALL.md, POLICY.md and EXTENDING.md.
 - 7 October 2026: step 4 copies the values into docs/RESULTS.md by hand; the results generator is removed.
