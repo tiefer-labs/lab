@@ -1,10 +1,10 @@
 <img alt="Tiefer Lab" src="docs/assets/header.png" width="100%">
 
-# Contributing to Tiefer
+# Contributing to Tiefer Lab
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-How to contribute to any repository of the `tiefer-labs` organisation: what to do before you start, how to set up, how commits and pull requests are made, the writing and evidence rules, and the licence of contributions. A repository's own `CONTRIBUTING.md`, if it has one, takes precedence.
+For anyone who wants to change Tiefer Lab: what to do before you start, how to set up and check your work, how commits and pull requests are made, the rules for results and data, and the terms of contributions. This is the Lab version of the organisation's contributing guide; it follows the same process and adds what is specific to Lab.
 
 ---
 
@@ -13,36 +13,45 @@ How to contribute to any repository of the `tiefer-labs` organisation: what to d
 | Contribution | Where |
 | :--- | :---: |
 | Report a bug | an issue with the bug report form |
-| Question a number or a source in the documentation | an issue with the documentation and results form |
+| Question a number or a source in the documentation | an issue that names the document, the section and the value |
 | Propose a feature or a change of method | an issue with the feature request form, before any code |
 | Fix a typo or a broken link | a pull request directly |
 | Fix a bug, add a test, improve documentation | a pull request that links an issue |
+| Add a config, band set, model, metric, dataset or hardware target | an issue first, then the path of [EXTENDING.md](EXTENDING.md) |
 | Report a security problem | never in public; see [SECURITY.md](SECURITY.md) |
 
-Tiefer is an early-stage company with a small team, and its public repositories are small. Contributions are welcome. Reading this guide first saves both sides time.
+Tiefer is an early-stage company with a small team. Contributions are welcome. Reading this guide first saves both sides time.
 
 ---
 
 ## 2. Before you start
 
-- For anything larger than a typo, open an issue first. Describe the problem, the change you propose and why. Wait for a maintainer to agree before you build it; this avoids work that cannot be merged.
+- For anything larger than a typo, open an issue first. Describe the problem, the change you propose and why. Wait for the maintainer to agree before you build it.
 - Search existing issues and pull requests first.
-- Read the repository's `README.md` and, for Tiefer Lab, [docs/STYLE.md](https://github.com/tiefer-labs/lab/blob/main/docs/STYLE.md) and [docs/SPEC.md](https://github.com/tiefer-labs/lab/blob/main/docs/SPEC.md).
-- Changes to results, metrics, data handling or the evaluation protocol need an issue and agreement first, because they change what the published numbers mean.
+- Read [START-HERE.md](START-HERE.md) to find the document that owns your topic, and [docs/STYLE.md](docs/STYLE.md) before you write documentation.
+- Changes to results, metrics, splits, thresholds, data handling or the evaluation protocol need an issue and agreement first, because they change what the published numbers mean ([GOVERNANCE.md](GOVERNANCE.md), section 2).
 
 ---
 
-## 3. Setting up
+## 3. Set-up and checks
 
-Each repository's `README.md` has the exact steps. In short:
+Tiefer Lab needs Python 3.12 or newer and uv 0.8 or newer. The first run is in [GETTING-STARTED.md](GETTING-STARTED.md); other platforms in [INSTALL.md](INSTALL.md).
 
-| Repository | Language and tools | Set up | Checks before a pull request |
-| :--- | :---: | :---: | :---: |
-| [lab](https://github.com/tiefer-labs/lab) | Python 3.12, [uv](https://docs.astral.sh/uv/), make | `make setup` | `make check` (ruff, mypy in strict mode, pytest); `make smoke` when you change the pipeline |
-| [web](https://github.com/tiefer-labs/web) | Go | see its README | `gofmt`, `go vet`, `go test ./...` |
-| [.github](https://github.com/tiefer-labs/.github) | Markdown and YAML | none | read the rendered file on GitHub |
+| `make` target | What it runs | When to run it |
+| :--- | :---: | :---: |
+| `make setup` | `uv sync --frozen` | once, and after `uv.lock` changes |
+| `make lint` | `ruff check .` and `ruff format --check .` | before every commit |
+| `make typecheck` | `mypy` in strict mode on `src/` | before every commit |
+| `make test` | `pytest` | before every commit |
+| `make check` | `lint`, `typecheck` and `test` | before every pull request; CI runs the same checks |
+| `make coverage` | the tests under coverage, with the floor of `pyproject.toml` | when you add or remove code |
+| `make smoke` | the whole pipeline on a tiny subset (`SMOKE_SOURCE=synthetic` for no network) | when you change the pipeline |
+| `make shellcheck` | ShellCheck on every script under `hpc/` and `jetson/` | when you change a shell script |
+| `make requirements` | regenerates `hpc/roihu/requirements.txt` from `uv.lock` | after every lock change |
 
-Do not commit environment files, credentials, tokens, datasets, trained models or other large binary files. The `.gitignore` of each repository lists what stays out.
+The tests also check text: forbidden characters and spelling forms (`tests/test_text_rules.py`), the Markdown standard (`tests/test_markdown_style.py`), public hygiene such as e-mail addresses, absolute paths and tokens (`tests/test_public_hygiene.py`), the requirements matrix (`tests/test_requirements_doc.py`), the standards matrix (`tests/test_wording.py`) and the index of documents (`tests/test_docs_index.py`).
+
+Do not commit environment files, credentials, tokens, datasets, caches, checkpoints, ONNX files or other large binary files. `.gitignore` lists what stays out.
 
 ---
 
@@ -70,7 +79,7 @@ Types used in Tiefer repositories:
 | `deps` | dependencies and lock files |
 | `refactor` | code changes without a change in behaviour |
 
-Use the author name and e-mail address you want to be public. GitHub's no-reply address (`<id>+<username>@users.noreply.github.com`) keeps your personal address out of the history.
+Use the author name and e-mail address you want to be public. GitHub's no-reply address keeps your personal address out of the history.
 
 ---
 
@@ -79,23 +88,17 @@ Use the author name and e-mail address you want to be public. GitHub's no-reply 
 1. Fill in the pull request template completely.
 2. Link the issue it resolves (`Closes #123`).
 3. Keep one pull request to one change. Split unrelated changes.
-4. Run the repository's checks locally first (section 3). CI must pass before review.
-5. Update the documentation and the changelog line of every Markdown file you change, in the same pull request.
-6. Do not force-push after review has started; add commits instead, and they are squashed or rebased on merge.
+4. Run `make check` locally first. CI must pass before review.
+5. Update every document your change affects, in the same pull request (section 8).
+6. Do not force-push after review has started; add commits instead.
 
-What CI runs in Tiefer Lab, as an example of what to expect:
+CI is organised in three workflows:
 
-| Check | What it does |
-| :--- | :---: |
-| Lint and type check | ruff and mypy in strict mode on `src/` |
-| Tests | pytest on x86 and ARM, with a coverage floor |
-| Text rules | forbidden characters, spelling forms and document structure in every tracked text file |
-| Shell scripts | ShellCheck |
-| Smoke run | the whole pipeline on synthetic data |
-| Secrets | gitleaks over the full history |
-| Dependencies | pip-audit on every push and weekly |
-| Code scanning | CodeQL |
-| SBOM | a CycloneDX bill of materials |
+| Workflow | Jobs | When |
+| :--- | :---: | :---: |
+| `.github/workflows/ci.yml` | `lint`, `typecheck`, `test (ubuntu-24.04)` with coverage and its floor, `test (ubuntu-24.04-arm)`, `shellcheck`, `smoke`, `sbom`, `secrets` (gitleaks over the full history) | every push and pull request |
+| `.github/workflows/audit.yml` | `pip-audit` over every package of `uv.lock` | every push and pull request, weekly and on demand |
+| `.github/workflows/codeql.yml` | CodeQL for Python and GitHub Actions | every push and pull request, and weekly |
 
 Review: a maintainer gives a first response within 5 working days (Monday to Friday, Baku time, UTC+4). A pull request may be closed if it has had no activity for 30 days after a review comment; it can be reopened.
 
@@ -103,58 +106,63 @@ Review: a maintainer gives a first response within 5 working days (Monday to Fri
 
 ## 6. Writing and documentation
 
-Every Markdown file follows the Tiefer Markdown standard, [docs/STYLE.md](https://github.com/tiefer-labs/lab/blob/main/docs/STYLE.md) in Tiefer Lab. The rules you will meet most often:
+Every Markdown file follows [docs/STYLE.md](docs/STYLE.md). The rules you will meet most often:
 
 - Plain, precise English with British spelling (licence, quantise, analyse). Short sentences.
 - No emoji and no decorative symbols.
-- No em dash (U+2014) and no U+2015. The en dash (U+2013) only in a range, without spaces (`2026–2028`). Use a comma, colon or full stop instead of a dash in a sentence.
+- No em dash (U+2014) and no U+2015. The en dash (U+2013) only in a range, without spaces (`2026–2028`).
 - Facts over adjectives. No marketing words; the list is in [docs/STYLE.md](docs/STYLE.md), section 3.
 - "On board" is the adverb, "onboard" the adjective. Dates are written `7 October 2026`.
 - Every file starts with the header, the title and a status line, and ends with a changelog, newest line first.
-- Tables are plain Markdown tables; a missing value is `not measured`, `pending` or `n/a`, never an empty cell.
-
-CI rejects text that breaks the character rules.
+- Each fact lives in one document; other documents link to it ([INDEX.md](INDEX.md) shows which document owns which topic).
 
 ---
 
-## 7. Results, data and claims
+## 7. Results, data and the test split
 
-Tiefer publishes results with their method: measured, not claimed.
+Tiefer Lab publishes results with their method: measured, not claimed. The gates a number must pass are in [POLICY.md](POLICY.md); in short:
 
-- Every number you add to a results page names its source: a report file in the repository, with the git commit that produced it. A value that was measured but whose report is not in the repository yet is written `pending`.
-- Never add an estimated, rounded-up or copied number as if it were measured. Never round to flatter a result.
-- Published values of other systems belong only in Tiefer Lab's [docs/LANDSCAPE.md](https://github.com/tiefer-labs/lab/blob/main/docs/LANDSCAPE.md), with their source and access date, and never next to our measurements on a results page.
-- The test split of a dataset is used only for final evaluation, through the logged `--final` path. Do not use it to choose models, thresholds or settings.
-- Do not add data without a licence that allows it, and state the licence in the data card. Never add personal data.
-- Do not commit datasets, caches, checkpoints or trained models. Model files are identified by their SHA-256 sums in the model card.
-
----
-
-## 8. Dependencies
-
-- Add a dependency only when it is needed, and say why in the pull request.
-- Its licence must be compatible with the Mozilla Public License 2.0. Copyleft licences that would change the licence of the repository are not accepted.
-- In Tiefer Lab, add it with uv so that `uv.lock` changes in the same commit, and add a row to [docs/DEPENDENCIES.md](https://github.com/tiefer-labs/lab/blob/main/docs/DEPENDENCIES.md) with its purpose and licence.
-- Pin GitHub Actions by full commit SHA, with the version in a comment.
+- Every number on a results page names its report file and the git commit that produced it. A value measured but not yet in the repository is `pending`.
+- To add a report file, copy it unchanged from the run (`hpc/roihu/collect.sh` packs them on CSC Roihu) into `reports/`, in a commit of type `reports` that names the run, the job and the commit recorded in the file. Never edit a report file.
+- Never add an estimated, rounded-up or copied number as if it were measured.
+- The test split is used only through `python -m tiefer_lab.evaluate --split test --final --reason "<why>"` or `python -m tiefer_lab.export --final --reason "<why>"`, which write an entry to `reports/test_log.md` before the data is read. Never use it to choose a model, a threshold or a setting. Only the maintainer runs it ([GOVERNANCE.md](GOVERNANCE.md), section 2).
+- Before a run on CSC Roihu, its config is committed and the run is added to [hpc/roihu/plan.md](hpc/roihu/plan.md) with its estimated cost.
+- Published values of other systems belong only in [docs/LANDSCAPE.md](docs/LANDSCAPE.md).
+- Do not add data without a licence that allows it; never add personal data ([POLICY.md](POLICY.md), gate 6).
 
 ---
 
-## 9. Licence of contributions
+## 8. Documents to update with a change
 
-Unless a repository says otherwise, Tiefer's repositories are licensed under the [Mozilla Public License 2.0](https://www.mozilla.org/en-US/MPL/2.0/). By submitting a contribution you confirm that:
+| If your change | Also update |
+| :--- | :---: |
+| adds, renames or removes a Markdown file | [INDEX.md](INDEX.md) (a test checks it) |
+| adds or changes something Tiefer may state in public | [CLAIMS.md](CLAIMS.md) |
+| changes a result or how it is read | [docs/RESULTS.md](docs/RESULTS.md) and [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) |
+| adds a dependency | `uv.lock`, `hpc/roihu/requirements.txt` (`make requirements`) and [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) |
+| adds a requirement or changes how it is verified | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) |
+| changes any Markdown file | its changelog line, newest first |
 
-1. the contribution is licensed under the same licence as the repository you contribute to;
+---
+
+## 9. Terms of contributions
+
+Contributions are accepted inbound equals outbound: your contribution is licensed under the licence of the repository, the Mozilla Public License 2.0 ([LICENSING.md](LICENSING.md)). By submitting a contribution you confirm that:
+
+1. the contribution is licensed under MPL 2.0;
 2. you wrote it, or you have the right to submit it under that licence;
 3. if your employer or another party has rights in your work, you have their permission to contribute it;
-4. any third-party code or data in it keeps its original licence notice, and that licence is compatible with the repository's licence.
+4. any third-party code or data in it keeps its original licence notice, and that licence is compatible with MPL 2.0.
 
-New source files start with the MPL 2.0 notice used in the repository (Exhibit A of the licence).
+New source files start with the MPL 2.0 notice used in the repository (Exhibit A of the licence). [CLA.md](CLA.md) is a draft and is not in force; it changes nothing about these terms until the founder approves it.
+
+Add a dependency only when it is needed, and say why. Its licence must be compatible with MPL 2.0; a copyleft licence that would change the licence of the repository is not accepted. Pin GitHub Actions by full commit SHA, with the version in a comment.
 
 ---
 
 ## 10. Trademarks
 
-The Tiefer name and logo are trademarks of Tiefer. They are not licensed by the code licence. Forks and derivative projects must not use them in a way that suggests they are Tiefer's or endorsed by Tiefer.
+The Tiefer name and logo are not licensed by the code licence. Forks must not use them in a way that suggests they are Tiefer's or endorsed by Tiefer; see [TRADEMARK.md](TRADEMARK.md).
 
 ---
 
@@ -166,6 +174,7 @@ Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Changelog
 
+- 7 October 2026: rewritten as the Lab version of the organisation file: the `make` targets, the text tests, how to add a report file, the test split, configs and the run plan before a CSC Roihu run, the documents to update with a change, the three CI workflows, and the terms of contributions with CLA.md as a draft. The process, addresses and times are those of the organisation version.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; set-up per repository, commit and branch rules, CI checks, writing rules aligned with the en dash rule of docs/STYLE.md, rules for results and data, dependencies and the terms of contribution added.
 - 27 September 2026: first version.
