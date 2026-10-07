@@ -41,6 +41,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [EXTENDING.md](EXTENDING.md) | golden paths to extend Lab | contributors | extension paths | in use | 7 October 2026 |
 | **Policies and community** | | | | | |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the contributor contract | contributors | contribution process | in use | 7 October 2026 |
+| [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | disclosure of AI-assisted systems in issues and pull requests, data rules, labelling, EU legal references | contributors, maintainers | AI assistance policy, regulatory references | in use | 7 October 2026 |
 | [CLA.md](CLA.md) | proposed contributor terms, not in force | the founder, contributors | contributor licence agreement | draft | 7 October 2026 |
 | [GOVERNANCE.md](GOVERNANCE.md) | roles, decision classes, versions, continuity | contributors, evaluators | decisions and roles | in use | 7 October 2026 |
 | [LICENSING.md](LICENSING.md) | the licence of every part of the repository | users, contributors | licences | in use | 7 October 2026 |
@@ -73,7 +74,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 | :--- | :---: | :---: |
 | `draft` | written, not yet reviewed or not yet complete | [CLA.md](CLA.md), [models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md) |
 | `in development` | in use and still changing with the work it describes | [README.md](README.md), [docs/RESULTS.md](docs/RESULTS.md), [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), [docs/LANDSCAPE.md](docs/LANDSCAPE.md), [docs/DATA.md](docs/DATA.md), [docs/DATASETS.md](docs/DATASETS.md), [docs/SPEC.md](docs/SPEC.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/STANDARDS.md](docs/STANDARDS.md), [hpc/roihu/README.md](hpc/roihu/README.md), [hpc/roihu/plan.md](hpc/roihu/plan.md), [jetson/README.md](jetson/README.md), [models/cloud-filter/README.md](models/cloud-filter/README.md), [reports/README.md](reports/README.md), [reports/jetson/README.md](reports/jetson/README.md) |
-| `in use` | complete for its purpose; changes are recorded in the changelog | [START-HERE.md](START-HERE.md), [INDEX.md](INDEX.md), [GETTING-STARTED.md](GETTING-STARTED.md), [INSTALL.md](INSTALL.md), [LEARNING-PATH.md](LEARNING-PATH.md), [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), [CLAIMS.md](CLAIMS.md), [POLICY.md](POLICY.md), [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md), [docs/STYLE.md](docs/STYLE.md), [EXTENDING.md](EXTENDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), [LICENSING.md](LICENSING.md), [NOTICE.md](NOTICE.md), [TRADEMARK.md](TRADEMARK.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md), [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md), [reports/test_log.md](reports/test_log.md) |
+| `in use` | complete for its purpose; changes are recorded in the changelog | [START-HERE.md](START-HERE.md), [INDEX.md](INDEX.md), [GETTING-STARTED.md](GETTING-STARTED.md), [INSTALL.md](INSTALL.md), [LEARNING-PATH.md](LEARNING-PATH.md), [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), [CLAIMS.md](CLAIMS.md), [POLICY.md](POLICY.md), [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md), [docs/STYLE.md](docs/STYLE.md), [EXTENDING.md](EXTENDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [AI_ASSISTANCE.md](AI_ASSISTANCE.md), [GOVERNANCE.md](GOVERNANCE.md), [LICENSING.md](LICENSING.md), [NOTICE.md](NOTICE.md), [TRADEMARK.md](TRADEMARK.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md), [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md), [reports/test_log.md](reports/test_log.md) |
 | `superseded` | replaced; the document names its successor | none |
 
 The plan of 2 October 2026 in [hpc/roihu/plan.md](hpc/roihu/plan.md), section 5, is superseded inside a file that is in development.
@@ -82,4 +83,5 @@ The plan of 2 October 2026 in [hpc/roihu/plan.md](hpc/roihu/plan.md), section 5,
 
 ## Changelog
 
+- 7 October 2026: AI_ASSISTANCE.md added to the policies and to the files in use.
 - 7 October 2026: first version: 39 Markdown files in nine groups, with purpose, audience, owned topic, status and last change, and the files in each lifecycle state.
