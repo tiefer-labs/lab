@@ -16,7 +16,7 @@ On the test split (975 patches), l2_spec_1m s0 has a mean IoU of 0.720 [0.707, 0
 
 ## 2. How to read this page
 
-- Numbers are rounded to 3 decimals; counts, bytes and times are exact. Where a source was already rounded, section 20 says so.
+- Numbers are rounded to 3 decimals, half up (0.0075 becomes 0.008); counts, bytes and times are exact. Where a source was already rounded, section 20 says so.
 - Intervals in brackets are 95 percent bootstrap intervals over patches, with 1000 resamples and seed 0 (`[evaluation]` of every config). A value without brackets has no interval in its source.
 - `pending`: measured, but the report file is not yet in the repository and no other source below holds the value. `not measured`: never measured. `n/a`: the measure does not apply.
 - Runs are named by their configuration and seed after section 3, for example l1_base s0. Every table has a source column: the key of a report file (appendix A) and the kind of source the value was copied from (below).
@@ -408,7 +408,7 @@ CSC bills GPU and CPU jobs in different units, so they are listed in two tables.
 | 2000941 | tiefer-train | l2_flex_1m, attempt 2 (batch 128, `load_mode` memory, expandable segments) | FAILED, out of GPU memory | 00:00:55 | 0.015 | 3.056 | log |
 | 2000949 | tiefer-train | l2_flex_1m s0, training (attempt 3, batch 64) | pending | 01:28:11 | 1.470 | 293.944 | `c-2000949`: page |
 | 2001000 | tiefer-train | l1_full s0, training | pending | 00:22:36 | 0.377 | 75.333 | `c-2001000`: page, log |
-| 2001268 | tiefer-evaluate | l1_full s0, validation | pending | 00:00:27 | 0.007 | 1.500 | `c-2001268`: page, log |
+| 2001268 | tiefer-evaluate | l1_full s0, validation | pending | 00:00:27 | 0.008 | 1.500 | `c-2001268`: page, log |
 | 2001269 | tiefer-evaluate | l1_full s0, test | pending | 00:00:32 | 0.009 | 1.778 | `c-2001269`: page, log |
 | 2001281 | tiefer-export | l1_full s0, export | pending | 01:20:54 | 1.348 | 269.667 | `c-2001281`: page |
 | 2001425 | tiefer-train | l2_spec_1m s0, training | pending | 00:37:27 | 0.624 | 124.833 | `c-2001425`: page |
@@ -603,6 +603,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: correction: job 2001268 used 0.008 GPU hours (27 s, 0.0075 rounded half up), not 0.007; every other derived value of section 16 was rechecked with the rule.
 - 7 October 2026: section 18 gives the human agreement of the CloudSEN12 paper (Table 6) instead of "not yet verified".
 - 7 October 2026: section 3 lists the l1_base runs of 2 October 2026 (training-loop values, reports pending), the reason for l1_full; section 17 links them.
 - 7 October 2026: correction: l1_base has two seeds; the summary and the limitations give their difference (0.042 on validation, 0.044 on test) instead of "every run is a single seed".
