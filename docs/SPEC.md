@@ -140,9 +140,9 @@ Evaluated with the same code and splits as the model:
 
   | Band set | Bands |
   | :--- | :---: |
-  | red, green, blue | B02, B03, B04 |
+  | blue, green, red | B02, B03, B04 |
   | plus near infrared | B02, B03, B04, B08 |
-  | plus short-wave infrared | B02, B03, B04, B08, B11, B12 (TODO(verify) that these are the short-wave infrared bands, from the Sentinel-2 mission documentation) |
+  | plus short-wave infrared | B02, B03, B04, B08, B11, B12 (B11 and B12 are the short-wave infrared bands of Sentinel-2 MSI, 20 m; B10, the 60 m cirrus band, is not in this set; ESA SentiWiki, S2 Mission, accessed 7 October 2026) |
   | all | B01 to B12 and B8A, 13 bands |
 
 - **Self-distillation:** on a batch that draws a smaller band set, the prediction with all 13 bands (no gradient) is a soft target for the prediction with the drawn set, next to the label loss (`train.distill_weight`).
@@ -537,6 +537,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 8, the band set table names B02, B03, B04 as blue, green, red, and B11 and B12 as the short-wave infrared bands, from ESA SentiWiki; a `TODO(verify)` resolved.
 - 7 October 2026: the results generator, its test and the `make results` target are removed; `docs/RESULTS.md` is written by hand from the report files (note in section 13). Reasons: readability, and the page had to combine the results of milestones L1 and L2 in tables the generator could not lay out. The report loader used by `tiefer_lab.acceptance` moves to `src/tiefer_lab/reports.py`. Sections 13, 14, 15 and 17 keep their original text next to the change.
 - 2 October 2026: section 15 and the tree describe the new CI: separate jobs, tests on x86 and ARM, coverage with a floor, shellcheck, the smoke job, the SBOM artifact, the secret scan and the weekly vulnerability audit. Before, one CI job ran lint, type check and tests, with `permissions: contents: read` at the workflow level.
 - 2 October 2026: section 9 adds the operational design domain and the fail-safe behaviour of `tiefer_lab.onboard`. Before, the specification did not say which inputs the filter is designed for or what happens outside them.

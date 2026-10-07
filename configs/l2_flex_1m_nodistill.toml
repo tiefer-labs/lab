@@ -3,10 +3,15 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Milestone L2: as l2_flex_1m without self-distillation.
-# Generated layout; the settings shared by the l2 family are listed in hpc/roihu/plan.md.
-# Band sets: B02 B03 B04 (red, green, blue); plus B08 (near infrared); plus B11 B12
-# (TODO(verify) that these are the short-wave infrared bands, from the Sentinel-2
-# mission documentation); all 13 bands.
+# The settings shared by the L2 family, and how they differ from L1, are listed in
+# docs/ASSUMPTIONS.md, section 6.
+# Band sets: B02 B03 B04 (blue, green, red); plus B08 (near infrared); plus B11 B12,
+# the two short-wave infrared bands of Sentinel-2 MSI (equivalent wavelength on
+# Sentinel-2A: B11 1613.7 nm, B12 2202.4 nm; both 20 m); all 13 bands. B10 (1373.5 nm,
+# 60 m) is the cirrus band, which ESA describes as not seeing the ground; it is not in
+# the 6-band set, which stands for a sensor with blue, green, red, near infrared and
+# two short-wave infrared bands. Source: ESA SentiWiki, S2 Mission, spectral
+# resolution, https://sentiwiki.copernicus.eu/web/s2-mission, accessed 7 October 2026.
 name = "l2_flex_1m_nodistill"
 
 [data]

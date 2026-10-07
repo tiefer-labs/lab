@@ -3,10 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Milestone L2: specialist on blue, green, red and near infrared, about 22 M parameters: the control.
-# Generated layout; the settings shared by the l2 family are listed in hpc/roihu/plan.md.
-# Band sets: B02 B03 B04 (red, green, blue); plus B08 (near infrared); plus B11 B12
-# (TODO(verify) that these are the short-wave infrared bands, from the Sentinel-2
-# mission documentation); all 13 bands.
+# The settings shared by the L2 family, and how they differ from L1, are listed in
+# docs/ASSUMPTIONS.md, section 6.
+# Bands: B02 B03 B04 B08 (blue, green, red, near infrared), a fixed input; this
+# config has no band sets (train.band_sets is empty).
 name = "l2_spec_22m"
 
 [data]
