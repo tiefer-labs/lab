@@ -61,6 +61,8 @@ A capability may be stated in public, on the website, the organisation profile, 
 | `C-26` | security problems can be reported through GitHub private vulnerability reporting | lab:SECURITY.md:28; .github:SECURITY.md:9–13 | `NOT STARTED` | the GitHub API returned `"enabled": false` for this repository on 7 October 2026 | the e-mail route of [SECURITY.md](SECURITY.md) works; the setting is the maintainer's to enable | 7 October 2026 |
 | `C-27` | the later stages of the roadmap: a ground pilot, a first flight, national satellites, more operators and radar data on board | web:internal/content/en.go:144–147 | `PLANNED` | none | stated as a roadmap, not as done | 7 October 2026 |
 
+Every number behind a `MEASURED` claim counts padded pixels; re-evaluation pending ([docs/RESULTS.md](docs/RESULTS.md), section 21). No such number is quoted outside the repository until it is evaluated again ([POLICY.md](POLICY.md), gate 2).
+
 ---
 
 ## 4. Statements that need correction
@@ -91,4 +93,5 @@ Public statements whose status is `NOT STARTED`, or that contradict [docs/RESULT
 
 ## Changelog
 
+- 7 October 2026: the numbers behind every `MEASURED` claim count padded pixels; re-evaluation pending, and no such number is quoted outside the repository until then.
 - 7 October 2026: first version: 27 claims from this repository, the organisation profile and policies, and the website, with status and evidence; the statements that need correction at their source.

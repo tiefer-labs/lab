@@ -43,7 +43,7 @@ Outside means the website, the organisation profile, posts, slides, applications
 
 | Part | Content |
 | :--- | :---: |
-| Rule | the claim has status MEASURED in [CLAIMS.md](CLAIMS.md); its report file is committed; the quote states the value with its interval, the split and the run, and the caveats of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3; it is cited in the form of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 4. A session-notes value or a `pending` value is never quoted outside |
+| Rule | the claim has status MEASURED in [CLAIMS.md](CLAIMS.md); its report file is committed; the quote states the value with its interval, the split and the run, and the caveats of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3; it is cited in the form of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 4. A session-notes value or a `pending` value is never quoted outside. A value that counts the dataset's padded pixels, every value measured before 7 October 2026, is not quoted outside until its run is evaluated again with the padding masked ([docs/RESULTS.md](docs/RESULTS.md), section 21) |
 | Evidence | the row in [CLAIMS.md](CLAIMS.md) and the citation |
 | Who checks | the maintainer, before publication |
 | When broken | the public text is corrected at its source, and [CLAIMS.md](CLAIMS.md), section 4, lists the statement until it is fixed |
@@ -117,5 +117,6 @@ The L2 runs of 3 October 2026 used a batch size and learning rate that are not i
 
 ## Changelog
 
+- 7 October 2026: gate 2, a value that counts padded pixels is not quoted outside the repository until it is evaluated again.
 - 7 October 2026: section 1 links AI_ASSISTANCE.md: content produced with an AI-assisted system passes the same gates.
 - 7 October 2026: first version: seven gates for results, public quotes, the test split, model cards, comparisons, datasets and compute spend.

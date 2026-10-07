@@ -67,6 +67,8 @@ Validation split, report written at commit `81ab34b03bcc` (the version of `b0-va
 | Expected calibration error | pending | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json`, `calibration` |
 | Worst stratum, cloud BOA | pending | n/a | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_val.json`, `worst_stratum` |
 
+Every value of this table counts padded pixels; re-evaluation pending ([RESULTS.md](../../../docs/RESULTS.md), section 21).
+
 Test split, report written at commit `81ab34b03bcc`; the values are copied from the generated page at commit c3e861a ([RESULTS.md](../../../docs/RESULTS.md), section 6):
 
 | Metric | Value | 95 percent interval | Source |
@@ -76,6 +78,8 @@ Test split, report written at commit `81ab34b03bcc`; the values are copied from 
 | Decision accuracy at 50 percent | 0.927 | [0.910, 0.943] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` |
 | Cloud fraction mean absolute error | 0.062 | [0.055, 0.070] | `reports/evaluation/l1_base-seed0-20261003T093922Z-81ab34b_test.json` |
 | Cloud BOA and shadow BOA | not measured | n/a | the code at `81ab34b03bcc` has no cloud and shadow measures ([RESULTS.md](../../../docs/RESULTS.md), section 11) |
+
+Every value of this table counts padded pixels; re-evaluation pending ([RESULTS.md](../../../docs/RESULTS.md), section 21).
 
 Fail-safe cases that end in a discarded frame: 0 of the nine cases of `tiefer_lab.onboard.failsafe_check` (`tests/test_onboard.py`); this is a property of the decision code, not of these weights.
 
@@ -92,6 +96,8 @@ Validation split, ONNX Runtime, report written at commit `81ab34b03bcc`; INT8 ca
 | FP32 | 993,280 | 0.649 | n/a | n/a | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json`; size (notes) |
 | FP16 | 518,144 | 0.649 | 0.000 | 0.000 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json`; size and values (notes) |
 | INT8 | 455,680 | 0.579 | -0.070 | -0.009 | `reports/export/l1_base-seed0-20261003T093922Z-81ab34b.json`; size (notes); cloud BOA change (note below) |
+
+The mean IoU and its changes in this table count padded pixels; re-evaluation pending ([RESULTS.md](../../../docs/RESULTS.md), section 21). The file sizes do not depend on them.
 
 - The file sizes and the FP16 values come from the session notes and are checked against the export report when it is in `reports/` ([RESULTS.md](../../../docs/RESULTS.md), section 20).
 - The false discard rate at 50 percent of the FP32 file is 0.039 in ONNX Runtime, against 0.042 in the PyTorch evaluation of the validation table above. The two come from different runtimes; the cause of the difference is not yet investigated ([RESULTS.md](../../../docs/RESULTS.md), section 14).
@@ -118,7 +124,7 @@ Validation split, ONNX Runtime, report written at commit `81ab34b03bcc`; INT8 ca
 - Later runs score higher on test: `l1_full s0` 0.689 and `l2_spec_1m s0` 0.720 mean IoU against 0.635 here ([RESULTS.md](../../../docs/RESULTS.md), section 6).
 - One seed only, trained from a working tree with uncommitted changes.
 - Mean IoU differs by region, from 0.685 to 0.561 on validation ([RESULTS.md](../../../docs/RESULTS.md), section 9).
-- The cached patches are 512 x 512 and hold the dataset's padding; every metric counts the padded pixels ([DATA.md](../../../docs/DATA.md), section 5).
+- The cached patches are 512 x 512 and hold the dataset's padding; every metric of this card counts the padded pixels ([DATA.md](../../../docs/DATA.md), section 5). Since 7 October 2026 the padding is masked at load time; this model is evaluated again with the same checkpoint, and until then its values keep their numbers ([RESULTS.md](../../../docs/RESULTS.md), section 21).
 - Standards: no agency or operator standard is claimed; see `docs/STANDARDS.md`.
 
 ---
@@ -140,6 +146,7 @@ Excluded: `best.pt`. Its SHA-256 (`bd6767cb5e06f489f81a6a5e79cc826f8b3437a127307
 
 ## Changelog
 
+- 7 October 2026: the evaluation and quantisation tables count padded pixels; re-evaluation pending.
 - 7 October 2026: the weight licence row cites LICENSING.md, which now states it.
 - 7 October 2026: the sources of the file sizes and FP16 values are the session notes; the difference between 0.042 (PyTorch) and 0.039 (ONNX Runtime) is explained; the cloud BOA changes of INT8 and FP16 have no source in the committed code yet.
 - 7 October 2026: `best.pt` is excluded from the file table, since its hash is not in `SHA256SUMS`.

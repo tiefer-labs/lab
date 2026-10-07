@@ -12,6 +12,8 @@ Measured results of milestones L1 (four-band cloud filter) and L2 (model size, b
 
 On the test split (975 patches), l2_spec_1m s0 has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]. The best baseline, the threshold rule, has a test mean IoU of 0.296 [0.285, 0.308]. On four bands, the band-flexible l2_flex_1m s0 has a test mean IoU of 0.609 against 0.720 for the four-band specialist l2_spec_1m s0. INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on each of the three exported runs, more than the one point (0.010) set in docs/SPEC.md, section 10. The Jetson Orin is not measured. l1_base has two seeds, whose mean IoU differs by 0.042 on validation and 0.044 on test; l1_full and every L2 run are single seeds.
 
+Every value on this page was computed over 512 x 512 patches that include the dataset's padding of 3 rows and 3 columns: it counts padded pixels; re-evaluation pending (section 21). Since 7 October 2026 the padding is masked at load time ([DATA.md](DATA.md), section 5); no value here is changed until its run is evaluated again.
+
 ---
 
 ## 2. How to read this page
@@ -143,6 +145,8 @@ Labelled pixels of the validation split, from the row sums of the confusion matr
 | cloud shadow | 12,363,186 | 0.088 | `b0-val` (report) |
 | all classes | 140,247,040 | 1.000 | `b0-val` (report) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 The class shares of the test split are pending (`b0-test`).
 
 | Cache | Bands | Size on disk | Built | Used by | Source |
@@ -166,6 +170,8 @@ Which cache l2_spec_1m s0 read is pending: the notes say the four-band cache, wh
 | **Baselines** | | | | | | |
 | always send | 0.135 [0.128, 0.143] | 0.133 [0.128, 0.138] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.635 [0.607, 0.664] | `s-val`, `s-test` (page) |
 | threshold rule | 0.297 [0.282, 0.314] | 0.296 [0.285, 0.308] | 0.227 [0.180, 0.269] | 0.218 [0.186, 0.252] | 0.741 [0.713, 0.768] | `s-val`, `s-test` (page) |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 The values of l1_base s1 were printed by its evaluation jobs 2000417 and 2000418, those of l1_full s0 by jobs 2001268 and 2001269 (unrounded values in section 20); the intervals of l1_base s1 are pending. The page h-0f0984d confirms the values of l1_full s0.
 
@@ -196,6 +202,8 @@ A higher mean IoU did not always mean fewer useful frames discarded: l1_full s0 
 | False discard rate at 70 percent | 0.040 [0.023, 0.060] | 0.042 [0.029, 0.056] | `s-val`, `s-test` (page) |
 | Decision accuracy at 70 percent | 0.955 [0.936, 0.972] | 0.944 [0.928, 0.958] | `s-val`, `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 The useful frames depend only on the labels (section 8). The false send rates of l2_spec_1m s0 are pending; PA and UA are in section 11. It is the selected model because it has the highest validation mean IoU of the runs measured so far; it is a single seed and has no export report yet (section 14).
 
 ---
@@ -219,6 +227,8 @@ IoU per class:
 | l2_flex_1m s0, 4 bands | pending | pending | pending | pending | `x-test-4` |
 | l2_spec_1m s0 | 0.885 [0.873, 0.896] | 0.853 [0.839, 0.864] | 0.505 [0.469, 0.536] | 0.637 [0.618, 0.656] | `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 Overall accuracy and cloud fraction mean absolute error:
 
 | Run | Overall accuracy, val | Overall accuracy, test | Mean absolute error, val | Mean absolute error, test | Source |
@@ -229,6 +239,8 @@ Overall accuracy and cloud fraction mean absolute error:
 | l2_flex_1m s0, 4 bands | pending | pending | pending | pending | `x-val-4`, `x-test-4` |
 | l2_spec_1m s0 | 0.895 [0.884, 0.906] | 0.896 [0.887, 0.904] | 0.046 [0.038, 0.054] | 0.045 [0.040, 0.050] | `s-val`, `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 Confusion matrix of l1_base s0 on the validation split, in pixels; rows are the labelled class, columns the predicted class:
 
 | Labelled class | Predicted clear | Predicted thick cloud | Predicted thin cloud | Predicted cloud shadow | Source |
@@ -237,6 +249,8 @@ Confusion matrix of l1_base s0 on the validation split, in pixels; rows are the 
 | thick cloud | 664,053 | 31,147,226 | 2,844,075 | 2,575,440 | `b0-val` (report) |
 | thin cloud | 2,269,398 | 688,896 | 11,244,293 | 777,284 | `b0-val` (report) |
 | cloud shadow | 930,418 | 550,298 | 1,051,029 | 9,831,441 | `b0-val` (report) |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 Thin cloud and cloud shadow are the two weakest classes in every run measured so far. The largest single confusion of l1_base s0 is clear pixels predicted as cloud shadow (4,812,396). The model predicts cloud shadow on 0.128 of the labelled validation pixels, against 0.088 in the labels. The per-class IoU and the overall accuracy computed from this matrix agree with the values in the tables above at 3 decimals.
 
@@ -261,6 +275,8 @@ Frame metrics at each threshold. Useful frames are those whose labelled cloud fr
 | 50 percent | 0.933 [0.917, 0.948] | 0.069 [0.051, 0.090] | pending | pending | `f0-test` (h-0f0984d) |
 | 70 percent | 0.934 [0.919, 0.949] | 0.060 [0.044, 0.077] | pending | pending | `f0-test` (h-0f0984d) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 The frame metrics of l1_base s1 and of l2_flex_1m s0 are pending (`b1-val`, `b1-test`, `x-val-4`, `x-test-4`); l2_spec_1m s0 is in section 7.
 
 A higher threshold sends more cloudy frames to the ground: for l1_base s0 on validation, the false send rate is 0.047 at 30 percent and 0.168 at 70 percent. This is the trade-off an operator sets.
@@ -280,6 +296,8 @@ l1_base s0 on the validation split, broken down by the dataset field `equi_zone`
 | AF | 80 | 0.624 | 0.074 | `b0-val` (report) |
 | OC | 50 | 0.561 | 0.037 | `b0-val` (report) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 The counts add up to the 535 validation patches. The mean IoU differs by 0.124 between EU and OC; this is a known bias to follow up, and the per-region results of the other runs are pending.
 
 ---
@@ -293,11 +311,15 @@ The counts add up to the 535 validation patches. The mean IoU differs by 0.124 b
 | threshold rule | val | 0.297 [0.282, 0.314] | 0.227 [0.180, 0.269] | 0.751 [0.716, 0.785] | 0.612 | `s-val` (page); overall accuracy `b0-val` (report) |
 | threshold rule | test | 0.296 [0.285, 0.308] | 0.218 [0.186, 0.252] | 0.741 [0.713, 0.768] | pending | `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 IoU per class of the threshold rule on the validation split:
 
 | Baseline | IoU clear | IoU thick cloud | IoU thin cloud | IoU cloud shadow | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | threshold rule | 0.584 | 0.459 | 0.147 | 0.000 | `b0-val` (report) |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 The threshold rule never predicts cloud shadow, so its shadow IoU is 0.000. Its parameters are `max_whiteness` 0.4, `thick_brightness` 0.2 and `thin_brightness` 0.14 (`b0-val`, report), tuned on the validation split; its validation values are therefore scored on the data it was tuned on, and the test values are the comparison that counts. The baseline values are the same in the reports of l1_base s0, l1_full s0 and l2_spec_1m s0 where more than one shows them (page, h-c3e861a, h-0f0984d).
 
@@ -346,6 +368,8 @@ Cloud against the rest:
 | always send | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | `s-test` (page) |
 | threshold rule | 0.738 [0.717, 0.752] | 0.746 [0.719, 0.776] | 0.854 [0.808, 0.890] | `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 Cloud shadow against the rest:
 
 | Run | Shadow BOA | Shadow PA | Shadow UA | Source |
@@ -367,6 +391,8 @@ Cloud shadow against the rest:
 | always send | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | `s-test` (page) |
 | threshold rule | 0.500 [0.500, 0.500] | 0.000 [0.000, 0.000] | n/a | `s-test` (page) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 The l1_base s0 validation row of the generated page took its values from `b0-bl1`, the evaluation under a blur of 1 pixel, not from the clean validation run; its values are therefore pending here. The generated page showed `n/a` in every cell of the l1_base s0 test row, and also for both baselines evaluated in that report (h-c3e861a). The code at commit 81ab34b03bcc, at which that report was written, has no cloud and shadow measures: `src/tiefer_lab/binary_metrics.py` was added in commit 22af34a, ten commits later. They were therefore not measured for that run. The cloud and shadow values of the band sets with 3, 4 and 6 bands of l2_flex_1m s0 are pending.
 
 ---
@@ -382,6 +408,8 @@ The l1_base s0 validation row of the generated page took its values from `b0-bl1
 | 13 bands | B01 to B12 and B8A | pending | 0.501 | 0.003 | `x-val-13`; `x-test-13` (notes) |
 | **l2_spec_1m s0** | | | | | |
 | 4 bands | B02 B03 B04 B08 | 0.732 [0.714, 0.749] | 0.720 [0.707, 0.732] | 0.042 [0.026, 0.059] | `s-val`, `s-test` (page) |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 Product decision. Under the rule of [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7, the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor. The rule is applied on validation, and `x-val-4` is pending, so no decision is recorded yet. The test values above (0.609 for l2_flex_1m s0 with four bands, a notes value, against 0.720 [0.707, 0.732] for l2_spec_1m s0) are informational only: the test split never selects a model or a setting ([SPEC.md](SPEC.md), section 2, rule 5).
 
@@ -404,15 +432,21 @@ l1_base s0 on the validation split, with a fixed perturbation applied to the inp
 | noise 0.01 | Gaussian noise, standard deviation 0.01 reflectance | 0.474 | 0.009 | pending | `b0-n0.01` (notes) |
 | blur 1 | Gaussian blur, standard deviation 1 pixel | 0.468 [0.447, 0.491] | 0.178 [0.139, 0.219] | 0.869 [0.839, 0.897] | `b0-bl1` (h-5ba4585) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 | Perturbation | IoU clear | IoU thick cloud | IoU thin cloud | IoU cloud shadow | Overall accuracy | Mean absolute error | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | none | 0.831 [0.810, 0.849] | 0.789 [0.765, 0.810] | 0.498 [0.451, 0.541] | 0.479 [0.451, 0.507] | 0.844 [0.830, 0.856] | 0.061 [0.053, 0.071] | `b0-val` (report) |
 | blur 1 | 0.543 [0.511, 0.578] | 0.682 [0.648, 0.716] | 0.359 [0.315, 0.408] | 0.290 [0.264, 0.315] | 0.672 [0.651, 0.694] | 0.121 [0.107, 0.136] | `b0-bl1` (h-5ba4585) |
 
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
+
 | Perturbation | Cloud BOA | Shadow BOA | Source |
 | :--- | :---: | :---: | :---: |
 | none | pending | pending | `b0-val` |
 | blur 1 | 0.853 [0.836, 0.869] | 0.858 [0.845, 0.873] | `b0-bl1` (h-5ba4585) |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 The per-class values, overall accuracy, mean absolute error and BOA of the six perturbations from the notes, and their intervals, are pending. A lower false discard rate together with a much lower mean IoU (noise 0.01: 0.009 and 0.474) means the model calls fewer frames cloudy, not that it decides better.
 
@@ -428,6 +462,8 @@ Formats of l1_base s0, scored with ONNX Runtime on the validation split: ONNX op
 | FP16 | 518,144 | 0.649 | 0.039 | `b0-exp` (notes); change 0.000 (card) |
 | INT8 | 455,680 | 0.579 | 0.030 | `b0-exp` (size notes; values page) |
 
+The mean IoU and false discard rate of this table count padded pixels; re-evaluation pending (section 21). The file sizes do not depend on them.
+
 INT8 change against FP32 for every exported run, on the validation split:
 
 | Run | FP32 mean IoU | INT8 mean IoU | Change | FP32 false discard rate | INT8 false discard rate | Source |
@@ -436,6 +472,8 @@ INT8 change against FP32 for every exported run, on the validation split:
 | l1_base s1 | 0.690 | 0.631 | -0.060 | 0.048 | 0.079 | `b1-exp` (page); change (h-0f0984d) |
 | l1_full s0 | 0.696 | 0.542 | -0.154 | 0.057 | 0.027 | `f0-exp` (page) |
 | l2_spec_1m s0 | pending | pending | pending | pending | pending | n/a |
+
+Every value of this table counts padded pixels; re-evaluation pending (section 21).
 
 The change is the value of the export report, computed before rounding; for l1_base s1 the difference of the two rounded values in this table is 0.059.
 
@@ -540,7 +578,7 @@ CPU jobs on the partition `small`, building the 13-band cache `cloudsen12-l1c-al
 - Thin cloud and cloud shadow are hard to label even for people, which bounds what any model can score on them; the CloudSEN12 paper reports a human-level median BOA of 0.99 for cloud and 0.99 for cloud shadow, and a producer's accuracy of 0.780 for thin cloud between the labels before and after its quality control, on its 975 test patches and the labels of the 2022 release, not on this repository's revision (docs/DATA.md, section 3).
 - The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, sensor and processing level (docs/DATASETS.md).
 - Only 509 x 509 patches are used; the 2000 x 2000 patches are left out (docs/DATA.md, section 5).
-- The cached patches are 512 x 512 and hold the dataset's padding of 3 rows and 3 columns: the 140,247,040 labelled pixels of `b0-val` are 535 x 512 x 512. Every metric on this page counts the padded pixels; which label code they hold is pending (docs/DATA.md, section 5).
+- The cached patches are 512 x 512 and hold the dataset's padding of 3 rows and 3 columns: the 140,247,040 labelled pixels of `b0-val` are 535 x 512 x 512. Every metric on this page counts the padded pixels; which label code they hold is pending (docs/DATA.md, section 5). The padding has been masked at load time since 7 October 2026, and every value is evaluated again (section 21).
 - The data is public Level-1C top-of-atmosphere reflectance, not raw onboard data with its own calibration, noise and compression.
 - No space environment effects are covered: radiation, vacuum and thermal behaviour of the onboard computer are not tested.
 - Hardware measurements, when present, come from an NVIDIA Jetson Orin, which is flight-like reference hardware, not flight hardware.
@@ -664,6 +702,92 @@ Values pending: measured, with the report file that will fill them.
 
 ---
 
+## 21. Re-evaluation with padded pixels masked
+
+Since 7 October 2026 the dataset's padding of each cached patch is set to `IGNORE_INDEX` when the labels are loaded ([DATA.md](DATA.md), section 5; [SPEC.md](SPEC.md), section 9), so every metric counts only the 509 x 509 pixels of the real image. Every value in sections 1 to 14 was computed before, over 512 x 512 patches: in each patch, 3,063 of 262,144 pixels (0.012) are padding, counted as the class of their label code (pending, [DATA.md](DATA.md), section 13), with image values of zero.
+
+Each value keeps its number until its run is evaluated again with the same checkpoint, from one clean commit; no value is changed by estimate. The jobs, their order and their cost are in [hpc/roihu/plan.md](../hpc/roihu/plan.md), section 6. When a new value is in, it replaces the old one in its table, with its report file, and the old one is listed as superseded in [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md), section 5. The difference is the new value minus the old one.
+
+Mean IoU:
+
+| Run | Split | Band set | Padded pixels counted | Padded pixels masked | Difference | Source of the old value |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Validation split** | | | | | | |
+| l1_base s0 | val | B02 B03 B04 B08 | 0.649 [0.630, 0.667] | pending | pending | `b0-val` (report) |
+| l1_base s1 | val | B02 B03 B04 B08 | 0.691 | pending | pending | `b1-val` (log) |
+| l1_full s0 | val | B02 B03 B04 B08 | 0.697 [0.680, 0.713] | pending | pending | `f0-val` (log, h-0f0984d) |
+| l2_spec_1m s0 | val | B02 B03 B04 B08 | 0.732 [0.714, 0.749] | pending | pending | `s-val` (page) |
+| l2_flex_1m s0 | val | B02 B03 B04 | pending | pending | pending | `x-val-3` |
+| l2_flex_1m s0 | val | B02 B03 B04 B08 | pending | pending | pending | `x-val-4` |
+| l2_flex_1m s0 | val | B02 B03 B04 B08 B11 B12 | pending | pending | pending | `x-val-6` |
+| l2_flex_1m s0 | val | B01 to B12 and B8A | pending | pending | pending | `x-val-13` |
+| l1_base s0, rescale 0.5 | val | B02 B03 B04 B08 | 0.625 | pending | pending | `b0-rs0.5` (notes) |
+| l1_base s0, rescale 2 | val | B02 B03 B04 B08 | 0.410 | pending | pending | `b0-rs2` (notes) |
+| l1_base s0, gain 0.9 | val | B02 B03 B04 B08 | 0.640 | pending | pending | `b0-g0.9` (notes) |
+| l1_base s0, gain 1.1 | val | B02 B03 B04 B08 | 0.650 | pending | pending | `b0-g1.1` (notes) |
+| l1_base s0, offset 0.01 | val | B02 B03 B04 B08 | 0.649 | pending | pending | `b0-o0.01` (notes) |
+| l1_base s0, noise 0.01 | val | B02 B03 B04 B08 | 0.474 | pending | pending | `b0-n0.01` (notes) |
+| l1_base s0, blur 1 | val | B02 B03 B04 B08 | 0.468 [0.447, 0.491] | pending | pending | `b0-bl1` (h-5ba4585) |
+| always send | val | B02 B03 B04 B08 | 0.135 [0.128, 0.143] | pending | pending | `s-val` (page) |
+| threshold rule | val | B02 B03 B04 B08 | 0.297 [0.282, 0.314] | pending | pending | `s-val` (page) |
+| **Test split** | | | | | | |
+| l1_base s0 | test | B02 B03 B04 B08 | 0.635 [0.621, 0.649] | pending | pending | `b0-test` (h-c3e861a, card) |
+| l1_base s1 | test | B02 B03 B04 B08 | 0.679 | pending | pending | `b1-test` (log) |
+| l1_full s0 | test | B02 B03 B04 B08 | 0.689 [0.676, 0.701] | pending | pending | `f0-test` (log, h-0f0984d) |
+| l2_spec_1m s0 | test | B02 B03 B04 B08 | 0.720 [0.707, 0.732] | pending | pending | `s-test` (page) |
+| l2_flex_1m s0 | test | B02 B03 B04 | 0.503 | pending | pending | `x-test-3` (notes) |
+| l2_flex_1m s0 | test | B02 B03 B04 B08 | 0.609 | pending | pending | `x-test-4` (notes) |
+| l2_flex_1m s0 | test | B02 B03 B04 B08 B11 B12 | 0.642 | pending | pending | `x-test-6` (notes) |
+| l2_flex_1m s0 | test | B01 to B12 and B8A | 0.501 | pending | pending | `x-test-13` (notes) |
+| always send | test | B02 B03 B04 B08 | 0.133 [0.128, 0.138] | pending | pending | `s-test` (page) |
+| threshold rule | test | B02 B03 B04 B08 | 0.296 [0.285, 0.308] | pending | pending | `s-test` (page) |
+
+False discard rate at 50 percent:
+
+| Run | Split | Band set | Padded pixels counted | Padded pixels masked | Difference | Source of the old value |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Validation split** | | | | | | |
+| l1_base s0 | val | B02 B03 B04 B08 | 0.042 [0.022, 0.066] | pending | pending | `b0-val` (report) |
+| l1_base s1 | val | B02 B03 B04 B08 | 0.045 | pending | pending | `b1-val` (log) |
+| l1_full s0 | val | B02 B03 B04 B08 | 0.057 [0.035, 0.084] | pending | pending | `f0-val` (log, h-0f0984d) |
+| l2_spec_1m s0 | val | B02 B03 B04 B08 | 0.036 [0.018, 0.058] | pending | pending | `s-val` (page) |
+| l2_flex_1m s0 | val | B02 B03 B04 | pending | pending | pending | `x-val-3` |
+| l2_flex_1m s0 | val | B02 B03 B04 B08 | pending | pending | pending | `x-val-4` |
+| l2_flex_1m s0 | val | B02 B03 B04 B08 B11 B12 | pending | pending | pending | `x-val-6` |
+| l2_flex_1m s0 | val | B01 to B12 and B8A | pending | pending | pending | `x-val-13` |
+| l1_base s0, rescale 0.5 | val | B02 B03 B04 B08 | 0.036 | pending | pending | `b0-rs0.5` (notes) |
+| l1_base s0, rescale 2 | val | B02 B03 B04 B08 | 0.247 | pending | pending | `b0-rs2` (notes) |
+| l1_base s0, gain 0.9 | val | B02 B03 B04 B08 | 0.030 | pending | pending | `b0-g0.9` (notes) |
+| l1_base s0, gain 1.1 | val | B02 B03 B04 B08 | 0.051 | pending | pending | `b0-g1.1` (notes) |
+| l1_base s0, offset 0.01 | val | B02 B03 B04 B08 | 0.051 | pending | pending | `b0-o0.01` (notes) |
+| l1_base s0, noise 0.01 | val | B02 B03 B04 B08 | 0.009 | pending | pending | `b0-n0.01` (notes) |
+| l1_base s0, blur 1 | val | B02 B03 B04 B08 | 0.178 [0.139, 0.219] | pending | pending | `b0-bl1` (h-5ba4585) |
+| always send | val | B02 B03 B04 B08 | 0.000 [0.000, 0.000] | pending | pending | `s-val` (page) |
+| threshold rule | val | B02 B03 B04 B08 | 0.227 [0.180, 0.269] | pending | pending | `s-val` (page) |
+| **Test split** | | | | | | |
+| l1_base s0 | test | B02 B03 B04 B08 | 0.039 [0.024, 0.055] | pending | pending | `b0-test` (h-c3e861a, card) |
+| l1_base s1 | test | B02 B03 B04 B08 | 0.061 | pending | pending | `b1-test` (log) |
+| l1_full s0 | test | B02 B03 B04 B08 | 0.069 [0.051, 0.090] | pending | pending | `f0-test` (log, h-0f0984d) |
+| l2_spec_1m s0 | test | B02 B03 B04 B08 | 0.042 [0.026, 0.059] | pending | pending | `s-test` (page) |
+| l2_flex_1m s0 | test | B02 B03 B04 | 0.097 | pending | pending | `x-test-3` (notes) |
+| l2_flex_1m s0 | test | B02 B03 B04 B08 | 0.084 | pending | pending | `x-test-4` (notes) |
+| l2_flex_1m s0 | test | B02 B03 B04 B08 B11 B12 | 0.058 | pending | pending | `x-test-6` (notes) |
+| l2_flex_1m s0 | test | B01 to B12 and B8A | 0.003 | pending | pending | `x-test-13` (notes) |
+| always send | test | B02 B03 B04 B08 | 0.000 [0.000, 0.000] | pending | pending | `s-test` (page) |
+| threshold rule | test | B02 B03 B04 B08 | 0.218 [0.186, 0.252] | pending | pending | `s-test` (page) |
+
+INT8 against FP32 on the validation split, ONNX Runtime (section 14):
+
+| Run | FP32 mean IoU, counted | FP32 mean IoU, masked | INT8 mean IoU, counted | INT8 mean IoU, masked | Change, masked | Source of the old values |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| l1_base s0 | 0.649 | pending | 0.579 | pending | pending | `b0-exp` (page) |
+| l1_base s1 | 0.690 | pending | 0.631 | pending | pending | `b1-exp` (page) |
+| l1_full s0 | 0.696 | pending | 0.542 | pending | pending | `f0-exp` (page) |
+
+Every other value of sections 6 to 14 (per-class IoU, overall accuracy, mean absolute error, BOA, PA, UA, frame metrics, regions and baselines) comes from the same reports and is replaced by the same jobs.
+
+---
+
 ## Appendix A. Report files
 
 Every report key used on this page, with its file and the git commit the report records. "Clean commit" says whether the working tree had no uncommitted changes (`provenance.git.dirty` false). None of these files is in `reports/` of the repository yet; they are on CSC Roihu, and the commits are those of the generated page. The GPU maintenance of CSC Roihu began on 6 October 2026 at 05:00 UTC (08:00 Finnish time); no GPU job of this repository has run since. The report files are copied in with `hpc/roihu/collect.sh` when the project can work on Roihu again.
@@ -707,6 +831,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: every table of measured values says that it counts padded pixels and that re-evaluation is pending; section 21 lists every run, split and band set to evaluate again with the padding masked, with the old value and the new value pending. No value is changed.
 - 7 October 2026: section 2 links BENCHMARK-AUTHORITY.md and POLICY.md for how values may be used and cited; no value changes.
 - 7 October 2026: section 18 says that every metric counts the padded pixels of the 512 x 512 cached patches.
 - 7 October 2026: restructured to the results page of docs/STYLE.md: source cells as `key (kind)` with a source column in every table, the source-key grammar, half-up rounding, UTC times, thousands separators and GiB stated once.

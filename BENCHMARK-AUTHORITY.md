@@ -42,6 +42,8 @@ Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) name
 | Latency, power and energy per tile on a Jetson Orin | not measured | n/a | n/a | docs/RESULTS.md, section 15 | not measured |
 | Comparison with other systems | no comparison is decided; published values are not results of this repository | n/a | n/a | [docs/LANDSCAPE.md](docs/LANDSCAPE.md), section 5 | not measured |
 
+Every measured value of this table counts padded pixels; re-evaluation pending ([docs/RESULTS.md](docs/RESULTS.md), section 21). Until a value is evaluated again, it may not be quoted outside the repository ([POLICY.md](POLICY.md), gate 2).
+
 ---
 
 ## 3. Caveats that apply to every number now
@@ -49,7 +51,7 @@ Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) name
 - **Seeds.** l1_full and every L2 run are single seeds. l1_base has two seeds, whose mean IoU differs by 0.042 on validation and 0.044 on test; a smaller difference between two single-seed runs is not evidence of a better model ([docs/RESULTS.md](docs/RESULTS.md), section 18).
 - **Provenance.** l1_base s0 ran from a working tree with uncommitted changes at commit `81ab34b03bcc`; the L2 runs used a batch size and learning rate that are not in their committed configs ([docs/RESULTS.md](docs/RESULTS.md), section 4).
 - **Report files.** The report files of the runs of 2 and 3 October 2026 are on CSC Roihu and pending a copy into the repository; most values are copied from the generated pages of earlier commits or from job logs ([docs/RESULTS.md](docs/RESULTS.md), section 20 and Appendix A).
-- **Padded pixels.** The cached patches are 512 x 512 and hold the dataset's padding of 3 rows and 3 columns; every metric counts those pixels ([docs/RESULTS.md](docs/RESULTS.md), section 18; [docs/DATA.md](docs/DATA.md), section 5).
+- **Padded pixels.** The cached patches are 512 x 512 and hold the dataset's padding of 3 rows and 3 columns; every value on this page counts those pixels ([docs/RESULTS.md](docs/RESULTS.md), section 18; [docs/DATA.md](docs/DATA.md), section 5). Since 7 October 2026 the padding is masked at load time; every value is evaluated again with the same checkpoints, and until then it keeps its number, carries the caveat "counts padded pixels; re-evaluation pending" and is not quoted outside the repository ([docs/RESULTS.md](docs/RESULTS.md), section 21; [POLICY.md](POLICY.md), gate 2).
 - **Product decision.** The choice between the band-flexible model and the four-band specialist is not taken on validation yet ([docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), section 7).
 - **Data.** Every value is on Sentinel-2 Level-1C at 10 m from CloudSEN12+; nothing is measured on a target sensor, and the hardware is a GPU on CSC Roihu, not flight hardware.
 
@@ -97,4 +99,5 @@ The v0.1.0 model card describes l1_base s0 and stays as its record; it is not th
 
 ## Changelog
 
+- 7 October 2026: every value counts padded pixels; re-evaluation is pending, and until then no value is quoted outside the repository.
 - 7 October 2026: first version: which result answers which question, the caveats that apply to every number, how to cite, and what supersedes what.
