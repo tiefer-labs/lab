@@ -108,6 +108,7 @@ If in doubt about whether an action is allowed, ask first through the routes in 
 
 - No secret belongs in the repository. `.env.example` lists only the `TIEFER_*` locations and a commented `TIEFER_CSC_PROJECT`; `.env` is ignored by git.
 - `HF_TOKEN`, the optional Hugging Face token, is read from the environment and passed to GDAL as a bearer token; it is never printed (`src/tiefer_lab/data/http.py`, `tests/test_http.py`).
+- Credentials, tokens and the content of a `.env` file are never given to an AI-assisted system; the data rules for such systems are in [AI_ASSISTANCE.md](AI_ASSISTANCE.md), section 4.
 - A git remote never holds a token: `git remote -v` shows a plain `https://github.com/...` URL.
 - `tests/test_public_hygiene.py` rejects tokens of several formats, private keys, e-mail addresses other than the project address, CSC project numbers and absolute personal paths in every tracked file; gitleaks scans the full history on every push.
 - If a credential appears in the repository or its history: revoke it first, at its issuer, then remove it from the files and, where needed, from the history, and record the event in a security advisory.
@@ -141,6 +142,7 @@ Trained models are not published in this repository. Each release folder lists t
 
 ## Changelog
 
+- 7 October 2026: section 7 links the data rules for AI-assisted systems in AI_ASSISTANCE.md.
 - 7 October 2026: rewritten as the Lab version of the organisation file, with the same reporting routes, times and disclosure rules: the assets in scope for this repository, secrets, the supply chain, model integrity, and a note that private vulnerability reporting is not yet enabled for this repository.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; supported versions, e-mail route, report contents, fix times by severity, coordinated disclosure, scope details and the measures in place added.
