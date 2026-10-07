@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the data cache, train, evaluate and export the cloud filter, and bring the results back.
+Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the data cache, train, evaluate and export the cloud filter, and bring the results back. Run Lab once on your own computer first ([GETTING-STARTED.md](../../GETTING-STARTED.md)); other platforms are in [INSTALL.md](../../INSTALL.md). Before a job, add the run with its cost to [plan.md](plan.md), and read the test split only as [POLICY.md](../../POLICY.md), gates 3 and 7, allow.
 
 ---
 
@@ -311,6 +311,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 7 October 2026: the purpose links GETTING-STARTED.md, INSTALL.md and the gates of POLICY.md for the test split and compute spend.
 - 7 October 2026: troubleshooting rows for out of GPU memory with 13 bands, jobs submitted from the wrong login host, HTTP 404 in a shard and ONNX Runtime affinity messages; GPU jobs set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `env.sh`.
 - 2 October 2026: timing job, sweep script and run plan for milestone L2.
 - 2 October 2026: 13-band cache built in shards with a shared rate cap and a disk estimate.
