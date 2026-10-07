@@ -128,6 +128,14 @@ The agreement values are for the labels of the 2022 release and its test set, no
 
 The builder reads each raster as it is stored and does not remove the card's padding (section 4). The confusion matrix of `l1_base s0` on the validation split counts 140,247,040 labelled pixels ([RESULTS.md](RESULTS.md), section 5), which is 535 x 512 x 512; a 509 x 509 patch has 259,081 pixels. So the cached validation patches are 512 x 512, and the 3 padded rows and 3 padded columns, 3,063 pixels per patch, are part of every cached patch, of the normalisation statistics and of every metric. What label code the padded label pixels hold is an open fact (section 13); if it is 0, they count as clear. The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`).
 
+A read-only check shows what a cache holds on each side of its patches:
+
+```bash
+python -m tiefer_lab.data.cache padding <cache-name> --split val --patches 50
+```
+
+It reads up to 50 patches spread evenly over the split, memory-mapped, and prints the stored array shapes, the values of `real_proj_shape` found in `index.json`, and for the left 3 columns, the bottom 3 rows, the right 3 columns and the top 3 rows separately: the label values with their pixel counts, and in how many patches every band is zero. The width of each strip is the stored size minus `real_proj_shape`, or 3 when a patch has no `real_proj_shape`. It writes nothing. It exits with 0 when the sides that are zero in every band of every sampled patch are `PADDING_SIDES` in `src/tiefer_lab/data/padding.py`, and with 1 otherwise. On the synthetic test cache with known padding it took 0.003 s for 6 patches of 64 x 64, and 0.016 s for 50 patches of 512 x 512 with four bands, on local disk (`tests/test_padding.py`); on CSC Roihu it is `not measured`. The width of the padding comes from `real_proj_shape` and the stored size of each patch; only its sides come from the card, as `PADDING_SIDES`, which stays `TODO(verify)` until the check has run on the caches on CSC Roihu (section 13).
+
 The 2000 x 2000 patches are left out: the export input is fixed at 512 x 512, and a 2000 x 2000 patch holds 15.4 times the pixels of a 509 x 509 patch.
 
 The normalisation values of each cache are pending until `index.json` is read (section 10).
@@ -297,7 +305,8 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 | Fact | What resolves it | Where it is used |
 | :--- | :---: | :---: |
-| Label code of the padded pixels of a cached patch | label histogram of the padded rows and columns, or the survey | section 5; every metric |
+| Label code of the padded pixels of a cached patch | `python -m tiefer_lab.data.cache padding` on `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, validation and test | section 5; every metric |
+| Sides of each patch that hold the padding: the card says left and bottom [1]; `PADDING_SIDES` in `src/tiefer_lab/data/padding.py` holds the card's statement as `TODO(verify)` | the same check: the sides whose image strips are zero in every band of every sampled patch | section 5; `PADDING_SIDES` |
 | Stored height and width of the training and test patches | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5 |
 | Dataset revision of the 13-band cache | `index.json` of `cloudsen12-l1c-all` | sections 8 and 10 |
 | High quality and dropped counts per split | `index.json` (`splits.<split>.selection`) | section 2.3 |
@@ -322,6 +331,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 ## Changelog
 
+- 7 October 2026: section 5 adds the read-only padding check, `python -m tiefer_lab.data.cache padding`; section 13 lists the padding sides as an open fact until it runs on CSC Roihu.
 - 7 October 2026: restructured to the data card of docs/STYLE.md: the sections follow the datasheet questions, then the facts the code depends on, the caches, the extra training patches, the richness report, open facts and sources. Section 5A is now section 11, and links from other files are updated.
 - 7 October 2026: the split field `tortilla:data_split` is confirmed by the cache builds of 2 October 2026; one `TODO(verify)` resolved.
 - 7 October 2026: the dataset revision is checked against the Hugging Face API (`sha` field, accessed 7 October 2026); one `TODO(verify)` resolved.

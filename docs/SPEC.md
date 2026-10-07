@@ -428,7 +428,8 @@ lab/
         sensor.py                 sensor robustness augmentations and evaluation perturbations
         survey.py                 python -m tiefer_lab.data.survey: counts, splits, encodings
         richness.py               python -m tiefer_lab.data.richness: classes, cloud cover, verified fields
-        cache.py                  cache reading, in memory or memory-mapped
+        cache.py                  cache reading, in memory or memory-mapped; the padding check
+        padding.py                where the dataset padded each patch (PADDING_SIDES, real_proj_shape)
         dataset.py                PyTorch datasets for train and evaluation
         transforms.py             reflectance, normalisation, crops, augmentation, padding
       models/
@@ -463,6 +464,7 @@ lab/
     test_transforms.py
     test_bands_and_labels.py
     test_cache.py                 cache build, resume and reading on synthetic data
+    test_padding.py               padding of cached patches and the read-only check, on synthetic data
     test_http.py                  backoff on HTTP 429, token never printed
     test_survey.py                survey on a synthetic table with real GeoTIFF items
     test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
@@ -587,6 +589,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 7 October 2026: section 14 lists `data/padding.py` and `tests/test_padding.py`.
 - 7 October 2026: section 16 names LICENSING.md, TRADEMARK.md and NOTICE.md for what each states.
 - 7 October 2026: section 14 lists the root documents added on 7 October 2026 and `tests/test_docs_index.py`; the community files of this repository override the organisation versions; principle 1 points to POLICY.md and CLAIMS.md.
 - 7 October 2026: the purpose names milestones L1 and L2 and a Jetson milestone; section 3 names REQUIREMENTS.md, section 8, as the single source of the acceptance targets, and says when milestone L2 and the Jetson milestone are done, with the provisional product decision.

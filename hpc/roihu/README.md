@@ -132,6 +132,20 @@ bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train --name cloudsen12-l1c-all -
 
 Every shard job is resumable on its own: submit the same line again after a stop. The merge refuses to start until every shard is complete, deletes each shard after copying it, and is resumable too.
 
+#### Check the padding of a cache
+
+The dataset pads each 509 x 509 patch to 512 x 512 ([docs/DATA.md](../../docs/DATA.md), sections 4 and 5). This read-only check shows which sides hold the padding and which label values are there. It reads up to 50 patches memory-mapped and writes nothing, so it runs on the login node; on the synthetic test cache it takes 0.016 s for 50 patches of 512 x 512 (on CSC Roihu: `not measured`). From `roihu-cpu.csc.fi`, after step 2:
+
+```bash
+source hpc/roihu/env.sh
+python3 -m tiefer_lab.data.cache padding cloudsen12-l1c-high --split val --patches 50
+python3 -m tiefer_lab.data.cache padding cloudsen12-l1c-high --split test --patches 50
+python3 -m tiefer_lab.data.cache padding cloudsen12-l1c-all --split val --patches 50
+python3 -m tiefer_lab.data.cache padding cloudsen12-l1c-all --split test --patches 50
+```
+
+Each command ends with `zero sides found: ...` and exits with 1 when those sides differ from `PADDING_SIDES` in `src/tiefer_lab/data/padding.py`. Copy the output into the issue or the pull request that records it.
+
 ### Step 4: smoke job on `gputest`
 
 This and every later job is submitted from `roihu-gpu.csc.fi`:
@@ -311,6 +325,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 7 October 2026: step 3 adds the read-only padding check of a cache, run on the login node.
 - 7 October 2026: item 2 of section 2 points to item 3 below instead of a section 2.3.
 - 7 October 2026: the troubleshooting table points to section 2, item 3, which has no section number of its own.
 - 7 October 2026: the purpose links GETTING-STARTED.md, INSTALL.md and the gates of POLICY.md for the test split and compute spend.

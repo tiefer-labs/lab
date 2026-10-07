@@ -30,6 +30,8 @@ from typing import Any, Literal
 import numpy as np
 from numpy.typing import NDArray
 
+from tiefer_lab.data import padding
+from tiefer_lab.tables import Group, markdown_table
 from tiefer_lab.utils import paths
 
 CACHE_FORMAT = 1
@@ -307,19 +309,88 @@ def location_overlap(
     return out
 
 
+# Patches read by the padding check unless --patches says otherwise.
+PADDING_SAMPLE = 50
+
+
+def sample_positions(count: int, patches: int) -> list[int]:
+    """Up to `patches` positions spread evenly over `count` patches, first and last included."""
+    if count <= 0 or patches <= 0:
+        return []
+    n = min(patches, count)
+    return sorted(set(np.rint(np.linspace(0, count - 1, n)).astype(int).tolist()))
+
+
+def padding_check(directory: Path, split: str, patches: int = PADDING_SAMPLE) -> int:
+    """Print what the strips on each side of a sample of patches hold; write nothing.
+
+    Reads the stored arrays as they are (memory-mapped), not the masked
+    labels of `load_split`. Exit code 0 when the sides whose image strips are
+    zero in every band of every sampled patch are padding.PADDING_SIDES, or when the
+    patches have no padding; 1 otherwise.
+    """
+    index = read_index(directory)
+    entry = index.get("splits", {}).get(split)
+    if not entry or not entry.get("complete"):
+        raise CacheError(f"split {split!r} is not complete in {paths.portable(directory)}")
+    images = np.load(images_path(directory, split), mmap_mode="r", allow_pickle=False)
+    labels = np.load(labels_path(directory, split), mmap_mode="r", allow_pickle=False)
+    metadata = list(entry.get("metadata", []))
+    positions = sample_positions(int(labels.shape[0]), patches)
+    reports, reals = padding.inspect(images, labels, metadata, positions, padding.CARD_WIDTH)
+    print(f"cache {paths.portable(directory)}, split {split}", flush=True)
+    print(f"stored images {tuple(images.shape)}, labels {tuple(labels.shape)}", flush=True)
+    real_text = ", ".join(f"{k}: {v}" for k, v in sorted(reals.items()))
+    print(f"patches read: {len(positions)}; real_proj_shape: {real_text}", flush=True)
+    rows = [
+        [
+            r.side,
+            str(r.width),
+            ", ".join(f"{v}: {c:,}" for v, c in sorted(r.label_counts.items())) or "n/a",
+            f"{r.patches_all_zero} of {r.patches}",
+        ]
+        for r in reports
+    ]
+    headers = ["Side", "Width", "Label values: pixels", "Patches with every band zero"]
+    print(markdown_table(headers, [Group("", rows)]).rstrip("\n"), flush=True)
+    found = padding.zero_sides(reports)
+    if all(r.width == 0 for r in reports):
+        print("no padding: the stored size equals real_proj_shape", flush=True)
+        return 0
+    expected = tuple(padding.PADDING_SIDES)
+    agree = set(found) == set(expected)
+    verdict = "agrees with" if agree else "differs from"
+    print(
+        f"zero sides found: {', '.join(found) or 'none'}; this {verdict} PADDING_SIDES "
+        f"({', '.join(expected)})",
+        flush=True,
+    )
+    return 0 if agree else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m tiefer_lab.data.cache",
         description=(
             "ready: exit 0 when the named splits are complete and not being built. "
-            "overlap: exit 0 when no training patch shares its location with val or test."
+            "overlap: exit 0 when no training patch shares its location with val or test. "
+            "padding: report the label values and zero images on each side of a sample of "
+            "patches; read-only; exit 0 when the zero sides are PADDING_SIDES."
         ),
     )
-    parser.add_argument("command", choices=["ready", "overlap"])
+    parser.add_argument("command", choices=["ready", "overlap", "padding"])
     parser.add_argument("name", help="cache folder name in $TIEFER_DATA_DIR")
-    parser.add_argument("args", nargs="+", help="splits (ready) or the location field (overlap)")
+    parser.add_argument("args", nargs="*", help="splits (ready) or the location field (overlap)")
+    parser.add_argument("--split", default="val", choices=ALL_SPLITS, help="padding: the split")
+    parser.add_argument(
+        "--patches", type=int, default=PADDING_SAMPLE, help="padding: patches to read"
+    )
     args = parser.parse_args(argv)
     directory = cache_dir(args.name)
+    if args.command == "padding":
+        return padding_check(directory, args.split, args.patches)
+    if not args.args:
+        parser.error(f"{args.command} needs splits (ready) or the location field (overlap)")
     if args.command == "overlap":
         overlap = location_overlap(read_index(directory), args.args[0])
         where = paths.portable(directory)
