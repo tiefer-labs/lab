@@ -4,7 +4,7 @@
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-How people are expected to behave in every space of the `tiefer-labs` organisation, how to report a problem, and how reports are handled.
+How people are expected to behave in every space of the `tiefer-labs` organisation, how to report a problem, and how reports are handled. This is the Lab copy of the organisation's code of conduct; its substance is the same.
 
 ---
 
@@ -117,6 +117,7 @@ This code draws on the structure and enforcement guidelines of the [Contributor 
 
 ## Changelog
 
+- 7 October 2026: this copy is the Lab version of the organisation file; the rules, the reporting route and the times are unchanged.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; scope, reporting details, response times, enforcement steps, appeals and attribution added.
 - 27 September 2026: first version.
