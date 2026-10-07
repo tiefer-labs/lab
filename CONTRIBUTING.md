@@ -12,13 +12,41 @@ For anyone who wants to change Tiefer Lab: what to do before you start, how to s
 
 | Contribution | Where |
 | :--- | :---: |
-| Report a bug | an issue with the bug report form |
-| Question a number or a source in the documentation | an issue that names the document, the section and the value |
-| Propose a feature or a change of method | an issue with the feature request form, before any code |
+| Report a bug | an issue with [`01_bug_report.yml`](https://github.com/tiefer-labs/lab/issues/new?template=01_bug_report.yml) |
+| Question a number or a source in the documentation | an issue with [`02_results_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=02_results_question.yml) |
+| Report a result you could not reproduce | an issue with [`03_reproducibility_failure.yml`](https://github.com/tiefer-labs/lab/issues/new?template=03_reproducibility_failure.yml) |
+| Propose a feature | an issue with [`10_feature_request.yml`](https://github.com/tiefer-labs/lab/issues/new?template=10_feature_request.yml), before any code |
+| Propose a change of method | an issue with [`11_method_change.yml`](https://github.com/tiefer-labs/lab/issues/new?template=11_method_change.yml), before any code |
 | Fix a typo or a broken link | a pull request directly |
 | Fix a bug, add a test, improve documentation | a pull request that links an issue |
 | Add a config, band set, model, metric, dataset or hardware target | an issue first, then the path of [EXTENDING.md](EXTENDING.md) |
 | Report a security problem | never in public; see [SECURITY.md](SECURITY.md) |
+
+Every kind of issue has its own form; blank issues are turned off. The forms, in the order of the New issue page:
+
+| Form | Use it for | Label |
+| :--- | :---: | :---: |
+| [`01_bug_report.yml`](https://github.com/tiefer-labs/lab/issues/new?template=01_bug_report.yml) | code or scripts that do not work as documented | `bug` |
+| [`02_results_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=02_results_question.yml) | a number, interval or source that looks wrong | `results` |
+| [`03_reproducibility_failure.yml`](https://github.com/tiefer-labs/lab/issues/new?template=03_reproducibility_failure.yml) | a published result you could not reproduce | `reproducibility` |
+| [`04_documentation.yml`](https://github.com/tiefer-labs/lab/issues/new?template=04_documentation.yml) | a document that is wrong, outdated or unclear | `documentation` |
+| [`05_claim_challenge.yml`](https://github.com/tiefer-labs/lab/issues/new?template=05_claim_challenge.yml) | a public statement without evidence | `claims` |
+| [`06_data_issue.yml`](https://github.com/tiefer-labs/lab/issues/new?template=06_data_issue.yml) | a dataset, label, cache or download | `data` |
+| [`07_hpc_job_failure.yml`](https://github.com/tiefer-labs/lab/issues/new?template=07_hpc_job_failure.yml) | a job script on CSC Roihu or another HPC system | `hpc` |
+| [`08_export_quantisation.yml`](https://github.com/tiefer-labs/lab/issues/new?template=08_export_quantisation.yml) | ONNX export, INT8 quantisation or a model checksum | `export` |
+| [`09_hardware_benchmark.yml`](https://github.com/tiefer-labs/lab/issues/new?template=09_hardware_benchmark.yml) | a measurement on a Jetson or other hardware | `hardware` |
+| [`10_feature_request.yml`](https://github.com/tiefer-labs/lab/issues/new?template=10_feature_request.yml) | new behaviour or a new option | `enhancement` |
+| [`11_method_change.yml`](https://github.com/tiefer-labs/lab/issues/new?template=11_method_change.yml) | metrics, splits, thresholds or the evaluation protocol | `protocol` |
+| [`12_new_dataset.yml`](https://github.com/tiefer-labs/lab/issues/new?template=12_new_dataset.yml) | a proposed dataset | `dataset-proposal` |
+| [`13_new_model.yml`](https://github.com/tiefer-labs/lab/issues/new?template=13_new_model.yml) | a proposed model, size or band set | `model-proposal` |
+| [`14_reference_comparison.yml`](https://github.com/tiefer-labs/lab/issues/new?template=14_reference_comparison.yml) | a comparison with another system | `comparison` |
+| [`15_ci_test_failure.yml`](https://github.com/tiefer-labs/lab/issues/new?template=15_ci_test_failure.yml) | a failing workflow, job or test | `ci` |
+| [`16_dependency.yml`](https://github.com/tiefer-labs/lab/issues/new?template=16_dependency.yml) | a dependency update or problem; vulnerabilities go to [SECURITY.md](SECURITY.md) | `dependencies` |
+| [`17_licensing_trademark.yml`](https://github.com/tiefer-labs/lab/issues/new?template=17_licensing_trademark.yml) | a licence or trademark question | `licensing` |
+| [`18_governance_request.yml`](https://github.com/tiefer-labs/lab/issues/new?template=18_governance_request.yml) | a decision that [GOVERNANCE.md](GOVERNANCE.md) gives to the maintainer | `governance` |
+| [`19_question.yml`](https://github.com/tiefer-labs/lab/issues/new?template=19_question.yml) | a question the documentation does not answer | `question` |
+
+Every form and every pull request template ends with the AI assistance disclosure and the data protection acknowledgement of [AI_ASSISTANCE.md](AI_ASSISTANCE.md). The labels are listed in `.github/labels.yml`.
 
 Tiefer is an early-stage company with a small team. Contributions are welcome. Reading this guide first saves both sides time.
 
@@ -86,12 +114,26 @@ Use the author name and e-mail address you want to be public. GitHub's no-reply 
 
 ## 5. Pull requests
 
-1. Fill in the pull request template completely.
+1. Fill in the pull request template that fits the change (below). Only the questions marked required must be answered; answer the others when they apply.
 2. Link the issue it resolves (`Closes #123`).
 3. Keep one pull request to one change. Split unrelated changes.
 4. Run `make check` locally first. CI must pass before review.
 5. Update every document your change affects, in the same pull request (section 8).
 6. Do not force-push after review has started; add commits instead.
+
+Pull request templates: GitHub fills in the default template, `.github/pull_request_template.md`, which covers any change. For a template that fits one kind of change, add `?quick_pull=1&template=<file>` to the compare page of your branch; from a fork, write the branch as `<your-user>:<your-branch>`.
+
+| Template | Use it for | Compare page |
+| :--- | :---: | :---: |
+| `code.md` | the Python package, scripts and tests | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=code.md` |
+| `documentation.md` | Markdown documents only | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=documentation.md` |
+| `results_and_reports.md` | report files copied from a run, and the values taken from them | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=results_and_reports.md` |
+| `configs_and_hpc_run.md` | configs, job scripts and the run plan | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=configs_and_hpc_run.md` |
+| `data.md` | a dataset, a reader, a cache or the data card | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=data.md` |
+| `model_card_release.md` | a model card or release folder | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=model_card_release.md` |
+| `dependencies.md` | `pyproject.toml`, `uv.lock`, CI tools or action pins | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=dependencies.md` |
+| `ci_and_tooling.md` | workflows, CI tools, the `Makefile` or the checks | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=ci_and_tooling.md` |
+| `governance_and_policy.md` | a policy, a governance rule or a community file | `https://github.com/tiefer-labs/lab/compare/main...<your-branch>?quick_pull=1&template=governance_and_policy.md` |
 
 CI is organised in three workflows:
 
@@ -175,6 +217,7 @@ Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Changelog
 
+- 7 October 2026: section 1 names the issue form for each kind of issue; section 5 explains how to pick a pull request template, with the compare page of each.
 - 7 October 2026: section 2 links AI_ASSISTANCE.md for the disclosure of AI-assisted systems.
 - 7 October 2026: rewritten as the Lab version of the organisation file: the `make` targets, the text tests, how to add a report file, the test split, configs and the run plan before a CSC Roihu run, the documents to update with a change, the three CI workflows, and the terms of contributions with CLA.md as a draft. The process, addresses and times are those of the organisation version.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
