@@ -14,7 +14,7 @@ from pathlib import Path
 
 CLAIM = re.compile(r"\b(compliant|compliance|certified|qualified|approved)\b", re.IGNORECASE)
 AUTHORITY = re.compile(r"\b(NASA|ESA|ECSS|Azercosmos)\b")
-STATUSES = {"met", "partly", "not met", "not applicable", "not read"}
+STATUSES = {"met", "partly", "not met", "not applicable", "not read", "no document"}
 
 
 def claims(text: str) -> list[str]:

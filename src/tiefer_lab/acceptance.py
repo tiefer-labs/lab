@@ -16,7 +16,7 @@ checked against its tables (TODO(verify), https://doi.org/10.1038/s41597-022-018
 
 Reports used: final test evaluations (`final: true`) for accuracy, frame and
 flexibility targets; export reports for compression; Jetson reports for the
-on-board targets; the fail-safe check of `tiefer_lab.onboard`; and
+onboard targets; the fail-safe check of `tiefer_lab.onboard`; and
 docs/REQUIREMENTS.md and docs/STANDARDS.md for the two documentation targets.
 When several seeds of a configuration have a report, the value is their mean
 and the interval spans the lowest and highest bound of their intervals.
@@ -762,9 +762,9 @@ def render(rows: Sequence[dict[str, Any]], date: dt.date) -> str:
         + table
         + "\nPublished reference values of the dataset paper are not written here until they are "
         "checked against its tables (TODO(verify), https://doi.org/10.1038/s41597-022-01878-2).\n\n"
-        + "## Basis of the on-board targets\n\n"
+        + "## Basis of the onboard targets\n\n"
         + THROUGHPUT_BASIS
-        + " The on-board targets are provisional and are reviewed after the first measurement.\n\n"
+        + " The onboard targets are provisional and are reviewed after the first measurement.\n\n"
         + "---\n\n## Changelog\n\n"
         + f"- {when}: generated from {len(rows)} targets.\n"
     )

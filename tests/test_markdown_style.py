@@ -107,7 +107,7 @@ def _cells(row: str) -> list[str]:
 
 
 def check_tables(text: str) -> list[str]:
-    """Markdown tables follow docs/STYLE.md, section 9."""
+    """Markdown tables follow docs/STYLE.md, section 10."""
     problems = []
     lines = text.split("\n")
     fenced, i = False, 0

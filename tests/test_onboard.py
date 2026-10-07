@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""The on-board decision: tiled inference and fail-safe behaviour.
+"""The onboard decision: tiled inference and fail-safe behaviour.
 
 No invalid, missing, saturated or out-of-domain input and no error may end
 in a discarded frame ("keep"): such frames are sent and flagged. Random bit

@@ -43,6 +43,10 @@ EN_DASH = "\u2013"
 
 PICTOGRAPHIC = regex.compile(r"\p{Extended_Pictographic}")
 # An en dash is accepted only directly between two characters, as in a range.
+# The hyphenated spelling is written in two pieces so this file never flags itself;
+# a capitalised form inside a quoted title is allowed (docs/STYLE.md, section 3).
+HYPHENATED_ONBOARD = "on" + "-board"
+URL = regex.compile(r"https?://\S+")
 LOOSE_EN_DASH = regex.compile(r"(?:^|\s)" + EN_DASH + r"|" + EN_DASH + r"(?:\s|$)", regex.MULTILINE)
 
 
@@ -64,6 +68,8 @@ def violations(text: str) -> list[str]:
             found.append(f"line {line_no}: pictographic character U+{ord(match.group()):04X}")
         if LOOSE_EN_DASH.search(line):
             found.append(f"line {line_no}: en dash (U+2013) next to a space or line boundary")
+        if HYPHENATED_ONBOARD in URL.sub("", line):
+            found.append(f"line {line_no}: write 'onboard' or 'on board'")
     return found
 
 
@@ -77,6 +83,9 @@ def test_rules_catch_each_forbidden_character() -> None:
     assert violations("end" + EN_DASH)
     assert not violations("2026" + EN_DASH + "2028, pages 12" + EN_DASH + "18")
     assert not violations("plain-hyphen and (parentheses): fine.")
+    assert violations("the " + HYPHENATED_ONBOARD + " computer")
+    assert not violations("the onboard computer, run on board, On" + "-Board Cloud Detection")
+    assert not violations("see https://example.org/processed-" + HYPHENATED_ONBOARD + "-satellite/")
 
 
 def test_tracked_text_files_follow_character_rules(

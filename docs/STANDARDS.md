@@ -36,7 +36,7 @@ There is no single agency standard for a cloud filter. The repository never stat
 No public technical standard of Azercosmos was found, so nothing about its requirements is assumed. These are the questions to ask:
 
 1. Which spectral bands does each target sensor deliver on board, with their wavelengths, bit depth, ground sampling distance and radiometric calibration?
-2. Which on-board computer runs the filter: processor, accelerator, memory, operating system and the inference runtime it supports?
+2. Which onboard computer runs the filter: processor, accelerator, memory, operating system and the inference runtime it supports?
 3. Through which interfaces does the filter receive frames and return decisions, and what must happen when it fails?
 4. Which software criticality category applies to the filter, and under which standard is it assessed?
 5. What is the acceptance procedure: which tests, data and documents does the operator require before the software flies?

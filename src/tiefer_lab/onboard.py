@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""The on-board decision for one frame: fail-safe, with tiled inference for large frames.
+"""The onboard decision for one frame: fail-safe, with tiled inference for large frames.
 
 A frame is kept on board only when the model ran on valid input and found its
 cloud fraction at or above the threshold. Everything else ends in "send" with

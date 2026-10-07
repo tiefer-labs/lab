@@ -183,7 +183,7 @@ Short answers to the usual data sheet questions, pointing to the section that ho
 | **Preprocessing in this repository** | |
 | What is done to the data? | selection, band selection at load time, reflectance scale, normalisation from the training split (sections 3, 6 and 10) |
 | **Uses** | |
-| What should it not be used for? | conclusions about other sensors, raw on-board data, compression or space environment effects (section 8) |
+| What should it not be used for? | conclusions about other sensors, raw onboard data, compression or space environment effects (section 8) |
 | **Distribution and maintenance** | |
 | Licence | CC0 1.0 (section 1) |
 | Revision used | recorded in `index.json` at build time (section 2) |
