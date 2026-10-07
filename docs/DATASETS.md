@@ -21,7 +21,7 @@ A dataset has exactly one role per experiment. The validation split chooses mode
 | CloudSEN12+ extra variant, reference masks | comparison algorithms on the same patches, not ground truth | TODO(verify) from the survey (DATA.md, section 2) |
 | Any other dataset | none until its row in section 2 is checked | not checked |
 
-The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, the sensor and the processing level. A result on it says nothing about other sensors (section 2 and [RESULTS.md](RESULTS.md), limitations).
+The test split is independent of the training patches, not of the dataset: it shares the labelling protocol, the sensor and the processing level. A result on it says nothing about other sensors (section 2 and [RESULTS.md](RESULTS.md), section 18).
 
 ---
 
@@ -76,4 +76,5 @@ How varied each built split is (class shares, cloud cover bins, shadow, verified
 
 ## Changelog
 
+- 7 October 2026: the link to the limitations follows the new section numbers of RESULTS.md.
 - 2 October 2026: first version; only CloudSEN12+ is checked, other candidates are listed as not checked.
