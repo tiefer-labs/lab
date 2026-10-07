@@ -29,6 +29,7 @@ Tiefer is an early-stage company with a small team. Contributions are welcome. R
 - For anything larger than a typo, open an issue first. Describe the problem, the change you propose and why. Wait for the maintainer to agree before you build it.
 - Search existing issues and pull requests first.
 - Read [START-HERE.md](START-HERE.md) to find the document that owns your topic, and [docs/STYLE.md](docs/STYLE.md) before you write documentation.
+- If you use an AI-assisted system for anything in an issue or a pull request, read [AI_ASSISTANCE.md](AI_ASSISTANCE.md) first: every such system is disclosed, and some content may never be given to one.
 - Changes to results, metrics, splits, thresholds, data handling or the evaluation protocol need an issue and agreement first, because they change what the published numbers mean ([GOVERNANCE.md](GOVERNANCE.md), section 2).
 
 ---
@@ -174,6 +175,7 @@ Everyone who takes part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Changelog
 
+- 7 October 2026: section 2 links AI_ASSISTANCE.md for the disclosure of AI-assisted systems.
 - 7 October 2026: rewritten as the Lab version of the organisation file: the `make` targets, the text tests, how to add a report file, the test split, configs and the run plan before a CSC Roihu run, the documents to update with a change, the three CI workflows, and the terms of contributions with CLA.md as a draft. The process, addresses and times are those of the organisation version.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; set-up per repository, commit and branch rules, CI checks, writing rules aligned with the en dash rule of docs/STYLE.md, rules for results and data, dependencies and the terms of contribution added.
