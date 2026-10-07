@@ -11,7 +11,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 ## 1. How to read this page
 
 - An ID names one requirement: `REQ-<area>-<number>` for requirements of the code, and the acceptance target IDs of `tiefer_lab.acceptance` (`ACC`, `IND`, `FRM`, `CMP`, `OBD`, `STD`).
-- "Verified by" lists tests as `tests/<file>.py::<test>` and files by their path. Files under `reports/` are generated on Roihu or a Jetson and are not in the repository until results exist.
+- "Verified by" lists tests as `tests/<file>.py::<test>` and files by their path. Files under `reports/` are generated on Roihu or a Jetson and are not in the repository until they are copied in. The GPU maintenance of CSC Roihu began on 6 October 2026 at 08:00 Finnish time (05:00 UTC); no GPU job of this repository has run since. The report files of 2 and 3 October 2026 are therefore still on Roihu.
 - Acceptance targets are measured by `python -m tiefer_lab.acceptance`, which writes `reports/acceptance.md`.
 - Status, on 7 October 2026: `met`, `not met`, `pending` (measured, but the value is not yet in the repository) or `not measured`, with the evidence. A code requirement is met when its tests pass. The acceptance targets are defined on the final test evaluation of `l2_flex_1m` with four bands; values are taken from [RESULTS.md](RESULTS.md), and a value from the session notes is marked so.
 
@@ -144,6 +144,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: section 1 says why the report files of 2 and 3 October 2026 are not yet committed.
 - 7 October 2026: correction: `REQ-EVL-01` is pending, not met, until the test log entries of 3 October 2026 are copied in.
 - 7 October 2026: correction: `REQ-TRN-07`, commit 81ab34b03bcc is in the history of this repository.
 - 7 October 2026: a status and its evidence for every requirement and acceptance target, from RESULTS.md.

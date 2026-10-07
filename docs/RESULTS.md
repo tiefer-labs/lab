@@ -553,7 +553,7 @@ Values pending: measured, with the report file that will fill them.
 
 ## Appendix A. Report files
 
-Every report key used on this page, with its file and the git commit the report records. "Clean commit" says whether the working tree had no uncommitted changes (`provenance.git.dirty` false). None of these files is in `reports/` of the repository yet; they are on CSC Roihu, and the commits are those of the generated page.
+Every report key used on this page, with its file and the git commit the report records. "Clean commit" says whether the working tree had no uncommitted changes (`provenance.git.dirty` false). None of these files is in `reports/` of the repository yet; they are on CSC Roihu, and the commits are those of the generated page. The GPU maintenance of CSC Roihu began on 6 October 2026 at 08:00 Finnish time (05:00 UTC); no GPU job of this repository has run since. The report files are copied in with `hpc/roihu/collect.sh` when the project can work on Roihu again.
 
 | Key | File in `reports/` | Commit | Clean commit |
 | :--- | :---: | :---: | :---: |
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: Appendix A says why the report files are not yet committed: the GPU maintenance of CSC Roihu that began on 6 October 2026.
 - 7 October 2026: correction: commit 81ab34b03bcc is in the history of this repository; only the uncommitted diff of the l1_base s0 run is lost (section 4). The earlier check ran on a shallow clone.
 - 7 October 2026: section 10 links docs/LANDSCAPE.md for the published values of other systems.
 - 7 October 2026: values copied from the generated versions of this page at commits c3e861a, 5ba4585 and 0f0984d (source kinds `h-...`): the test metrics of l1_base s0, the validation and test metrics of l1_full s0 with intervals, the blur 1 metrics, and the INT8 change of l1_base s1 (-0.060 in the report, not the 0.059 between the rounded values). The l1_base s0 test values of cloud and shadow accuracy are `not measured` (the report has none), not `n/a`. The limitation on human agreement said "verified"; it is not yet verified (docs/DATA.md, section 11). The elapsed times of jobs 2002028, 2002101 and 2002148 are marked as lower bounds.
