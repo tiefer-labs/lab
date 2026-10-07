@@ -98,7 +98,7 @@ One word for each state, defined here once. Other documents link to this table i
 ## 5. Structure, numbering and changelog
 
 - One `#` heading per file; `##` for sections, `###` for subsections; never skip a level.
-- Numbered sections (`## 1. Title`) in every file in `docs/`, in every Markdown file at the repository root (the route map, guides, ledgers and policies of sections 12.15 to 12.31), in plans and in model cards; not in README files and not in `NOTICE.md`. Sections are numbered 1, 2, 3; a lettered section (`2A`, `5A`) is not used: renumber instead and fix every link to the renumbered sections.
+- Numbered sections (`## 1. Title`) in every file in `docs/`, in every Markdown file at the repository root (the route map, guides, ledgers and policies of sections 12.15 to 12.32), in plans and in model cards; not in README files and not in `NOTICE.md`. Sections are numbered 1, 2, 3; a lettered section (`2A`, `5A`) is not used: renumber instead and fix every link to the renumbered sections.
 - Appendices come after the numbered sections and are headed `## Appendix A. <name>`.
 - Separate major parts with `---`.
 - Every Markdown file ends with `## Changelog`, except `LICENSE` and append-only logs such as `reports/test_log.md`. Each line is exactly `- D Month YYYY: text`, one change per line, newest first; several lines on the same day are allowed, the most recent first. Old lines are never edited; a correction is a new line.
@@ -320,6 +320,10 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 
 Every fact lives in one document, named in the "Owns" column of `INDEX.md`; every other document links to it. Before writing a section, check whether another document owns the topic.
 
+### 12.32 Policy: AI assistance
+
+`AI_ASSISTANCE.md`: scope, disclosure rule, responsibility, data rules, licence and provenance, labelling, regulatory references (article, official title, plain meaning, source, date read, with the dates from which each part applies), breaches, review with the open decisions, sources. The plain meaning never states an obligation more strongly than the legal text, and the page never says that a rule of the repository makes anyone meet a law.
+
 ---
 
 ## 13. This repository
@@ -334,6 +338,7 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 
 ## Changelog
 
+- 7 October 2026: section 12.32, the document type of the AI assistance policy.
 - 7 October 2026: section 12.12, the notice holds attributions only; section 13 cites LICENSING.md for the exclusion of `docs/assets/`.
 - 7 October 2026: section 12 adds the document types of the root documents (sections 12.15 to 12.30) and the rule of one owner per fact (12.31); the README skeleton adds "What <repository> is not" and "Where to go next"; root documents use numbered sections; section 4 adds the claim statuses and the result authority words.
 - 7 October 2026: section 12.3 gives the columns of the code requirements; section 12.9 puts the status of the standards matrix last, where the code reads it.
