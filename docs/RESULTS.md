@@ -263,7 +263,7 @@ IoU per class of the threshold rule on the validation split:
 
 The threshold rule never predicts cloud shadow, so its shadow IoU is 0.000. Its parameters are `max_whiteness` 0.4, `thick_brightness` 0.2 and `thin_brightness` 0.14 (`b0-val`: report), tuned on the validation split; its validation values are therefore scored on the data it was tuned on, and the test values are the fair comparison. The baseline values are the same in the reports of l1_base s0, l1_full s0 and l2_spec_1m s0 where more than one shows them (page, h-c3e861a, h-0f0984d).
 
-The reference algorithms Sen2Cor, s2cloudless, Fmask, QA60 and UNetMobV2 are not yet measured by this repository. Published values are not quoted on this page, because they were measured on other data or with other settings.
+The reference algorithms Sen2Cor, s2cloudless, Fmask, QA60 and UNetMobV2 are not yet measured by this repository. Published values are not quoted on this page, because they were measured on other data or with other settings. Published values of other systems: [docs/LANDSCAPE.md](LANDSCAPE.md).
 
 | Reference algorithm | Mean IoU | Cloud BOA | Shadow BOA |
 | :--- | :---: | :---: | :---: |
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: section 10 links docs/LANDSCAPE.md for the published values of other systems.
 - 7 October 2026: values copied from the generated versions of this page at commits c3e861a, 5ba4585 and 0f0984d (source kinds `h-...`): the test metrics of l1_base s0, the validation and test metrics of l1_full s0 with intervals, the blur 1 metrics, and the INT8 change of l1_base s1 (-0.060 in the report, not the 0.059 between the rounded values). The l1_base s0 test values of cloud and shadow accuracy are `not measured` (the report has none), not `n/a`. The limitation on human agreement said "verified"; it is not yet verified (docs/DATA.md, section 11). The elapsed times of jobs 2002028, 2002101 and 2002148 are marked as lower bounds.
 - 7 October 2026: rewritten by hand, generator removed; corrected the l1_base s0 validation row of the cloud and shadow table (it came from the blur file) and the summary that mixed two models; added per-run false discard rates, accuracy by class and region, band sets of the flexible model, robustness, file sizes per format and all known jobs.
 - 3 October 2026: generated from 23 evaluation, 3 export, 0 Jetson and 16 compute report files.

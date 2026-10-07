@@ -103,6 +103,7 @@ Training and full evaluation run on CSC Roihu GPU nodes (NVIDIA GH200). The step
 - [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md): sensor, data, decision and hardware assumptions to revisit.
 - [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md): every dependency, why it is needed, and its licence.
 - [docs/RESULTS.md](docs/RESULTS.md): measured results, written by hand; every value names the report file it was copied from.
+- [docs/LANDSCAPE.md](docs/LANDSCAPE.md): related onboard cloud detection systems, onboard AI platforms and reference algorithms, their published values, and the measurements that would decide a comparison.
 - [docs/STYLE.md](docs/STYLE.md): the Markdown standard for Tiefer repositories.
 - [hpc/roihu/README.md](hpc/roihu/README.md), [jetson/README.md](jetson/README.md), [reports/README.md](reports/README.md) and [models/cloud-filter/README.md](models/cloud-filter/README.md): guides for each folder.
 - Security policy, contributing guide, code of conduct and support: [tiefer-labs/.github](https://github.com/tiefer-labs/.github).
@@ -135,5 +136,6 @@ Data and dependencies: CloudSEN12+ is a third-party dataset under CC0 1.0 and is
 
 ## Changelog
 
+- 7 October 2026: the documentation list links docs/LANDSCAPE.md.
 - 7 October 2026: the status describes milestones L1 and L2 as measured on CSC Roihu, with the headline results; principles and layout mention the L2 band sets and sizes.
 - 7 October 2026: docs/RESULTS.md is written by hand; the command of the results generator is removed.
