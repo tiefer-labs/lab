@@ -174,6 +174,7 @@ A higher mean IoU did not always mean fewer useful frames discarded: l1_full s0 
 | Overall accuracy | 0.895 [0.884, 0.906] | 0.896 [0.887, 0.904] | `s-val`, `s-test`: page |
 | **Frames** | | | |
 | Cloud fraction mean absolute error | 0.046 [0.038, 0.054] | 0.045 [0.040, 0.050] | `s-val`, `s-test`: page |
+| Useful frames at 30, 50 and 70 percent | 259, 331 and 422 of 535 | pending | `b0-val` (labels only, section 8) |
 | False discard rate at 30 percent | 0.035 [0.015, 0.060] | 0.034 [0.019, 0.051] | `s-val`, `s-test`: page |
 | Decision accuracy at 30 percent | 0.968 [0.953, 0.981] | 0.958 [0.945, 0.970] | `s-val`, `s-test`: page |
 | False discard rate at 50 percent | 0.036 [0.018, 0.058] | 0.042 [0.026, 0.059] | `s-val`, `s-test`: page |
@@ -213,7 +214,7 @@ Confusion matrix of l1_base s0 on the validation split, in pixels; rows are the 
 
 Thin cloud and cloud shadow are the two weakest classes in every run measured so far. The largest single confusion of l1_base s0 is clear pixels predicted as cloud shadow (4,812,396). The model predicts cloud shadow on 0.128 of the labelled validation pixels, against 0.088 in the labels. The per-class IoU and the overall accuracy computed from this matrix agree with the values in the table above at 3 decimals.
 
-Frame metrics at each threshold. Useful frames are those whose labelled cloud fraction is below the threshold.
+Frame metrics at each threshold. Useful frames are those whose labelled cloud fraction is below the threshold. They depend only on the labels (`src/tiefer_lab/metrics.py`), so on the unperturbed validation split they are the same for every run: 259, 331 and 422 of 535 at 30, 50 and 70 percent. The useful frames of the test split are pending until a test report is read.
 
 | Run, split and threshold | Decision accuracy | False discard rate | False send rate | Useful frames | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -226,9 +227,9 @@ Frame metrics at each threshold. Useful frames are those whose labelled cloud fr
 | 50 percent | 0.927 [0.910, 0.943] | 0.039 [0.024, 0.055] | pending | pending | `b0-test`: h-c3e861a |
 | 70 percent | 0.939 [0.922, 0.954] | 0.033 [0.021, 0.048] | pending | pending | `b0-test`: h-c3e861a |
 | **l1_full s0, validation** | | | | | |
-| 30 percent | 0.964 [0.948, 0.978] | 0.058 [0.032, 0.091] | pending | pending | `f0-val`: h-0f0984d |
-| 50 percent | 0.948 [0.929, 0.966] | 0.057 [0.035, 0.084] | pending | pending | `f0-val`: h-0f0984d |
-| 70 percent | 0.942 [0.921, 0.961] | 0.055 [0.034, 0.077] | pending | pending | `f0-val`: h-0f0984d |
+| 30 percent | 0.964 [0.948, 0.978] | 0.058 [0.032, 0.091] | pending | 259 of 535 | `f0-val`: h-0f0984d; useful frames: `b0-val` |
+| 50 percent | 0.948 [0.929, 0.966] | 0.057 [0.035, 0.084] | pending | 331 of 535 | `f0-val`: h-0f0984d; useful frames: `b0-val` |
+| 70 percent | 0.942 [0.921, 0.961] | 0.055 [0.034, 0.077] | pending | 422 of 535 | `f0-val`: h-0f0984d; useful frames: `b0-val` |
 | **l1_full s0, test** | | | | | |
 | 30 percent | 0.945 [0.929, 0.959] | 0.077 [0.053, 0.103] | pending | pending | `f0-test`: h-0f0984d |
 | 50 percent | 0.933 [0.917, 0.948] | 0.069 [0.051, 0.090] | pending | pending | `f0-test`: h-0f0984d |
@@ -549,7 +550,7 @@ Values pending: measured, with the report file that will fill them.
 | l1_base s1: stop and training job | 3 | `runs/<run-id>/metadata.json` of l1_base s1 |
 | l2_flex_1m s0: validation values of all band sets; test intervals, decision accuracy and IoU per class; cloud and shadow values with 3, 4 and 6 bands | 6, 8, 11, 12 | `x-val-3`, `x-val-4`, `x-val-6`, `x-val-13`, `x-test-3`, `x-test-4`, `x-test-6`, `x-test-13` |
 | l2_spec_1m s0: learning rate, stop, best epoch | 3, 17 | `runs/<run-id>/config.toml` and `metadata.json` of l2_spec_1m s0 |
-| false send rates and useful frames of every run except l1_base s0 on validation | 7, 8 | every evaluation report |
+| false send rates of every run except l1_base s0 on validation; useful frames of the test split | 7, 8 | every evaluation report; `b0-test` for the test useful frames |
 | l1_base s0 validation cloud and shadow BOA, PA, UA | 11 | `b0-val` (version at commit 4ce677d1811b) |
 | per-region results of every run except l1_base s0 on validation | 9 | every evaluation report |
 | test overall accuracy of the baselines | 10 | `s-test` |
@@ -603,6 +604,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: the validation useful frames (259, 331 and 422 of 535) are filled in for every run, since they depend only on the labels; the test useful frames stay pending.
 - 7 October 2026: correction: job 2001268 used 0.008 GPU hours (27 s, 0.0075 rounded half up), not 0.007; every other derived value of section 16 was rechecked with the rule.
 - 7 October 2026: section 18 gives the human agreement of the CloudSEN12 paper (Table 6) instead of "not yet verified".
 - 7 October 2026: section 3 lists the l1_base runs of 2 October 2026 (training-loop values, reports pending), the reason for l1_full; section 17 links them.
