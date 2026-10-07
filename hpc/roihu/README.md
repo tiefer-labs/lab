@@ -270,7 +270,7 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export, 
 | `invalid partition` from `sbatch` | a partition name differs on Roihu | check `sinfo` and the [partitions page](https://docs.csc.fi/computing/running/batch-job-partitions/), then edit the `#SBATCH --partition` line |
 | The training log ends with `interrupted` | the time limit was reached | submit `train.sbatch` again with the run ID |
 | `CUDA out of memory` in the training log of a 13-band config | batch 128 with all 13 bands does not fit on one GH200; expandable segments in the allocator alone did not help (jobs 2000912 and 2000941, 3 October 2026) | halve the batch size and the learning rate together, as the L2 configs do since 7 October 2026 (batch 64, learning rate 0.004; job 2000949 ran to the end) |
-| modules or the venv are not found inside a job | the job was submitted from the login host of the other architecture, so it inherited the wrong environment | submit GPU jobs from `roihu-gpu.csc.fi` and CPU jobs from `roihu-cpu.csc.fi` (section 2.3) |
+| modules or the venv are not found inside a job | the job was submitted from the login host of the other architecture, so it inherited the wrong environment | submit GPU jobs from `roihu-gpu.csc.fi` and CPU jobs from `roihu-cpu.csc.fi` (section 2, item 3) |
 | `HTTP 404` in the log of a shard of the data job | the dataset host answered 404 for a read (job 1999649) | submit the same shard again; the build resumes where it stopped (job 2000731) |
 | `pthread_setaffinity_np` messages from ONNX Runtime in the export log | ONNX Runtime could not set the thread affinity it asked for; the cause is not investigated | nothing; the exports completed; the effect on timing has not been investigated |
 | `the test split is only for final evaluation` | test was requested without `FINAL=1` and `REASON` | evaluate on validation; use test once, for the final result |
@@ -311,6 +311,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 
 ## Changelog
 
+- 7 October 2026: the troubleshooting table points to section 2, item 3, which has no section number of its own.
 - 7 October 2026: the purpose links GETTING-STARTED.md, INSTALL.md and the gates of POLICY.md for the test split and compute spend.
 - 7 October 2026: troubleshooting rows for out of GPU memory with 13 bands, jobs submitted from the wrong login host, HTTP 404 in a shard and ONNX Runtime affinity messages; GPU jobs set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `env.sh`.
 - 2 October 2026: timing job, sweep script and run plan for milestone L2.
