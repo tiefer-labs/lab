@@ -172,7 +172,7 @@ A higher mean IoU did not always mean fewer useful frames discarded: l1_full s0 
 | False discard rate at 70 percent | 0.040 [0.023, 0.060] | 0.042 [0.029, 0.056] | `s-val`, `s-test`: page |
 | Decision accuracy at 70 percent | 0.955 [0.936, 0.972] | 0.944 [0.928, 0.958] | `s-val`, `s-test`: page |
 
-The false send rates of l2_spec_1m s0 are pending. It is the selected model because it has the highest validation mean IoU of the runs measured so far; it is a single seed and has no export yet (section 14).
+The false send rates of l2_spec_1m s0 are pending. It is the selected model because it has the highest validation mean IoU of the runs measured so far; it is a single seed and has no export report yet (section 14).
 
 ---
 
