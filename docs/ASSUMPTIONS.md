@@ -13,7 +13,7 @@ The assumptions behind milestones L1 and L2 about the target sensor, the data, t
 | Assumption | Reason | Revisit when |
 | :--- | :---: | :---: |
 | Milestone L1 uses four bands only: blue, green, red, near infrared (Sentinel-2 B02, B03, B04, B08) | Very high resolution optical satellites typically carry these four bands plus panchromatic, not the shortwave infrared bands that classic cloud algorithms use | a customer's exact sensor and band set are known |
-| Milestone L2 also uses all 13 Level-1C bands: the band-flexible model reads any of them and is scored per band set (3, 4, 6 and 13 bands); the four-band specialist reads the four L1 bands | Target sensors differ in their bands, and one model for all of them is simpler to qualify and update; whether it costs accuracy on four bands is measured against the specialist (section 7). The 13-band cache serves every band set (docs/DATA.md, section 10) | the product decision of section 7 is confirmed on validation |
+| Milestone L2 also uses all 13 Level-1C bands: the band-flexible model reads any of them and is scored per band set (3, 4, 6 and 13 bands); the four-band specialist reads the four L1 bands; which cache its seed 0 run read is pending ([DATA.md](DATA.md), section 10) | Target sensors differ in their bands, and one model for all of them is simpler to qualify and update; whether it costs accuracy on four bands is measured against the specialist (section 7). The 13-band cache serves every band set (docs/DATA.md, section 10) | the product decision of section 7 is confirmed on validation |
 | Sentinel-2 spectral responses stand in for the target sensor's | No public cloud dataset with labels exists for the target sensors | spectral response functions of the target sensor are available |
 | 10 m ground sampling stands in for very high resolution | CloudSEN12+ is Sentinel-2 at 10 m; cloud and shadow texture look different at finer sampling | labelled very high resolution frames are available |
 | The panchromatic band is not used | It is not in the training data | the target sensor and its onboard processing chain are known |
@@ -86,6 +86,7 @@ Outcome so far (7 October 2026, provisional). On the test split, the four-band m
 
 ## Changelog
 
+- 7 October 2026: section 1 points to the cache table of DATA.md for the cache of `l2_spec_1m` seed 0, which is pending.
 - 7 October 2026: correction: the learning rate of the `l2_spec_1m` run is pending; only `l2_flex_1m` is known to have used 0.004.
 - 7 October 2026: section 1 says that L1 uses four bands and L2 also all 13; section 6 adds batch 64 and learning rate 0.004 for the L2 family, with the out-of-memory error that caused it; section 7 records the provisional outcome of the product decision.
 - 2 October 2026: section 7, product decision between the band-flexible model and four-band specialists.

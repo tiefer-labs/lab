@@ -156,7 +156,14 @@ python -m tiefer_lab.data.build_cache --split test
 
 `--bands all` stores all 13 Level-1C bands instead of the four L1 bands; models select their bands from the cache when they load it, so one cache serves every band set. A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, about 6.7 MiB, with all bands, and about 2.2 MiB with four; the builder prints the estimate for each split before it starts. `--shard I/N` builds part I of N of a split in its own folder and `--merge N` joins the shards; `--max-rate P` caps the reads per minute of the whole split.
 
-The 13-band cache `cloudsen12-l1c-all` was built on CSC Roihu and takes about 66 GB; the four-band cache `cloudsen12-l1c-high` takes about 22 GB (both sizes from the session notes, [RESULTS.md](RESULTS.md), section 5). Its training split was built in 4 shards and merged; shard 0 failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped ([RESULTS.md](RESULTS.md), section 16).
+The caches built on CSC Roihu:
+
+| Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | validation split built 2 October 2026, 05:42 UTC; jobs pending | about 22 GiB (notes) | `l1_base`, `l1_full`; `l2_spec_1m` seed 0: pending (notes say this cache; its config names `cloudsen12-l1c-all`) | pending (`index.json`) |
+| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split in 4 shards, then merged (jobs in [RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m` seed 0: pending | pending (`index.json`) |
+
+The cache that `l2_spec_1m` seed 0 read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. Its run `config.toml` decides it; the config file is not changed until then. The training split of `cloudsen12-l1c-all` was built in 4 shards and merged; shard 0 failed with HTTP 404 from the dataset host and was submitted again, and the build resumed where it had stopped.
 
 Add `--limit <n>` for a small subset. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection (for example `--limit`) into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart` to replace it on purpose. On CSC Roihu use `hpc/roihu/data.sbatch` (see [hpc/roihu/README.md](../hpc/roihu/README.md)).
 
@@ -204,6 +211,7 @@ Other metadata fields are listed by name only. Their meaning is not verified fro
 
 ## Changelog
 
+- 7 October 2026: one table of the caches built on CSC Roihu, with the cache of `l2_spec_1m` seed 0 recorded as pending.
 - 7 October 2026: L2 also reads all 13 bands (sections 1, 2, 3 and 10); the 13-band cache, its size and its build in shards; the dataset revision and the kept counts per split; a first measurement of geographic bias by `equi_zone` (section 7).
 - 2 October 2026: data sheet (section 11) and richness report (section 12).
 - 2 October 2026: reference masks from the extra table, added to a split once their link and encodings are verified.

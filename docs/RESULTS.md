@@ -130,7 +130,7 @@ The class shares of the test split are pending (`b0-test`).
 | `cloudsen12-l1c-high` | 4 (B02 B03 B04 B08) | about 22 GB | one build per split | l1_base, l1_full, l2_spec_1m | notes |
 | `cloudsen12-l1c-all` | 13 | about 66 GB | training split in 4 shards, then merged (section 16) | l2_flex_1m | notes; jobs: log |
 
-The committed `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`; that l2_spec_1m s0 read the four-band cache comes from the notes and is confirmed once its `config.toml` is read (section 20).
+Which cache l2_spec_1m s0 read is pending: the notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`; see the cache table in [DATA.md](DATA.md), section 10, and section 20.
 
 ---
 
@@ -594,6 +594,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: the cache of l2_spec_1m s0 is pending and recorded in the cache table of docs/DATA.md, section 10.
 - 7 October 2026: correction: l2_spec_1m s0 ran with batch 64 (notes) and a learning rate that is pending; only l2_flex_1m s0 is known to have used 0.004 (sections 3, 4, 17, 18, 19).
 - 7 October 2026: Appendix A says why the report files are not yet committed: the GPU maintenance of CSC Roihu that began on 6 October 2026.
 - 7 October 2026: correction: commit 81ab34b03bcc is in the history of this repository; only the uncommitted diff of the l1_base s0 run is lost (section 4). The earlier check ran on a shallow clone.
