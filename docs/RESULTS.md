@@ -20,6 +20,7 @@ On the test split (975 patches), l2_spec_1m s0 has a mean IoU of 0.720 [0.707, 0
 - Intervals in brackets are 95 percent bootstrap intervals over patches, with 1,000 resamples and seed 0 (`[evaluation]` of every config). A value without brackets has no interval in its source.
 - `pending`, `not measured` and `n/a` have the meanings of [docs/STYLE.md](STYLE.md), section 4: measured but not yet in the repository; never measured; does not apply.
 - Times are in UTC. Durations are written `hh:mm:ss`; CPU time as Slurm prints it. GPU BU means GPU billing units of CSC.
+- Which value answers which question, what supersedes what and how to cite a value are in [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md); the gates a value must pass before it appears here or is quoted outside the repository are in [POLICY.md](../POLICY.md), gates 1 and 2.
 - Runs are named by their configuration and seed after section 3, for example l1_base s0. Every table has a source column, written `key (kind)`: the key of a report file (Appendix A) and the kind of source the value was copied from (below).
 
 Source keys of report files: the run (`b0` l1_base s0, `b1` l1_base s1, `f0` l1_full s0, `x` l2_flex_1m s0, `s` l2_spec_1m s0), then the report: `-val` and `-test` evaluation, `-exp` export, `-3`, `-4`, `-6` and `-13` the band set of l2_flex_1m (for example `x-test-4`), and for the perturbed validation runs of l1_base s0 `-rs0.5`, `-rs2` (rescale), `-g0.9`, `-g1.1` (gain), `-o0.01` (offset), `-n0.01` (noise) and `-bl1` (blur). `c-<job ID>` is the compute report of a Slurm job.
@@ -706,6 +707,7 @@ The training runs behind these reports: l1_base s0 records commit `81ab34b03bcc`
 
 ## Changelog
 
+- 7 October 2026: section 2 links BENCHMARK-AUTHORITY.md and POLICY.md for how values may be used and cited; no value changes.
 - 7 October 2026: section 18 says that every metric counts the padded pixels of the 512 x 512 cached patches.
 - 7 October 2026: restructured to the results page of docs/STYLE.md: source cells as `key (kind)` with a source column in every table, the source-key grammar, half-up rounding, UTC times, thousands separators and GiB stated once.
 - 7 October 2026: wide tables split by topic: metrics by split, reference algorithms, cloud and shadow accuracy, sensor robustness and calibration.
