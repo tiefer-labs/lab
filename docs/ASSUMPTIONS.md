@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-The assumptions behind milestone L1 about the target sensor, the data and the hardware, and when each one has to be revisited.
+The assumptions behind milestones L1 and L2 about the target sensor, the data, training and the hardware, and when each one has to be revisited.
 
 ---
 
@@ -12,7 +12,8 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 
 | Assumption | Reason | Revisit when |
 | :--- | :---: | :---: |
-| Four bands only: blue, green, red, near infrared (Sentinel-2 B02, B03, B04, B08) | Very high resolution optical satellites typically carry these four bands plus panchromatic, not the shortwave infrared bands that classic cloud algorithms use | a customer's exact sensor and band set are known |
+| Milestone L1 uses four bands only: blue, green, red, near infrared (Sentinel-2 B02, B03, B04, B08) | Very high resolution optical satellites typically carry these four bands plus panchromatic, not the shortwave infrared bands that classic cloud algorithms use | a customer's exact sensor and band set are known |
+| Milestone L2 also uses all 13 Level-1C bands: the band-flexible model reads any of them and is scored per band set (3, 4, 6 and 13 bands); the four-band specialist reads the four L1 bands | Target sensors differ in their bands, and one model for all of them is simpler to qualify and update; whether it costs accuracy on four bands is measured against the specialist (section 7). The 13-band cache serves every band set (docs/DATA.md, section 10) | the product decision of section 7 is confirmed on validation |
 | Sentinel-2 spectral responses stand in for the target sensor's | No public cloud dataset with labels exists for the target sensors | spectral response functions of the target sensor are available |
 | 10 m ground sampling stands in for very high resolution | CloudSEN12+ is Sentinel-2 at 10 m; cloud and shadow texture look different at finer sampling | labelled very high resolution frames are available |
 | The panchromatic band is not used | It is not in the training data | the target sensor and its onboard processing chain are known |
@@ -68,6 +69,7 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 | Final runs train to the end of the cosine schedule (`patience` equal to `epochs`), and `best.pt` keeps the epoch with the best validation mean IoU | On Roihu on 2 October 2026, `l1_base` stopped early while the training loss was still falling: seed 0 at epoch 72 (best validation mean IoU 0.678 at epoch 57), seed 1 at epoch 36 (best 0.626 at epoch 21). Its cosine schedule is defined over 150 epochs, so patience 15 ended it long before the learning rate had decayed | a full run shows validation mean IoU falling for many epochs before the end |
 | A linear warm-up of the learning rate (5 epochs) and an exponential moving average of the weights (decay 0.999) make validation steadier | Validation mean IoU moved by up to 0.10 between nearby epochs in the same runs; the learning rate 0.008 is scaled for a batch of 128. Both values are design choices, not measured optima | the `l1_full` runs show whether the swing is smaller; one change per run separates the effect of each |
 | `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | The GPU budget before the maintenance on 6 October 2026 favours one run that fixes the known problems; separating the three effects needs extra runs | the budget allows ablation runs |
+| Every L2 config trains with batch 64 and learning rate 0.004; the L1 configs keep batch 128 and learning rate 0.008 | With 13 bands, `l2_flex_1m` ran out of GPU memory at batch 128 on one GH200 on 3 October 2026 (jobs 2000912 and 2000941; expandable segments in the allocator did not help). Batch and learning rate were halved together, following the linear scaling of the L1 configs (0.008 x 64 / 128), and that run finished (job 2000949). The whole L2 family uses the same values so that its results stay comparable; a difference between an L1 and an L2 result is therefore not caused by the model alone. The learning rate of the `l2_spec_1m` run is still to be read from its `config.toml` | an L2 run with batch 128 fits in memory, or the L1 and L2 results are compared at the same settings |
 
 ---
 
@@ -78,10 +80,13 @@ The assumptions behind milestone L1 about the target sensor, the data and the ha
 | The band-flexible model is the product if, on the four-band set (blue, green, red, near infrared), its result is within the confidence interval of the four-band specialist of the same size; otherwise specialists are shipped per sensor | One model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation |
 | Target sensors are optical satellites whose bands differ; high resolution satellites usually carry blue, green, red and near infrared only, for example SPOT-7 NAOMI ([eoPortal](https://directory.eoportal.org/web/eoportal/satellite-missions/s/spot-6-7), TODO(verify) the page) | Specifications of newer target satellites are not public, so nothing about them is assumed | a target sensor's specification is available |
 
+Outcome so far (7 October 2026, provisional). On the test split, the four-band mean IoU of `l2_flex_1m` seed 0 is 0.609, 0.111 below the 0.720 of `l2_spec_1m` seed 0 and outside its interval [0.707, 0.732] ([RESULTS.md](RESULTS.md), section 12). The rule is defined on validation, and the validation value of the flexible model is not yet transcribed, so the decision is recorded as: specialists per sensor, to be confirmed on validation. Both runs are a single seed.
+
 ---
 
 ## Changelog
 
+- 7 October 2026: section 1 says that L1 uses four bands and L2 also all 13; section 6 adds batch 64 and learning rate 0.004 for the L2 family, with the out-of-memory error that caused it; section 7 records the provisional outcome of the product decision.
 - 2 October 2026: section 7, product decision between the band-flexible model and four-band specialists.
 - 2 October 2026: section 6, training: run to the end of the schedule, warm-up and moving average, with the measured reason.
 - 1 October 2026: the PyTorch module assumption is checked on Roihu.
