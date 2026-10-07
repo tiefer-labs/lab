@@ -51,6 +51,9 @@ For anyone looking for a document by name or by state. This document owns the li
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | expected behaviour and how reports are handled | everyone | conduct | in use | 7 October 2026 |
 | [SUPPORT.md](SUPPORT.md) | where to ask for help | everyone | support | in use | 7 October 2026 |
 | [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md) | what Tiefer's products may not be used for | customers, users | acceptable use | in use | 7 October 2026 |
+| **Issue forms and pull request templates** | | | | | |
+| `.github/ISSUE_TEMPLATE/` | 19 issue forms, one per kind of issue, and the chooser configuration | everyone who opens an issue | issue forms | in use | 7 October 2026 |
+| `.github/pull_request_template.md` and `.github/PULL_REQUEST_TEMPLATE/` | the default pull request template and nine templates by kind of change | contributors | pull request templates | in use | 7 October 2026 |
 | **Folder guides** | | | | | |
 | [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 7 October 2026 |
 | [hpc/roihu/plan.md](hpc/roihu/plan.md) | what ran on CSC Roihu against the plan, next steps | maintainers, evaluators | run plan, compute budget | in development | 7 October 2026 |
@@ -83,5 +86,6 @@ The plan of 2 October 2026 in [hpc/roihu/plan.md](hpc/roihu/plan.md), section 5,
 
 ## Changelog
 
+- 7 October 2026: one row each for the issue forms folder and the pull request templates folder.
 - 7 October 2026: AI_ASSISTANCE.md added to the policies and to the files in use.
 - 7 October 2026: first version: 39 Markdown files in nine groups, with purpose, audience, owned topic, status and last change, and the files in each lifecycle state.
