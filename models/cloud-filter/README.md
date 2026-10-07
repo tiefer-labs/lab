@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What a release folder of the cloud filter contains. The model files themselves are never published from this repository: checkpoints and ONNX files stay with Tiefer, and the checksums here let Tiefer show which model produced which result.
+What a release folder of the cloud filter contains. The model files themselves are never published from this repository: checkpoints and ONNX files stay with Tiefer, and the checksums here let Tiefer show which model produced which result. A model card is published only under [POLICY.md](../../POLICY.md), gate 4; the checksums are checked as [INSTALL.md](../../INSTALL.md), section 3, shows; no licence is granted for the model files ([LICENSING.md](../../LICENSING.md)).
 
 ---
 
@@ -65,5 +65,6 @@ Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` see
 
 ## Changelog
 
+- 7 October 2026: the purpose links POLICY.md, INSTALL.md and LICENSING.md.
 - 7 October 2026: step 4 links docs/STYLE.md, section 12.11, after the sections of STYLE.md were renumbered.
 - 7 October 2026: v0.1.0 is a draft; the folder for `l2_spec_1m` waits for its export report; values match `docs/RESULTS.md`, which is written by hand.
