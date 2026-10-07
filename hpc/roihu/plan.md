@@ -98,8 +98,24 @@ bash hpc/roihu/sweep.sh --seeds 1,2 configs/l2_flex_1m.toml configs/l2_spec_1m.t
 
 ---
 
+## 6. Open measurements
+
+The measurements that would decide the comparisons of [docs/LANDSCAPE.md](../../docs/LANDSCAPE.md), section 5. None has started. GPU BU are estimated before submission like every run of this plan.
+
+| Item | Decides | Where | Acceptance target | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| Score the extra-table reference masks (QA60, Sen2Cor, s2cloudless, CloudScore+ cs and cs_cdf, UNetMobV2 v1 and v2, SEnSeI v2) on the 975 test patches with this repository's code | references on the same CloudSEN12+ test pixels | CSC Roihu, CPU job; needs the verified link and encodings of `build_cache --references` (docs/DATA.md, section 2) | `ACC-04` | not started |
+| Run Fmask 4.0, KappaMask L1C and L2A, CD-FCNN-RGBI and CD-FCNN-RGBISWIR on the same test patches | references not in the extra table | CSC Roihu | `ACC-04` | not started |
+| Run dtacs4bands on the test split with B02, B03, B04, B08 | dtacs4bands on the same pixels and bands | CSC Roihu, GPU job; first check that its CC BY-NC 4.0 licence allows this use | none | not started |
+| Threshold sweep of `l2_spec_1m` s0 on test: false send rate at a false discard rate of 0.01, with usefulness fixed at 70 percent cloud | CloudScout false positives against our false discard rate | CSC Roihu, GPU job; needs a decision threshold separate from the usefulness threshold, because `evaluate` uses one threshold for both today | `FRM-01`, `FRM-02` | not started |
+| Latency, power and energy per 512 x 512 tile, FP16 and INT8, with `jetson/bench.py` | latency, power and energy against CloudScout | Jetson Orin ([jetson/README.md](../../jetson/README.md)) | `OBD-01`, `OBD-02`, `OBD-05` | not started |
+| File size and memory during inference of the selected model | model size against CloudScout's memory footprint | export on CSC Roihu, memory on the Jetson Orin | `OBD-03`, `OBD-04` | not started |
+
+---
+
 ## Changelog
 
+- 7 October 2026: section 6, the open measurements that would decide the comparisons of docs/LANDSCAPE.md.
 - 7 October 2026: section 1, what ran before the maintenance, with job IDs, elapsed times and GPU BU; the plan of 2 October 2026 stays below as the record of what was planned.
 - 2 October 2026: the three sensor robustness runs added below the cut line.
 - 2 October 2026: first version, with upper-bound costs from the measured speed of `l1_base`.
