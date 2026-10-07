@@ -18,7 +18,7 @@ What a release folder of the cloud filter contains. The model files themselves a
 
 ## Steps
 
-Release folders are written in Part B of milestone L1, after the runs on CSC Roihu.
+Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` seed 0) is a draft. A folder for `l2_spec_1m` seed 0 waits for its export report and the SHA-256 of its ONNX files; its quantisation is not measured yet ([docs/RESULTS.md](../../docs/RESULTS.md), section 14).
 
 1. Create the folder `models/cloud-filter/<version>/`, for example `models/cloud-filter/v0.1.0/`.
 2. Copy the resolved configuration of the run:
@@ -33,7 +33,7 @@ Release folders are written in Part B of milestone L1, after the runs on CSC Roi
    (cd runs/<run-id>/export && sha256sum cloud_filter_*.onnx) > models/cloud-filter/<version>/SHA256SUMS
    ```
 
-4. Copy `models/cloud-filter/MODEL_CARD_TEMPLATE.md` to `MODEL_CARD.md` in the release folder and fill it following `docs/STYLE.md`, section 7, with every number taken from a report file.
+4. Copy `models/cloud-filter/MODEL_CARD_TEMPLATE.md` to `MODEL_CARD.md` in the release folder and fill it following `docs/STYLE.md`, section 7, with every number taken from a report file and the same value as in `docs/RESULTS.md`. Put the INT8 file size next to its loss in mean IoU.
 
 ---
 
@@ -60,3 +60,9 @@ Release folders are written in Part B of milestone L1, after the runs on CSC Roi
 | :--- | :---: | :---: |
 | `sha256sum` values differ from the export report | the files were exported again or changed after the report | export once, and copy the report and the files together |
 | `git add` ignores an `.onnx` file | model files are excluded by `.gitignore` on purpose | keep them outside git; commit only the release folder files |
+
+---
+
+## Changelog
+
+- 7 October 2026: v0.1.0 is a draft; the folder for `l2_spec_1m` waits for its export report; values match `docs/RESULTS.md`, which is written by hand.

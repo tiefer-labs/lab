@@ -33,6 +33,8 @@ What each report file is and which script writes it. [docs/RESULTS.md](../docs/R
 | `compute/<job-id>.json` | `hpc/roihu/usage.sh` | `sacct` record of a Roihu job |
 | `test_log.md` | `python -m tiefer_lab.evaluate` and `python -m tiefer_lab.export` with `--final` | one entry per use of the test split: date, run ID, git commit, reason |
 
+The report files of the runs of 2 and 3 October 2026 are still on CSC Roihu: 23 evaluation, 3 export and 16 compute reports, plus the entries of the test evaluations in its `test_log.md`. [docs/RESULTS.md](../docs/RESULTS.md) lists each of them in appendix A and writes `pending` for every value that only these files hold. Copy them here unchanged; trained models (`best.pt`, `.onnx`) are never committed.
+
 ---
 
 ## Troubleshooting
@@ -46,4 +48,5 @@ What each report file is and which script writes it. [docs/RESULTS.md](../docs/R
 
 ## Changelog
 
+- 7 October 2026: the report files of 2 and 3 October are still on CSC Roihu and are pending in docs/RESULTS.md.
 - 7 October 2026: docs/RESULTS.md is written by hand from these files; the results generator and `make results` are removed.

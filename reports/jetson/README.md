@@ -28,7 +28,7 @@ Where the Jetson Orin benchmark results land. Each file is written by `jetson/be
 | :--- | :---: |
 | `<label>_<UTC time>.json` | device, latency percentiles, throughput, power, energy per tile, temperatures, out of scope note |
 
-No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../../docs/RESULTS.md) is "not yet measured".
+No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../../docs/RESULTS.md), section 15, is `not measured`.
 
 ---
 
@@ -43,4 +43,5 @@ No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../.
 
 ## Changelog
 
+- 7 October 2026: hardware values are `not measured` in docs/RESULTS.md, section 15.
 - 7 October 2026: Jetson values are copied into docs/RESULTS.md by hand; `make results` is removed.
