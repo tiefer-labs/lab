@@ -300,7 +300,7 @@ IoU per class of the threshold rule on the validation split:
 
 The threshold rule never predicts cloud shadow, so its shadow IoU is 0.000. Its parameters are `max_whiteness` 0.4, `thick_brightness` 0.2 and `thin_brightness` 0.14 (`b0-val`, report), tuned on the validation split; its validation values are therefore scored on the data it was tuned on, and the test values are the comparison that counts. The baseline values are the same in the reports of l1_base s0, l1_full s0 and l2_spec_1m s0 where more than one shows them (page, h-c3e861a, h-0f0984d).
 
-The reference algorithms are not yet measured by this repository. Published values of other systems are not quoted on this page, because they were measured on other data or with other settings; they are in [LANDSCAPE.md](LANDSCAPE.md), section 4, which also says how each one would be measured on the same pixels.
+The reference algorithms are not measured by this repository. Published values of other systems are not quoted on this page, because they were measured on other data or with other settings; they are in [LANDSCAPE.md](LANDSCAPE.md), section 4, which also says how each one would be measured on the same pixels.
 
 | Reference algorithm | Mean IoU | Cloud BOA | Shadow BOA | Source |
 | :--- | :---: | :---: | :---: | :---: |
