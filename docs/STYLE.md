@@ -81,7 +81,7 @@ A README inside a folder (`hpc/roihu/`, `jetson/`, `models/cloud-filter/`, `repo
 ## 7. Model cards and results pages
 
 - `models/cloud-filter/<version>/MODEL_CARD.md`: Summary table (task, input, output, parameters, operations, formats, training run and commit, date), Intended use, Out of scope, Training data, Evaluation (table with sources), Quantisation (table), Hardware measurements (table, "not measured" where empty), Limitations, Files (table of SHA-256 hashes), Changelog. A note says the model files are not distributed in this repository.
-- `docs/RESULTS.md` (written by hand): Summary, Environment, Data, Model, Baselines and model (table with sources), Pixel and frame metrics, Quantisation, Hardware, Compute used, Limitations, How to reproduce, Changelog.
+- `docs/RESULTS.md` (written by hand): Summary, How to read this page, Runs, Environment and provenance, Data, results by topic (each table with sources), Quantisation, Hardware, Compute used, Training notes, Limitations, How to reproduce, Values to verify and values pending, an appendix of report files, Changelog.
 
 ---
 
