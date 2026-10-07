@@ -4,7 +4,7 @@
 
 Status: in use. Owner: Tiefer. Licence: MPL 2.0.
 
-What Tiefer's products and services may not be used for, how Tiefer applies these limits, and the design commitments that support them. This is a plain-language summary; the binding terms are part of Tiefer's customer agreements.
+What Tiefer's products and services may not be used for, how Tiefer applies these limits, and the design commitments that support them. This is a plain-language summary; the binding terms are part of Tiefer's customer agreements. This is the Lab copy of the organisation's policy; its substance is the same.
 
 ---
 
@@ -46,7 +46,7 @@ Tiefer's products and services may not be used to:
 
 ## 4. Design commitments
 
-Tiefer designs its products to the following requirements. Each product's documentation states how far each one is implemented and how it is verified.
+Tiefer designs its products to the following requirements. Each product's documentation states how far each one is implemented and how it is verified; for what exists in Tiefer Lab, see [CLAIMS.md](CLAIMS.md).
 
 - Nothing is deleted blindly: frames filtered on board are compressed and kept, and the operator sets the rules.
 - Every alert labels what the sensor observed separately from what a model inferred, with a confidence value.
@@ -76,6 +76,7 @@ This policy is reviewed at least once a year, and whenever the product, Tiefer's
 
 ## Changelog
 
+- 7 October 2026: this copy is the Lab version of the organisation file; it links CLAIMS.md for how far each design commitment is implemented. The policy is unchanged.
 - 7 October 2026: header image and table alignment follow docs/STYLE.md of this repository.
 - 7 October 2026: rewritten to the Tiefer Markdown standard; scope, international humanitarian law, target selection, purpose statement, the relation to the open-source licence, a reporting time and the review cycle added; the product rules are stated as design commitments whose implementation each product documents.
 - 27 September 2026: first version.
