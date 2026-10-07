@@ -47,7 +47,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-TRN-04` | Unavailable bands never change the output of a band-flexible model | met | its tests pass (`make check`, 7 October 2026) | `tests/test_flexible_model.py::test_unavailable_bands_never_change_the_output` |
 | `REQ-TRN-05` | Pixels without a label add nothing to the loss | met | its tests pass (`make check`, 7 October 2026) | `tests/test_flexible_model.py::test_ignored_pixels_add_nothing_to_the_loss` |
 | `REQ-TRN-06` | The size ladder hits its parameter targets and every variant changes one setting | met | its tests pass (`make check`, 7 October 2026) | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant` |
-| `REQ-TRN-07` | Every run records its config, seed, commit, job ID and GPU hours; reports/experiments.md is built from the run folders | met | its tests pass; l1_base s0 records a commit that is not in this repository and a working tree with changes ([RESULTS.md](RESULTS.md), section 4) | `tests/test_checkpoint_resume.py::test_run_metadata_has_provenance_and_no_absolute_paths`, `tests/test_experiments.py::test_one_row_per_run_from_its_folder` |
+| `REQ-TRN-07` | Every run records its config, seed, commit, job ID and GPU hours; reports/experiments.md is built from the run folders | met | its tests pass; l1_base s0 records commit 81ab34b03bcc, which is in the history, made from a working tree with uncommitted changes (only that diff is lost) ([RESULTS.md](RESULTS.md), section 4) | `tests/test_checkpoint_resume.py::test_run_metadata_has_provenance_and_no_absolute_paths`, `tests/test_experiments.py::test_one_row_per_run_from_its_folder` |
 
 ---
 
@@ -144,6 +144,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 
 ## Changelog
 
+- 7 October 2026: correction: `REQ-TRN-07`, commit 81ab34b03bcc is in the history of this repository.
 - 7 October 2026: a status and its evidence for every requirement and acceptance target, from RESULTS.md.
 - 7 October 2026: `REQ-EVL-06` is verified by the report loader tests in `tests/test_reports.py`; the results generator and its tests are removed.
 - 2 October 2026: shellcheck, accepted vulnerability findings and the coverage floor.

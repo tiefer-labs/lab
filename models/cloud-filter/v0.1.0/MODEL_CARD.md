@@ -19,7 +19,7 @@ Draft model card of the milestone L1 cloud filter `l1_base` seed 0 for four-band
 | Output | 4 class logits per pixel | export report |
 | Operations | 2,190,082,048 multiply-accumulates (1 x 4 x 512 x 512) | `metadata.json`: `model.macs_512x512` |
 | Formats | FP32, FP16, INT8 | export report: FP32, FP16, INT8 |
-| Training run and commit | `l1_base-seed0-20261003T093922Z-81ab34b`, `81ab34b03bcc`, made with uncommitted changes; the commit is not in the history of this repository | `metadata.json`: run ID, `git_commit`; [RESULTS.md](../../../docs/RESULTS.md), section 4 |
+| Training run and commit | `l1_base-seed0-20261003T093922Z-81ab34b`, `81ab34b03bcc`, made with uncommitted changes; the base commit is in the history of this repository, only the uncommitted diff is lost | `metadata.json`: run ID, `git_commit`; [RESULTS.md](../../../docs/RESULTS.md), section 4 |
 | Training | batch 128, learning rate 0.008, best epoch 32, early stopped (patience 15 of a 150-epoch schedule) | `config.toml`; evaluation report: `run.best_epoch`, `run.status` |
 | Pretrained weights | none; trained from random initialisation | `NOTICE.md` |
 | Date | 3 October 2026 | `metadata.json`: end of the last session |
@@ -121,5 +121,6 @@ FP16 kept the mean IoU (0.649) and the false discard rate at 50 percent (0.039) 
 
 ## Changelog
 
+- 7 October 2026: correction: commit 81ab34b03bcc is in the history of this repository; only the uncommitted diff is lost.
 - 7 October 2026: status draft instead of release; file sizes, the FP16 result, the best epoch, the region breakdown and limitations on INT8, later runs and provenance added.
 - 3 October 2026: model card v0.1.0 from CSC Roihu GH200 training run `l1_base-seed0-20261003T093922Z-81ab34b`.
