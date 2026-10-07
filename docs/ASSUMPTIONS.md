@@ -4,72 +4,91 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-The assumptions behind milestones L1 and L2 about the target sensor, the data, training and the hardware, and when each one has to be revisited.
+The assumptions behind milestones L1 and L2 about the target sensor, the data, training and the hardware, the evidence for each, and when each one has to be revisited.
 
 ---
 
 ## 1. Sensor
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| Milestone L1 uses four bands only: blue, green, red, near infrared (Sentinel-2 B02, B03, B04, B08) | Very high resolution optical satellites typically carry these four bands plus panchromatic, not the shortwave infrared bands that classic cloud algorithms use | a customer's exact sensor and band set are known |
-| Milestone L2 also uses all 13 Level-1C bands: the band-flexible model reads any of them and is scored per band set (3, 4, 6 and 13 bands); the four-band specialist reads the four L1 bands; which cache its seed 0 run read is pending ([DATA.md](DATA.md), section 10) | Target sensors differ in their bands, and one model for all of them is simpler to qualify and update; whether it costs accuracy on four bands is measured against the specialist (section 7). The 13-band cache serves every band set (docs/DATA.md, section 10) | the product decision of section 7 is confirmed on validation |
-| Sentinel-2 spectral responses stand in for the target sensor's | No public cloud dataset with labels exists for the target sensors | spectral response functions of the target sensor are available |
-| 10 m ground sampling stands in for very high resolution | CloudSEN12+ is Sentinel-2 at 10 m; cloud and shadow texture look different at finer sampling | labelled very high resolution frames are available |
-| The panchromatic band is not used | It is not in the training data | the target sensor and its onboard processing chain are known |
+Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none, design choice"), and a status in the words of [STYLE.md](STYLE.md), section 4: `open` (not yet tested), `confirmed` (tested, with evidence), `revisit due` (the trigger has happened) or `superseded`. "Last checked" is the date the row was last compared with its evidence. External sources are listed in section 8.
+
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-1.1` | Milestone L1 uses four bands: blue, green, red and near infrared (Sentinel-2 B02, B03, B04, B08) | very high resolution optical satellites, the target sensors, carry these four bands and a panchromatic band, not the shortwave infrared bands that classic cloud algorithms use | SPOT-6 and SPOT-7 NAOMI: one panchromatic band and four multispectral bands, blue, green, red and near infrared [1] | a customer's exact sensor and band set are known | open | 7 October 2026 |
+| `A-1.2` | Milestone L2 also uses all 13 Level-1C bands: the band-flexible model reads any of them and is scored per band set (3, 4, 6 and 13 bands); the four-band specialist reads the four L1 bands | target sensors differ in their bands, and one model for all of them is simpler to qualify and update; whether it costs accuracy on four bands is measured against the specialist (section 7) | none, design choice | the product decision of section 7 is recorded | open | 7 October 2026 |
+| `A-1.3` | B11 and B12 are the shortwave infrared bands of the 6-band set; B10 is not in it | the 6-band set stands for a sensor with blue, green, red, near infrared and two shortwave infrared bands | B11 1613.7 nm and B12 2202.4 nm on Sentinel-2A, both 20 m; B10 (1373.5 nm, 60 m) is the cirrus band [2] | n/a | confirmed | 7 October 2026 |
+| `A-1.4` | Sentinel-2 spectral responses stand in for the target sensor's | no public cloud dataset with labels is known for the target sensors | the datasets checked are listed in [DATASETS.md](DATASETS.md) | spectral response functions of the target sensor are available | open | 7 October 2026 |
+| `A-1.5` | 10 m ground sampling stands in for very high resolution | CloudSEN12+ is Sentinel-2 at 10 m to 60 m; cloud and shadow texture look different at finer sampling | [DATA.md](DATA.md), section 2.1 | labelled very high resolution frames are available | open | 7 October 2026 |
+| `A-1.6` | The panchromatic band is not used | it is not in the training data | Sentinel-2 has no panchromatic band ([DATA.md](DATA.md), section 2.1) | the target sensor and its onboard processing chain are known | open | 7 October 2026 |
+| `A-1.7` | Nothing is assumed about the bands of target satellites whose specifications are not public | an assumption without a source cannot be checked | none, design choice | a target sensor's specification is available | open | 7 October 2026 |
 
 ---
 
 ## 2. Data on board
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| Top-of-atmosphere reflectance (Level-1C) is the closest public proxy for onboard data | There is no atmospheric correction on board | the onboard radiometric calibration chain is known |
-| Onboard frames can be scaled to reflectance before the filter runs | The model is trained on reflectance normalised with training split statistics | the onboard data format (raw counts, bit depth, calibration on board or not) is known |
-| A frame is processed as 512 x 512 pixel tiles | The exported model has a fixed 1 x 4 x 512 x 512 input; at 10 m a tile covers 5.12 km x 5.12 km | the sensor's frame size and the onboard tiling are known |
-| Compression happens after the filter | The training data has no compression artefacts | the onboard compression and its position in the pipeline are known |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-2.1` | Top-of-atmosphere reflectance (Level-1C) is the closest public proxy for onboard data | there is no atmospheric correction on board | none, design choice | the onboard radiometric calibration chain is known | open | 7 October 2026 |
+| `A-2.2` | Onboard frames can be scaled to reflectance before the filter runs | the model is trained on reflectance normalised with training split statistics | none, design choice | the onboard data format (raw counts, bit depth, calibration on board or not) is known | open | 7 October 2026 |
+| `A-2.3` | The normalisation statistics of the Sentinel-2 training split transfer to the target sensor | the model sees inputs normalised with those statistics | none; the gain and offset perturbations of [RESULTS.md](RESULTS.md), section 13, are simulated on Sentinel-2 | labelled data of the target sensor is available | open | 7 October 2026 |
+| `A-2.4` | Input shape: the L1 models and the four-band specialist take 1 x 4 x 512 x 512; the band-flexible model is exported as one file per band set, 1 x N x 512 x 512 with N the number of bands of the set | the export input is fixed; at 10 m a tile covers 5.12 km x 5.12 km | `b0-exp`: opset 17, input 1 x 4 x 512 x 512 ([RESULTS.md](RESULTS.md), section 14); `REQ-EXP-02` ([REQUIREMENTS.md](REQUIREMENTS.md), section 5) | the sensor's frame size and the onboard tiling are known | open | 7 October 2026 |
+| `A-2.5` | A larger frame is resampled to 10 m and processed in 512-pixel tiles overlapping by 64 pixels; the logits are averaged where tiles overlap | a tile edge has less context than its centre | `src/tiefer_lab/onboard.py` (`overlap = 64`); `REQ-OBD-04` | the sensor's frame size and the onboard tiling are known | open | 7 October 2026 |
+| `A-2.6` | Operational design domain: top-of-atmosphere reflectance in [0, 2], ground sampling 0.5 to 20 m, at most 1 percent invalid pixels, at least 32 pixels per side; a frame outside it is sent and flagged | outside the domain the filter is not validated, and a doubtful frame costs downlink, never a lost frame | `tiefer_lab.onboard.Domain` and [SPEC.md](SPEC.md), section 9; validated on Sentinel-2 Level-1C at 10 m only | data of another sensor is evaluated | open | 7 October 2026 |
+| `A-2.7` | Compression happens after the filter | the training data has no compression artefacts | none, design choice | the onboard compression and its position in the pipeline are known | open | 7 October 2026 |
 
 ---
 
 ## 3. Decision
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| A frame is sent when its predicted cloud fraction (thick plus thin cloud) is below the operator's threshold, otherwise kept on board | A simple, explainable rule that an operator can set | operators state their own decision rules |
-| Cloud shadow does not count towards the cloud fraction; it is reported separately | Shadowed ground can still be useful for some products | operators state whether shadow makes a frame useless |
-| Thresholds of 30, 50 and 70 percent are evaluated; the configurable default is 50 percent | They span strict to lenient use; none is preferred before operators say so | an operator chooses a threshold |
-| A false discard (a useful frame kept on board) is the most costly error | A kept frame is lost to the customer; a sent cloudy frame only costs downlink | operators state the cost of each error |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-3.1` | A frame is sent when its predicted cloud fraction (thick plus thin cloud) is below the operator's threshold, otherwise kept on board | an operator can set and check the rule with one number | none, design choice | operators state their own decision rules | open | 7 October 2026 |
+| `A-3.2` | Cloud shadow does not count towards the cloud fraction; it is reported separately | shadowed ground can still be useful for some products | none, design choice | operators state whether shadow makes a frame useless | open | 7 October 2026 |
+| `A-3.3` | Thresholds of 30, 50 and 70 percent are evaluated; the configurable default is 50 percent | they span strict to lenient use; none is preferred before operators say so | none, design choice; `decision_threshold = 0.5` in `src/tiefer_lab/config.py` | an operator chooses a threshold | open | 7 October 2026 |
+| `A-3.4` | A false discard (a useful frame kept on board) is the most costly error | a kept frame is lost to the customer; a sent cloudy frame only costs downlink | none, design choice | operators state the cost of each error | open | 7 October 2026 |
 
 ---
 
 ## 4. Hardware
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| An NVIDIA Jetson Orin is a flight-like reference, not flight hardware | It runs the same TensorRT software stack as candidate flight computers | the flight computer is chosen |
-| Only operators that TensorRT handles well in INT8 are used | INT8 is the likely onboard precision | the flight computer's runtime is known |
-| Radiation, vacuum and thermal effects are out of scope | They need hardware testing outside this repository | hardware qualification starts |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-4.1` | An NVIDIA Jetson Orin is a flight-like reference, not flight hardware | the same module family flies on Planet Pelican-4 and EDGX Sterna | [LANDSCAPE.md](LANDSCAPE.md), section 3; the sources do not name the exact Orin module | the flight computer is chosen | open | 7 October 2026 |
+| `A-4.2` | Only operators that TensorRT handles well in INT8 are used | INT8 is the likely onboard precision | INT8 loses 0.060 to 0.154 validation mean IoU on every exported L1 run, above the one point of [SPEC.md](SPEC.md), section 10 ([RESULTS.md](RESULTS.md), section 14) | the flight computer's runtime is known, or INT8 loses more than one point of mean IoU | revisit due | 7 October 2026 |
+| `A-4.3` | Radiation, vacuum and thermal effects are out of scope | they need hardware testing outside this repository | none, design choice | hardware qualification starts | open | 7 October 2026 |
 
 ---
 
 ## 5. Software and data access
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| CloudSEN12+ is published in the TACO v1 format that `tacoreader` 0.5 reads | The [card 1.1.2](https://huggingface.co/datasets/tacofoundation/cloudsen12) example uses `tacoreader` 0.5.3; 0.5.6 works on CSC Roihu | the card moves to a newer TACO format |
-| The CSC PyTorch module on Roihu provides Python 3.12 or newer | The package requires Python 3.12 or newer; observed on Roihu on 1 October 2026: `python-pytorch/2.10` gives Python 3.12.12 on a GPU node ([GPU and ML guide](https://docs.csc.fi/support/tutorials/gpu-ml/)) | the module is updated or `python-pytorch/2.10` is removed |
-| The legacy TorchScript ONNX exporter (`dynamo=False`) is available in the PyTorch version used | It needs no extra dependency; it works in PyTorch 2.14 with a deprecation warning | PyTorch removes it; then `onnxscript` would be needed, which requires the team's agreement |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-5.1` | CloudSEN12+ is published in the TACO v1 format that `tacoreader` 0.5 reads | the card's example uses `tacoreader` 0.5.3; the lock holds 0.5.6 | dataset card 1.1.2 [3]; the cache builds of 2 October 2026 on CSC Roihu read it with 0.5.6 | the card moves to a newer TACO format | confirmed | 7 October 2026 |
+| `A-5.2` | The CSC PyTorch module on Roihu provides Python 3.12 or newer | the package requires Python 3.12 or newer | observed on Roihu on 1 October 2026: `python-pytorch/2.10` gives Python 3.12.12 on a GPU node [4] | the module is updated or `python-pytorch/2.10` is removed | confirmed | 1 October 2026 |
+| `A-5.3` | Results do not depend on the PyTorch version: the lock holds torch 2.14.1 for local checks and CI, while the jobs on Roihu use the CSC module, torch 2.10.0+cu130 | the CSC module is built for the GH200 nodes; `hpc/roihu/env.sh` loads it for every job | `b0-val` records PyTorch 2.10.0+cu130 ([RESULTS.md](RESULTS.md), section 4); the training and export jobs load the same module through `env.sh`, and their reports, which record the version, are pending | a result is reproduced with another PyTorch version | open | 7 October 2026 |
+| `A-5.4` | The legacy TorchScript ONNX exporter (`dynamo=False`) is available in the PyTorch versions used | it needs no extra dependency | `tests/test_export.py` passes with torch 2.14.1 (with a deprecation warning); the exports on Roihu with 2.10.0+cu130 completed ([RESULTS.md](RESULTS.md), section 14) | PyTorch removes it; then `onnxscript` would be needed, which requires the team's agreement | confirmed | 7 October 2026 |
 
 ---
 
 ## 6. Training
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| Final runs train to the end of the cosine schedule (`patience` equal to `epochs`), and `best.pt` keeps the epoch with the best validation mean IoU | On Roihu on 2 October 2026, `l1_base` stopped early while the training loss was still falling: seed 0 at epoch 72 (best validation mean IoU 0.678 at epoch 57), seed 1 at epoch 36 (best 0.626 at epoch 21); source: training log of 2 October 2026, training-loop values, reports pending. On 3 October 2026, `l1_base` seed 0 stopped early again with its best epoch at 32 (its evaluation report, [RESULTS.md](RESULTS.md), section 17). Its cosine schedule is defined over 150 epochs, so patience 15 ended it long before the learning rate had decayed | a full run shows validation mean IoU falling for many epochs before the end |
-| A linear warm-up of the learning rate (5 epochs) and an exponential moving average of the weights (decay 0.999) make validation steadier | Validation mean IoU moved by up to 0.10 between nearby epochs in the same runs; the learning rate 0.008 is scaled for a batch of 128. Both values are design choices, not measured optima | the `l1_full` runs show whether the swing is smaller; one change per run separates the effect of each |
-| `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | The GPU budget before the maintenance on 6 October 2026 favours one run that fixes the known problems; separating the three effects needs extra runs | the budget allows ablation runs |
-| Every L2 config trains with batch 64 and learning rate 0.004; the L1 configs keep batch 128 and learning rate 0.008 | With 13 bands, `l2_flex_1m` ran out of GPU memory at batch 128 on one GH200 on 3 October 2026 (jobs 2000912 and 2000941; expandable segments in the allocator did not help). Batch and learning rate were halved together, following the linear scaling of the L1 configs (0.008 x 64 / 128), and that run finished (job 2000949). The whole L2 family uses the same values so that its results stay comparable; a difference between an L1 and an L2 result is therefore not caused by the model alone. `l2_spec_1m` seed 0 ran with batch 64 (session notes); its learning rate is pending until its run `config.toml` is read, so the configs hold 0.004 to be confirmed | an L2 run with batch 128 fits in memory, or the L1 and L2 results are compared at the same settings |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-6.1` | The dense high quality labels of CloudSEN12+ are the ground truth | no other labels exist for these patches | the labels are not perfect: producer's accuracy 0.780 for thin cloud between the labels before and after quality control ([DATA.md](DATA.md), section 3) | labels of another source are available for the same patches | open | 7 October 2026 |
+| `A-6.2` | The training, validation and test splits are independent by location | a shared location would inflate validation and test results | not checked: the location field is an open fact ([DATA.md](DATA.md), section 6.4) | the overlap check runs on the built caches | open | 7 October 2026 |
+| `A-6.3` | 509 x 509 patches stand in for 2000 x 2000 patches and for larger frames | the export input is fixed at 512 x 512 | none, design choice ([DATA.md](DATA.md), section 5) | the 2000 x 2000 patches are evaluated | open | 7 October 2026 |
+| `A-6.4` | Final runs train to the end of the cosine schedule (`patience` equal to `epochs`), and `best.pt` keeps the epoch with the best validation mean IoU | l1_base stopped early three times while its training loss was still falling, long before the learning rate had decayed (below) | training log of 2 October 2026; `b0-val` (best epoch 32); the best epoch of l1_full s0 was 129 of 150 (notes) ([RESULTS.md](RESULTS.md), section 17) | a full run shows validation mean IoU falling for many epochs before the end | open | 7 October 2026 |
+| `A-6.5` | A linear warm-up of the learning rate (5 epochs) and an exponential moving average of the weights (decay 0.999) make validation steadier | validation mean IoU moved by up to 0.10 between nearby epochs in the runs of 2 October 2026 | none, design choice; the values are not measured optima | the l1_full runs show whether the swing is smaller: l1_full s0 ran on 3 October 2026, and its per-epoch validation values in the training log are not yet read | revisit due | 7 October 2026 |
+| `A-6.6` | `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | the GPU budget before the maintenance of 6 October 2026 favoured one run that fixes the known problems | none, design choice | the budget allows ablation runs | open | 7 October 2026 |
+| `A-6.7` | Every L2 config trains with batch 64 and learning rate 0.004; the L1 configs keep batch 128 and learning rate 0.008 | with 13 bands, `l2_flex_1m` ran out of GPU memory at batch 128 on one GH200 (below) | jobs 2000912, 2000941 and 2000949 (log); the learning rate of `l2_spec_1m s0` is pending | an L2 run with batch 128 fits in memory, or the L1 and L2 results are compared at the same settings | open | 7 October 2026 |
+| `A-6.8` | One seed is enough for a provisional decision | the GPU budget allowed one seed per L2 config | the two seeds of l1_base differ by 0.042 in validation mean IoU ([RESULTS.md](RESULTS.md), section 18), so a smaller difference between single-seed runs decides nothing | three seeds of the final pair are run | open | 7 October 2026 |
+| `A-6.9` | The placeholder design for missing bands is chosen over the zero design on validation | the choice is measured, not assumed | none, design choice; `configs/l2_flex_1m_zero.toml` has not run | `l2_flex_1m_zero` is evaluated on validation | open | 7 October 2026 |
+| `A-6.10` | L1 weights the loss by median class frequency; L2 does not | the L2 configs keep one change per variant, and `l2_flex_1m_classweights` measures the weighting | none, design choice; `l2_flex_1m_classweights` has not run | `l2_flex_1m_classweights` is evaluated on validation | open | 7 October 2026 |
+
+Notes on section 6:
+
+- `A-6.4`: on 2 October 2026, `l1_base` stopped early while the training loss was still falling: seed 0 at epoch 72 (best validation mean IoU 0.678 at epoch 57), seed 1 at epoch 36 (best 0.626 at epoch 21); training-loop values from the training log, reports pending. On 3 October 2026, `l1_base` seed 0 stopped early again with its best epoch at 32 ([RESULTS.md](RESULTS.md), section 17). Its cosine schedule is defined over 150 epochs, so patience 15 ended it long before the learning rate had decayed.
+- `A-6.7`: jobs 2000912 and 2000941 ran out of memory at batch 128; expandable segments in the allocator did not help. Batch and learning rate were halved together, following the linear scaling of the L1 configs (0.008 x 64 / 128), and job 2000949 finished. The whole L2 family uses the same values so that its results stay comparable. `l2_spec_1m` seed 0 ran with batch 64 (session notes); its learning rate is pending until its run `config.toml` is read, so the configs hold 0.004 to be confirmed. Which cache it read is pending too ([DATA.md](DATA.md), section 10).
 
 Every setting in which the L1 and L2 configs differ, as the configs and the defaults of `src/tiefer_lab/config.py` resolve them on 7 October 2026:
 
@@ -93,17 +112,30 @@ Settings not listed are the same in every config (crop 256, weight decay 0.0001,
 
 ## 7. Product decision
 
-| Assumption | Reason | Revisit when |
-| :--- | :---: | :---: |
-| Product rule: the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor | One model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation |
-| Target sensors are optical satellites whose bands differ; high resolution satellites usually carry blue, green, red and near infrared only, for example SPOT-7 NAOMI ([eoPortal](https://directory.eoportal.org/web/eoportal/satellite-missions/s/spot-6-7), TODO(verify) the page) | Specifications of newer target satellites are not public, so nothing about them is assumed | a target sensor's specification is available |
+| ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `A-7.1` | Product rule: the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor | one model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | none, design choice | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation | open | 7 October 2026 |
 
 Status on 7 October 2026: no decision is recorded yet. The rule is applied on validation, and the four-band validation mean IoU of `l2_flex_1m` seed 0 (`x-val-4`) is pending ([RESULTS.md](RESULTS.md), section 12). The test split never selects a model or a setting ([SPEC.md](SPEC.md), section 2, rule 5), so the test values (0.609 for `l2_flex_1m` seed 0, a session-notes value, against 0.720 [0.707, 0.732] for `l2_spec_1m` seed 0) are informational only. Both runs are a single seed.
 
 ---
 
+## 8. Sources
+
+1. SPOT-6 and SPOT-7, eoPortal, https://www.eoportal.org/satellite-missions/spot-6-7, accessed 7 October 2026.
+2. S2 Mission, spectral and spatial resolution, ESA SentiWiki, https://sentiwiki.copernicus.eu/web/s2-mission, accessed 7 October 2026.
+3. CloudSEN12+ dataset card, version 1.1.2, TACO Foundation, Hugging Face, https://huggingface.co/datasets/tacofoundation/cloudsen12, accessed 7 October 2026.
+4. GPU and ML guide, CSC, https://docs.csc.fi/support/tutorials/gpu-ml/, accessed 1 October 2026.
+
+---
+
 ## Changelog
 
+- 7 October 2026: every row has an ID, evidence, a status and the date it was last checked; rows without a source say "none, design choice".
+- 7 October 2026: one band statement in `A-1.1`, checked against the SPOT-6 and SPOT-7 page of eoPortal (a `TODO(verify)` resolved); the row on target sensors moved from section 7 to section 1 (`A-1.7`).
+- 7 October 2026: new rows: B11 and B12 (`A-1.3`), normalisation transfer (`A-2.3`), input shapes (`A-2.4`), tile overlap (`A-2.5`), operational design domain (`A-2.6`), PyTorch versions (`A-5.3`), labels as ground truth (`A-6.1`), split independence (`A-6.2`), patch size (`A-6.3`), one seed (`A-6.8`), input design (`A-6.9`) and class weighting (`A-6.10`).
+- 7 October 2026: `A-4.2` and `A-6.5` are `revisit due`: INT8 loses more than one point of mean IoU, and l1_full s0 has run.
+- 7 October 2026: the decision rule's reason no longer uses adjectives; links are relative.
 - 7 October 2026: section 6 lists every setting in which the L1 and L2 configs differ, as resolved by the configs and the defaults of `config.py`.
 - 7 October 2026: section 6 names the source of the early stops of 2 October 2026 (training log) and adds the stop of `l1_base` seed 0 on 3 October 2026.
 - 7 October 2026: correction: section 7 states the product rule completely (mean IoU, validation, B02 B03 B04 B08, 1 M, seeds as available, the specialist's interval); no decision is recorded until `x-val-4` is read, and the test values are informational only.
