@@ -10,6 +10,29 @@ readme = "README.md"
 license = "MPL-2.0"
 requires-python = ">=3.12"
 authors = [{ name = "Tiefer", email = "hello@tiefer.space" }]
+# The GitHub topics of the repository, in the same spelling.
+keywords = [
+    "cloud-detection",
+    "cloud-masking",
+    "cloudsen12",
+    "deep-learning",
+    "earth-observation",
+    "edge-ai",
+    "hpc",
+    "model-compression",
+    "nvidia-jetson",
+    "onboard-processing",
+    "onnx",
+    "pytorch",
+    "quantization",
+    "remote-sensing",
+    "reproducible-research",
+    "satellite-imagery",
+    "semantic-segmentation",
+    "sentinel-2",
+    "space-technology",
+    "tensorrt",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
@@ -30,6 +53,8 @@ dependencies = [
 [project.urls]
 Homepage = "https://tiefer.space"
 Repository = "https://github.com/tiefer-labs/lab"
+Documentation = "https://github.com/tiefer-labs/lab/tree/main/docs"
+Issues = "https://github.com/tiefer-labs/lab/issues"
 
 [dependency-groups]
 dev = [
