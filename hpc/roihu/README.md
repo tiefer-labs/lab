@@ -119,7 +119,7 @@ squeue --me
 
 The job runs on the CPU partition `small` with 16 cores, one parallel download worker per core (`SLURM_CPUS_PER_TASK`). It keeps only high quality 509 x 509 patches and prints the kept and dropped counts per split. The build is resumable: if the job stops, submit the same command again and it continues where it stopped.
 
-The log says `Hugging Face token: set` or `not set`, never the token itself. When the server still answers HTTP 429, every reader pauses together and then continues: for the server's `Retry-After` when it is known, otherwise 10 s, 20 s, 40 s and so on up to 300 s, with random jitter. Never write the token into `~/.bashrc` or a file in the repository.
+The log says `Hugging Face token: set` or `not set`, never the token itself. When the server still answers HTTP 429, every reader pauses together and then continues: for the server's `Retry-After` when it is known, otherwise 10 s, 20 s, 40 s and so on up to 300 s, with random jitter. A read that fails part way, which happens when the server answers with an error page instead of data, is treated the same: the log says `read failed (RasterioIOError: ...); all readers pause` and the patch is read again. After 12 attempts the job stops, names the patch and says that the build is resumable. Never write the token into `~/.bashrc` or a file in the repository.
 
 Its log starts with the metadata columns of the dataset. If it stops because the split field is missing, see the troubleshooting table.
 
@@ -127,7 +127,9 @@ Its log starts with the metadata columns of the dataset. If it stops because the
 
 The band-flexible models read all 13 Level-1C bands from one cache, `cloudsen12-l1c-all`. With all bands a 509 x 509 patch takes about 6.7 MiB, so the cache needs about 6.7 MiB times the number of patches of each split; the merge needs one shard more at its peak. The builder prints its estimate and stops when the file system has less free space, but the project quota on `/scratch` can be lower than that: check it first (`TODO(verify)` the command on [docs.csc.fi](https://docs.csc.fi/computing/disk/)).
 
-The training split is read by four CPU jobs side by side, each into its own folder, and merged afterwards. `--max-rate` caps the reads per minute of the whole split and is shared between the shards; lower it when the log shows HTTP 429:
+Run the 4-band build and the 13-band build one after the other, not at the same time: submit the 13-band jobs only when `data.sbatch all` has finished and its log says every split is complete. All data jobs read from the same server, and several builds at once push it into rate limits and error pages.
+
+The training split is read by four CPU jobs side by side, each into its own folder, and merged afterwards. `--max-rate` caps the reads per minute of the whole split and is shared between the shards; keep the four shards at one shared `--max-rate 120`, and lower it when the log shows HTTP 429:
 
 ```bash
 for i in 0 1 2 3; do
@@ -296,6 +298,7 @@ Every job script starts with `#!/bin/bash --login`, a login shell given by full 
 | `the split field 'tortilla:data_split' is not in the metadata` | the dataset uses another name for the split field | find it in the `metadata columns` line of the log, set `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`, commit, and submit the data job again |
 | The data job fails with a network error | compute nodes cannot reach `huggingface.co` | stop and ask the CSC Service Desk; do not build the cache on a login node |
 | `rate limited (HTTP 429); all readers pause` in the data log | Hugging Face limits reads without a token | nothing to do, the job continues; set `HF_TOKEN` as in step 3 before the next data job |
+| `RasterioIOError: Read failed` after `rate limited (HTTP 429)`, with GDAL's `not recognized as being in a supported file format` before it | the server answered a read with an error page instead of data while it limited requests; an older version stopped there | run `git pull`: the job now pauses (`read failed (RasterioIOError: ...); all readers pause`) and reads the patch again. If it still stops with `could not be read after 12 attempts`, submit the same data job again, since the build resumes, and run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120` or lower (step 3) |
 | `OUT_OF_MEMORY` in the finishing step of the data job, then `FileNotFoundError` on `train_images.partial.npy` | an older version counted class pixels on the whole split at once | run `git pull` and submit the same data job again; it goes straight to the finishing step |
 | `stopped after ... of ...` in the data log | the job hit its time limit or a read failed | submit the same data job again; it continues |
 | `shard ... is not complete; merge later` | the merge was submitted before every shard finished | wait for the shard jobs (`squeue --me`), resubmit any that stopped, then merge |
@@ -349,6 +352,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 8 October 2026: step 3, a read that fails part way pauses every reader and is read again; run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120`; troubleshooting row for `Read failed` after HTTP 429.
 - 8 October 2026: everything is done from `roihu-cpu.csc.fi`: GPU jobs follow CSC's way of submitting across architectures and build their environment on the GPU node; the GPU setup is the job `setup_gpu.sbatch`; step 4 and the troubleshooting table say how to check a job's environment in its log.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: step 3 adds the read-only padding check of a cache, run on the login node.
