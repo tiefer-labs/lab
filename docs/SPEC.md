@@ -427,7 +427,7 @@ lab/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
         build_cache.py            python -m tiefer_lab.data.build_cache
-        http.py                   backoff on HTTP 429 and the Hugging Face token
+        http.py                   backoff on HTTP 429 and other transient read errors; the token
         sensor.py                 sensor robustness augmentations and evaluation perturbations
         survey.py                 python -m tiefer_lab.data.survey: counts, splits, encodings
         richness.py               python -m tiefer_lab.data.richness: classes, cloud cover, verified fields
@@ -470,6 +470,7 @@ lab/
     test_cpu_jobs_without_torch.py  the modules of the CPU jobs import and record provenance without torch
     test_padding.py               padding of cached patches and the read-only check, on synthetic data
     test_http.py                  backoff on HTTP 429, token never printed
+    test_transient_reads.py       a read that fails part way is read again; other errors stop at once
     test_survey.py                survey on a synthetic table with real GeoTIFF items
     test_extra_patches.py         scribble and nolabel patches, location exclusion, overlap proof
     test_richness.py              richness report: cloud cover bins, verified fields only
@@ -593,6 +594,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 8 October 2026: section 14, `http.py` retries every transient read error, and `test_transient_reads.py` tests it.
 - 8 October 2026: sections 12, 14 and 15: every Roihu step runs from `roihu-cpu.csc.fi`; GPU jobs follow CSC's way of submitting across architectures, and `setup_gpu.sbatch` sets up the GPU side; `metadata.py` works without torch, as the CPU jobs need, with its test.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 9, the dataset's padding is masked in the labels at load time, and every metric and fraction counts only the real image area.
