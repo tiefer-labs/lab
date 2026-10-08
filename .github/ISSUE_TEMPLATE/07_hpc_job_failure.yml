@@ -67,10 +67,10 @@ body:
     id: hpc_login
     attributes:
       label: "Login host used to submit"
-      description: "GPU jobs are submitted from `roihu-gpu.csc.fi` and the data job from `roihu-cpu.csc.fi` (hpc/roihu/README.md, section 5)."
+      description: "Every job is submitted from `roihu-cpu.csc.fi`; GPU jobs may also come from `roihu-gpu.csc.fi` (hpc/roihu/README.md, section 2, item 3)."
       options:
-        - "roihu-gpu.csc.fi"
         - "roihu-cpu.csc.fi"
+        - "roihu-gpu.csc.fi"
         - "A login node of another system"
         - "Not sure"
   - type: input
