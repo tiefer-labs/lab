@@ -120,10 +120,10 @@ One word for each state, defined here once. Other documents link to this table i
 ## 7. Numbers and units
 
 - Rounding: 3 decimals, half up (0.0075 becomes 0.008), stated once per document. Never round to flatter a result, and never round a value twice without saying so.
-- Fractions are written as fractions (0.720), not as percent, except where a threshold is named in words ("at 50 percent"). The word "percent" is written out; the sign `%` is not used in prose or tables.
-- Thousands separators: commas in counts and sizes of 1,000 and more, in prose and in tables (8,490 patches, 993,280 bytes). No separators in identifiers, job IDs, years, commits, configuration values quoted from code, or code blocks.
+- Fractions are written as fractions (0.830), not as percent, except where a threshold is named in words ("at 50 percent"). The word "percent" is written out; the sign `%` is not used in prose or tables.
+- Thousands separators: commas in counts and sizes of 1,000 and more, in prose and in tables (1,200 patches, 1,048,576 bytes). No separators in identifiers, job IDs, years, commits, configuration values quoted from code, or code blocks.
 - Data sizes in bytes, MiB or GiB (binary units). "GB" or "MB" is used only when a source states a decimal size, and then as the source wrote it.
-- Times in UTC, with "UTC" written out (`3 October 2026, 09:39 UTC`); a local time is given only next to its UTC time. Durations as `hh:mm:ss`; CPU time as Slurm prints it. A table column of times or durations names its format in the header.
+- Times in UTC, with "UTC" written out (`8 October 2026, 09:00 UTC`); a local time is given only next to its UTC time. Durations as `hh:mm:ss`; CPU time as Slurm prints it. A table column of times or durations names its format in the header.
 - A space between number and unit (`12.4 ms`). Confidence intervals in brackets: `0.83 [0.81, 0.85]`.
 - Every measured or quoted value has a source (section 8); every physical quantity has a unit.
 
@@ -136,13 +136,13 @@ Every value names where it comes from. The kinds of source and how each is writt
 | Kind | Syntax | Rule |
 | :--- | :---: | :---: |
 | Report file | `reports/evaluation/<file>.json` | the file the value was copied from |
-| Source key | `b0-val` | lowercase, hyphenated, defined once in an appendix of the same document (`## Appendix A. <name>`) with the full path and commit |
-| Session notes | `notes` | temporary; every such value is listed in a "values to verify" table with its exit condition: the report file is copied into the repository and the value is checked against it |
+| Source key | `run-a-val` | lowercase, hyphenated, defined once in an appendix of the same document (`## Appendix A. <name>`) with the full path and commit |
+| Session notes | `notes` | temporary; every such value is listed under "Values pending" with its exit condition: the report file is copied into the repository and the value is checked against it |
 | Log | `log` | Slurm or terminal output; the job ID is given next to it |
-| Commit | `81ab34b03bcc` | 12-character hash |
+| Commit | `0123456789ab` | 12-character hash |
 | Cited document | `[n]` | numbered list at the end of the document |
 
-- A source column uses one format: `key` or `key (kind)`, for example `b0-val (report)`. No prose in source cells; explanations go below the table.
+- A source column uses one format: `key` or `key (kind)`, for example `run-a-val (report)`. No prose in source cells; explanations go below the table.
 - External sources are listed at the end of the document, numbered, each as "Title, publisher or authors, date, URL, accessed D Month YYYY". A source that could not be opened is not cited; the fact stays as it was, or is listed as an open fact.
 - A published value of another organisation is labelled "published" and is never placed in a table of this repository's own measured values (section 12.8).
 
@@ -150,7 +150,7 @@ Every value names where it comes from. The kinds of source and how each is writt
 
 ## 9. Identifiers and markers
 
-- Run names: `l1_base s0` style (configuration and seed) in prose and tables; the full run ID is written once, in a runs table.
+- Run names: `run-a s0` style (configuration and seed) in prose and tables; the full run ID is written once, in a runs table.
 - Requirement IDs (`REQ-DAT-11`, `ACC-01`) and assumption IDs (`A-1.1`: section 1, row 1) are written in backticks. Standards are named by identifier and revision (`ECSS-E-ST-40C Rev.1`).
 - `TODO(verify)` marks a fact that needs a source not yet read, and names what would resolve it. It is not used inside table cells: such facts are listed in an "Open facts" table (fact, what resolves it, where it is used).
 
@@ -200,7 +200,7 @@ Each document type has required sections, in this order. A document may add sect
 
 ### 12.2 Results page
 
-`docs/RESULTS.md`, written by hand: summary; how to read this page (rounding rule, source-key grammar, the words of section 4, metric definitions); runs; environment and provenance; data; results by topic, each table with a source column; quantisation; hardware; compute used; training notes; limitations; how to reproduce; values to verify and values pending; Appendix A of report files; changelog. Published values of other systems are not on this page.
+`docs/RESULTS.md`, written by hand: summary; how to read this page (rounding rule, source-key grammar, the words of section 4, metric definitions); runs; environment and provenance; data; results by topic, each table with a source column; quantisation; hardware; compute used; training notes; limitations; how to reproduce; values pending; Appendix A of report files; changelog. Published values of other systems are not on this page.
 
 ### 12.3 Requirements matrix
 
@@ -354,6 +354,8 @@ Every fact lives in one document, named in the "Owns" column of `INDEX.md`; ever
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
+- 8 October 2026: one-time exception to the rule of section 5 that old changelog lines are never edited: by decision of the founder, lines that quoted results, run IDs, job IDs or report keys of the campaign of 1 to 3 October 2026 are removed from every changelog.
 - 7 October 2026: section 12.33, the rules of issue forms and pull request templates; templates are exempt from the header, title, status line and changelog; section 13 names their tests.
 - 7 October 2026: section 12.32, the document type of the AI assistance policy.
 - 7 October 2026: section 12.12, the notice holds attributions only; section 13 cites LICENSING.md for the exclusion of `docs/assets/`.
