@@ -74,7 +74,7 @@ The path has 11 tracks and 38 concepts. Work through the tracks in order; within
 | `EV-2` | Balanced overall accuracy, producer's and user's accuracy | Per-patch accuracies of a binary problem, such as cloud against the rest. | They make Lab comparable with the CloudSEN12 benchmark. | `EV-1`, `CL-2` | `src/tiefer_lab/binary_metrics.py`; [docs/DATASETS.md](docs/DATASETS.md), section 4 | [4] |
 | `EV-3` | Frame decisions | A frame is sent when its predicted cloud fraction is below a threshold. The false discard rate counts useful frames kept on board, the false send rate cloudy frames sent, and decision accuracy all correct decisions. | The false discard rate is the error that costs an operator most. | `EO-3`, `EV-1` | `src/tiefer_lab/metrics.py`, `src/tiefer_lab/decisions.py`; [docs/RESULTS.md](docs/RESULTS.md), section 2 | [6] |
 | `EV-4` | Bootstrap intervals | Resampling the patches with replacement gives the spread of a metric. | Every interval in RESULTS.md is a 95 percent bootstrap interval over patches. | `EV-1` | `src/tiefer_lab/bootstrap.py` | [13] |
-| `EV-5` | Seeds and reproducibility | A run depends on its random seed; results differ between seeds even with the same code. | l1_base has two seeds that differ by 0.042 in validation mean IoU; every other run is a single seed. | `EV-4` | [docs/RESULTS.md](docs/RESULTS.md), section 18 | [14] |
+| `EV-5` | Seeds and reproducibility | A run depends on its random seed; results differ between seeds even with the same code. | A difference between two runs counts as evidence only when it is larger than the spread between seeds of the same configuration. | `EV-4` | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), section 6 | [14] |
 | `EV-6` | Validation and test discipline | The validation split chooses models and settings; the test split is read once, for the final result. | Lab logs every use of the test split and never chooses with it. | `DS-1` | [POLICY.md](POLICY.md), gate 3; `reports/test_log.md` | [4] |
 
 ---
@@ -96,7 +96,7 @@ The path has 11 tracks and 38 concepts. Work through the tracks in order; within
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | `DP-1` | ONNX and operator sets | A file format for trained models; the opset version fixes which operators a file may use. | Every export is pinned to opset 17. | `SG-1` | `src/tiefer_lab/export/`; [docs/STANDARDS.md](docs/STANDARDS.md), section 2 | [19] |
 | `DP-2` | Post-training quantisation | A model is converted to 8-bit integers after training, with scales computed on calibration data; the QDQ format marks where values are quantised. | INT8 is the likely onboard precision. | `DP-1` | `src/tiefer_lab/export/quantise.py` | [20] |
-| `DP-3` | Quantisation error | Integer arithmetic approximates the floating point model, and accuracy can drop. | INT8 loses 0.060 to 0.154 validation mean IoU in Lab, more than its limit. | `DP-2`, `EV-1` | [docs/RESULTS.md](docs/RESULTS.md), section 14 | [21] |
+| `DP-3` | Quantisation error | Integer arithmetic approximates the floating point model, and accuracy can drop. | Lab measures the INT8 change on validation and compares it with its limit before an INT8 file is recommended. | `DP-2`, `EV-1` | [docs/RESULTS.md](docs/RESULTS.md), section 14 | [21] |
 | `DP-4` | TensorRT engines | TensorRT builds an engine for a specific NVIDIA device from an ONNX file; `trtexec` builds and times it. | The Jetson scripts build FP16 and INT8 engines with `trtexec`. | `DP-1` | `jetson/build_engines.sh` | [22] |
 
 ---
@@ -164,5 +164,6 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: correction: the path has 38 concepts; the first version said 33.
 - 7 October 2026: first version: 11 tracks and 33 concepts, each with its place in the repository and one primary reference.
