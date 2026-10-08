@@ -243,7 +243,7 @@ def test_finishing_step_resumes_after_it_failed(
     with pytest.raises(MemoryError):
         build_cache.main(args)
     directory = cache.cache_dir(build_cache.DEFAULT_NAME)
-    # The state that failed on Roihu: final files in place, no partial files, progress at the end.
+    # A failed finishing step: final files in place, no partial files, progress at the end.
     assert (directory / "train_images.npy").is_file()
     assert not (directory / "train_images.partial.npy").exists()
     assert json.loads((directory / "train.progress.json").read_text())["done"] == 20

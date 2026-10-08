@@ -41,11 +41,11 @@ def test_one_row_per_run_from_its_folder(two_runs: Path) -> None:
     row = rows[0]
     assert row["seed"] == 3 and row["config"] == "tinyexp" and row["epochs"] == 3
     assert row["gpu_hours"] == 0.0  # trained on the CPU
-    text = experiments.render(rows, dt.date(2026, 10, 2))
+    text = experiments.render(rows, dt.date(2027, 1, 15))
     lines = text.split("\n")
     assert not check_header(Path("reports/experiments.md"), lines)
     assert not check_structure(text)
-    assert "`a`" in text and "2 October 2026" in text
+    assert "`a`" in text and "15 January 2027" in text
 
 
 def test_gpu_hours_sum_sessions_and_unknown_stays_unknown() -> None:
