@@ -18,10 +18,10 @@ The repository is public because results are published with their method: measur
 
 ### What Lab is not
 
-- Not flight software, and not flight-proven: every model ran on GPUs on CSC Roihu, never on a satellite.
+- Not flight software, and not flight-proven: no model has run on a satellite.
 - Not a model distribution: trained models are not published here and no licence is granted for them ([LICENSING.md](LICENSING.md)).
 - Not measured on hardware: the Jetson Orin scripts exist, but no latency, power or energy has been measured ([docs/RESULTS.md](docs/RESULTS.md), section 15).
-- Not measured on a target sensor: every result is on Sentinel-2 Level-1C data from CloudSEN12+.
+- Not measured on a target sensor: the training and test data are Sentinel-2 Level-1C from CloudSEN12+.
 - Not a detector, alert system or update system: those stages have no code in this repository ([CLAIMS.md](CLAIMS.md)).
 
 ---
@@ -31,21 +31,21 @@ The repository is public because results are published with their method: measur
 | Milestone or component | Status | Evidence |
 | :--- | :---: | :---: |
 | **Milestone L1: four-band cloud filter** | | |
-| Data cache (CloudSEN12+, Level-1C, four bands) | done | [docs/DATA.md](docs/DATA.md), section 10 |
-| Training and evaluation on CSC Roihu (`l1_base` seeds 0 and 1, `l1_full` seed 0) | measured | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
-| ONNX export and INT8 quantisation | measured | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
-| Model card and checksums (v0.1.0, `l1_base` seed 0) | draft | [models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md) |
+| Data cache (CloudSEN12+, Level-1C, four bands) | v2 pending | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
+| ONNX export and INT8 quantisation | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Model card and checksums | v2 pending | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) |
 | **Milestone L2: band-flexible model and four-band specialist** | | |
-| 13-band data cache | done | [docs/DATA.md](docs/DATA.md), section 10 |
-| Training and evaluation on CSC Roihu (`l2_flex_1m` and `l2_spec_1m`, seed 0) | measured | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
-| Export of the L2 models | not measured | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
-| Seeds 1 and 2 of the L2 pair | not run | [hpc/roihu/plan.md](hpc/roihu/plan.md), section 1 |
+| 13-band data cache | v2 pending | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
+| Export of the L2 models | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Seeds of the L2 pair | v2 pending | [hpc/roihu/plan.md](hpc/roihu/plan.md) |
 | Product decision between the two L2 models | pending | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), section 7 |
 | **Jetson milestone** | | |
 | Benchmark scripts, dry-run mode | done | [jetson/README.md](jetson/README.md) |
 | Latency, power and energy on a Jetson Orin | not measured | [docs/RESULTS.md](docs/RESULTS.md), section 15 |
 
-Headline numbers, as [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) lists them: on the test split, the four-band specialist `l2_spec_1m` seed 0 has a mean IoU of 0.720 [0.707, 0.732] and a false discard rate at 50 percent of 0.042 [0.026, 0.059]; INT8 quantisation lowers the validation mean IoU by 0.060 to 0.154 on the three exported L1 runs. Caveats: single seeds, L2 settings not in the committed configs, report files still on CSC Roihu, and padded pixels counted in every metric ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3).
+No headline numbers yet: every result waits for the v2 campaign ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md); [hpc/roihu/plan.md](hpc/roihu/plan.md)).
 
 ---
 
@@ -103,11 +103,11 @@ Every Markdown file of the repository, with its purpose, audience and status, is
 
 ## Principles
 
-1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The gates a number must pass are in [POLICY.md](POLICY.md). The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19. Not every number can be reproduced from a commit yet: `l1_base s0` ran from a working tree with uncommitted changes, the L2 runs used a batch size and learning rate that are not in their committed configs, and the report files of 2 and 3 October 2026 are still on CSC Roihu (docs/RESULTS.md, section 4).
+1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The gates a number must pass are in [POLICY.md](POLICY.md). The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19, and every run of the v2 campaign starts from one tagged, clean commit.
 2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
 3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
 4. Reproducible: fixed seeds, versioned configurations, a locked environment, and the dataset revision and the git commit in every result file, with a flag when the working tree had uncommitted changes.
-5. The test split is used only for final evaluation, and every use is logged where it runs. The entries of the test evaluations of 3 October 2026 are on CSC Roihu and pending a copy into [reports/test_log.md](reports/test_log.md), which has no entries yet.
+5. The test split is used only for final evaluation, and every use is logged where it runs. [reports/test_log.md](reports/test_log.md) has no entries yet.
 
 ---
 
@@ -125,10 +125,8 @@ The repository is licensed under the Mozilla Public License 2.0, see [LICENSE](L
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the first screen says what Lab is and what it is not; "What Lab is not", a status table with evidence, "Where to go next", a minimal quick start that defers to GETTING-STARTED.md and INSTALL.md, and a documentation section that points to INDEX.md and START-HERE.md; the community files of this repository replace the links to tiefer-labs/.github.
 - 7 October 2026: the documentation list adds DATASETS.md, REQUIREMENTS.md, STANDARDS.md, NOTICE.md and hpc/roihu/plan.md; principles 1 and 4 say what holds now and what is pending.
-- 7 October 2026: correction: `l1_base` has two seeds; the other runs are single seeds.
-- 7 October 2026: correction: the test log entries of 3 October 2026 are on CSC Roihu and pending a copy.
 - 7 October 2026: the documentation list links docs/LANDSCAPE.md.
-- 7 October 2026: the status describes milestones L1 and L2 as measured on CSC Roihu, with the headline results; principles and layout mention the L2 band sets and sizes.
 - 7 October 2026: docs/RESULTS.md is written by hand; the command of the results generator is removed.
