@@ -74,7 +74,7 @@ The extra-table masks are those of the dataset variant `tacofoundation:cloudsen1
 
 ## 5. Head-to-head status
 
-The column "This repository" holds values measured here, from [RESULTS.md](RESULTS.md); the column "Other system" holds published values unless the cell says otherwise. No row is decided yet: each status names the measurement that would decide it. The open measurements are listed as work items in [hpc/roihu/plan.md](../hpc/roihu/plan.md).
+The column "This repository" holds values measured here, from [RESULTS.md](RESULTS.md); the column "Other system" holds published values unless the cell says otherwise. No row is decided yet: each status names the measurement that would decide it. The deciding measurements are added as steps of the v2 plan ([hpc/roihu/plan.md](../hpc/roihu/plan.md)).
 
 | Comparison | Metric | This repository | Other system | Status | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -87,7 +87,7 @@ The column "This repository" holds values measured here, from [RESULTS.md](RESUL
 
 Notes:
 
-1. Deciding measurement: score the extra-table masks and the runnable algorithms with this repository's code on the same 975 test patches.
+1. Deciding measurement: score the extra-table masks and the runnable algorithms with this repository's code on the same test patches.
 2. Deciding measurement: run dtacs4bands on the test split with B02, B03, B04 and B08, after checking that its CC BY-NC 4.0 licence allows the use.
 3. Different data and definitions. A threshold sweep that reports the false send rate at a false discard rate of 0.01 gives a comparable operating point for this repository's model, but it does not decide the comparison without both models on the same frames.
 4. Different data, bands and resolution. Deciding measurement: both models on the same frames.
