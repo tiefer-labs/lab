@@ -237,7 +237,7 @@ Training and full evaluation run on **CSC Roihu GPU nodes**. Check the current C
 The facts the scripts depend on, each with its source, are in the table of [hpc/roihu/README.md](../hpc/roihu/README.md), section 6; that table is the reference, and this list summarises it.
 
 - CPU nodes are x86 (AMD). **GPU nodes are ARM (aarch64), NVIDIA GH200 Grace Hopper**, 4 GPUs per node; each reserved GPU gives up to 72 ARM cores, 95 GiB HBM3 and about 117 GiB CPU memory.
-- Login nodes: `roihu-cpu.csc.fi` (x86) and `roihu-gpu.csc.fi` (ARM). Software for GPU jobs must be installed from `roihu-gpu.csc.fi`.
+- Login nodes: `roihu-cpu.csc.fi` (x86) and `roihu-gpu.csc.fi` (ARM). Software for GPU jobs is built for ARM; it is installed on a GPU node by the job `setup_gpu.sbatch`, so every step runs from `roihu-cpu.csc.fi`. A GPU job submitted from the x86 login node follows CSC's way of submitting across architectures: a short `--export` list, a login shell and `CSC_ENV_INIT_NON_INTERACTIVE=yes`.
 - GPU partitions: `gputest` (15 minutes), `gpumedium` (up to 36 hours, up to 4 GPUs on one node), `gpularge` (multi-node, not needed), `gpuinteractive` (up to 12 hours).
 - Syntax: `#SBATCH --account=<project>` (mandatory), `#SBATCH --partition=gpumedium`, `#SBATCH --gres=gpu:gh200:1`.
 - PyTorch comes from the module, for example `module load python-pytorch/2.10`, which includes CUDA and cuDNN. Verify the current name with `module avail python-pytorch`.
@@ -258,18 +258,19 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | File | Purpose |
 | :--- | :---: |
 | `README.md` | Founder guide, plain English, step by step (below) |
-| `job_prelude.sh` | Sourced first by every job and by `setup.sh`: stops with a clear message when `module` is missing, runs `module purge` |
+| `job_prelude.sh` | Sourced first by every job and by `setup.sh`: initialises the CSC environment of the node when `module` is missing, stops with a clear message when it is still missing, sets `SLURM_EXPORT_ENV=ALL` in a job, prints the node and how its environment was made, runs `module purge` |
 | `shell_options.sh` | Turns off `errexit`, `nounset` and `pipefail` around every `module` command, then restores exactly the saved options |
-| `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module, activates the venv, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`); creates the venv, installs, runs the environment check |
-| `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing |
+| `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module and activates the venv of the node's architecture, prints them in a job, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
+| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on a GPU node through `setup_gpu.sbatch` (`venv-aarch64`); creates the venv, installs, runs the environment check |
+| `setup_gpu.sbatch` | `gputest`, 1 GPU, 15 minutes: runs `setup.sh` on a GPU node; fails when no GPU is visible |
+| `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing, or inside a GPU job when no GPU is visible |
 | `survey.sbatch` | Short CPU job: counts, splits, locations and item encodings of the dataset, in `reports/data/survey.json` |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache in its own folder when the train and val splits of the full cache are not complete, and only reads the full cache |
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
 | `export.sbatch` | Export and quantisation on Roihu (calibration needs the cached training data) |
-| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT`, `--chdir` and the log location to `sbatch`, since `#SBATCH` lines cannot read environment variables; jobs use sbatch's default export, so `TIEFER_CSC_PROJECT`, `SEED`, `FINAL` and `REASON` reach the job as plain environment variables; GPU jobs are refused unless submitted from an `aarch64` host (`roihu-gpu.csc.fi`) and the data job unless from an `x86_64` host (`roihu-cpu.csc.fi`); `sbatch` options such as `--test-only` go before the job script |
+| `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT`, `--chdir` and the log location to `sbatch`, since `#SBATCH` lines cannot read environment variables; CPU jobs use sbatch's default export and are refused unless submitted from an `x86_64` host (`roihu-cpu.csc.fi`); GPU jobs are accepted from either login node and get only `HOME`, `CSC_ENV_INIT_NON_INTERACTIVE=yes` and, by name, the variables the jobs read (`TIEFER_CSC_PROJECT`, the `TIEFER_*` paths, `SEED`, `FINAL`, `REASON` and the others listed in the script); `sbatch` options such as `--test-only` go before the job script |
 | `usage.sh` | Prints `sacct` usage of a job for the results |
 | `timing.sbatch` | One cut epoch on `gputest`: the real cost of a config |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
@@ -277,18 +278,18 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `requirements.txt` | Generated from `uv.lock` with `uv export`, without the packages of the CSC module |
 | `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
 
-Every job script starts with `#!/bin/bash -l` and uses sbatch's default export; GPU jobs stop unless `uname -m` is `aarch64`. Slurm output goes to `$TIEFER_RUNS_DIR/slurm/%x-%j.out`. Jobs copy the cache to `$TMPDIR` at start when it is read from disk.
+Every job script starts with `#!/bin/bash --login`, a login shell by full path, so a GPU job initialises the module system of its own node; GPU jobs stop unless `uname -m` is `aarch64`. Slurm output goes to `$TIEFER_RUNS_DIR/slurm/%x-%j.out`. Jobs copy the cache to `$TMPDIR` at start when it is read from disk.
 
 ### Founder guide (content of `hpc/roihu/README.md`)
 
 The guide follows docs/STYLE.md, section 12.14, and its steps are:
 
-1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` and `roihu-gpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
-2. Before you start: the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; which login node submits which job; login nodes are for light work only, so the cache is never built there.
+1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
+2. Before you start: the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; where each job runs and which environment it gets; login nodes are for light work only, so the cache is never built there.
 3. Step 1, clone and set the project: `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` and `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>`.
-4. Step 2, set up both architectures: `bash hpc/roihu/setup.sh` on `roihu-cpu.csc.fi` (`venv-x86_64`) and on `roihu-gpu.csc.fi` (`venv-aarch64`).
+4. Step 2, set up both architectures from `roihu-cpu.csc.fi`: `bash hpc/roihu/setup.sh` there (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what its log must show.
 5. Step 3, survey the dataset with `survey.sbatch`, then build the data cache with `data.sbatch`.
-6. Step 4, the smoke job on `gputest`; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
+6. Step 4, the smoke job on `gputest`, submitted from `roihu-cpu.csc.fi` like every GPU job, and how to check the environment lines of a GPU job log; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
 7. Step 5, train on `gpumedium`, one GPU per job, seeds as separate jobs with `SEED`; `timing.sbatch` and `sweep.sh` for the cost of a config and for several configs.
 8. Step 6, evaluate, export, the final test with `FINAL=1` and `REASON`, `usage.sh` per job, and `bash hpc/roihu/collect.sh <run-id>`; copy the archive to the founder's computer and unpack it into the repository.
 
@@ -364,13 +365,14 @@ lab/
   hpc/
     roihu/
       README.md                   founder guide for CSC Roihu (section 12)
-      job_prelude.sh              module check and module purge for every job
+      job_prelude.sh              module system of the node, module purge for every job
       shell_options.sh            relax and restore set -euo pipefail around module commands
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
+      setup_gpu.sbatch            gputest, 15 minutes: setup.sh on a GPU node
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
-      submit.sh                   sbatch wrapper: --account, log location, login node check
+      submit.sh                   sbatch wrapper: --account, log location, export by job kind
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
@@ -450,7 +452,7 @@ lab/
         paths.py                  TIEFER_* variables and defaults
         devices.py                CUDA, MPS, CPU selection, precision choice
         seeding.py
-        metadata.py               run provenance, Slurm fields, relative paths only
+        metadata.py               run provenance, Slurm fields, relative paths only; works without torch
         signals.py                SIGTERM and SIGUSR1 handling
         checkpoint.py             save, load (weights_only), resume
         ema.py                    exponential moving average of the weights
@@ -465,6 +467,7 @@ lab/
     test_transforms.py
     test_bands_and_labels.py
     test_cache.py                 cache build, resume and reading on synthetic data
+    test_cpu_jobs_without_torch.py  the modules of the CPU jobs import and record provenance without torch
     test_padding.py               padding of cached patches and the read-only check, on synthetic data
     test_http.py                  backoff on HTTP 429, token never printed
     test_survey.py                survey on a synthetic table with real GeoTIFF items
@@ -496,7 +499,7 @@ lab/
     test_markdown_style.py        every Markdown file follows docs/STYLE.md
     test_docs_index.py            INDEX.md lists every Markdown file, and every listed file exists
     test_reports.py               report loading: smoke reports left out, provenance required
-    test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch and sacct
+    test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch, sacct and module
     test_tables.py                Markdown table helper
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
@@ -546,7 +549,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 - `ruff`, `mypy --strict` on `src/`, `pytest` pass on every commit.
 - Every Markdown file follows [STYLE.md](STYLE.md): the header image, the standard header block, heading levels, copy-ready commands, sources for every number. `LICENSE` and `docs/assets/` are provided by the founder and are never edited.
-- Tests cover: paths from `TIEFER_*` variables; `requirements.txt` in sync with `uv.lock`; data transforms and normalisation; exactly four bands in the right order; label mapping; metrics against hand-computed examples; frame decisions; bootstrap reproducibility; the test-split guard; checkpoint save and resume; parameter budget and operator set; ONNX export round trip on a tiny untrained model; quantisation on synthetic data; Jetson scripts in dry-run mode; report loading that leaves smoke reports out and refuses reports without git provenance (until 7 October 2026: the results generator refusing to run without real report files).
+- Tests cover: paths from `TIEFER_*` variables; `requirements.txt` in sync with `uv.lock`; data transforms and normalisation; exactly four bands in the right order; label mapping; metrics against hand-computed examples; frame decisions; bootstrap reproducibility; the test-split guard; checkpoint save and resume; parameter budget and operator set; ONNX export round trip on a tiny untrained model; quantisation on synthetic data; Jetson scripts in dry-run mode; the modules of the CPU jobs on Roihu without torch; the export of each kind of Roihu job and the module setup by the node's architecture; report loading that leaves smoke reports out and refuses reports without git provenance (until 7 October 2026: the results generator refusing to run without real report files).
 - **Text rule test:** fails if any tracked text file (`.py`, `.md`, `.toml`, `.yaml`, `.yml`, `.txt`, `.sh`, `.sbatch`, `.json`, `.cff`, `.cfg`) contains U+2014, U+2015, U+FE0F or a character with the Unicode property Extended_Pictographic (checked with the `regex` package), or an en dash (U+2013) that has a space or line boundary on either side (an en dash is only accepted directly between two characters, as in a range). `LICENSE` is checked too.
 - **Public hygiene test:** fails if a tracked file contains an absolute home or scratch path (for example `/home/`, `/Users/`, `/users/`, `/scratch/project_`, `/projappl/project_`), a CSC project identifier pattern (`project_` followed by digits), an email address other than `hello@tiefer.space`, something that looks like a key or token, or the name of any AI coding tool or its vendor in tracked content or paths (patterns built from string pieces so the test does not match itself). Report JSON stores paths relative to the repository or as `$TIEFER_*` placeholders.
 - Both tests write their patterns with escape sequences or string concatenation (for example the Python escape sequence for U+2014 instead of the character itself), never as literal characters, so they do not flag themselves. Placeholders such as `<project>` in documentation are allowed.
@@ -590,6 +593,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 8 October 2026: sections 12, 14 and 15: every Roihu step runs from `roihu-cpu.csc.fi`; GPU jobs follow CSC's way of submitting across architectures, and `setup_gpu.sbatch` sets up the GPU side; `metadata.py` works without torch, as the CPU jobs need, with its test.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 9, the dataset's padding is masked in the labels at load time, and every metric and fraction counts only the real image area.
 - 7 October 2026: section 14 lists `data/padding.py` and `tests/test_padding.py`.
