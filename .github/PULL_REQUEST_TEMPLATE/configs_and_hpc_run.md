@@ -126,7 +126,7 @@ Runs whose settings were not in their committed config are listed as caveats (do
 - [ ] Not sure
 
 ### 15. Where the scripts were tested
-GPU jobs are submitted from `roihu-gpu.csc.fi`, the data job from `roihu-cpu.csc.fi`. Choose one.
+Every job is submitted from `roihu-cpu.csc.fi`; GPU jobs run on the ARM GPU nodes, CPU jobs on the x86 CPU nodes. Choose one.
 
 - [ ] On CSC Roihu, GPU side
 - [ ] On CSC Roihu, CPU side
