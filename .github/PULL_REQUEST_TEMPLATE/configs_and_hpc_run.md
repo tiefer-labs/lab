@@ -86,6 +86,7 @@ Choose all that apply.
 Choose all that apply.
 
 - [ ] setup.sh
+- [ ] setup_gpu.sbatch
 - [ ] data.sbatch
 - [ ] smoke.sbatch
 - [ ] survey.sbatch
