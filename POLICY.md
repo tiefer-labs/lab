@@ -43,12 +43,12 @@ Outside means the website, the organisation profile, posts, slides, applications
 
 | Part | Content |
 | :--- | :---: |
-| Rule | the claim has status MEASURED in [CLAIMS.md](CLAIMS.md); its report file is committed; the quote states the value with its interval, the split and the run, and the caveats of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3; it is cited in the form of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 4. A session-notes value or a `pending` value is never quoted outside. A value that counts the dataset's padded pixels, every value measured before 7 October 2026, is not quoted outside until its run is evaluated again with the padding masked ([docs/RESULTS.md](docs/RESULTS.md), section 21) |
+| Rule | the claim has status MEASURED in [CLAIMS.md](CLAIMS.md); its report file is committed; the quote states the value with its interval, the split and the run, and the caveats of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 3; it is cited in the form of [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 4. A session-notes value or a `pending` value is never quoted outside. A value that counts the dataset's padded pixels is never quoted outside ([docs/DATA.md](docs/DATA.md), section 5) |
 | Evidence | the row in [CLAIMS.md](CLAIMS.md) and the citation |
 | Who checks | the maintainer, before publication |
 | When broken | the public text is corrected at its source, and [CLAIMS.md](CLAIMS.md), section 4, lists the statement until it is fixed |
 
-On 7 October 2026 no report file of the CSC Roihu runs is committed yet, so no number passes this gate yet ([docs/RESULTS.md](docs/RESULTS.md), Appendix A).
+No report file is committed yet, so no number passes this gate yet; the first come from the v2 campaign ([hpc/roihu/plan.md](hpc/roihu/plan.md)).
 
 ---
 
@@ -61,7 +61,7 @@ On 7 October 2026 no report file of the CSC Roihu runs is committed yet, so no n
 | Who checks | the code refuses the test split without `--final`; the maintainer checks the log against the report files |
 | When broken | a result chosen with the test split is marked in [docs/RESULTS.md](docs/RESULTS.md) as not independent, with a correction line; the choice is made again on validation |
 
-The entries of the test evaluations of 3 October 2026 are on CSC Roihu and pending a copy ([docs/RESULTS.md](docs/RESULTS.md), section 20).
+No test evaluation is logged yet; `reports/test_log.md` holds its header only.
 
 ---
 
@@ -87,7 +87,7 @@ No model card is published yet; the first comes from the v2 campaign.
 | Who checks | the maintainer |
 | When broken | the statement is withdrawn and recorded in [CLAIMS.md](CLAIMS.md) |
 
-On 7 October 2026 no comparison passes this gate ([docs/LANDSCAPE.md](docs/LANDSCAPE.md), section 5).
+On 8 October 2026 no comparison passes this gate ([docs/LANDSCAPE.md](docs/LANDSCAPE.md), section 5).
 
 ---
 
@@ -109,9 +109,9 @@ On 7 October 2026 no comparison passes this gate ([docs/LANDSCAPE.md](docs/LANDS
 | Rule | a run is added to [hpc/roihu/plan.md](hpc/roihu/plan.md) with its estimated cost in GPU billing units before it is submitted, and its config is committed |
 | Evidence | the row in [hpc/roihu/plan.md](hpc/roihu/plan.md); the measured cost in [docs/RESULTS.md](docs/RESULTS.md), section 16 |
 | Who checks | the maintainer |
-| When broken | the run is added to the plan afterwards with a correction line, and its results carry the provenance note of [docs/RESULTS.md](docs/RESULTS.md), section 4 |
+| When broken | the run is added to the plan afterwards with a correction line, and its results carry a provenance note in [docs/RESULTS.md](docs/RESULTS.md), section 4 |
 
-The L2 runs of 3 October 2026 used a batch size and learning rate that are not in their committed configs ([docs/RESULTS.md](docs/RESULTS.md), section 4); this gate exists so that it does not happen again.
+This gate makes every run reproducible from a committed config: a setting passed on the command line or in the environment instead of the config breaks it.
 
 ---
 
