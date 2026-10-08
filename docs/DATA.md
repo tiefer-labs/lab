@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What data milestones L1 and L2 train and evaluate on, answered in the order of the usual datasheet questions, followed by the facts the code depends on and the caches built on CSC Roihu.
+What data milestones L1 and L2 train and evaluate on, answered in the order of the usual datasheet questions, followed by the facts the code depends on and the caches of the v2 campaign on CSC Roihu.
 
 ---
 
@@ -65,12 +65,12 @@ The dataset's own train, validation and test splits are used. The cache builder 
 
 | Split | High quality patches | Kept (509 x 509) | Dropped (other size) | Class shares | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| train | pending | 8,490 | pending | pending | kept: builds of 2 October 2026 |
-| validation | pending | 535 | pending | [RESULTS.md](RESULTS.md), section 5 | kept and shares: `b0-val` (report) |
-| test | pending | 975 | pending | pending | kept: `b0-test` (h-c3e861a) |
-| total | pending | 10,000 | pending | pending | sum of the rows |
+| train | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
+| validation | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
+| test | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
+| total | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | sum of the rows |
 
-The source keys are those of [RESULTS.md](RESULTS.md), section 2. The high quality and dropped counts and the training class shares are pending until `index.json` of the cache is read; the test class shares are pending until `b0-test` is copied into the repository.
+Every count and share of this table is recorded by the v2 build in `index.json` (`splits.<split>.selection` and `class_pixels`).
 
 ### 2.4 Metadata fields
 
@@ -127,7 +127,7 @@ The agreement values are for the labels of the 2022 release and its test set, no
 | Dataset padding | every padded label pixel is set to `IGNORE_INDEX` when a split is loaded, since 7 October 2026; the loss, the class weights, every metric and every cloud fraction leave it out; images and the cache files are not changed | `src/tiefer_lab/data/padding.py`, `src/tiefer_lab/data/cache.py` |
 | Evaluation padding | each full patch is reflect-padded at the bottom and right to a multiple of 32, and the prediction is cropped back to the label's size | `src/tiefer_lab/data/dataset.py`, `src/tiefer_lab/data/transforms.py` |
 
-The builder reads each raster as it is stored and does not remove the card's padding (section 4). The confusion matrix of `l1_base s0` on the validation split counts 140,247,040 labelled pixels ([RESULTS.md](RESULTS.md), section 5), which is 535 x 512 x 512; a 509 x 509 patch has 259,081 pixels. So the cached validation patches are 512 x 512, and the 3 padded rows and 3 padded columns, 3,063 pixels per patch, are part of every cached patch, of the normalisation statistics and of every metric. What label code the padded label pixels hold is an open fact (section 13); if it is 0, they count as clear. The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`).
+The builder reads each raster as it is stored and does not remove the card's padding (section 4). By the card, a cached patch is 512 x 512, and its 3 padded rows and 3 padded columns, 3,063 of 262,144 pixels, are part of every cached patch and of the normalisation statistics; a 509 x 509 patch has 259,081 pixels. What label code the padded label pixels hold is an open fact (section 13); if it is 0, they count as clear. The stored height and width of each split are in `index.json` (`splits.<split>.height` and `width`).
 
 Masked at load time since 7 October 2026, commit `e01804d`: `load_split` sets every padded label pixel to `IGNORE_INDEX` (255), from the width given by `real_proj_shape` and the stored size of each patch and the sides in `PADDING_SIDES`. No rebuild is needed; the cache files are not changed. The images keep their zero pixels, so the model still sees them as input, and the normalisation statistics of each cache still include them. Every value measured before this change counts the padded pixels; they are evaluated again ([RESULTS.md](RESULTS.md)).
 
@@ -141,7 +141,7 @@ It reads up to 50 patches spread evenly over the split, memory-mapped, and print
 
 The 2000 x 2000 patches are left out: the export input is fixed at 512 x 512, and a 2000 x 2000 patch holds 15.4 times the pixels of a 509 x 509 patch.
 
-The normalisation values of each cache are pending until `index.json` is read (section 10).
+The normalisation values of each cache are recorded by the v2 build in `index.json` (section 10).
 
 ---
 
@@ -162,7 +162,7 @@ Training and evaluation of the cloud filter of milestones L1 and L2, and scoring
 
 Evaluation reports break results down by every scalar metadata field with between 2 and 30 distinct values (`MAX_GROUPS` = 30 in `src/tiefer_lab/evaluate.py`), with the patch count of each group, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
 
-First measurement: the breakdown of `l1_base s0` on the validation split by `equi_zone`, in six zones, is in [RESULTS.md](RESULTS.md), section 9. The causes of the difference are not analysed. The seasonal and land cover distribution is not analysed.
+No breakdown is measured yet (v2 pending). The seasonal and land cover distribution is not analysed.
 
 ### 6.4 Leakage between splits
 
@@ -198,9 +198,9 @@ Titles and authors are listed at the DOI links; this repository names no individ
 | :--- | :---: | :---: |
 | Dataset card version | 1.1.2 | [1] |
 | Revision read | `f9490f7de11b4f387f72ef800e73ccbb754711de`, the `sha` field of the Hugging Face dataset API, last modified 5 January 2025, 14:47:21 UTC | [2] |
-| How the revision is recorded | the builder writes the `sha` field to `index.json` at build time, and every evaluation report copies it ([RESULTS.md](RESULTS.md), section 4) | `src/tiefer_lab/data/source.py` |
+| How the revision is recorded | the builder writes the `sha` field to `index.json` at build time, and every evaluation report copies it | `src/tiefer_lab/data/source.py` |
 | Is the revision pinned? | no; it is recorded, not pinned: the reader reads the current revision, so a rebuild, a resumed build or a merge of shards can read a newer revision than the one recorded first | `src/tiefer_lab/data/source.py` |
-| Revision of the 13-band cache | pending until its `index.json` is read | section 10 |
+| Revision of each cache | recorded by the v2 build | section 10 |
 | What changes when the dataset changes | a new revision means a new cache; the facts of section 9 are checked again against the card | this card |
 
 ---
@@ -224,14 +224,14 @@ Each fact is defined once, in `src/tiefer_lab/data/source.py`, and checked at ru
 | **Labels and metadata** | | | |
 | Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | [1] | yes: any other code stops the build |
 | Item positions in a sample | `read(0)` image, `read(1)` label | [1] | yes: label shape equals image shape |
-| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | builds of 2 October 2026 ([RESULTS.md](RESULTS.md), section 5) | yes: the reader stops when the field is missing |
+| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`; checked again by the v2 build | yes: the reader stops when the field is missing |
 | Quality field and value | `label_type` = `high` | [1] | yes |
 | Patch ID field | `roi_id` | [1] | no |
 | Row key | `tortilla:id`, used only to sort rows and to resume a build | source of `tacoreader` 0.5.6 | no |
 | Reference mask names | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2` | [1] | no |
 | Reference mask link, item names and encodings | `REFERENCE_LINK_FIELD`, `REFERENCE_MASK_ITEMS`, `REFERENCE_ENCODINGS`: not set | open fact (section 13) | `build_cache --references` stops with a clear message |
 
-The card does not name the split field. The caches of 2 October 2026 were built with `tortilla:data_split` and the values `train`, `validation` and `test`, and gave 8,490, 535 and 975 kept patches; the reader stops when the field is missing, so the builds confirm the field and its values for revision `f9490f7de11b`.
+The card does not name the split field. The code reads `tortilla:data_split` with the values `train`, `validation` and `test`; the reader stops when the field is missing, so the v2 build confirms the field and its values for the revision it records.
 
 ---
 
@@ -269,14 +269,14 @@ python -m tiefer_lab.data.build_cache --split all --bands all --name cloudsen12-
 
 A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, 6.67 MiB, with all bands, and 4 x 509 x 509 x 2 + 509 x 509 bytes, 2.22 MiB, with four; the builder prints the estimate for each split before it starts. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart`. On CSC Roihu use `hpc/roihu/data.sbatch` ([hpc/roihu/README.md](../hpc/roihu/README.md)).
 
-The caches built on CSC Roihu:
+The caches of the v2 campaign on CSC Roihu:
 
 | Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | `f9490f7de11b4f387f72ef800e73ccbb754711de` | validation split built 2 October 2026, 05:42 UTC; jobs pending | about 22 GiB (notes) | `l1_base`, `l1_full`; `l2_spec_1m s0`: pending | pending (`index.json`) |
-| `cloudsen12-l1c-all` | all 13 | pending (`index.json`) | training split: shards 1 to 3 in jobs 1999650, 1999651 and 1999652, shard 0 in job 2000731, merge in job 2000814 ([RESULTS.md](RESULTS.md), section 16); validation and test jobs pending | about 66 GiB (notes); the builder's estimate is 65.1 GiB | every L2 config; `l2_spec_1m s0`: pending | pending (`index.json`) |
+| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `l1_base`, `l1_full` | recorded by the v2 build |
+| `cloudsen12-l1c-all` | all 13 | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | every L2 config | recorded by the v2 build |
 
-The cache that `l2_spec_1m s0` read is pending: the session notes say the four-band cache, while `configs/l2_spec_1m.toml` names `cloudsen12-l1c-all`. The run's `config.toml` decides it; the config file is not changed until then. The training split of `cloudsen12-l1c-all` was built in 4 shards of 2,122 or 2,123 patches. Shard 0 failed in job 1999649 with HTTP 404 from the dataset host, and job 2000731 ran it again with `--max-rate 120` and resumed where it had stopped.
+Each cache is built from the commit of the v2 campaign; the build jobs, the revision, the size and the normalisation values are recorded here from `index.json` when the build is done.
 
 ---
 
@@ -311,7 +311,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 | Label code of the padded pixels of a cached patch | `python -m tiefer_lab.data.cache padding` on `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, validation and test | section 5; every metric |
 | Sides of each patch that hold the padding: the card says left and bottom [1]; `PADDING_SIDES` in `src/tiefer_lab/data/padding.py` holds the card's statement as `TODO(verify)` | the same check: the sides whose image strips are zero in every band of every sampled patch | section 5; `PADDING_SIDES` |
 | Stored height and width of the training and test patches | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5 |
-| Dataset revision of the 13-band cache | `index.json` of `cloudsen12-l1c-all` | sections 8 and 10 |
+| Dataset revision of each cache | `index.json` of the v2 build | sections 8 and 10 |
 | High quality and dropped counts per split | `index.json` (`splits.<split>.selection`) | section 2.3 |
 | Normalisation values of each cache | `index.json` (`normalisation`) | sections 5 and 10 |
 | Field that identifies a patch's location (candidates: `roi_id`, `stac:centroid`) | survey report (`overlap_with_val_test`) | sections 6.4 and 11; `LOCATION_FIELD` |
@@ -334,14 +334,13 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 5 names the commit that masks the padding.
 - 7 October 2026: section 5, the padding is masked in the labels at load time; the class weights are counted over the masked labels; the normalisation statistics still include the padding.
 - 7 October 2026: section 5 adds the read-only padding check, `python -m tiefer_lab.data.cache padding`; section 13 lists the padding sides as an open fact until it runs on CSC Roihu.
 - 7 October 2026: restructured to the data card of docs/STYLE.md: the sections follow the datasheet questions, then the facts the code depends on, the caches, the extra training patches, the richness report, open facts and sources. Section 5A is now section 11, and links from other files are updated.
-- 7 October 2026: the split field `tortilla:data_split` is confirmed by the cache builds of 2 October 2026; one `TODO(verify)` resolved.
 - 7 October 2026: the dataset revision is checked against the Hugging Face API (`sha` field, accessed 7 October 2026); one `TODO(verify)` resolved.
 - 7 October 2026: a table of the 13 bands with the card's names, resolutions and centre wavelengths, the Sentinel-2A equivalent wavelengths from ESA, and the four L2 band sets.
-- 7 October 2026: the cached validation patches are 512 x 512 and hold the card's padding (140,247,040 labelled pixels in `b0-val`, 535 x 512 x 512); the label code of the padded pixels is an open fact.
 - 7 October 2026: the dataset revision is recorded, not pinned; the extra-variant masks are not normalised to the class schema (card); class weights from the training class pixels; every build option.
 - 7 October 2026: class 255 (no label) in the class table, and the split total of 10,000 kept patches.
 - 7 October 2026: the meaning of `equi_zone` (continental zone of the Equi7Grid) from the Equi7Grid README.
@@ -350,7 +349,6 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 - 7 October 2026: the total size of 248 GB is sourced to the Hugging Face page instead of the specification; the reader version is stated once.
 - 7 October 2026: the remaining `TODO(verify)` facts are listed in one open facts table (section 13).
 - 7 October 2026: section 11, how the images were selected and labelled and the human agreement, from the CloudSEN12 paper (Table 6 and Technical Validation); two `TODO(verify)` resolved.
-- 7 October 2026: one table of the caches built on CSC Roihu, with the cache of `l2_spec_1m` seed 0 recorded as pending.
 - 7 October 2026: L2 also reads all 13 bands (sections 1, 2, 3 and 10); the 13-band cache, its size and its build in shards; the dataset revision and the kept counts per split; a first measurement of geographic bias by `equi_zone` (section 7).
 - 2 October 2026: data sheet (section 11) and richness report (section 12).
 - 2 October 2026: reference masks from the extra table, added to a split once their link and encodings are verified.
