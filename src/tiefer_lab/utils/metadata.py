@@ -6,6 +6,11 @@
 Records the git commit, platform, library versions, device and Slurm fields.
 Paths are never recorded as absolute paths (see `paths.portable`), and the
 Slurm account (the CSC project) is deliberately not recorded.
+
+torch is imported only inside the functions that need it: the CPU jobs on
+CSC Roihu (the survey and the data cache build) run in a virtual environment
+without torch. Without torch the provenance says so: `libraries.torch`,
+`cuda_runtime` and `cudnn` are null and `device` is "cpu".
 """
 
 from __future__ import annotations
@@ -16,12 +21,14 @@ import os
 import platform
 import subprocess
 import sys
-from typing import Any
-
-import torch
+from types import ModuleType
+from typing import TYPE_CHECKING, Any
 
 from tiefer_lab import __version__
 from tiefer_lab.utils import paths
+
+if TYPE_CHECKING:
+    import torch
 
 LIBRARIES = ("torch", "numpy", "onnx", "onnxruntime", "tacoreader", "rasterio")
 SLURM_FIELDS = {
@@ -57,15 +64,25 @@ def git_commit() -> dict[str, Any]:
     return {"commit": commit, "dirty": bool(status)}
 
 
-def library_versions() -> dict[str, str]:
-    versions = {}
+def _torch() -> ModuleType | None:
+    """The torch module, or None when it is not installed."""
+    try:
+        import torch
+    except ImportError:
+        return None
+    return torch
+
+
+def library_versions() -> dict[str, str | None]:
+    versions: dict[str, str | None] = {}
     for name in LIBRARIES:
         try:
             versions[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
             versions[name] = "not installed"
-    # The CSC module may ship torch without package metadata.
-    versions["torch"] = torch.__version__
+    # The CSC module may ship torch without package metadata; null without torch.
+    torch = _torch()
+    versions["torch"] = torch.__version__ if torch is not None else None
     return versions
 
 
@@ -73,15 +90,16 @@ def slurm_fields() -> dict[str, str]:
     return {key: os.environ[env] for key, env in SLURM_FIELDS.items() if os.environ.get(env)}
 
 
-def _cudnn_version() -> int | None:
+def _cudnn_version(torch: ModuleType) -> int | None:
     cudnn = torch.backends.cudnn
-    if not cudnn.is_available():  # type: ignore[no-untyped-call]
+    if not cudnn.is_available():
         return None
-    version = cudnn.version()  # type: ignore[no-untyped-call]
+    version = cudnn.version()
     return int(version) if version is not None else None
 
 
 def platform_info(device: torch.device | None = None) -> dict[str, Any]:
+    torch = _torch()
     info: dict[str, Any] = {
         "python": platform.python_version(),
         "implementation": sys.implementation.name,
@@ -89,10 +107,13 @@ def platform_info(device: torch.device | None = None) -> dict[str, Any]:
         "machine": platform.machine(),
         "tiefer_lab": __version__,
         "libraries": library_versions(),
-        "cuda_runtime": torch.version.cuda,
-        "cudnn": _cudnn_version(),
+        "cuda_runtime": torch.version.cuda if torch is not None else None,
+        "cudnn": _cudnn_version(torch) if torch is not None else None,
     }
-    if device is not None:
+    if torch is None:
+        # Without torch nothing runs on a GPU.
+        info["device"] = "cpu"
+    elif device is not None:
         info["device"] = device.type
         if device.type == "cuda":
             info["gpu"] = torch.cuda.get_device_name(device)
