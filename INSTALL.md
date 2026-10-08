@@ -16,7 +16,7 @@ For anyone who installs Tiefer Lab for real use: on a workstation, on CSC Roihu,
 | Linux aarch64 | uv, locked environment from `uv.lock` | yes, in CI: `test (ubuntu-24.04-arm)` | `.github/workflows/ci.yml` |
 | macOS, Apple MPS | uv, locked environment | not tested | the code selects MPS when it is available (`src/tiefer_lab/utils/devices.py`) |
 | Windows | n/a | not tested | `make` and the shell scripts assume a POSIX shell |
-| CSC Roihu GPU nodes (aarch64, NVIDIA GH200) | CSC module `python-pytorch/2.10` and a venv with `hpc/roihu/requirements.txt` | yes, on 2 and 3 October 2026 | [docs/RESULTS.md](docs/RESULTS.md), section 4 |
+| CSC Roihu GPU nodes (aarch64, NVIDIA GH200) | CSC module `python-pytorch/2.10` and a venv with `hpc/roihu/requirements.txt` | the environment check only; the first runs are the v2 campaign | [hpc/roihu/README.md](hpc/roihu/README.md), section 6 |
 | CSC Roihu CPU nodes (x86_64) | CSC Python module and a venv | yes, for the data cache | [docs/DATA.md](docs/DATA.md), section 10 |
 | NVIDIA Jetson Orin | system Python 3 of JetPack, standard library only; `trtexec` from JetPack | dry-run mode only, in CI through `make smoke`; never on a board | [jetson/README.md](jetson/README.md); [docs/RESULTS.md](docs/RESULTS.md), section 15 |
 
