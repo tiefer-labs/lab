@@ -122,10 +122,10 @@ All accessed 7 October 2026.
 ## Changelog
 
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
-- 7 October 2026: CloudScout's 1.8 W is its average power during inference, as the paper states; 0.585 J is derived here, not published.
 - 7 October 2026: section 1 links POLICY.md, gate 5, and BENCHMARK-AUTHORITY.md.
 - 7 October 2026: status `in development`, like the other pages that change with the work.
 - 7 October 2026: correction: the EDGX Sterna demonstration launched on SpaceX Transporter-16 (press release of 9 April 2026); the page no longer says that whether it flew is not checked.
+- 7 October 2026: CloudScout's 1.8 W is its average power during inference, as the paper states; 0.585 J is derived here, not published.
 - 7 October 2026: section 4 has a note column, so the input column holds inputs only; one term, "none published".
 - 7 October 2026: links to docs/DATA.md follow its new section numbers.
 - 7 October 2026: first version: onboard cloud detection systems, onboard AI platforms, reference algorithms on CloudSEN12 with their published values, and the measurements that would decide each comparison.
