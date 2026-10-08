@@ -21,7 +21,7 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 | reproduce a published number | [docs/RESULTS.md](docs/RESULTS.md), section 19 | researchers, evaluators |
 | see every measured result and its source | [docs/RESULTS.md](docs/RESULTS.md) | researchers |
 | train on CSC Roihu | [hpc/roihu/README.md](hpc/roihu/README.md) | maintainers |
-| see what ran and what is next | [hpc/roihu/plan.md](hpc/roihu/plan.md) | maintainers, evaluators |
+| see the run plan of the v2 campaign | [hpc/roihu/plan.md](hpc/roihu/plan.md) | maintainers, evaluators |
 | measure on a Jetson | [jetson/README.md](jetson/README.md) | hardware testers |
 | learn the concepts | [LEARNING-PATH.md](LEARNING-PATH.md) | new contributors, researchers |
 | add a model, dataset, metric or band set | [EXTENDING.md](EXTENDING.md) | contributors |
@@ -63,6 +63,7 @@ For anyone who opens Tiefer Lab with a task in mind. This document owns the rout
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 1 routes each kind of issue to its form by file name, and pull requests to the templates.
 - 7 October 2026: section 1 routes the use of AI-assisted systems to AI_ASSISTANCE.md.
 - 7 October 2026: first version: a route from each task to the document that owns it, and reading lists for 5, 30 and 120 minutes.
