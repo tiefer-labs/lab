@@ -11,7 +11,7 @@
 # download workers. It is resumable: submit again after a time limit or an
 # error. Login nodes are for light work only, so the cache is never built there
 # (https://docs.csc.fi/computing/usage-policy/). Compute nodes reach
-# huggingface.co (observed on Roihu, 2 October 2026). Set HF_TOKEN in the
+# huggingface.co (observed on Roihu). Set HF_TOKEN in the
 # submitting shell to avoid HTTP 429 (hpc/roihu/README.md, step 3).
 #
 # CPU partition 'small': up to 72 hours on one node.
