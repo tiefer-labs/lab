@@ -18,9 +18,9 @@ What a release folder of the cloud filter contains. The model files themselves a
 
 ## Steps
 
-Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` seed 0) is a draft. A folder for `l2_spec_1m` seed 0 waits for its export report and the SHA-256 of its ONNX files; its quantisation is not measured yet ([docs/RESULTS.md](../../docs/RESULTS.md), section 14).
+Release folders are written after the runs on CSC Roihu. No release folder exists yet; the first is written from the v2 campaign ([hpc/roihu/plan.md](../../hpc/roihu/plan.md)).
 
-1. Create the folder `models/cloud-filter/<version>/`, for example `models/cloud-filter/v0.1.0/`.
+1. Create the folder `models/cloud-filter/<version>/`, for example `models/cloud-filter/v<version>/`.
 2. Copy the resolved configuration of the run:
 
    ```bash
@@ -65,6 +65,6 @@ Release folders are written after the runs on CSC Roihu. `v0.1.0` (`l1_base` see
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the purpose links POLICY.md, INSTALL.md and LICENSING.md.
 - 7 October 2026: step 4 links docs/STYLE.md, section 12.11, after the sections of STYLE.md were renumbered.
-- 7 October 2026: v0.1.0 is a draft; the folder for `l2_spec_1m` waits for its export report; values match `docs/RESULTS.md`, which is written by hand.

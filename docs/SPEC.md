@@ -392,8 +392,8 @@ lab/
     cloud-filter/
       README.md                   what release folders contain (filled in Part B)
       MODEL_CARD_TEMPLATE.md      model card to copy into each release folder
-      v0.1.0/
-        MODEL_CARD.md             model card of l1_base s0 (draft)
+      v<version>/                 a release folder, written from the v2 campaign
+        MODEL_CARD.md             model card of the release
         SHA256SUMS                SHA-256 of the model files, which are not in the repository
         config.toml               resolved configuration of the run
   reports/
@@ -590,6 +590,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 9, the dataset's padding is masked in the labels at load time, and every metric and fraction counts only the real image area.
 - 7 October 2026: section 14 lists `data/padding.py` and `tests/test_padding.py`.
 - 7 October 2026: section 16 names LICENSING.md, TRADEMARK.md and NOTICE.md for what each states.
@@ -600,7 +601,6 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 - 7 October 2026: section 5 adds `fsspec[http]`, `coverage`, `hatchling` 1.32.4 and the `uv` version, and points to DEPENDENCIES.md.
 - 7 October 2026: section 12 adds `timing.sbatch`, `sweep.sh`, `plan.md` and `requirements.txt`, points to the sourced facts of hpc/roihu/README.md, and the founder guide follows its steps.
 - 7 October 2026: section 13 is in the past tense for the removed generator and states the hand-written rule, with `notes` and `pending` allowed until their report file is copied in.
-- 7 October 2026: section 14: `richness.py`, `cache.py`, `dataset.py` and `transforms.py` are under `data/`; LANDSCAPE.md and the v0.1.0 release folder are listed; the run-time report files, the `.gitignore` patterns, the dependabot rule and the `coverage` and `shellcheck` targets are complete.
 - 7 October 2026: references to "section 18" point to docs/STYLE.md; one bold phrase per item; `n/a` instead of "not applicable"; one separator before section 17.
 - 7 October 2026: section 8 links the table of every L1 and L2 setting difference in docs/ASSUMPTIONS.md, section 6.
 - 7 October 2026: section 8, the band set table names B02, B03, B04 as blue, green, red, and B11 and B12 as the short-wave infrared bands, from ESA SentiWiki; a `TODO(verify)` resolved.

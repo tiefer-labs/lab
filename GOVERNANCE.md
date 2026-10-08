@@ -46,7 +46,7 @@ A person becomes a maintainer when the current maintainer adds them in writing, 
 | Item | Rule | Now |
 | :--- | :---: | :---: |
 | Package version (`pyproject.toml`, `src/tiefer_lab/__init__.py`) | semantic versioning; 0.x while the milestones run. A minor bump for a change of behaviour, of a report format or of the evaluation protocol; a patch bump for a fix without such a change | 0.1.0 |
-| Model card version (`models/cloud-filter/<version>/`) | a new version for every set of model files with new checksums; an existing folder changes only in its card text, with a changelog line | v0.1.0, status draft |
+| Model card version (`models/cloud-filter/<version>/`) | a new version for every set of model files with new checksums; an existing folder changes only in its card text, with a changelog line | none yet; the first comes from the v2 campaign |
 | Git tags | a tag `v<version>` on the commit that sets a package version, once the maintainer decides to tag | none |
 
 A version bump or a tag is a maintainer decision and is not part of a documentation change. Results are cited by commit, not by version ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), section 4).
@@ -67,5 +67,6 @@ A change to this document needs the maintainer's approval and a changelog line.
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 2 adds the decision class "policy change" for the rules of AI_ASSISTANCE.md.
 - 7 October 2026: first version: roles, decision classes, versions and releases, continuity.

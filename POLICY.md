@@ -74,7 +74,7 @@ The entries of the test evaluations of 3 October 2026 are on CSC Roihu and pendi
 | Who checks | the maintainer, in review ([GOVERNANCE.md](GOVERNANCE.md), section 2) |
 | When broken | the card's status goes back to `draft`, with a correction line |
 
-`models/cloud-filter/v0.1.0/MODEL_CARD.md` is a draft: its export report is not yet in the repository.
+No model card is published yet; the first comes from the v2 campaign.
 
 ---
 
@@ -117,6 +117,7 @@ The L2 runs of 3 October 2026 used a batch size and learning rate that are not i
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: gate 2, a value that counts padded pixels is not quoted outside the repository until it is evaluated again.
 - 7 October 2026: section 1 links AI_ASSISTANCE.md: content produced with an AI-assisted system passes the same gates.
 - 7 October 2026: first version: seven gates for results, public quotes, the test split, model cards, comparisons, datasets and compute spend.

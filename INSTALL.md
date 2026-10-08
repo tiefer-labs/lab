@@ -61,7 +61,7 @@ Follow [jetson/README.md](jetson/README.md). The scripts in `jetson/` use the sy
 | Pinned GitHub Actions | `.github/workflows/*.yml` | `grep -h "uses:" .github/workflows/*.yml`: every action is pinned by a full commit SHA |
 | Pinned CI tools | `.github/ci-tools/requirements.txt`; the gitleaks SHA-256 in `.github/workflows/ci.yml` | CI installs them with `uv pip install --require-hashes`, which fails on any file whose hash differs |
 | Commit and local changes behind a report | `provenance.git` of every report JSON | `python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['provenance']['git'])" <report>.json`; `"dirty": true` means the working tree had uncommitted changes |
-| Model files | `SHA256SUMS` of a release folder, for example `models/cloud-filter/v0.1.0/` | in the folder that holds the model files: `sha256sum -c SHA256SUMS` |
+| Model files | `SHA256SUMS` of a release folder, for example `models/cloud-filter/v<version>/` | in the folder that holds the model files: `sha256sum -c SHA256SUMS` |
 
 The model files are not distributed in this repository ([LICENSING.md](LICENSING.md)); the checksums let a holder of the files check them.
 
@@ -100,4 +100,5 @@ uv keeps downloaded packages in its own cache; `uv cache clean` removes it. On C
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: first version: platform matrix with the CI jobs that test it, installation from git, from a source archive and on CSC Roihu and a Jetson, provenance checks, clean-up and troubleshooting.

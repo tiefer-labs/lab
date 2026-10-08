@@ -61,7 +61,6 @@ For anyone looking for a document by name or by state. This document owns the li
 | **Models** | | | | | |
 | [models/cloud-filter/README.md](models/cloud-filter/README.md) | what a release folder contains | users | release folders | in development | 7 October 2026 |
 | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) | template for a model card | maintainers | model card fields | in use | 7 October 2026 |
-| [models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md) | model card of l1_base s0 | evaluators | model v0.1.0 | draft | 7 October 2026 |
 | **Reports** | | | | | |
 | [reports/README.md](reports/README.md) | what each report file is and which script writes it | users | report files | in development | 7 October 2026 |
 | [reports/jetson/README.md](reports/jetson/README.md) | where Jetson results land | hardware testers | Jetson reports | in development | 7 October 2026 |
@@ -75,7 +74,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 | Status | Meaning | Files |
 | :--- | :---: | :---: |
-| `draft` | written, not yet reviewed or not yet complete | [CLA.md](CLA.md), [models/cloud-filter/v0.1.0/MODEL_CARD.md](models/cloud-filter/v0.1.0/MODEL_CARD.md) |
+| `draft` | written, not yet reviewed or not yet complete | [CLA.md](CLA.md) |
 | `in development` | in use and still changing with the work it describes | [README.md](README.md), [docs/RESULTS.md](docs/RESULTS.md), [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), [docs/LANDSCAPE.md](docs/LANDSCAPE.md), [docs/DATA.md](docs/DATA.md), [docs/DATASETS.md](docs/DATASETS.md), [docs/SPEC.md](docs/SPEC.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/STANDARDS.md](docs/STANDARDS.md), [hpc/roihu/README.md](hpc/roihu/README.md), [hpc/roihu/plan.md](hpc/roihu/plan.md), [jetson/README.md](jetson/README.md), [models/cloud-filter/README.md](models/cloud-filter/README.md), [reports/README.md](reports/README.md), [reports/jetson/README.md](reports/jetson/README.md) |
 | `in use` | complete for its purpose; changes are recorded in the changelog | [START-HERE.md](START-HERE.md), [INDEX.md](INDEX.md), [GETTING-STARTED.md](GETTING-STARTED.md), [INSTALL.md](INSTALL.md), [LEARNING-PATH.md](LEARNING-PATH.md), [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), [CLAIMS.md](CLAIMS.md), [POLICY.md](POLICY.md), [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md), [docs/STYLE.md](docs/STYLE.md), [EXTENDING.md](EXTENDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [AI_ASSISTANCE.md](AI_ASSISTANCE.md), [GOVERNANCE.md](GOVERNANCE.md), [LICENSING.md](LICENSING.md), [NOTICE.md](NOTICE.md), [TRADEMARK.md](TRADEMARK.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md), [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md), [reports/test_log.md](reports/test_log.md) |
 | `superseded` | replaced; the document names its successor | none |
@@ -86,6 +85,7 @@ The plan of 2 October 2026 in [hpc/roihu/plan.md](hpc/roihu/plan.md), section 5,
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: one row each for the issue forms folder and the pull request templates folder.
 - 7 October 2026: AI_ASSISTANCE.md added to the policies and to the files in use.
 - 7 October 2026: first version: 39 Markdown files in nine groups, with purpose, audience, owned topic, status and last change, and the files in each lifecycle state.
