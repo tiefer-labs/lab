@@ -227,7 +227,7 @@ Compute on CSC Roihu is planned in hpc/roihu/plan.md before it is spent (POLICY.
 - [ ] Not sure
 
 ### 28. Compute spent
-The billing units spent, from `reports/compute/<job-id>.json` written by `usage.sh`. Example: `124.833 GPU BU`.
+The billing units spent, from `reports/compute/<job-id>.json` written by `usage.sh`. Example: `<n> GPU BU`.
 
 
 ## 8. Provenance

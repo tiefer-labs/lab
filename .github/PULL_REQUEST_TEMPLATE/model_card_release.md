@@ -62,7 +62,7 @@ The model card version; a new set of model files gets a new version (GOVERNANCE.
 
 
 ### 8. Run
-The run and commit the model files come from. Example: `l2_spec_1m s0, 0f0984d76116`.
+The run and commit the model files come from. Example: `run-a s0, 0123456789ab`.
 
 
 ### 9. Template

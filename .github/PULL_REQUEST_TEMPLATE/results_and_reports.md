@@ -62,7 +62,7 @@ The runs whose report files are added, by run name and full run ID.
 
 
 ### 8. Job IDs
-The Slurm job IDs that wrote the report files. Example: `1999649`.
+The Slurm job IDs that wrote the report files. Example: `1234567`.
 
 
 ### 9. Report files added
@@ -88,7 +88,7 @@ Choose all that apply.
 - [ ] Section 4. Environment and provenance
 - [ ] Section 5. Data
 - [ ] Section 6. All runs at a glance
-- [ ] Section 7. Selected model: l2_spec_1m s0 in detail
+- [ ] Section 7. Selected model in detail
 - [ ] Section 8. Accuracy by class
 - [ ] Section 9. Accuracy by region
 - [ ] Section 10. Baselines
@@ -101,7 +101,7 @@ Choose all that apply.
 - [ ] Section 17. Training notes
 - [ ] Section 18. Limitations
 - [ ] Section 19. How to reproduce
-- [ ] Section 20. Values to verify and values pending
+- [ ] Section 20. Values pending
 - [ ] Section Appendix A. Report files
 
 ### 13. Pending values
