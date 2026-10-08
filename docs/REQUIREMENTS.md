@@ -33,7 +33,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-DAT-06` | The finishing step stays within bounded memory (chunked counts and statistics) | met | `tests/test_cache.py::test_class_pixels_are_counted_in_chunks_without_loading_the_split`, `tests/test_cache.py::test_band_statistics_are_chunked` |
 | `REQ-DAT-07` | One cache stores all 13 bands; models select their bands by name at load time | met | `tests/test_cache.py::test_bands_are_selected_by_name_at_load_time` |
 | `REQ-DAT-08` | Shards never write the same file and merge into the same cache as one build | met | `tests/test_cache.py::test_shards_write_apart_and_merge_into_the_same_cache_as_one_build`, `tests/test_cache.py::test_an_interrupted_merge_resumes` |
-| `REQ-DAT-09` | Reads respect a shared rate cap and back off on HTTP 429; the token is never printed | met | `tests/test_cache.py::test_the_rate_cap_is_shared_between_shards`, `tests/test_http.py::test_a_pause_holds_every_reader`, `tests/test_http.py::test_token_goes_to_gdal_and_is_never_printed` |
+| `REQ-DAT-09` | Reads respect a shared rate cap and back off on HTTP 429 and on other transient read errors, including a read that fails part way; errors a retry cannot fix stop at once; the token is never printed | met | `tests/test_cache.py::test_the_rate_cap_is_shared_between_shards`, `tests/test_http.py::test_a_pause_holds_every_reader`, `tests/test_transient_reads.py::test_a_read_that_fails_twice_part_way_pauses_and_is_read_again`, `tests/test_transient_reads.py::test_errors_a_retry_cannot_fix_are_raised_at_once`, `tests/test_http.py::test_token_goes_to_gdal_and_is_never_printed` |
 | `REQ-DAT-10` | Extra training patches never share a location with the validation or test split | met | `tests/test_extra_patches.py::test_built_index_proves_no_training_patch_shares_a_location_with_val_or_test` |
 | `REQ-DAT-11` | Facts not yet verified stop the code instead of being guessed | met | `tests/test_extra_patches.py::test_extra_patches_wait_for_verified_facts`, `tests/test_references.py::test_references_wait_for_verified_facts` |
 | `REQ-DAT-12` | Reference masks are linked and encoded only with verified encodings; unknown values stop | met | `tests/test_references.py::test_references_are_linked_encoded_and_resumable`, `tests/test_references.py::test_unknown_raw_values_stop_the_encoding` |
@@ -173,6 +173,7 @@ Notes:
 
 ## Changelog
 
+- 8 October 2026: `REQ-DAT-09` covers transient read errors, including a read that fails part way, with their tests.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 1 links POLICY.md and BENCHMARK-AUTHORITY.md for how values may be quoted.
 - 7 October 2026: `STD-04` counts 8 rows `not read` in the revised standards matrix.
