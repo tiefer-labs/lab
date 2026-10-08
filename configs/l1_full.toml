@@ -4,10 +4,10 @@
 
 # Milestone L1: l1_base trained to the end of its cosine schedule, with a
 # learning rate warm-up and an exponential moving average of the weights.
-# On Roihu (2 October 2026) l1_base stopped early while the training loss was
-# still falling, and validation mean IoU moved by up to 0.10 between nearby
-# epochs; see docs/ASSUMPTIONS.md. Differences from l1_base: warmup_epochs,
-# ema_decay and patience.
+# An early stop can end a run before the cosine schedule has decayed the
+# learning rate, and validation mean IoU can swing between nearby epochs; see
+# docs/ASSUMPTIONS.md. Differences from l1_base: warmup_epochs, ema_decay and
+# patience.
 name = "l1_full"
 
 [data]
@@ -39,8 +39,7 @@ min_improvement = 0.001
 log_every = 20
 # Linear warm-up over the first 5 epochs of the scaled learning rate 0.008.
 warmup_epochs = 5
-# Averaging horizon of about 1 / (1 - 0.999) = 1000 steps, about 15 epochs
-# at 66 steps per epoch on the full training split.
+# Averaging horizon of about 1 / (1 - 0.999) = 1000 steps.
 ema_decay = 0.999
 
 [evaluation]

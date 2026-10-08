@@ -11,16 +11,14 @@ name = "l2_flex_1m_rescale"
 cache_name = "cloudsen12-l1c-all"
 crop_size = 256
 # Batch 64 and learning rate 0.004 (0.008 x 64 / 128, the linear scaling of
-# l1_base). With 13 bands, batch 128 ran out of GPU memory on one GH200 on
-# 3 October 2026 (jobs 2000912 and 2000941); l2_flex_1m ran to the end with
-# batch 64 and learning rate 0.004 (job 2000949). Every L2 config uses the
-# same values so that the L2 results stay comparable (docs/ASSUMPTIONS.md).
+# l1_base) so that 13 bands fit in the memory of one GH200; confirmed by the
+# v2 timing run. Every L2 config uses the same values so that the L2 results
+# stay comparable (docs/ASSUMPTIONS.md).
 batch_size = 64
 eval_batch_size = 8
 num_workers = 16
-# The whole training split in memory, as in the finished l2_flex_1m run (job
-# 2000949); by itself it did not avoid the out-of-memory error (job 2000941).
-# The l2_flex_1m variants keep it so that each changes one setting only.
+# The whole training split in memory (load_mode "memory"); the l2_flex_1m
+# variants keep it so that each changes one setting only.
 load_mode = "memory"
 brightness = 0.1
 contrast = 0.1
