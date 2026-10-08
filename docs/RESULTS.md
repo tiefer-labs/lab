@@ -304,7 +304,7 @@ uv run python -m tiefer_lab.evaluate --run <run-id> --split test --band-set all 
 uv run python -m tiefer_lab.export --run <run-id> --band-set all
 ```
 
-On CSC Roihu, the same steps run as Slurm jobs from `roihu-gpu.csc.fi` ([hpc/roihu/README.md](../hpc/roihu/README.md)); the 13-band cache is built from `roihu-cpu.csc.fi` as described there:
+On CSC Roihu, the same steps run as Slurm jobs submitted from `roihu-cpu.csc.fi`, with the 13-band cache built as described in [hpc/roihu/README.md](../hpc/roihu/README.md):
 
 ```bash
 git checkout <commit>
@@ -333,6 +333,7 @@ Every value on this page waits for the v2 campaign ([hpc/roihu/plan.md](../hpc/r
 
 ## Changelog
 
+- 8 October 2026: section 19, the Roihu jobs are submitted from `roihu-cpu.csc.fi`.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: every table of measured values says that it counts padded pixels and that re-evaluation is pending; section 21 lists every run, split and band set to evaluate again with the padding masked, with the old value and the new value pending. No value is changed.
 - 7 October 2026: section 2 links BENCHMARK-AUTHORITY.md and POLICY.md for how values may be used and cited; no value changes.
