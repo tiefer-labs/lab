@@ -43,7 +43,7 @@ body:
         - "docs/RESULTS.md, section 4. Environment and provenance"
         - "docs/RESULTS.md, section 5. Data"
         - "docs/RESULTS.md, section 6. All runs at a glance"
-        - "docs/RESULTS.md, section 7. Selected model: l2_spec_1m s0 in detail"
+        - "docs/RESULTS.md, section 7. Selected model in detail"
         - "docs/RESULTS.md, section 8. Accuracy by class"
         - "docs/RESULTS.md, section 9. Accuracy by region"
         - "docs/RESULTS.md, section 10. Baselines"
@@ -56,7 +56,7 @@ body:
         - "docs/RESULTS.md, section 17. Training notes"
         - "docs/RESULTS.md, section 18. Limitations"
         - "docs/RESULTS.md, section 19. How to reproduce"
-        - "docs/RESULTS.md, section 20. Values to verify and values pending"
+        - "docs/RESULTS.md, section 20. Values pending"
         - "docs/RESULTS.md, Appendix A. Report files"
         - "BENCHMARK-AUTHORITY.md"
         - "A model card (models/cloud-filter/)"
@@ -69,7 +69,7 @@ body:
     attributes:
       label: "Value as written"
       description: "Copy the value with its interval and unit exactly as the document shows it."
-      placeholder: "0.720 [0.707, 0.732]"
+      placeholder: "0.83 [0.81, 0.85]"
   - type: input
     id: res_source_key
     attributes:
@@ -123,7 +123,7 @@ body:
     attributes:
       label: "Value you expect, with its source"
       description: "The value you believe is right, and where it comes from."
-      placeholder: "0.719 [0.706, 0.731] from reports/evaluation/<file>.json"
+      placeholder: "0.82 [0.80, 0.84] from reports/evaluation/<file>.json"
   - type: input
     id: res_other_document
     attributes:

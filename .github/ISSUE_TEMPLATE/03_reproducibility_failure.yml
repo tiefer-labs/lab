@@ -42,7 +42,7 @@ body:
     attributes:
       label: "Run, config and seed"
       description: "The run name, its config file in `configs/` and the seed."
-      placeholder: "l2_spec_1m s0, configs/l2_spec_1m.toml"
+      placeholder: "run-a s0, configs/<config>.toml"
   - type: dropdown
     id: repro_steps
     attributes:
@@ -67,24 +67,24 @@ body:
     attributes:
       label: "Value obtained"
       description: "Your value with its interval, and the report file it is in."
-      placeholder: "0.701 [0.688, 0.714], runs/<run-id>/..."
+      placeholder: "0.81 [0.79, 0.83], runs/<run-id>/..."
   - type: input
     id: repro_published
     attributes:
       label: "Published value"
       description: "The published value with its interval, copied from the document."
-      placeholder: "0.720 [0.707, 0.732]"
+      placeholder: "0.83 [0.81, 0.85]"
   - type: input
     id: repro_difference
     attributes:
       label: "Difference"
       description: "Your value minus the published value, at 3 decimals."
-      placeholder: "-0.019"
+      placeholder: "-0.02"
   - type: dropdown
     id: repro_overlap
     attributes:
       label: "Do the intervals overlap?"
-      description: "Overlapping 95 percent intervals suggest the difference may be noise; two seeds of l1_base differ by 0.042 on validation (docs/RESULTS.md, section 18)."
+      description: "Overlapping 95 percent intervals suggest the difference may be noise; a difference counts only when it is larger than the spread between seeds of the same configuration (docs/ASSUMPTIONS.md, section 6)."
       options:
         - "Yes"
         - "No"

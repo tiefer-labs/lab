@@ -76,7 +76,7 @@ body:
     attributes:
       label: "Mean IoU change after INT8"
       description: "The change of mean IoU between FP32 and INT8 on validation, from the export report."
-      placeholder: "-0.070"
+      placeholder: "-0.05"
   - type: textarea
     id: exp_onnxruntime
     attributes:

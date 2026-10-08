@@ -78,7 +78,7 @@ body:
     attributes:
       label: "Job ID"
       description: "The Slurm job ID, printed by `sbatch` or `submit.sh`."
-      placeholder: "1999649"
+      placeholder: "1234567"
   - type: textarea
     id: hpc_sacct
     attributes:
@@ -116,7 +116,7 @@ body:
     attributes:
       label: "Billing units spent"
       description: "The GPU or CPU billing units of the job, from `reports/compute/<job-id>.json` written by `usage.sh`. GPU jobs cost 200 GPU BU per GPU hour."
-      placeholder: "124.833 GPU BU"
+      placeholder: "<n> GPU BU"
   - type: markdown
     attributes:
       value: |

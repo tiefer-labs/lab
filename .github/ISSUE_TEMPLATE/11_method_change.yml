@@ -83,7 +83,7 @@ body:
         - label: "Section 4. Environment and provenance"
         - label: "Section 5. Data"
         - label: "Section 6. All runs at a glance"
-        - label: "Section 7. Selected model: l2_spec_1m s0 in detail"
+        - label: "Section 7. Selected model in detail"
         - label: "Section 8. Accuracy by class"
         - label: "Section 9. Accuracy by region"
         - label: "Section 10. Baselines"
@@ -96,7 +96,7 @@ body:
         - label: "Section 17. Training notes"
         - label: "Section 18. Limitations"
         - label: "Section 19. How to reproduce"
-        - label: "Section 20. Values to verify and values pending"
+        - label: "Section 20. Values pending"
         - label: "Section Appendix A. Report files"
   - type: dropdown
     id: meth_reevaluation
