@@ -38,6 +38,7 @@ body:
       description: "The script you submitted or ran, from hpc/roihu/README.md, section 4."
       options:
         - "setup.sh"
+        - "setup_gpu.sbatch"
         - "data.sbatch"
         - "smoke.sbatch"
         - "survey.sbatch"
