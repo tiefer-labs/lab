@@ -18,7 +18,8 @@
 # login node's environment: they get only HOME, CSC_ENV_INIT_NON_INTERACTIVE=yes
 # and the variables the jobs read (TIEFER_CSC_PROJECT, the TIEFER_* paths and,
 # when set, SEED, FINAL, REASON, ROBUSTNESS, PERTURBATIONS,
-# TIEFER_PYTORCH_MODULE, TIEFER_CPU_PYTHON_MODULE and PYTORCH_CUDA_ALLOC_CONF),
+# TIEFER_PYTORCH_MODULE, TIEFER_CPU_PYTHON_MODULE, PYTORCH_CUDA_ALLOC_CONF and
+# HF_TOKEN, which the smoke job needs when it builds its tiny cache),
 # and the job's login shell builds the module environment of its own node
 # (job_prelude.sh). This is CSC's way of submitting across architectures, and
 # it works the same from either login node:
@@ -84,13 +85,14 @@ export TIEFER_CSC_PROJECT
 [[ -n "${REASON:-}" ]] && export REASON
 
 # GPU jobs: only these variables reach the job. A name without a value passes
-# its current value, so a REASON with commas or spaces arrives unchanged.
+# its current value, so a REASON with commas or spaces arrives unchanged, and
+# the token never appears on the sbatch command line.
 if [[ "${gpu_job}" == "1" ]]; then
   export_list="HOME,CSC_ENV_INIT_NON_INTERACTIVE=yes,TIEFER_SUBMIT_HOST_ARCH=${host_arch}"
   for name in TIEFER_CSC_PROJECT TIEFER_PROJAPPL TIEFER_SCRATCH TIEFER_SRC \
     TIEFER_DATA_DIR TIEFER_RUNS_DIR TIEFER_REPORTS_DIR TIEFER_PYTORCH_MODULE \
     TIEFER_CPU_PYTHON_MODULE PYTORCH_CUDA_ALLOC_CONF SEED FINAL REASON \
-    ROBUSTNESS PERTURBATIONS; do
+    ROBUSTNESS PERTURBATIONS HF_TOKEN; do
     if [[ -n "${!name:-}" ]]; then
       export "${name?}"
       export_list+=",${name}"

@@ -92,6 +92,7 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
 ) -> None:
     env = {**roihu_env, "STUB_ARCH": "aarch64", "SEED": "1", "FINAL": "1"}
     env["REASON"] = "final L1 check, once"
+    env["HF_TOKEN"] = "synthetic-token-value"
     args = ["--test-only", "--time=24:00:00", "hpc/roihu/train.sbatch", "configs/l1_base.toml"]
     result = _run("submit.sh", args, env)
     assert result.returncode == 0, result.stderr
@@ -99,6 +100,7 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
     assert "--test-only --time=24:00:00 hpc/roihu/train.sbatch" in sbatch_args
     export = _export_list(sbatch_args)
     assert {"SEED", "FINAL", "REASON"} <= set(export), "passed by name, so commas survive"
+    assert "HF_TOKEN" in export and "synthetic-token-value" not in sbatch_args
     assert (tmp_path / "sbatch.log.env").read_text().splitlines() == [
         "FINAL=1",
         "REASON=final L1 check, once",
@@ -132,6 +134,7 @@ def test_submit_starts_gpu_jobs_from_either_login_node_with_a_clean_environment(
         f"TIEFER_SUBMIT_HOST_ARCH={host}",
     ]
     assert "TIEFER_CSC_PROJECT" in export and "TIEFER_SCRATCH" in export
+    assert "HF_TOKEN" not in export, "passed only when set"
     assert not {"ALL", "PATH", "MODULEPATH", "LD_LIBRARY_PATH", "PATH_FROM_LOGIN"} & set(export)
 
 
