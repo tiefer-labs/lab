@@ -113,7 +113,7 @@ def _export_list(sbatch_args: str) -> list[str]:
     return match.group(1).split(",")
 
 
-GPU_JOBS = ("train", "smoke", "timing", "evaluate", "export")
+GPU_JOBS = ("train", "smoke", "timing", "evaluate", "export", "setup_gpu")
 
 
 @pytest.mark.parametrize("job", GPU_JOBS)
@@ -214,7 +214,7 @@ def test_job_scripts_request_documented_resources() -> None:
     assert "#SBATCH --signal=B:USR1@300" in train
     assert "#SBATCH --time=12:00:00" in train
     assert "#SBATCH --partition=gputest" in (ROIHU / "smoke.sbatch").read_text()
-    for name in ("train", "evaluate", "export", "smoke"):
+    for name in ("train", "evaluate", "export", "smoke", "setup_gpu"):
         assert "#SBATCH --cpus-per-task=72" in (ROIHU / f"{name}.sbatch").read_text()
     for script in ROIHU.glob("*.sbatch"):
         text = script.read_text()
@@ -222,12 +222,22 @@ def test_job_scripts_request_documented_resources() -> None:
         # A login shell by full path initialises the module system on the node.
         assert text.startswith("#!/bin/bash --login\n"), script.name
         assert "--export" not in text, "submit.sh sets the export"
+        if script.name == "setup_gpu.sbatch":
+            assert text.index("uname -m") < text.index("bash hpc/roihu/setup.sh")
+            continue
         prelude = text.index("source hpc/roihu/job_prelude.sh")
         assert prelude < text.index("source hpc/roihu/env.sh"), script.name
         assert text.index("uname -m") < prelude, "architecture is checked before loading"
 
 
-@pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke"])
+def test_setup_gpu_job_requests_one_gpu_on_gputest() -> None:
+    text = (ROIHU / "setup_gpu.sbatch").read_text()
+    assert "#SBATCH --partition=gputest" in text
+    assert "#SBATCH --gres=gpu:gh200:1" in text
+    assert "#SBATCH --time=00:15:00" in text
+
+
+@pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke", "setup_gpu"])
 def test_gpu_jobs_stop_on_a_non_arm_node(roihu_env: dict[str, str], name: str) -> None:
     result = _run(f"{name}.sbatch", ["configs/l1_base.toml"], roihu_env)
     assert result.returncode == 1
@@ -533,3 +543,23 @@ def test_every_shell_script_is_in_the_shellcheck_list(repo_root: Path) -> None:
         is_shell = first.startswith(b"#!") and b"sh" in first.rsplit(b"/", 1)[-1]
         if is_shell or name.endswith((".sh", ".sbatch")):
             assert name.endswith((".sh", ".sbatch")), f"{name}: rename to .sh so shellcheck sees it"
+
+
+@pytest.mark.parametrize("gpu_job, code", [(False, 0), (True, 1)])
+def test_check_env_needs_a_visible_gpu_inside_a_gpu_job(gpu_job: bool, code: int) -> None:
+    """The test machine has no GPU: fine on a login node, an error in a job given one."""
+    import sys
+
+    import torch
+
+    if torch.cuda.is_available():
+        pytest.skip("a GPU is visible here")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("SLURM_")}
+    if gpu_job:
+        env["SLURM_GPUS_ON_NODE"] = "1"
+    result = subprocess.run(
+        [sys.executable, str(ROIHU / "check_env.py")], env=env, capture_output=True, text=True
+    )
+    assert result.returncode == code, result.stdout + result.stderr
+    if gpu_job:
+        assert "no GPU visible inside a GPU job" in result.stderr

@@ -8,7 +8,12 @@
 # run the environment check.
 #
 #   bash hpc/roihu/setup.sh   # x86 side: on roihu-cpu.csc.fi, creates venv-x86_64
-#   bash hpc/roihu/setup.sh   # ARM side: on roihu-gpu.csc.fi, creates venv-aarch64
+#   bash hpc/roihu/submit.sh hpc/roihu/setup_gpu.sbatch   # ARM side: a gputest job
+#                                                          # runs this on a GPU node
+#                                                          # and creates venv-aarch64
+#
+# Run on roihu-gpu.csc.fi, it creates venv-aarch64 there too; a GPU is not
+# visible on that login node, so the job is the full check.
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

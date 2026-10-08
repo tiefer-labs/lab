@@ -8,13 +8,14 @@
 
 Imports every dependency, prints versions, CPU architecture, GPU name and
 CUDA and bf16 availability, and exits with a clear message if anything is
-missing.
+missing. Inside a Slurm job that was given a GPU, no visible GPU is an error.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib
+import os
 import platform
 import sys
 
@@ -54,6 +55,9 @@ def main(argv: list[str] | None = None) -> int:
     if cuda:
         print(f"GPU: {torch.cuda.get_device_name(0)} ({torch.cuda.device_count()} visible)")
         print(f"bf16 supported: {torch.cuda.is_bf16_supported()}")
+    elif os.environ.get("SLURM_GPUS_ON_NODE") or os.environ.get("SLURM_JOB_GPUS"):
+        print("error: no GPU visible inside a GPU job", file=sys.stderr)
+        return 1
     else:
         print("no GPU visible: fine on a login node, an error inside a GPU job")
     print("environment ready")
