@@ -51,6 +51,8 @@ def roihu_env(tmp_path: Path) -> dict[str, str]:
             "TIEFER_PROJAPPL": str(tmp_path / "projappl"),
             "TIEFER_SCRATCH": str(tmp_path / "scratch"),
             "STUB_LOG": str(tmp_path / "sbatch.log"),
+            # No CSC initialisation file unless a test writes one.
+            "TIEFER_CSC_ENV_INIT": str(tmp_path / "zz-csc-env.sh"),
         }
     )
     return env
@@ -82,7 +84,6 @@ def test_submit_adds_account_and_log_location(roihu_env: dict[str, str], tmp_pat
     sbatch_args = (tmp_path / "sbatch.log").read_text()
     assert "--account=testproject" in sbatch_args
     assert f"--output={tmp_path}/scratch/runs/slurm/%x-%j.out" in sbatch_args
-    assert "--export" not in sbatch_args, "jobs use sbatch's default export"
     assert sbatch_args.strip().endswith("hpc/roihu/train.sbatch configs/l1_base.toml")
 
 
@@ -94,10 +95,10 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
     args = ["--test-only", "--time=24:00:00", "hpc/roihu/train.sbatch", "configs/l1_base.toml"]
     result = _run("submit.sh", args, env)
     assert result.returncode == 0, result.stderr
-    assert (
-        "--test-only --time=24:00:00 hpc/roihu/train.sbatch"
-        in (tmp_path / "sbatch.log").read_text()
-    )
+    sbatch_args = (tmp_path / "sbatch.log").read_text()
+    assert "--test-only --time=24:00:00 hpc/roihu/train.sbatch" in sbatch_args
+    export = _export_list(sbatch_args)
+    assert {"SEED", "FINAL", "REASON"} <= set(export), "passed by name, so commas survive"
     assert (tmp_path / "sbatch.log.env").read_text().splitlines() == [
         "FINAL=1",
         "REASON=final L1 check, once",
@@ -106,28 +107,56 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
     ]
 
 
+def _export_list(sbatch_args: str) -> list[str]:
+    match = re.search(r"--export=(\S+)", sbatch_args)
+    assert match is not None, "GPU jobs get a short --export list"
+    return match.group(1).split(",")
+
+
+GPU_JOBS = ("train", "smoke", "timing", "evaluate", "export")
+
+
+@pytest.mark.parametrize("job", GPU_JOBS)
+@pytest.mark.parametrize("host", ["x86_64", "aarch64"])
+def test_submit_starts_gpu_jobs_from_either_login_node_with_a_clean_environment(
+    roihu_env: dict[str, str], tmp_path: Path, job: str, host: str
+) -> None:
+    env = {**roihu_env, "STUB_ARCH": host, "PATH_FROM_LOGIN": "x", "MODULEPATH": "/login/mods"}
+    result = _run("submit.sh", [f"hpc/roihu/{job}.sbatch"], env)
+    assert result.returncode == 0, result.stderr
+    export = _export_list((tmp_path / "sbatch.log").read_text())
+    # CSC's way across architectures: HOME, the batch-mode switch, and what the jobs read.
+    assert export[:3] == [
+        "HOME",
+        "CSC_ENV_INIT_NON_INTERACTIVE=yes",
+        f"TIEFER_SUBMIT_HOST_ARCH={host}",
+    ]
+    assert "TIEFER_CSC_PROJECT" in export and "TIEFER_SCRATCH" in export
+    assert not {"ALL", "PATH", "MODULEPATH", "LD_LIBRARY_PATH", "PATH_FROM_LOGIN"} & set(export)
+
+
+@pytest.mark.parametrize("job", ["data", "survey"])
+def test_submit_cpu_jobs_from_the_cpu_login_node_with_default_export(
+    roihu_env: dict[str, str], tmp_path: Path, job: str
+) -> None:
+    result = _run("submit.sh", [f"hpc/roihu/{job}.sbatch"], {**roihu_env, "STUB_ARCH": "x86_64"})
+    assert result.returncode == 0, result.stderr
+    assert "--export" not in (tmp_path / "sbatch.log").read_text()
+
+
 @pytest.mark.parametrize(
-    "job, arch, message",
+    "job, message",
     [
-        ("train", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
-        ("smoke", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
-        ("evaluate", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
-        ("export", "x86_64", "submit GPU jobs from roihu-gpu.csc.fi"),
-        ("data", "aarch64", "submit the data job from roihu-cpu.csc.fi"),
-        ("survey", "aarch64", "submit CPU jobs from roihu-cpu.csc.fi"),
+        ("data", "submit the data job from roihu-cpu.csc.fi"),
+        ("survey", "submit CPU jobs from roihu-cpu.csc.fi"),
     ],
 )
-def test_submit_refuses_a_job_from_the_wrong_login_node(
-    roihu_env: dict[str, str], tmp_path: Path, job: str, arch: str, message: str
+def test_submit_refuses_a_cpu_job_from_the_gpu_login_node(
+    roihu_env: dict[str, str], tmp_path: Path, job: str, message: str
 ) -> None:
-    result = _run("submit.sh", [f"hpc/roihu/{job}.sbatch"], {**roihu_env, "STUB_ARCH": arch})
+    result = _run("submit.sh", [f"hpc/roihu/{job}.sbatch"], {**roihu_env, "STUB_ARCH": "aarch64"})
     assert result.returncode == 2 and message in result.stderr
     assert not (tmp_path / "sbatch.log").exists()
-    other = "aarch64" if arch == "x86_64" else "x86_64"
-    assert (
-        _run("submit.sh", [f"hpc/roihu/{job}.sbatch"], {**roihu_env, "STUB_ARCH": other}).returncode
-        == 0
-    )
 
 
 @pytest.mark.parametrize(
@@ -190,8 +219,9 @@ def test_job_scripts_request_documented_resources() -> None:
     for script in ROIHU.glob("*.sbatch"):
         text = script.read_text()
         assert "#SBATCH --account" not in text, "the account is passed by submit.sh"
-        assert text.startswith("#!/bin/bash -l\n"), script.name
-        assert "--export" not in text, "jobs use sbatch's default export"
+        # A login shell by full path initialises the module system on the node.
+        assert text.startswith("#!/bin/bash --login\n"), script.name
+        assert "--export" not in text, "submit.sh sets the export"
         prelude = text.index("source hpc/roihu/job_prelude.sh")
         assert prelude < text.index("source hpc/roihu/env.sh"), script.name
         assert text.index("uname -m") < prelude, "architecture is checked before loading"
@@ -369,6 +399,66 @@ def test_prelude_stops_without_the_module_command(
     result = subprocess.run(["bash", "-c", script], env=roihu_env, capture_output=True, text=True)
     assert result.returncode == 1 and "continued" not in result.stdout
     assert "submit it with hpc/roihu/submit.sh from a Roihu login node" in result.stderr
+
+
+# A stand-in for /etc/profile.d/zz-csc-env.sh: defines 'module' when the batch-mode
+# switch is set, and records the architecture it initialised for.
+CSC_INIT = """\
+if [[ "${CSC_ENV_INIT_NON_INTERACTIVE:-}" == "yes" ]]; then
+  echo "init for $(uname -m)" >> "$STUB_LOG.module"
+  module() { echo "module $*" >> "$STUB_LOG.module"; }
+fi
+"""
+
+
+def test_prelude_initialises_the_csc_environment_when_module_is_missing(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    (tmp_path / "bin" / "module").unlink()
+    Path(roihu_env["TIEFER_CSC_ENV_INIT"]).write_text(CSC_INIT)
+    env = {**roihu_env, "STUB_ARCH": "aarch64", "SLURM_JOB_ID": "7"}
+    script = (
+        f"set -euo pipefail; source {ROIHU / 'job_prelude.sh'}; "
+        'echo "export=$SLURM_EXPORT_ENV csc=$CSC_ENV_INIT_NON_INTERACTIVE"'
+    )
+    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "export=ALL csc=yes" in result.stdout
+    calls = Path(roihu_env["STUB_LOG"] + ".module").read_text()
+    assert calls == "init for aarch64\nmodule purge\n"
+
+
+@pytest.mark.parametrize(
+    "node, module, venv",
+    [
+        ("aarch64", "python-pytorch/2.10", "venv-aarch64"),
+        ("x86_64", "python-data/3.12-31.03", "venv-x86_64"),
+    ],
+)
+def test_job_sets_up_the_modules_of_the_node_it_runs_on(
+    roihu_env: dict[str, str], tmp_path: Path, node: str, module: str, venv: str
+) -> None:
+    """A job submitted on x86_64 builds the environment of whatever node runs it."""
+    (tmp_path / "bin" / "module").unlink()
+    Path(roihu_env["TIEFER_CSC_ENV_INIT"]).write_text(CSC_INIT)
+    env = {
+        **roihu_env,
+        "STUB_ARCH": node,
+        "SLURM_JOB_ID": "7",
+        "CSC_ENV_INIT_NON_INTERACTIVE": "yes",
+        "TIEFER_SUBMIT_HOST_ARCH": "x86_64",
+    }
+    script = (
+        f"set -euo pipefail; source {ROIHU / 'job_prelude.sh'}; source {ROIHU / 'env.sh'}; "
+        'echo "venv=$TIEFER_VENV"'
+    )
+    result = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert f"({node}), submitted on x86_64, module environment built on this node" in result.stdout
+    assert f"environment: {node}, module {module}," in result.stdout
+    assert result.stdout.strip().endswith(f"/{venv}")
+    calls = Path(roihu_env["STUB_LOG"] + ".module").read_text().splitlines()
+    assert calls == [f"init for {node}", "module purge", "module purge", f"module load {module}"]
 
 
 def _appending_sbatch(roihu_env: dict[str, str], tmp_path: Path) -> Path:

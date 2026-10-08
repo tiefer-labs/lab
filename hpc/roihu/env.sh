@@ -56,11 +56,14 @@ export TIEFER_PYTORCH_MODULE="${TIEFER_PYTORCH_MODULE:-python-pytorch/2.10}"
 export TIEFER_CPU_PYTHON_MODULE="${TIEFER_CPU_PYTHON_MODULE:-python-data/3.12-31.03}"
 export TIEFER_VENV="${TIEFER_PROJAPPL}/venv-${TIEFER_ARCH}"
 
+# The module and the virtual environment follow the architecture of the node
+# this runs on, never that of the host a job was submitted from.
 if [[ "${TIEFER_ARCH}" == "aarch64" ]]; then
   tiefer_module="${TIEFER_PYTORCH_MODULE}"
 else
   tiefer_module="${TIEFER_CPU_PYTHON_MODULE}"
 fi
+export TIEFER_MODULE="${tiefer_module}"
 # The module command is not written for 'set -euo pipefail'; relax the
 # options around it and restore exactly the saved ones (shell_options.sh).
 # shellcheck source=hpc/roihu/shell_options.sh
@@ -91,6 +94,11 @@ fi
 if [[ -f "${TIEFER_VENV}/bin/activate" ]]; then
   # shellcheck disable=SC1091
   source "${TIEFER_VENV}/bin/activate"
+fi
+
+# One line in the job log to check the environment against the node.
+if [[ -n "${SLURM_JOB_ID:-}" ]]; then
+  echo "environment: ${TIEFER_ARCH}, module ${TIEFER_MODULE}, python3 $(command -v python3) ($(python3 --version 2>&1)), venv ${TIEFER_VENV}$([[ -f "${TIEFER_VENV}/bin/activate" ]] || echo ' (missing)')"
 fi
 
 # Stop with a clear message when setup.sh has not been run for this architecture.

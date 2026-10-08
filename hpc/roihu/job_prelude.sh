@@ -10,20 +10,59 @@
 #
 #   source hpc/roihu/job_prelude.sh
 #
-# Jobs use sbatch's default export (hpc/roihu/submit.sh), so the module
-# command and MODULEPATH come from the login shell that submitted the job.
-# This stops with a clear message when 'module' is missing, and runs
-# 'module purge' with errexit, nounset and pipefail turned off and the
+# The module environment belongs to the node the job runs on. CPU jobs take it
+# from roihu-cpu.csc.fi through sbatch's default export. GPU jobs get only a
+# few variables (hpc/roihu/submit.sh) and build it on the GPU node: the job
+# script is a login shell (#!/bin/bash --login) and CSC_ENV_INIT_NON_INTERACTIVE
+# is yes, so /etc/profile.d/zz-csc-env.sh initialises the CSC environment and
+# the module system for that node's architecture. When 'module' is still
+# missing, for example in a shell that setup.sh starts inside the job, this
+# file runs the same CSC initialisation. Inside a job it also sets
+# SLURM_EXPORT_ENV=ALL, so srun passes on the environment the job has built
+# instead of the short --export list. Source:
+# https://docs.csc.fi/computing/running/submitting-jobs-across-architectures/
+#
+# Then it prints the node, its architecture and how the environment was made,
+# and runs 'module purge' with errexit, nounset and pipefail turned off and the
 # caller's options restored afterwards (shell_options.sh). Source
-# hpc/roihu/env.sh only after this.
+# hpc/roihu/env.sh only after this; it loads the Python module and the virtual
+# environment for the node's architecture.
 
 # shellcheck source=hpc/roihu/shell_options.sh
 source "$(dirname "${BASH_SOURCE[0]}")/shell_options.sh"
 
+TIEFER_NODE_ARCH="$(uname -m)"
+export TIEFER_NODE_ARCH
+
+# CSC's initialisation of a non-interactive shell; the path can be changed for tests.
+tiefer_init_csc_env() {
+  local init="${TIEFER_CSC_ENV_INIT:-/etc/profile.d/zz-csc-env.sh}"
+  [[ -r "${init}" ]] || return 0
+  export CSC_ENV_INIT_NON_INTERACTIVE=yes
+  tiefer_relax_shell
+  # shellcheck source=/dev/null
+  source "${init}"
+  tiefer_restore_shell
+}
 if ! command -v module >/dev/null 2>&1; then
-  echo "error: the 'module' command is not available in this job; submit it with hpc/roihu/submit.sh from a Roihu login node" >&2
+  tiefer_init_csc_env
+fi
+if ! command -v module >/dev/null 2>&1; then
+  echo "error: the 'module' command is not available in this ${TIEFER_NODE_ARCH} job; submit it with hpc/roihu/submit.sh from a Roihu login node" >&2
   return 1 2>/dev/null || exit 1
 fi
+
+if [[ -n "${SLURM_JOB_ID:-}" ]]; then
+  export SLURM_EXPORT_ENV=ALL
+  if [[ "${CSC_ENV_INIT_NON_INTERACTIVE:-}" == "yes" ]]; then
+    tiefer_made="built on this node"
+  else
+    tiefer_made="inherited from the login node"
+  fi
+  echo "job environment: node $(hostname) (${TIEFER_NODE_ARCH}), submitted on ${TIEFER_SUBMIT_HOST_ARCH:-${TIEFER_NODE_ARCH}}, module environment ${tiefer_made}"
+  unset tiefer_made
+fi
+
 tiefer_relax_shell
 module purge
 tiefer_status=$?
