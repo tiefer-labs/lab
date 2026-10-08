@@ -58,7 +58,7 @@ The acceptance targets of milestone L2, with their minimum and target values, ar
 
 1. Every L2 config of the run plan has run, or is marked `not run` with its reason in [hpc/roihu/plan.md](../hpc/roihu/plan.md).
 2. The report files of the L2 runs are in `reports/`, and every acceptance target of REQUIREMENTS.md, section 8, has a status from them.
-3. The product decision between the band-flexible model and the four-band specialists is recorded on validation by the rule of [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7. On 7 October 2026 it is provisional: no decision is recorded, because `x-val-4` is pending ([RESULTS.md](RESULTS.md), section 12).
+3. The product decision between the band-flexible model and the four-band specialists is recorded on validation by the rule of [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7. No decision is recorded yet.
 4. The comparisons of [LANDSCAPE.md](LANDSCAPE.md), section 5, name the measurement that decides each of them, and the open measurements are listed in hpc/roihu/plan.md.
 
 ### Jetson milestone: done when
@@ -180,7 +180,7 @@ Evaluated with the same code and splits as the model:
 - **False discard rate:** frames that are actually useful (cloud fraction below the threshold) but would be kept on board. The most important error for an operator; report it prominently.
 - 95 percent confidence intervals by bootstrap over patches (1,000 resamples, fixed seed).
 - Breakdown by available metadata (for example region or land cover) with sample counts.
-- **Padding:** the dataset pads each 509 x 509 patch to 512 x 512 ([DATA.md](DATA.md), section 5). When a split is loaded, every padded label pixel is set to `IGNORE_INDEX` (`src/tiefer_lab/data/padding.py`, since 7 October 2026); the width comes from `real_proj_shape` and the stored size, the sides from `PADDING_SIDES`. Every pixel metric, cloud fraction, frame metric, bootstrap interval, breakdown, baseline, export check, the loss and the class weights then count only labelled pixels of the real image area; the predicted cloud fraction of a frame is taken over the same pixels as the reference. Images are not changed. Values computed before this change count the padded pixels.
+- **Padding:** the dataset pads each 509 x 509 patch to 512 x 512 ([DATA.md](DATA.md), section 5). When a split is loaded, every padded label pixel is set to `IGNORE_INDEX` (`src/tiefer_lab/data/padding.py`, since 7 October 2026); the width comes from `real_proj_shape` and the stored size, the sides from `PADDING_SIDES`. Every pixel metric, cloud fraction, frame metric, bootstrap interval, breakdown, baseline, export check, the loss and the class weights then count only labelled pixels of the real image area; the predicted cloud fraction of a frame is taken over the same pixels as the reference. Images are not changed.
 - Output: JSON in `$TIEFER_REPORTS_DIR` with all provenance fields from section 8.
 - **Test guard:** `--split test` requires the flag `--final` and appends an entry to `reports/test_log.md` (date, run ID, git commit, reason) before the test data is read; `python -m tiefer_lab.export --final` does the same. Without `--final` it refuses to run. A test checks this.
 
@@ -273,7 +273,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `usage.sh` | Prints `sacct` usage of a job for the results |
 | `timing.sbatch` | One cut epoch on `gputest`: the real cost of a config |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
-| `plan.md` | The run plan of 2 October 2026, what ran, and the open measurements |
+| `plan.md` | The run plan of the v2 campaign: budget, stop line and steps |
 | `requirements.txt` | Generated from `uv.lock` with `uv export`, without the packages of the CSC module |
 | `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
 
@@ -301,9 +301,9 @@ Until 7 October 2026, a results generator built `docs/RESULTS.md` only from the 
 Since then the step is: write `docs/RESULTS.md` by hand, by the results page type of [STYLE.md](STYLE.md), section 12.2.
 
 - Every value names the report file in `reports/` that it was copied from, and the report file records the git commit, configuration and platform. No value without a report file, the dataset revision and a commit behind it.
-- A value from the session notes (`notes`) or a value that is `pending` is allowed for a time. Each such value is listed in the section of values to verify, with its exit condition: the report file is copied into the repository and the value is checked against it.
+- A value that is `pending` is allowed for a time. The section of values pending lists what each one waits for: the report file is copied into the repository and the value is checked against it.
 - Missing values use the words of STYLE.md, section 4: `not measured`, `pending`, `n/a`.
-- Sections: summary (three sentences, no adjectives), how to read the page, runs, environment and provenance, data, results by topic with a source column, quantisation, hardware, compute used on Roihu, training notes, limitations, how to reproduce, values to verify, report files, changelog.
+- Sections: summary (three sentences, no adjectives), how to read the page, runs, environment and provenance, data, results by topic with a source column, quantisation, hardware, compute used on Roihu, training notes, limitations, how to reproduce, values pending, report files, changelog.
 
 Limitations must include: 10 m training data versus very high resolution target sensors, the band set of each result, public Level-1C data versus onboard raw data, no space environment effects.
 
@@ -377,7 +377,7 @@ lab/
       survey.sbatch               survey of the dataset metadata and item encodings
       timing.sbatch               one cut epoch on gputest: the real cost of a config
       sweep.sh                    configs and seeds as separate one-GPU jobs
-      plan.md                     run plan of 2 October 2026, what ran, open measurements
+      plan.md                     run plan of the v2 campaign: budget, stop line, steps
       smoke.sbatch                gputest, 15 minutes
       train.sbatch                gpumedium, resumable
       evaluate.sbatch             validation, or test with FINAL=1
