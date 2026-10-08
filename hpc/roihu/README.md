@@ -116,9 +116,9 @@ Its log starts with the metadata columns of the dataset. If it stops because the
 
 #### All 13 bands, in shards
 
-The band-flexible models read all 13 Level-1C bands from one cache, `cloudsen12-l1c-all`. With all bands a 509 x 509 patch takes about 6.7 MiB, so the high quality train, val and test splits (8490, 535 and 975 patches on 2 October 2026) need about 55.3, 3.5 and 6.4 GiB, 65.1 GiB in all; the merge needs one shard more at its peak. The builder prints its estimate and stops when the file system has less free space, but the project quota on `/scratch` can be lower than that: check it first (`TODO(verify)` the command on [docs.csc.fi](https://docs.csc.fi/computing/disk/)).
+The band-flexible models read all 13 Level-1C bands from one cache, `cloudsen12-l1c-all`. With all bands a 509 x 509 patch takes about 6.7 MiB, so the cache needs about 6.7 MiB times the number of patches of each split; the merge needs one shard more at its peak. The builder prints its estimate and stops when the file system has less free space, but the project quota on `/scratch` can be lower than that: check it first (`TODO(verify)` the command on [docs.csc.fi](https://docs.csc.fi/computing/disk/)).
 
-The training split is read by four CPU jobs side by side, each into its own folder, and merged afterwards. `--max-rate` caps the reads per minute of the whole split and is shared between the shards; 120 is the highest rate observed with a token without HTTP 429 (2 October 2026):
+The training split is read by four CPU jobs side by side, each into its own folder, and merged afterwards. `--max-rate` caps the reads per minute of the whole split and is shared between the shards; lower it when the log shows HTTP 429:
 
 ```bash
 for i in 0 1 2 3; do
@@ -168,7 +168,7 @@ grep "full epoch" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>
 
 ### Step 5: train on `gpumedium`
 
-Train `configs/l1_full.toml`: `l1_base` run to the end of its 150-epoch cosine schedule, with a learning rate warm-up and a moving average of the weights (the reasons are in [ASSUMPTIONS.md](../../docs/ASSUMPTIONS.md), section 6). At the measured 8.6 s per epoch on one GH200 (2 October 2026), 150 epochs take about 22 minutes, about 0.4 GPU hours. `configs/l1_base.toml` stays as it was measured.
+Train `configs/l1_full.toml`: `l1_base` run to the end of its 150-epoch cosine schedule, with a learning rate warm-up and a moving average of the weights (the reasons are in [ASSUMPTIONS.md](../../docs/ASSUMPTIONS.md), section 6). Its time per epoch comes from the timing job of step 4. `configs/l1_base.toml` stays unchanged.
 
 Each training job uses one GPU. The run ID is printed in the log (`run directory: $TIEFER_RUNS_DIR/<run-id>`) and contains the seed, for example `l1_base-seed0-<time>-<commit>`. If the time limit is reached, the job saves `last.pt` and stops; submit again with the run ID to continue:
 
@@ -248,7 +248,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `export.sbatch` | ONNX export per band set, check against PyTorch, INT8 quantisation |
 | `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
-| `plan.md` | the run order with costs, under 5000 GPU BU |
+| `plan.md` | the v2 run plan: budget, stop line and steps |
 | `usage.sh` | `sacct` record of a job, written to `reports/compute/<job-id>.json` |
 | `collect.sh` | packs reports, run metadata, best checkpoint and ONNX files, with relative paths only |
 
@@ -283,10 +283,10 @@ Every job script starts with `#!/bin/bash -l` and uses sbatch's default export, 
 | `stores bands ...; this build asks for ...` | a 4-band cache name was used for a 13-band build, or the other way round | use `--name cloudsen12-l1c-all` with `--bands all` |
 | `invalid partition` from `sbatch` | a partition name differs on Roihu | check `sinfo` and the [partitions page](https://docs.csc.fi/computing/running/batch-job-partitions/), then edit the `#SBATCH --partition` line |
 | The training log ends with `interrupted` | the time limit was reached | submit `train.sbatch` again with the run ID |
-| `CUDA out of memory` in the training log of a 13-band config | batch 128 with all 13 bands does not fit on one GH200; expandable segments in the allocator alone did not help (jobs 2000912 and 2000941, 3 October 2026) | halve the batch size and the learning rate together, as the L2 configs do since 7 October 2026 (batch 64, learning rate 0.004; job 2000949 ran to the end) |
+| `CUDA out of memory` in the training log of a 13-band config | a 13-band model at batch 128 may not fit in the memory of one GH200; expandable segments in the allocator alone may not help | halve the batch size and the learning rate together; the L2 configs use batch 64 and learning rate 0.004 |
 | modules or the venv are not found inside a job | the job was submitted from the login host of the other architecture, so it inherited the wrong environment | submit GPU jobs from `roihu-gpu.csc.fi` and CPU jobs from `roihu-cpu.csc.fi` (section 2, item 3) |
-| `HTTP 404` in the log of a shard of the data job | the dataset host answered 404 for a read (job 1999649) | submit the same shard again; the build resumes where it stopped (job 2000731) |
-| `pthread_setaffinity_np` messages from ONNX Runtime in the export log | ONNX Runtime could not set the thread affinity it asked for; the cause is not investigated | nothing; the exports completed; the effect on timing has not been investigated |
+| `HTTP 404` in the log of a shard of the data job | the dataset host answered 404 for a read | submit the same shard again; the build resumes where it stopped |
+| `pthread_setaffinity_np` messages from ONNX Runtime in the export log | ONNX Runtime could not set the thread affinity it asked for | check that the export report is written; the messages alone do not stop the export |
 | `the test split is only for final evaluation` | test was requested without `FINAL=1` and `REASON` | evaluate on validation; use test once, for the final result |
 
 ---
@@ -307,6 +307,7 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | CPU partition `small`: 72 hours, 1 node | `data.sbatch` | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | `--account` is mandatory; GPUs are requested with `--gres=gpu:gh200:<n>`; Slurm adds memory per GPU automatically | `submit.sh`, job scripts | [job scripts on Roihu](https://docs.csc.fi/computing/running/creating-job-scripts-roihu/) |
 | 200 GPU BU per GPU hour; up to 72 cores and 212 GiB memory per GPU included, so GPU jobs request `--cpus-per-task=72` | GPU job scripts | [billing](https://docs.csc.fi/computing/hpc-billing/) |
+| Slurm was upgraded from 25.05 to 26.05 during the service break of 6 to 8 October 2026 | every job script; a smoke job runs first after the upgrade | CSC notice of the service break |
 | `$TMPDIR` is set for every job without a request; its sizes are listed on the partitions page | `env.sh` (`tiefer_stage_cache`) | [Roihu FAQ](https://docs.csc.fi/support/faq/roihu/); sizes: [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | **Software** | | |
 | The PyTorch module `python-pytorch/2.10` | `env.sh` (`TIEFER_PYTORCH_MODULE`) | [GPU and ML guide](https://docs.csc.fi/support/tutorials/gpu-ml/) |
@@ -319,17 +320,17 @@ Facts from the CSC documentation were checked on 1 October 2026; each row links 
 | A Roihu-CPU or Roihu-GPU shell is available in the web interface | this guide | [www.roihu.csc.fi](https://www.roihu.csc.fi) |
 | **Storage and network** | | |
 | Files in `/scratch` unused for 180 days are deleted | `env.sh` | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
-| Compute nodes reach `huggingface.co`; without a token the server answered HTTP 429 after about 415 patches per window, and with a bearer token reads ran at 55 to 120 patches per minute without 429 | `data.sbatch`, `src/tiefer_lab/data/http.py` | observed on Roihu, 2 October 2026 |
+| Compute nodes reach `huggingface.co`; without a token the server answers HTTP 429 after a few hundred reads, so the data job runs with a bearer token | `data.sbatch`, `src/tiefer_lab/data/http.py` | observed on Roihu |
 
 ---
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: step 3 adds the read-only padding check of a cache, run on the login node.
 - 7 October 2026: item 2 of section 2 points to item 3 below instead of a section 2.3.
 - 7 October 2026: the troubleshooting table points to section 2, item 3, which has no section number of its own.
 - 7 October 2026: the purpose links GETTING-STARTED.md, INSTALL.md and the gates of POLICY.md for the test split and compute spend.
-- 7 October 2026: troubleshooting rows for out of GPU memory with 13 bands, jobs submitted from the wrong login host, HTTP 404 in a shard and ONNX Runtime affinity messages; GPU jobs set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `env.sh`.
 - 2 October 2026: timing job, sweep script and run plan for milestone L2.
 - 2 October 2026: 13-band cache built in shards with a shared rate cap and a disk estimate.
 - 2 October 2026: survey job before a data build.
