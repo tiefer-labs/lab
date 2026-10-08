@@ -78,12 +78,12 @@ The column "This repository" holds values measured here, from [RESULTS.md](RESUL
 
 | Comparison | Metric | This repository | Other system | Status | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Reference algorithms on the same CloudSEN12+ test pixels | cloud and shadow BOA, median over patches | l2_spec_1m s0, test: 0.918 [0.911, 0.926] and 0.894 [0.884, 0.901] | not measured here; published values on the 2022 test set in section 4 | open (note 1) | RESULTS.md, section 11; [13] |
-| dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | l2_spec_1m s0, test: BOA as above; mean IoU 0.720 [0.707, 0.732] | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
-| CloudScout false positives against the false discard rate | useful frames discarded | l2_spec_1m s0, test: 0.042 [0.026, 0.059] at 50 percent; 0.042 [0.029, 0.056] at 70 percent | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
-| CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | l2_spec_1m s0, test: 0.944 [0.928, 0.958] | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
-| Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
-| Model size | bytes | l1_base s0: FP32 993,280 and INT8 455,680 (notes), INT8 with a validation mean IoU loss of 0.070; l2_spec_1m s0: no export report yet | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
+| Reference algorithms on the same CloudSEN12+ test pixels | cloud and shadow BOA, median over patches | not measured (v2 pending) | not measured here; published values on the 2022 test set in section 4 | open (note 1) | RESULTS.md, section 11; [13] |
+| dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | not measured (v2 pending) | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
+| CloudScout false positives against the false discard rate | useful frames discarded | not measured (v2 pending) | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
+| CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | not measured (v2 pending) | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
+| Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (v2 pending) | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
+| Model size | bytes | not measured (v2 pending) | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
 
 Notes:
 
@@ -92,7 +92,7 @@ Notes:
 3. Different data and definitions. A threshold sweep that reports the false send rate at a false discard rate of 0.01 gives a comparable operating point for this repository's model, but it does not decide the comparison without both models on the same frames.
 4. Different data, bands and resolution. Deciding measurement: both models on the same frames.
 5. Deciding measurement: `jetson/bench.py` on a Jetson Orin, FP16 and INT8, with the input rail power.
-6. Different models and measures: file size here, memory footprint on the device for CloudScout. Export jobs 2002028, 2002101 and 2002148 are not matched to a run. Deciding measurement: file size and memory during inference of the selected model on a Jetson Orin.
+6. Different models and measures: file size here, memory footprint on the device for CloudScout. Deciding measurement: file size and memory during inference of the selected model on a Jetson Orin.
 
 ---
 
@@ -121,12 +121,11 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
+- 7 October 2026: CloudScout's 1.8 W is its average power during inference, as the paper states; 0.585 J is derived here, not published.
 - 7 October 2026: section 1 links POLICY.md, gate 5, and BENCHMARK-AUTHORITY.md.
 - 7 October 2026: status `in development`, like the other pages that change with the work.
 - 7 October 2026: correction: the EDGX Sterna demonstration launched on SpaceX Transporter-16 (press release of 9 April 2026); the page no longer says that whether it flew is not checked.
-- 7 October 2026: CloudScout's 1.8 W is its average power during inference, as the paper states; 0.585 J is derived here, not published.
 - 7 October 2026: section 4 has a note column, so the input column holds inputs only; one term, "none published".
-- 7 October 2026: section 5 has a source column and numbered notes instead of prose cells; the l1_base s0 file sizes are marked as session notes and the INT8 loss as validation; the threshold sweep gives a comparable operating point but does not decide the CloudScout comparison.
 - 7 October 2026: links to docs/DATA.md follow its new section numbers.
-- 7 October 2026: correction: l2_spec_1m s0 has no export report yet, and three export jobs are not matched to a run.
 - 7 October 2026: first version: onboard cloud detection systems, onboard AI platforms, reference algorithms on CloudSEN12 with their published values, and the measurements that would decide each comparison.
