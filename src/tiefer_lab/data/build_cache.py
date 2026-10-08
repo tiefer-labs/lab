@@ -408,6 +408,22 @@ def plan_split(
     )
 
 
+def _patch_name(table: Any, position: int) -> str:
+    """The patch identifier at `position` of the table, for messages."""
+    try:
+        return f"patch {table.iloc[position][source.PATCH_ID_FIELD]} (row {position})"
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return f"the patch at row {position}"
+
+
+def _gave_up(what: str, attempts: int, error: BaseException) -> cache.CacheError:
+    return cache.CacheError(
+        f"{what} could not be read after {attempts} attempts "
+        f"({type(error).__name__}: {error}). The build is resumable: submit the same "
+        "data job again, and lower --max-rate or run fewer data jobs at the same time"
+    )
+
+
 def _reader(plan: Plan, backoff: http.Backoff, limiter: http.RateLimiter | None) -> Any:
     bands = None if plan.bands == source.USED_BANDS else plan.bands
 
@@ -421,7 +437,13 @@ def _reader(plan: Plan, backoff: http.Backoff, limiter: http.RateLimiter | None)
                 return source.read_patch(plan.table, position)
             return source.read_patch(plan.table, position, bands=bands)
 
-        return backoff.call(once)
+        try:
+            return backoff.call(once)
+        except Exception as error:
+            # A transient error that outlasted every attempt; others pass unchanged.
+            if not http.is_transient(error):
+                raise
+            raise _gave_up(_patch_name(plan.table, position), backoff.attempts, error) from error
 
     return read
 
@@ -559,7 +581,13 @@ def build_references(
                 limiter.acquire()
             return source.read_references(extra, row, names)
 
-        return backoff.call(once)
+        try:
+            return backoff.call(once)
+        except Exception as error:
+            if not http.is_transient(error):
+                raise
+            what = f"the reference masks at row {row}"
+            raise _gave_up(what, backoff.attempts, error) from error
 
     pool = ThreadPoolExecutor(max_workers=max(1, workers))
     pending: dict[int, Future[dict[str, NDArray[np.uint8]]]] = {}

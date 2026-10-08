@@ -4,11 +4,18 @@
 """Polite access to the dataset over HTTPS: rate-limit backoff and the token.
 
 Hugging Face answers HTTP 429 (too many requests) when a client reads too
-fast. Every read goes through one `Backoff`: when any read is rate limited,
-all reader threads pause together, for the server's `Retry-After` when the
-error carries it, otherwise for an exponential backoff with jitter, capped.
-GDAL errors do not carry response headers, so reads through rasterio always
-use the backoff.
+fast. Every read goes through one `Backoff`: when any read fails for a
+transient reason, all reader threads pause together, for the server's
+`Retry-After` when the error carries it, otherwise for an exponential backoff
+with jitter, capped, and the read is tried again.
+
+Transient means: HTTP 429, an HTTP 5xx answer, or a rasterio I/O error at open
+or during the read. When the server answers a range request with an error page
+instead of data, GDAL reports the file as "not recognized as being in a
+supported file format" and rasterio raises `RasterioIOError: Read failed`,
+without the status code; GDAL errors do not carry response headers either.
+Errors that a retry cannot fix, such as a missing band or a wrong shape
+(`DataSourceError`), are raised at once.
 
 A Hugging Face token raises the limit. It is read from `HF_TOKEN` and passed
 to GDAL as a bearer token (`GDAL_HTTP_AUTH=BEARER`, `GDAL_HTTP_BEARER`). The
@@ -61,6 +68,24 @@ def is_rate_limited(error: BaseException) -> bool:
     return "429" in text or "Too Many Requests" in text
 
 
+TRANSIENT_HTTP_CODES = frozenset({429, 500, 502, 503, 504})
+
+
+def _is_rasterio_io_error(error: BaseException) -> bool:
+    """True for rasterio.errors.RasterioIOError, matched by name so rasterio is not imported."""
+    return any(
+        cls.__name__ == "RasterioIOError" and cls.__module__.startswith("rasterio")
+        for cls in type(error).__mro__
+    )
+
+
+def is_transient(error: BaseException) -> bool:
+    """True when the same read may succeed later: rate limit, server error, GDAL I/O error."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in TRANSIENT_HTTP_CODES
+    return is_rate_limited(error) or _is_rasterio_io_error(error)
+
+
 def retry_after_seconds(error: BaseException) -> float | None:
     """The server's Retry-After in seconds, when the error carries it."""
     if isinstance(error, urllib.error.HTTPError) and error.headers is not None:
@@ -103,7 +128,7 @@ class RateLimiter:
 
 @dataclass
 class Backoff:
-    """Shared pause for all reader threads after a rate-limited read."""
+    """Shared pause for all reader threads after a read that failed for a transient reason."""
 
     base_s: float = BASE_DELAY_S
     max_s: float = MAX_DELAY_S
@@ -128,21 +153,33 @@ class Backoff:
             self.sleep(remaining)
 
     def call(self, fn: Callable[..., T], *args: object) -> T:
-        """Run fn(*args); on HTTP 429 pause every reader and try again."""
+        """Run fn(*args); on a transient error pause every reader and try again.
+
+        After `attempts` tries the last error is raised.
+        """
         for attempt in range(self.attempts):
             self._wait_for_pause()
             try:
                 return fn(*args)
             except Exception as error:
-                if not is_rate_limited(error) or attempt == self.attempts - 1:
+                if not is_transient(error) or attempt == self.attempts - 1:
                     raise
                 wait = self.delay(attempt, error)
                 with self._lock:
                     self._paused_until = max(self._paused_until, self.clock() + wait)
                     self.waits.append(wait)
+                if is_rate_limited(error):
+                    reason = "rate limited (HTTP 429)"
+                else:
+                    reason = f"read failed ({type(error).__name__}: {_first_line(error)})"
                 print(
-                    f"rate limited (HTTP 429); all readers pause {wait:.0f} s "
+                    f"{reason}; all readers pause {wait:.0f} s "
                     f"(attempt {attempt + 1} of {self.attempts})",
                     flush=True,
                 )
         raise AssertionError("unreachable")
+
+
+def _first_line(error: BaseException) -> str:
+    text = str(error).strip()
+    return text.splitlines()[0][:200] if text else "no message"
