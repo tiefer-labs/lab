@@ -14,10 +14,10 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 - "Verified by" lists tests as `tests/<file>.py::<test>` and files by their path. Files under `reports/` are generated on CSC Roihu or a Jetson and are not in the repository until they are copied in.
 - The status words are those of [STYLE.md](STYLE.md), section 4: `met` and `not met` are judged against the minimum unless the row says target; `pending` means measured, with the value not yet in the repository; `not measured` means never measured.
 - A code requirement (`REQ-...`) is met when its tests pass. Every test passed in `make check` on 7 October 2026; that run is the evidence for every `REQ-...` row marked met. Further evidence of a row is given below its table.
-- The statuses of the acceptance targets were set by hand on 7 October 2026 from [RESULTS.md](RESULTS.md). `python -m tiefer_lab.acceptance` writes `reports/acceptance.md` from the report files; that file is not committed, because the report files of 2 and 3 October 2026 are still on CSC Roihu. Its GPU maintenance began on 6 October 2026 at 08:00 Finnish time (05:00 UTC), and no GPU job of this repository has run since.
-- `acceptance.py` defines the accuracy, frame and compression targets on the final test evaluation of the 1 M band-flexible model (`l2_flex_1m`) with the four bands B02, B03, B04 and B08; section 8 assesses `l2_flex_1m s0` on that basis. Section 9 gives the same targets for the four-band specialist `l2_spec_1m s0` for information, because the product decision between the two is not recorded yet ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 7).
+- Every acceptance target that needs a measured value is `pending` until the v2 campaign ([hpc/roihu/plan.md](../hpc/roihu/plan.md)). `python -m tiefer_lab.acceptance` writes `reports/acceptance.md` from the report files; it is committed with the report files of the v2 campaign.
+- `acceptance.py` defines the accuracy, frame and compression targets on the final test evaluation of the 1 M band-flexible model (`l2_flex_1m`) with the four bands B02, B03, B04 and B08. The product decision between it and the four-band specialist is taken under [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7.
 - A status of this page says whether a target is met; whether a value may be quoted, and in which form, is decided by [POLICY.md](../POLICY.md), gate 2, and [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md).
-- A minimum or target written "above" is strict; "at least" and "at most" include the bound. Values are rounded to 3 decimals, half up, as in RESULTS.md; a value from the session notes is marked so in the evidence.
+- A minimum or target written "above" is strict; "at least" and "at most" include the bound. Values are rounded to 3 decimals, half up, as in RESULTS.md.
 
 ---
 
@@ -53,7 +53,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-TRN-06` | The size ladder hits its parameter targets and every variant changes one setting | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant` |
 | `REQ-TRN-07` | Every run records its config, seed, commit, job ID and GPU hours; reports/experiments.md is built from the run folders | met | `tests/test_checkpoint_resume.py::test_run_metadata_has_provenance_and_no_absolute_paths`, `tests/test_experiments.py::test_one_row_per_run_from_its_folder` |
 
-Further evidence: `REQ-TRN-07`: l1_base s0 records commit `81ab34b03bcc`, which is in the history; the run was made from a working tree with uncommitted changes, and only that diff is lost ([RESULTS.md](RESULTS.md), section 4).
+Further evidence: `REQ-TRN-07`: the metadata test passes; no run of the v2 campaign exists yet.
 
 ---
 
@@ -71,10 +71,10 @@ Further evidence: `REQ-TRN-07`: l1_base s0 records commit `81ab34b03bcc`, which 
 
 Further evidence:
 
-- `REQ-EVL-01`: the guard's tests pass. At least eight test evaluations ran on 3 October 2026; their log entries are on CSC Roihu, pending a copy into `reports/test_log.md`, which has no entries yet. The status stays pending until they are copied.
+- `REQ-EVL-01`: the guard's tests pass; `reports/test_log.md` has no entries yet. The status stays pending until the first logged test evaluation of the v2 campaign is copied in.
 - `REQ-EVL-03`: the code is tested; no reference algorithm has been scored yet ([RESULTS.md](RESULTS.md), section 10).
-- `REQ-EVL-05`: measured for l1_base s0 ([RESULTS.md](RESULTS.md), section 13).
-- `REQ-EVL-07`: l2_flex_1m s0 was evaluated per band set ([RESULTS.md](RESULTS.md), section 12).
+- `REQ-EVL-05`: verified by the perturbation test; no robustness result yet (v2 pending).
+- `REQ-EVL-07`: verified by the tests; no result per band set yet (v2 pending).
 
 ---
 
@@ -85,7 +85,7 @@ Further evidence:
 | `REQ-EXP-01` | ONNX FP32 matches PyTorch; FP16 and INT8 are measured against FP32 | met | `tests/test_export.py::test_fp32_round_trip_matches_pytorch`, `tests/test_quantise.py::test_int8_model_is_qdq_and_scores`, `tests/test_binary_metrics.py::test_int8_comparison_reports_the_boa_change` |
 | `REQ-EXP-02` | One ONNX file per band set takes only the bands of that set | met | `tests/test_flexible_pipeline.py::test_flexible_model_trains_evaluates_and_exports_per_band_set`, `tests/test_flexible_model.py::test_band_set_model_matches_the_flexible_model` |
 
-Further evidence: `REQ-EXP-01`: FP32 and INT8 are measured for three L1 runs (l1_base s0 and s1, l1_full s0); FP16 is measured for l1_base s0 only and is pending for l1_base s1 and l1_full s0 ([RESULTS.md](RESULTS.md), section 14).
+Further evidence: `REQ-EXP-01`: verified by the tests; no export report yet (v2 pending).
 
 ---
 
@@ -125,40 +125,40 @@ Further evidence: `REQ-OBD-05`: the tests pass in dry-run mode; nothing is measu
 | ID | Requirement | Minimum | Target | Measured value | Run | Status | Evidence | Verified by |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Accuracy on the 975 test patches, four-band set, 1 M model unless stated** | | | | | | | | |
-| `ACC-01` | Cloud against non-cloud, median BOA | above 0.84 | at least 0.90 | pending | l2_flex_1m s0, 4 bands | pending | `x-test-4` not yet transcribed ([RESULTS.md](RESULTS.md), section 11) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-02` | Same, largest model, all 13 bands | at least 0.90 | at least 0.92 | not measured | n/a | not measured | no model of the largest size was trained ([RESULTS.md](RESULTS.md), section 3) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-03` | Cloud shadow, median BOA | above 0.74 | at least 0.85 | pending | l2_flex_1m s0, 4 bands | pending | `x-test-4` not yet transcribed ([RESULTS.md](RESULTS.md), section 11) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-04` | Reference algorithms (except UNetMobV2) whose cloud BOA interval overlaps the model's | at most 0 | at most 0 | not measured | n/a | not measured | no reference algorithm measured ([RESULTS.md](RESULTS.md), section 10) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-05` | Mean IoU, four classes | at least 0.70 | at least 0.75 | 0.609 | l2_flex_1m s0, 4 bands | not met | `x-test-4` (notes); [RESULTS.md](RESULTS.md), section 12 | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-06` | Thin cloud producer's and user's accuracy | reported | above every reference except UNetMobV2 | pending | l2_flex_1m s0, 4 bands | pending | `x-test-4` not yet transcribed; no reference measured ([RESULTS.md](RESULTS.md), sections 10 and 11); no published value compares (below) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-07` | Cloud cover per patch, mean absolute error | at most 0.08 | at most 0.05 | pending | l2_flex_1m s0, 4 bands | pending | `x-test-4` not yet transcribed ([RESULTS.md](RESULTS.md), section 8) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-08` | Expected calibration error | at most 0.08 | at most 0.05 | pending | l2_flex_1m s0, 4 bands | pending | in the evaluation reports, not yet transcribed ([RESULTS.md](RESULTS.md), section 20) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | at most 0.02 | at most 0.01 | not measured | n/a | not measured | l2_flex_1m has one seed (below) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-01` | Cloud against non-cloud, median BOA | above 0.84 | at least 0.90 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-02` | Same, largest model, all 13 bands | at least 0.90 | at least 0.92 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-03` | Cloud shadow, median BOA | above 0.74 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-04` | Reference algorithms (except UNetMobV2) whose cloud BOA interval overlaps the model's | at most 0 | at most 0 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-05` | Mean IoU, four classes | at least 0.70 | at least 0.75 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-06` | Thin cloud producer's and user's accuracy | reported | above every reference except UNetMobV2 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-07` | Cloud cover per patch, mean absolute error | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-08` | Expected calibration error | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Independent datasets, four-band set, never used for training or selection** | | | | | | | | |
-| `IND-01` | Independent datasets evaluated | at least 2 | 4, from at least 3 sensors | not measured | n/a | not measured | no independent dataset evaluated ([DATASETS.md](DATASETS.md)) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-02` | Each independent Sentinel-2 dataset, cloud BOA | above Sen2Cor on the same pixels | within 0.03 of the CloudSEN12+ test result | not measured | n/a | not measured | no independent dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-03` | Each other-sensor dataset, cloud BOA | above the dataset's operational mask, where one exists | within 0.05 of the CloudSEN12+ test result | not measured | n/a | not measured | no independent dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-04` | Worst biome or surface class on any independent dataset, BOA | at least 0.75 | at least 0.85 | not measured | n/a | not measured | no independent dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-01` | Independent datasets evaluated | at least 2 | 4, from at least 3 sensors | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-02` | Each independent Sentinel-2 dataset, cloud BOA | above Sen2Cor on the same pixels | within 0.03 of the CloudSEN12+ test result | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-03` | Each other-sensor dataset, cloud BOA | above the dataset's operational mask, where one exists | within 0.05 of the CloudSEN12+ test result | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-04` | Worst biome or surface class on any independent dataset, BOA | at least 0.75 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Frame decision, at the decision threshold of 50 percent** | | | | | | | | |
-| `FRM-01` | Useful frames wrongly discarded (false discard rate) | at most 0.02 | at most 0.01 | 0.084 | l2_flex_1m s0, 4 bands | not met | `x-test-4` (notes); [RESULTS.md](RESULTS.md), section 12 | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `FRM-02` | Cloudy frames detected (1 minus the false send rate) | at least 0.85 | at least 0.90 | pending | l2_flex_1m s0, 4 bands | pending | false send rate not yet transcribed ([RESULTS.md](RESULTS.md), section 8) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `FRM-01` | Useful frames wrongly discarded (false discard rate) | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `FRM-02` | Cloudy frames detected (1 minus the false send rate) | at least 0.85 | at least 0.90 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Compression and flexibility** | | | | | | | | |
-| `CMP-01` | ONNX FP32 against PyTorch, argmax agreement | at least 0.999 | at least 0.999 | not measured | l2_flex_1m s0 | not measured | no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run ([RESULTS.md](RESULTS.md), section 14) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-02` | FP16 against FP32, cloud BOA loss | at most 0.005 | at most 0.002 | not measured | l2_flex_1m s0 | not measured | no export report yet (below) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-03` | INT8 against FP32, cloud BOA loss | at most 0.02 | at most 0.01 | not measured | l2_flex_1m s0 | not measured | no export report yet (below) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | at most 0.01 | within the specialist's interval | pending | l2_flex_1m s0 and l2_spec_1m s0, 4 bands | pending | `x-test-4` not yet transcribed; the product rule is applied on validation ([RESULTS.md](RESULTS.md), section 12) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-05` | Rescaling 0.5x to 2x, cloud BOA loss | at most 0.04 | at most 0.02 | not measured | n/a | not measured | no rescaling evaluation of l2_flex_1m s0; l1_base s0 is in [RESULTS.md](RESULTS.md), section 13 | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-06` | Other sensors against Sentinel-2, cloud BOA loss | at most 0.08 | at most 0.05 | not measured | n/a | not measured | no other-sensor dataset evaluated | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-07` | Red, green and blue only, cloud BOA | reported | reported | pending | l2_flex_1m s0, 3 bands | pending | `x-test-3` not yet transcribed ([RESULTS.md](RESULTS.md), [Appendix A](RESULTS.md#appendix-a-report-files)) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-01` | ONNX FP32 against PyTorch, argmax agreement | at least 0.999 | at least 0.999 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-02` | FP16 against FP32, cloud BOA loss | at most 0.005 | at most 0.002 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-03` | INT8 against FP32, cloud BOA loss | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | at most 0.01 | within the specialist's interval | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-05` | Rescaling 0.5x to 2x, cloud BOA loss | at most 0.04 | at most 0.02 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-06` | Other sensors against Sentinel-2, cloud BOA loss | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-07` | Red, green and blue only, cloud BOA | reported | reported | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **On board (Jetson), provisional** | | | | | | | | |
-| `OBD-01` | Throughput, 512 x 512 tiles per second | at least 20 | at least 40 | not measured | n/a | not measured | no Jetson measurement ([RESULTS.md](RESULTS.md), section 15) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-02` | Latency per tile, INT8 or FP16 | at most 50 ms | at most 25 ms | not measured | n/a | not measured | no Jetson measurement ([RESULTS.md](RESULTS.md), section 15) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-03` | Model file of the 1 M model | at most 4,000,000 bytes (4 MB) in FP32 | at most 1,500,000 bytes (1.5 MB) in INT8 | not measured | l2_flex_1m s0 | not measured | no export report yet (below) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-04` | Memory during inference | at most 2 GB | at most 1 GB | not measured | n/a | not measured | not measured by the Jetson scripts yet | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-05` | Board power during inference | at most 25 W | at most 15 W | not measured | n/a | not measured | no Jetson measurement ([RESULTS.md](RESULTS.md), section 15) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-06` | Same input, same output across runs | bit identical per runtime | n/a | not measured | n/a | not measured | not measured by the Jetson scripts yet | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-01` | Throughput, 512 x 512 tiles per second | at least 20 | at least 40 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-02` | Latency per tile, INT8 or FP16 | at most 50 ms | at most 25 ms | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-03` | Model file of the 1 M model | at most 4,000,000 bytes (4 MB) in FP32 | at most 1,500,000 bytes (1.5 MB) in INT8 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-04` | Memory during inference | at most 2 GB | at most 1 GB | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-05` | Board power during inference | at most 25 W | at most 15 W | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-06` | Same input, same output across runs | bit identical per runtime | n/a | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Standards alignment** | | | | | | | | |
-| `STD-01` | Worst stratum, cloud BOA | at least 0.75 | at least 0.85 | pending | l2_flex_1m s0, 4 bands | pending | in the evaluation reports, not yet transcribed ([RESULTS.md](RESULTS.md), section 20) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `STD-01` | Worst stratum, cloud BOA | at least 0.75 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-02` | Invalid or out-of-domain input that ends in a discarded frame | at most 0 | at most 0 | 0 | n/a | met | `tiefer_lab.onboard.failsafe_check` discards no frame (`tests/test_onboard.py`) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-03` | Requirements without a linked verification | at most 0 | at most 0 | 0 | n/a | met | `tests/test_requirements_doc.py` | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-04` | Rows of the standards matrix with status "not read" | reported | at most 0 | 8 | n/a | not met against the target | [STANDARDS.md](STANDARDS.md) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
@@ -166,45 +166,21 @@ Further evidence: `REQ-OBD-05`: the tests pass in dry-run mode; nothing is measu
 Notes:
 
 - `ACC-06`: the CloudSEN12 paper reports PA and UA for cloud and for cloud shadow as the share of test patches with a value below 0.1, between 0.1 and 0.9, and above 0.9 (Table 6), not per class and not as medians, so no published thin cloud PA or UA of a reference compares to this target (CloudSEN12, Scientific Data, 2022, https://doi.org/10.1038/s41597-022-01878-2, Table 6 and the text that defines it, accessed 7 October 2026).
-- `ACC-09`: the target is defined on three seeds of the 1 M model, and l2_flex_1m has one seed. l1_base has two seeds, with validation mean IoU 0.649 (s0, from a working tree with uncommitted changes at 81ab34b) and 0.691 (s1, at 5ba4585); their cloud BOA spread is pending ([RESULTS.md](RESULTS.md), section 18).
-- `CMP-02`, `CMP-03`, `OBD-03`: l2_flex_1m s0 has no export report yet; export jobs 2002028, 2002101 and 2002148 are not matched to a run. For l1_base s0, the FP16 change in validation mean IoU is 0.000. The model card gives a cloud BOA change of -0.009 for l1_base s0 in INT8, which the code at that commit could not compute ([RESULTS.md](RESULTS.md), section 14). INT8 loses 0.060 to 0.154 validation mean IoU on every exported L1 run, above the one point of [SPEC.md](SPEC.md), section 10, which is a separate limit. The l1_base s0 files are 993,280 bytes in FP32 and 455,680 bytes in INT8 (notes).
+- `ACC-09`: the target is defined on three seeds of the 1 M model.
 - `OBD-03`: `acceptance.py` divides the file size in bytes by 1,000,000, so MB here is a decimal unit.
-
----
-
-## 9. Acceptance targets against l2_spec_1m s0
-
-For information only: the targets of section 8 apply to `l2_flex_1m`. The values are those of [RESULTS.md](RESULTS.md), section 7, on the test split; the status is judged against the minimum, and against the target where the cell says so.
-
-| Target | Minimum | Target value | l2_spec_1m s0, test | Status | Source |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| Cloud against non-cloud, median BOA (`ACC-01`) | above 0.84 | at least 0.90 | 0.918 [0.911, 0.926] | met; target met | `s-test` (page) |
-| Cloud shadow, median BOA (`ACC-03`) | above 0.74 | at least 0.85 | 0.894 [0.884, 0.901] | met; target met | `s-test` (page) |
-| Mean IoU, four classes (`ACC-05`) | at least 0.70 | at least 0.75 | 0.720 [0.707, 0.732] | met; target not met | `s-test` (page) |
-| Cloud cover per patch, mean absolute error (`ACC-07`) | at most 0.08 | at most 0.05 | 0.045 [0.040, 0.050] | met; target met | `s-test` (page) |
-| Useful frames wrongly discarded (`FRM-01`) | at most 0.02 | at most 0.01 | 0.042 [0.026, 0.059] | not met | `s-test` (page) |
-
-The thin cloud PA and UA, the expected calibration error, the false send rate and the worst stratum of l2_spec_1m s0 are pending ([RESULTS.md](RESULTS.md), section 20). l2_spec_1m s0 has no export report yet, so the compression targets are not measured for it.
 
 ---
 
 ## Changelog
 
+- 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 1 links POLICY.md and BENCHMARK-AUTHORITY.md for how values may be quoted.
 - 7 October 2026: `STD-04` counts 8 rows `not read` in the revised standards matrix.
 - 7 October 2026: restructured to the requirements matrix of docs/STYLE.md: the acceptance targets have columns Minimum, Target, Measured value, Run, Status and Evidence, with the bounds of `src/tiefer_lab/acceptance.py`, and category rows for the target groups.
 - 7 October 2026: section 1 states once that the statuses were set by hand and that `make check` of 7 October 2026 is the evidence for every code requirement; the repeated evidence cells are removed and further evidence is listed below each table.
-- 7 October 2026: section 9 assesses the targets for l2_spec_1m s0, for information.
-- 7 October 2026: `REQ-EVL-03`: no reference algorithm has been scored yet. `REQ-EVL-05` is verified by the perturbation test only. `REQ-EXP-01`: FP16 is measured for l1_base s0 only.
-- 7 October 2026: `CMP-01` no longer says that the L1 runs passed the check at 0.999, which RESULTS.md does not show. `CMP-02` names the metric of the FP16 change (validation mean IoU).
 - 7 October 2026: `ACC-06`: the CloudSEN12 paper reports PA and UA as shares of patches, so no published comparison exists. `FRM-02` is 1 minus the false send rate. `OBD-03` gives the bounds in bytes. `CMP-07` links Appendix A of RESULTS.md.
 - 7 October 2026: correction: `CMP-03` is not measured, not "not met": its target is a cloud BOA loss of the 1 M model, which has no export report yet.
-- 7 October 2026: correction: `ACC-09` no longer says that every run is a single seed; l1_base has two.
 - 7 October 2026: correction: `CMP-04` no longer cites the test split for the product decision.
-- 7 October 2026: correction: `CMP-01`, `CMP-02`, `CMP-03` and `OBD-03`: the L2 runs have no export report yet, and three export jobs are not matched to a run.
-- 7 October 2026: section 1 says why the report files of 2 and 3 October 2026 are not yet committed.
-- 7 October 2026: correction: `REQ-EVL-01` is pending, not met, until the test log entries of 3 October 2026 are copied in.
-- 7 October 2026: correction: `REQ-TRN-07`, commit 81ab34b03bcc is in the history of this repository.
 - 7 October 2026: a status and its evidence for every requirement and acceptance target, from RESULTS.md.
 - 7 October 2026: `REQ-EVL-06` is verified by the report loader tests in `tests/test_reports.py`; the results generator and its tests are removed.
 - 2 October 2026: shellcheck, accepted vulnerability findings and the coverage floor.
