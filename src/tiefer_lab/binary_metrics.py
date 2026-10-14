@@ -33,14 +33,16 @@ in docs/RESULTS.md.
 
 The paper's own summary (`paper_summary`, evaluated only with
 `python -m tiefer_lab.evaluate --full-metrics`, a protocol option whose
-default leaves every report unchanged): per patch PA and UA, NaN where the
-patch has no reference positives (PA) or no predicted positives (UA); then
+default leaves every report unchanged): per patch PA and UA, both NaN on a
+patch without reference positives ("Since the PA and UA values are always
+zero in cloudless IPs, they were replaced by NaN"), and UA also NaN where
+nothing is predicted positive (0 / 0); then
 the share of patches with the value below 0.1 (low), from 0.1 to 0.9
 (middle) and above 0.9 (high). Source: CloudSEN12, Scientific Data 9, 782,
 2022, https://doi.org/10.1038/s41597-022-01878-2, Technical Validation, Eq. 1
 and the paragraph after it, and the notes of Table 6 ("percentage of IPs";
 the BOA is "the median BOA across all IPs"), read on 14 October 2026 in the
-PMC full text. The denominator of the shares is TODO(verify): the text says
+Europe PMC full text (PMC9789947). The denominator of the shares is TODO(verify): the text says
 "percentage of IPs" and "of total IPs" and sets PA and UA of cloudless
 patches to NaN, but does not say whether those NaN patches are in the
 denominator; this code divides by the patches where the value is defined,
@@ -168,11 +170,13 @@ def paper_summary(
     out: dict[str, Any] = {}
     for problem in problems:
         values = per_patch(cms, problem)
+        # The paper sets UA to NaN on patches without reference positives, like PA.
+        ua = np.where(np.isnan(values["pa"]), np.nan, values["ua"])
         out[problem] = {
             "positive_classes": list(ALL_PROBLEMS[problem]),
             "median_boa": None if math.isnan(median(values["boa"])) else median(values["boa"]),
             "pa_shares": shares(values["pa"]),
-            "ua_shares": shares(values["ua"]),
+            "ua_shares": shares(ua),
         }
     out["verified"] = dict(PAPER_VERIFIED)
     out["share_denominator"] = "patches where the value is defined (TODO(verify))"

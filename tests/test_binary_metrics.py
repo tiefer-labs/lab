@@ -147,6 +147,10 @@ def test_valid_problem_and_paper_summary_by_hand() -> None:
     # The clear patch has no cloud: PA undefined, so one defined patch.
     assert out["cloud"]["pa_shares"]["patches_defined"] == 1
     assert out["cloud"]["pa_shares"]["middle"] == 1.0  # 5 / 6
+    # A cloudless patch with a false cloud pixel: its UA (0) is NaN, as in the paper.
+    false_cloud = np.array([[9, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    out2 = bm.paper_summary(np.stack([CM, false_cloud]), ("cloud",))
+    assert out2["cloud"]["ua_shares"]["patches_defined"] == 1
     assert out["verified"] == {"median_boa": True, "share_summary": False}
     assert out["valid"]["median_boa"] == pytest.approx((6 / 8 + 5 / 6) / 2)
 
