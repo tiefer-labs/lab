@@ -131,3 +131,129 @@ def test_requirements_traceability(tmp_path: Path) -> None:
     ]
     assert result["duplicates"] == ["REQ-TST-01"]
     assert result["missing_acceptance_targets"] == []
+
+
+def _independent(
+    config: str,
+    source: str,
+    sensor: str,
+    cloud: float,
+    reference: tuple[str, float] | None = None,
+    strata: dict[str, float] | None = None,
+) -> Report:
+    report = _evaluation(config, cloud=cloud, shadow=0.8)
+    report.data.update(
+        {
+            "split": "all",
+            "final": False,
+            "data": {"source": source},
+            "independent": {
+                "sensor": sensor,
+                "four_band_equivalent": True,
+                "operational_mask": None if sensor.startswith("Sentinel") else "reference_qa",
+                "strata_fields": ["biome"],
+            },
+            "breakdown": {
+                "biome": {
+                    name: {"patches": 12, "cloud_boa": value}
+                    for name, value in (strata or {}).items()
+                }
+            },
+        }
+    )
+    if reference is not None:
+        name, value = reference
+        report.data["baselines"] = {name: {"binary": {"cloud": {"median_boa": value}}}}
+    report.path = Path(f"evaluation/{config}-{source}.json")
+    return report
+
+
+def test_independent_targets_by_hand() -> None:
+    reports = Reports(
+        evaluation=[
+            _evaluation("l2_flex_1m", cloud=0.90, shadow=0.8),
+            _independent(
+                "l2_flex_1m",
+                "s2_cloud_catalogue",
+                "Sentinel-2 MSI",
+                0.89,
+                ("reference_sen2cor", 0.80),
+            ),
+            _independent(
+                "l2_flex_1m", "kappaset", "Sentinel-2 MSI", 0.85, ("reference_sen2cor", 0.70)
+            ),
+            _independent(
+                "l2_flex_1m",
+                "landsat8_biome",
+                "Landsat 8 OLI",
+                0.86,
+                ("reference_qa", 0.80),
+                strata={"snow": 0.74, "forest": 0.9},
+            ),
+        ]
+    )
+    rows = _rows(reports)
+    assert rows["IND-01"]["measurement"].value == 3
+    assert rows["IND-01"]["minimum_status"] == "met"
+    # Three datasets from two sensors: the target needs four from three.
+    assert rows["IND-01"]["target_status"] == "not met"
+    ind2 = rows["IND-02"]
+    # Smallest margin over Sen2Cor: 0.89 - 0.80 = 0.09 and 0.85 - 0.70 = 0.15.
+    assert abs(ind2["measurement"].value - 0.09) < 1e-9 and ind2["minimum_status"] == "met"
+    # Within 0.03 of the test value 0.90: 0.89 yes, 0.85 no.
+    assert ind2["target_status"] == "not met"
+    ind3 = rows["IND-03"]
+    assert abs(ind3["measurement"].value - 0.06) < 1e-9
+    # 0.86 is within 0.05 of 0.90.
+    assert ind3["target_status"] == "met"
+    assert rows["IND-04"]["measurement"].value == 0.74
+    assert rows["IND-04"]["minimum_status"] == "not met"
+    # CMP-06: 0.90 - 0.86 = 0.04, below the minimum 0.08 and the target 0.05.
+    assert abs(rows["CMP-06"]["measurement"].value - 0.04) < 1e-9
+    assert rows["CMP-06"]["target_status"] == "met"
+
+
+def test_per_model_targets_read_only_that_config() -> None:
+    reports = Reports(
+        evaluation=[
+            _evaluation("l2_flex_1m", cloud=0.86, shadow=0.8),
+            _evaluation("l1_full", cloud=0.92, shadow=0.8),
+        ]
+    )
+    rows = {
+        r["target"].id: r
+        for r in acceptance.evaluate(reports, acceptance.build_targets(("l1_full",), strict=True))
+    }
+    assert rows["ACC-01"]["measurement"].value == 0.92
+    assert "largest" in rows["ACC-02"]["measurement"].note
+    assert "l2_spec_1m" in rows["CMP-04"]["measurement"].note
+    # The default table still reads the 1 M band-flexible model only.
+    assert _rows(reports)["ACC-01"]["measurement"].value == 0.86
+
+
+def test_export_match_is_strict_only_in_per_model_tables() -> None:
+    assert acceptance._export_matches("l2_flex_1m_rescale-seed0-x", ("l2_flex_1m",), False)
+    assert not acceptance._export_matches("l2_flex_1m_rescale-seed0-x", ("l2_flex_1m",), True)
+    assert acceptance._export_matches("l2_flex_1m-seed0-x", ("l2_flex_1m",), True)
+
+
+def test_jetson_memory_and_determinism() -> None:
+    jetson = Report(
+        Path("jetson/int8.json"),
+        {
+            "memory": {"peak_gb": 0.8},
+            "determinism": {"identical": True, "runs": 20},
+            "throughput": {"tiles_per_second": 30.0},
+        },
+    )
+    rows = _rows(Reports(jetson=[jetson]))
+    assert rows["OBD-04"]["target_status"] == "met"
+    assert rows["OBD-06"]["minimum_status"] == "reported"
+    assert rows["OBD-06"]["target_status"] == "met"
+
+
+def test_per_model_page_follows_the_markdown_standard() -> None:
+    rows = acceptance.evaluate(Reports(), acceptance.build_targets(("l1_full",), strict=True))
+    text = acceptance.render(rows, dt.date(2026, 10, 14), "l1_full")
+    assert not check_header(Path("reports/acceptance_l1_full.md"), text.split("\n"))
+    assert "Acceptance of l1_full" in text
