@@ -447,3 +447,35 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def add_reference_masks(
+    directory: Path, split: str, masks: dict[str, NDArray[np.uint8]], kinds: dict[str, str]
+) -> None:
+    """Add reference masks to a complete split, next to the ones it already holds.
+
+    Used for masks made outside `build_cache --references`: the 2022 release
+    masks and the reference models run from `references/`. Every array must
+    have the split's patch count and label size; a name that the split already
+    holds is an error, so nothing is replaced.
+    """
+    index = read_index(directory)
+    entry = index.get("splits", {}).get(split)
+    if not entry or not entry.get("complete"):
+        raise CacheError(f"split {split!r} is not complete in {paths.portable(directory)}")
+    labels = np.load(labels_path(directory, split), mmap_mode="r", allow_pickle=False)
+    present = list(entry.get("reference_masks", []))
+    for name, array in masks.items():
+        if name in present:
+            raise CacheError(f"split {split!r} already holds the reference mask {name!r}")
+        if array.shape != labels.shape or array.dtype != np.uint8:
+            raise CacheError(
+                f"{name}: expected uint8 {labels.shape}, got {array.dtype} {array.shape}"
+            )
+        if kinds.get(name) not in ("four_class", "cloud", "probability"):
+            raise CacheError(f"{name}: kind must be four_class, cloud or probability")
+    for name, array in masks.items():
+        np.save(reference_path(directory, split, name), array, allow_pickle=False)
+    entry["reference_masks"] = [*present, *masks]
+    entry["reference_kinds"] = {**entry.get("reference_kinds", {}), **kinds}
+    write_index(directory, index)
