@@ -199,12 +199,22 @@ def test_collect_packs_relative_paths_only(roihu_env: dict[str, str], tmp_path: 
     (run / "last.pt").write_text("not collected")
     (scratch / "reports" / "evaluation").mkdir(parents=True)
     (scratch / "reports" / "evaluation" / "r1_val.json").write_text("{}")
+    # A band-flexible export: one ONNX folder and one report per band set.
+    (run / "export" / "B02+B03+B04+B08").mkdir()
+    (run / "export" / "B02+B03+B04+B08" / "cloud_filter_int8.onnx").write_text("placeholder")
+    (scratch / "reports" / "export").mkdir(parents=True)
+    (scratch / "reports" / "export" / "r1_B02+B03+B04+B08.json").write_text("{}")
+    (scratch / "reports" / "calibration").mkdir(parents=True)
+    (scratch / "reports" / "calibration" / "r1_B02+B03+B04+B08.json").write_text("{}")
     result = _run("collect.sh", ["r1"], roihu_env)
     assert result.returncode == 0, result.stderr
     with tarfile.open(scratch / "collect" / "tiefer-r1.tar.gz") as archive:
         names = archive.getnames()
     assert "runs/r1/best.pt" in names and "runs/r1/export/m.onnx" in names
     assert "reports/evaluation/r1_val.json" in names
+    assert "reports/export/r1_B02+B03+B04+B08.json" in names
+    assert "reports/calibration/r1_B02+B03+B04+B08.json" in names
+    assert "runs/r1/export/B02+B03+B04+B08/cloud_filter_int8.onnx" in names
     assert "runs/r1/last.pt" not in names
     assert all(not n.startswith("/") and ".." not in n for n in names)
     assert _run("collect.sh", ["missing"], roihu_env).returncode == 2
