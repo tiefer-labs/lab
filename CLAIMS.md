@@ -60,6 +60,10 @@ A capability may be stated in public, on the website, the organisation profile, 
 | `C-25` | secret scanning, dependency audit, code scanning, pinned actions and a software bill of materials | lab:SECURITY.md, section 8 | `IMPLEMENTED` | `.github/workflows/ci.yml`, `audit.yml`, `codeql.yml` | n/a | 7 October 2026 |
 | `C-26` | security problems can be reported through GitHub private vulnerability reporting | lab:SECURITY.md:28; .github:SECURITY.md:9–13 | `NOT STARTED` | the GitHub API returned `"enabled": false` for this repository on 7 October 2026 | the e-mail route of [SECURITY.md](SECURITY.md) works; the setting is the maintainer's to enable | 7 October 2026 |
 | `C-27` | the later stages of the roadmap: a ground pilot, a first flight, national satellites, more operators and radar data on board | web:internal/content/en.go:144–147 | `PLANNED` | none | stated as a roadmap, not as done | 7 October 2026 |
+| `C-28` | evaluation on independent datasets labelled by others, on Sentinel-2 and Landsat 8 | lab:docs/INDEPENDENT.md | `IMPLEMENTED` | `src/tiefer_lab/data/independent.py`, `evaluate --data`; `tests/test_independent.py` | every reader stops until its facts are verified; no dataset is evaluated yet | 14 October 2026 |
+| `C-29` | every model and reference algorithm scored with the same metrics on the same pixels | lab:docs/SPEC.md, section 9 | `IMPLEMENTED` | `src/tiefer_lab/compare.py`, `src/tiefer_lab/acceptance.py --config`; `tests/test_compare.py`, `tests/test_acceptance.py` | no report file yet; reference masks wait for verified facts and licence decisions | 14 October 2026 |
+| `C-30` | a re-implementation of CloudScout trained by Tiefer Lab, measured on the same frames | lab:docs/LANDSCAPE.md, section 2 | `IMPLEMENTED` | `src/tiefer_lab/models/cloudscout.py`, `configs/cloudscout*.toml`; `tests/test_training_options.py` | not the flown model; not trained yet | 14 October 2026 |
+| `C-31` | memory during inference and output determinism measured on a Jetson Orin | lab:jetson/README.md | `SIMULATED` | `jetson/bench.py`, `jetson/power.py`; `tests/test_jetson_dry_run.py` | dry run only; field layouts are `TODO(verify)` on the board | 14 October 2026 |
 
 No claim is `MEASURED` on 8 October 2026: no result is in [docs/RESULTS.md](docs/RESULTS.md) until the v2 campaign.
 
@@ -93,5 +97,6 @@ Public statements whose status is `NOT STARTED`, or that contradict [docs/RESULT
 
 ## Changelog
 
+- 14 October 2026: `C-28` to `C-31`, the v3 capabilities: independent datasets, one comparison of every model, the CloudScout re-implementation, and Jetson memory and determinism; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: first version: 27 claims from this repository, the organisation profile and policies, and the website, with status and evidence; the statements that need correction at their source.

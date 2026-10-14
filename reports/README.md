@@ -31,7 +31,12 @@ What each report file is and which script writes it. [docs/RESULTS.md](../docs/R
 | `export/<run-id>.json` | `python -m tiefer_lab.export` | SHA-256 of the ONNX files, parameters, operations, operators, ONNX Runtime check, INT8 change |
 | `jetson/<label>_<UTC time>.json` | `jetson/bench.py` on a Jetson Orin | latency, throughput, power, energy per tile, temperatures |
 | `compute/<job-id>.json` | `hpc/roihu/usage.sh` | `sacct` record of a Roihu job |
-| `test_log.md` | `python -m tiefer_lab.evaluate` and `python -m tiefer_lab.export` with `--final` | one entry per use of the test split: date, run ID, git commit, reason |
+| `test_log.md` | `python -m tiefer_lab.evaluate` and `python -m tiefer_lab.export` with `--final`, and `evaluate --data` | one entry per use of the test split or of an independent dataset: date, run ID, git commit, reason |
+| `evaluation/<run-id>_independent_<dataset>.json` | `python -m tiefer_lab.evaluate --data <cache>` | the evaluation of a run on an independent dataset, with its `independent` block |
+| `calibration/<run-id>_<band set>.json` | `python -m tiefer_lab.calibrate` | the cloud logit bias and the temperature chosen on validation |
+| `diagnosis/<name>.json` | `python -m tiefer_lab.diagnose` | seed, false discard and INT8 diagnostics, validation and training only |
+| `acceptance.md`, `acceptance_<config>.md` | `python -m tiefer_lab.acceptance [--config <config>]` | acceptance targets against the report files |
+| `comparison.md` | `python -m tiefer_lab.compare` | every model and reference algorithm with the same metrics and a cost block |
 
 No report file is in this folder yet. Report files are committed when the v2 campaign collects them ([hpc/roihu/plan.md](../hpc/roihu/plan.md)), unchanged, together with the entries of `test_log.md`; trained models (`best.pt`, `.onnx`) are never committed.
 
@@ -48,6 +53,7 @@ No report file is in this folder yet. Report files are committed when the v2 cam
 
 ## Changelog
 
+- 14 October 2026: independent evaluation, calibration, diagnosis, per-config acceptance and comparison files; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the purpose links CONTRIBUTING.md, POLICY.md and INSTALL.md.
 - 7 October 2026: docs/RESULTS.md is written by hand from these files; the results generator and `make results` are removed.

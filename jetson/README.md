@@ -56,6 +56,9 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 - Power: the input rail from `tegrastats`, sampled every 100 ms during the run and for 10 s at idle before it.
 - Energy per tile in millijoules = mean input power (W) x mean latency (s) x 1000, for the total board power and for the power above idle.
 - Board temperatures at the start and the end of the run.
+- Memory during inference (`OBD-04`): the peak RAM of `tegrastats` during the run above its idle level; the Jetson shares one memory between CPU and GPU. The field and its unit are `TODO(verify)` on the board.
+- Determinism (`OBD-06`): the engine runs `--determinism-runs` times (default 10) on one fixed input (`--input-shape`, `--input-name`), and the SHA-256 of every output must be the same. The layout of the trtexec output file is `TODO(verify)` on the board.
+- `--run-id <run-id>` ties a report to the run its engine comes from, so `python -m tiefer_lab.compare` can show it.
 - Large frames, with `--frame-pixels N`: frames per second of the tiled path (`tiefer_lab.onboard.predict_frame`) for a square frame of N pixels at the training resolution, = 1000 / (mean tile latency in ms x tiles per frame), with tiles of 512 pixels overlapping by `--overlap` pixels (default 64). Resampling and stitching are not included.
 
 ---
@@ -84,5 +87,6 @@ python3 jetson/bench.py --engine engines/cloud_filter_fp16.engine --label fp16 -
 
 ## Changelog
 
+- 14 October 2026: memory during inference, determinism of the outputs and `--run-id`; drafted with an AI-assisted system.
 - 7 October 2026: the purpose links INSTALL.md, POLICY.md and EXTENDING.md.
 - 7 October 2026: step 4 copies the values into docs/RESULTS.md by hand; the results generator is removed.
