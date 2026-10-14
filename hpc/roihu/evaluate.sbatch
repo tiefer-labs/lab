@@ -43,6 +43,8 @@ tiefer_stage_cache "${cache_name}"
 
 # Evaluation options of the v3 protocol, each off unless set (docs/SPEC.md, section 9).
 EVAL_OPTIONS=()
+[[ -n "${CLOUD_BIAS:-}" ]] && EVAL_OPTIONS+=(--cloud-bias "${CLOUD_BIAS}")
+[[ -n "${FRACTION:-}" ]] && EVAL_OPTIONS+=(--fraction "${FRACTION}")
 
 # DATA=<cache>: an independent dataset cache (build_cache --source), a clean check
 # that needs REASON and is logged; SUBSTITUTE=1 reads B08 from B8A on Landsat 8.

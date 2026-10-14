@@ -32,8 +32,14 @@ tiefer_require_venv
 cache_name="$(python3 -c 'import sys; from tiefer_lab.config import load_config; from tiefer_lab.train import resolve_run_dir; print(load_config(resolve_run_dir(sys.argv[1]) / "config.toml").data.cache_name)' "${run_id}")"
 tiefer_stage_cache "${cache_name}"
 
+# Export options, each off unless set: CLOUD_BIAS=auto (or a value) folds the cloud
+# bias chosen on validation into the last convolution; EXPORT_CONFIG=configs/<name>.toml
+# takes the [export] settings of a committed config (INT8 calibration variants).
+options=()
+[[ -n "${CLOUD_BIAS:-}" ]] && options+=(--cloud-bias "${CLOUD_BIAS}")
+[[ -n "${EXPORT_CONFIG:-}" ]] && options+=(--settings-from "${EXPORT_CONFIG}")
 if [[ "${FINAL:-0}" == "1" ]]; then
-  python3 -m tiefer_lab.export --run "${run_id}" --band-set all --final --reason "${REASON:?FINAL=1 needs REASON}"
+  python3 -m tiefer_lab.export --run "${run_id}" --band-set all "${options[@]}" --final --reason "${REASON:?FINAL=1 needs REASON}"
 else
-  python3 -m tiefer_lab.export --run "${run_id}" --band-set all
+  python3 -m tiefer_lab.export --run "${run_id}" --band-set all "${options[@]}"
 fi
