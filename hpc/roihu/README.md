@@ -231,6 +231,8 @@ The test split is only for the final evaluation. It needs `FINAL=1` and a reason
 FINAL=1 REASON="<why>" bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
 ```
 
+The v3 options of the jobs, each off unless set: `FULL_METRICS=1` adds the full metric set; `DATA=<cache>` with `REASON` evaluates an independent dataset (logged), and `SUBSTITUTE=1` reads B08 from B8A on Landsat 8; `CLOUD_BIAS=auto` and `FRACTION=soft` use the values of `calibrate.sbatch`; `EXPORT_CONFIG=configs/<name>.toml` takes the export settings of a committed config. The order of the v3 jobs and their commands are in [plan.md](plan.md), section 3.
+
 Record the compute used by each job, then pack the results:
 
 ```bash
@@ -266,6 +268,10 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `evaluate.sbatch` | validation with baselines on every band set of the run; test only with `FINAL=1` and `REASON`; `ROBUSTNESS=1` adds the fixed sensor perturbations in `PERTURBATIONS` |
 | `export.sbatch` | ONNX export per band set, check against PyTorch, INT8 quantisation |
 | `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
+| `calibrate.sbatch` | `gputest`, 1 GPU: the cloud logit bias and the temperature of a run, on validation only |
+| `independent.sbatch` | CPU job: downloads an independent dataset (Zenodo, capped rate, resumable) and caches it; Landsat 8 data is downloaded by hand into `$TIEFER_DATA_DIR/downloads/<dataset>/` |
+| `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, validation only |
+| `diagnose_gpu.sbatch` | `gpumedium`, 1 GPU, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
 | `plan.md` | the v2 run plan: budget, stop line and steps |
 | `usage.sh` | `sacct` record of a job, written to `reports/compute/<job-id>.json` |
@@ -352,6 +358,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 14 October 2026: the files table lists the calibration, independent dataset and diagnosis jobs; step 6 names the v3 options of the jobs; drafted with an AI-assisted system.
 - 8 October 2026: step 3, a read that fails part way pauses every reader and is read again; run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120`; troubleshooting row for `Read failed` after HTTP 429.
 - 8 October 2026: everything is done from `roihu-cpu.csc.fi`: GPU jobs follow CSC's way of submitting across architectures and build their environment on the GPU node; the GPU setup is the job `setup_gpu.sbatch`; step 4 and the troubleshooting table say how to check a job's environment in its log.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).

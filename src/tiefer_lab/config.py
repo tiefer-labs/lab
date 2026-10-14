@@ -53,6 +53,9 @@ class DataConfig:
     offset_jitter: float = 0.0
     noise_std: float = 0.0
     blur_sigma: float = 0.0
+    # Also train on the extra split (scribble and nolabel patches away from val and
+    # test, data/source.py); its build waits for verified facts. Off by default.
+    include_extra: bool = False
 
     def __post_init__(self) -> None:
         _check(len(self.bands) >= 1, "bands: at least one")
@@ -80,7 +83,8 @@ class DataConfig:
 @dataclass(frozen=True)
 class ModelConfig:
     widths: tuple[int, ...] = (16, 32, 64, 128, 256)
-    architecture: Literal["separable_unet", "convnext_unet"] = "separable_unet"
+    # "cloudscout": the re-implemented frame classifier of models/cloudscout.py.
+    architecture: Literal["separable_unet", "convnext_unet", "cloudscout"] = "separable_unet"
     # "fixed": the network takes data.bands. "flexible": all 13 bands plus
     # availability flags, trained on the band sets of train.band_sets.
     input: Literal["fixed", "flexible"] = "fixed"
@@ -117,6 +121,36 @@ class TrainConfig:
     class_weighting: Literal["median_frequency", "none"] = "median_frequency"
     # Focal term (1 - p)^gamma on the cross-entropy; 0 is plain cross-entropy.
     focal_gamma: float = 0.0
+    # "segmentation": a class per pixel. "frame": one cloudy or not decision per
+    # crop, cloudy when its labelled cloud fraction is at least
+    # frame_label_threshold (the cloudscout re-implementation).
+    task: Literal["segmentation", "frame"] = "segmentation"
+    frame_label_threshold: float = 0.7
+    # Weight of a false positive in the frame loss (Equation (2) of the CloudScout paper: 2).
+    false_positive_weight: float = 2.0
+    # "decision": train only the decision layers of a frame classifier, the second
+    # step of the CloudScout training; "all": every layer.
+    train_only: Literal["all", "decision"] = "all"
+    # Start from the best.pt of another run of this repository, given by its run ID
+    # or by a prefix that names exactly one run, for example "cloudscout_th30-seed0".
+    # Random initialisation stays the rule; this loads only Tiefer's own weights.
+    init_checkpoint: str | None = None
+    # Clip the global norm of the gradient to this value; 0 is off.
+    grad_clip_norm: float = 0.0
+    # Skip an optimizer step whose loss or gradient is not finite, and count it.
+    skip_nonfinite: bool = False
+    # Band set whose validation mean IoU chooses best.pt for a band-flexible model;
+    # empty: the mean over every band set, as before.
+    select_band_set: tuple[str, ...] = ()
+    # Weight of the frame term: Huber loss between the soft cloud fraction of a crop,
+    # mean(p_thick + p_thin) over labelled pixels, and its labelled cloud fraction.
+    frame_loss_weight: float = 0.0
+    # Weight of the Lovasz-softmax term on the four classes; 0 is off.
+    lovasz_weight: float = 0.0
+    # Distillation from another run of this repository (run ID or unique prefix) as a
+    # soft target, with this weight; the teacher reads all bands of its own config.
+    teacher_run: str | None = None
+    teacher_weight: float = 0.0
 
     def __post_init__(self) -> None:
         _check(self.epochs >= 1, "epochs must be >= 1")
@@ -133,6 +167,22 @@ class TrainConfig:
         _check(0.0 <= self.min_improvement < 0.1, "min_improvement in [0, 0.1)")
         _check(self.max_steps_per_epoch is None or self.max_steps_per_epoch >= 1, "max_steps")
         _check(self.log_every >= 1, "log_every must be >= 1")
+        _check(0.0 < self.frame_label_threshold <= 1.0, "frame_label_threshold in (0, 1]")
+        _check(self.false_positive_weight > 0, "false_positive_weight must be > 0")
+        _check(self.grad_clip_norm >= 0, "grad_clip_norm must be >= 0")
+        _check(
+            self.frame_loss_weight >= 0 and self.lovasz_weight >= 0 and self.teacher_weight >= 0,
+            "frame_loss_weight, lovasz_weight and teacher_weight must be >= 0",
+        )
+        _check(
+            (self.teacher_run is None) == (self.teacher_weight == 0),
+            "teacher_run and teacher_weight go together",
+        )
+        _check(all(b in L1C_BANDS for b in self.select_band_set), "select_band_set: L1C bands")
+        _check(
+            self.train_only == "all" or self.task == "frame",
+            "train_only = decision needs task = frame",
+        )
 
 
 @dataclass(frozen=True)
@@ -156,6 +206,15 @@ class ExportConfig:
     max_logit_difference: float = 1e-2
     min_argmax_agreement: float = 0.999
     max_verify_patches: int | None = None
+    # INT8 calibration: "minmax" (as before), "percentile" or "entropy" (ONNX Runtime).
+    calibrate_method: Literal["minmax", "percentile", "entropy"] = "minmax"
+    # Draw the calibration patches evenly from the cloud cover bins of the training split.
+    calibration_stratified: bool = False
+    # Keep the first and the last convolution in floating point in the INT8 file.
+    keep_fp_first_last: bool = False
+    # Clip the normalised input to the [p, 100 - p] percentiles of the training split
+    # before the network (an ONNX Clip node); 0 is off.
+    input_clip_percentile: float = 0.0
 
     def __post_init__(self) -> None:
         _check(13 <= self.opset <= 21, "opset in [13, 21]")
@@ -164,6 +223,7 @@ class ExportConfig:
         _check(self.max_logit_difference > 0, "max_logit_difference must be > 0")
         _check(0 < self.min_argmax_agreement <= 1, "min_argmax_agreement in (0, 1]")
         _check(self.max_verify_patches is None or self.max_verify_patches >= 1, "verify patches")
+        _check(0.0 <= self.input_clip_percentile < 50.0, "input_clip_percentile in [0, 50)")
 
 
 @dataclass(frozen=True)
@@ -180,9 +240,23 @@ class Config:
         if self.model.input == "flexible":
             _check(self.data.bands == L1C_BANDS, "a flexible model loads all 13 bands in order")
             _check(len(self.train.band_sets) >= 1, "a flexible model needs train.band_sets")
+            _check(
+                not self.train.select_band_set
+                or self.train.select_band_set in self.train.band_sets,
+                "select_band_set must be one of train.band_sets",
+            )
         else:
+            _check(not self.train.select_band_set, "select_band_set needs model.input = flexible")
             _check(not self.train.band_sets, "band_sets need model.input = flexible")
             _check(self.train.distill_weight == 0, "distill_weight needs model.input = flexible")
+        _check(
+            (self.model.architecture == "cloudscout") == (self.train.task == "frame"),
+            "the cloudscout architecture and task = frame go together",
+        )
+        _check(
+            self.model.architecture != "cloudscout" or self.model.input == "fixed",
+            "the cloudscout architecture takes fixed bands",
+        )
 
 
 SECTIONS: dict[str, type[Any]] = {

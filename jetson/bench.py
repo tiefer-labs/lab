@@ -26,6 +26,10 @@ Measurements:
   the total board power and for the power above the idle level measured
   before the run
 - temperature: tegrastats temperatures at start and end
+- memory (OBD-04): the peak RAM of tegrastats during the run above its idle
+  level (a Jetson shares one memory between CPU and GPU)
+- determinism (OBD-06): the engine runs `--determinism-runs` times on the same
+  fixed input; the SHA-256 of every output must be identical
 
 Radiation, vacuum and thermal effects of the space environment are out of
 scope; the Jetson Orin is flight-like reference hardware, not flight hardware.
@@ -35,9 +39,12 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import math
+import random
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -148,6 +155,61 @@ def read_latencies(times_file: Path) -> list[float]:
     raise ValueError(f"no latency field {LATENCY_FIELDS} in trtexec times; found {keys}")
 
 
+def write_input(path: Path, shape: tuple[int, ...], seed: int = 0) -> Path:
+    """A fixed float32 input (little-endian), the same bytes for every run and board."""
+    rng = random.Random(seed)  # noqa: S311 (a fixed test input, not a secret)
+    count = math.prod(shape)
+    path.write_bytes(struct.pack(f"<{count}f", *(rng.uniform(-2.0, 2.0) for _ in range(count))))
+    return path
+
+
+def output_hash(output_file: Path) -> str:
+    """SHA-256 of the output values that trtexec --exportOutput wrote.
+
+    TODO(verify) on the board: the layout of the exported JSON (a list of
+    entries with "name" and "values"); the hash covers the names and values.
+    """
+    entries = json.loads(output_file.read_text(encoding="utf-8"))
+    digest = hashlib.sha256()
+    for entry in entries:
+        digest.update(str(entry.get("name")).encode())
+        digest.update(json.dumps(entry.get("values"), separators=(",", ":")).encode())
+    return digest.hexdigest()
+
+
+def determinism_summary(hashes: list[str]) -> dict[str, Any]:
+    return {
+        "runs": len(hashes),
+        "distinct_outputs": len(set(hashes)),
+        "identical": len(hashes) > 1 and len(set(hashes)) == 1,
+        "hashes": sorted(set(hashes)),
+    }
+
+
+def determinism(args: argparse.Namespace, trtexec: str, tmp: Path) -> dict[str, Any]:
+    """Run the engine on the same input several times and compare output hashes."""
+    shape = tuple(int(v) for v in args.input_shape.split("x"))
+    data = write_input(tmp / "input.bin", shape)
+    hashes = []
+    for i in range(args.determinism_runs):
+        out = tmp / f"output_{i}.json"
+        subprocess.run(
+            [
+                trtexec,
+                f"--loadEngine={args.engine}",
+                f"--loadInputs={args.input_name}:{data}",
+                "--iterations=1",
+                "--warmUp=0",
+                "--duration=0",
+                f"--exportOutput={out}",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        hashes.append(output_hash(out))
+    return {"input_shape": list(shape), **determinism_summary(hashes)}
+
+
 def git_commit() -> str:
     """Commit of the repository checkout on the board, recorded in the report."""
     root = Path(__file__).resolve().parent.parent
@@ -179,6 +241,8 @@ def plan(args: argparse.Namespace, trtexec: str) -> list[str]:
         f"tegrastats --interval {args.interval_ms} in the background during the run",
         f"{trtexec} --loadEngine={args.engine} --iterations={args.runs} "
         f"--warmUp={args.warmup_ms} --duration=0 --exportTimes={times}",
+        f"{trtexec} --loadEngine={args.engine} --loadInputs={args.input_name}:<fixed input> "
+        f"--exportOutput=<output i>.json, {args.determinism_runs} times (same output hash)",
         f"write {args.output_dir}/<label>_<UTC time>.json",
     ]
 
@@ -193,6 +257,10 @@ def validate(args: argparse.Namespace) -> list[str]:
         problems.append("--label may contain letters, digits, - and _ only")
     if args.tile_pixels <= 0 or args.gsd_m <= 0:
         problems.append("--tile-pixels and --gsd-m must be positive")
+    if args.determinism_runs == 1 or args.determinism_runs < 0:
+        problems.append("--determinism-runs must be 0 or at least 2")
+    if not all(v.isdigit() and int(v) > 0 for v in args.input_shape.split("x")):
+        problems.append("--input-shape is written like 1x4x512x512")
     return problems
 
 
@@ -216,6 +284,7 @@ def run(args: argparse.Namespace, trtexec: str) -> dict[str, Any]:
                 check=True,
             )
         latencies = read_latencies(times)
+        checks = determinism(args, trtexec, Path(tmp)) if args.determinism_runs else None
     samples = sampler.samples
     rail = power.input_rail(samples, args.rail)
     run_power = power.summarise(samples, rail)
@@ -225,6 +294,7 @@ def run(args: argparse.Namespace, trtexec: str) -> dict[str, Any]:
     return {
         "kind": "jetson",
         "label": args.label,
+        "run_id": args.run_id,
         "engine": args.engine.name,
         "git_commit": git_commit(),
         "time": dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat(),
@@ -238,6 +308,8 @@ def run(args: argparse.Namespace, trtexec: str) -> dict[str, Any]:
         if args.frame_pixels
         else None,
         "power": {"run": run_power, "idle": idle_power, "interval_ms": args.interval_ms},
+        "memory": power.memory_summary(samples, idle),
+        "determinism": checks,
         "energy_per_tile_mj": {
             "total": energy_per_tile_mj(float(run_power["mean_mw"]), float(lat["mean_ms"])),
             "above_idle": energy_per_tile_mj(above_idle, float(lat["mean_ms"])),
@@ -268,6 +340,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="side of a square frame at the training resolution, for the tiled large-frame path",
     )
     parser.add_argument("--overlap", type=int, default=64, help="tile overlap of the frame path")
+    parser.add_argument(
+        "--determinism-runs",
+        type=int,
+        default=10,
+        help="runs on one fixed input whose output hashes must agree (0 to skip)",
+    )
+    parser.add_argument("--input-shape", default="1x4x512x512", help="engine input, NxCxHxW")
+    parser.add_argument("--input-name", default="reflectance", help="engine input name")
+    parser.add_argument("--run-id", default=None, help="run of this repository the engine is from")
     parser.add_argument("--output-dir", type=Path, default=Path("reports/jetson"))
     parser.add_argument("--trtexec", help="path to trtexec")
     parser.add_argument("--dry-run", action="store_true")

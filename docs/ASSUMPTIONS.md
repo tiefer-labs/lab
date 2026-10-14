@@ -21,6 +21,8 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-1.5` | 10 m ground sampling stands in for very high resolution | CloudSEN12+ is Sentinel-2 at 10 m to 60 m; cloud and shadow texture look different at finer sampling | [DATA.md](DATA.md), section 2.1 | labelled very high resolution frames are available | open | 7 October 2026 |
 | `A-1.6` | The panchromatic band is not used | it is not in the training data | Sentinel-2 has no panchromatic band ([DATA.md](DATA.md), section 2.1) | the target sensor and its onboard processing chain are known | open | 7 October 2026 |
 | `A-1.7` | Nothing is assumed about the bands of target satellites whose specifications are not public | an assumption without a source cannot be checked | none, design choice | a target sensor's specification is available | open | 7 October 2026 |
+| `A-1.8` | Landsat 8 OLI bands are named after the Sentinel-2 band of the closest centre wavelength and width: band 1 B01, 2 B02, 3 B03, 4 B04, 5 (865 nm, narrow) B8A, 6 B11, 7 B12, 9 (cirrus) B10 | the band-flexible model reads Sentinel-2 band names; the decision of the open fact of [DATASETS.md](DATASETS.md), section 3 | none, design choice; the numeric tolerance stays open; `LANDSAT8_TO_S2` in `src/tiefer_lab/data/independent.py` | the first Landsat 8 evaluation is read, or the Landsat 8 band specification is cited here | open | 14 October 2026 |
+| `A-1.9` | A four-band model run on Landsat 8 reads band 5 in place of B08; such a result is a substitution, reported apart from the band-flexible model run with B8A | the four-band models were trained on B08 (842 nm, wide); Landsat 8 has no band at that position | none, design choice; `evaluate --substitute` records it in the report | the substitution and the B8A run are compared | open | 14 October 2026 |
 
 ---
 
@@ -35,6 +37,7 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-2.5` | A larger frame is resampled to 10 m and processed in 512-pixel tiles overlapping by 64 pixels; the logits are averaged where tiles overlap | a tile edge has less context than its centre | `src/tiefer_lab/onboard.py` (`overlap = 64`); `REQ-OBD-04` | the sensor's frame size and the onboard tiling are known | open | 7 October 2026 |
 | `A-2.6` | Operational design domain: top-of-atmosphere reflectance in [0, 2], ground sampling 0.5 to 20 m, at most 1 percent invalid pixels, at least 32 pixels per side; a frame outside it is sent and flagged | outside the domain the filter is not validated, and a doubtful frame costs downlink, never a lost frame | `tiefer_lab.onboard.Domain` and [SPEC.md](SPEC.md), section 9; validated on Sentinel-2 Level-1C at 10 m only | data of another sensor is evaluated | open | 7 October 2026 |
 | `A-2.7` | Compression happens after the filter | the training data has no compression artefacts | none, design choice | the onboard compression and its position in the pipeline are known | open | 7 October 2026 |
+| `A-2.8` | On an independent dataset a patch is a non-overlapping 509 x 509 tile cut from the top left after resampling to 10 m, and a tile with more than 0.1 unlabelled pixels is dropped; the native resolution is evaluated as a perturbation | 509 x 509 at 10 m is the CloudSEN12 patch, so per-patch medians stay comparable; the onboard filter resamples to 10 m (`tiefer_lab.onboard.predict_frame`) | none, design choice; a protocol decision proposed in a method-change issue; [INDEPENDENT.md](INDEPENDENT.md), section 4 | the maintainer agrees or changes it in that issue | open | 14 October 2026 |
 
 ---
 
@@ -46,6 +49,8 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-3.2` | Cloud shadow does not count towards the cloud fraction; it is reported separately | shadowed ground can still be useful for some products | none, design choice | operators state whether shadow makes a frame useless | open | 7 October 2026 |
 | `A-3.3` | Thresholds of 30, 50 and 70 percent are evaluated; the configurable default is 50 percent | they span strict to lenient use; none is preferred before operators say so | none, design choice; `decision_threshold = 0.5` in `src/tiefer_lab/config.py` | an operator chooses a threshold | open | 7 October 2026 |
 | `A-3.4` | A false discard (a useful frame kept on board) is the most costly error | a kept frame is lost to the customer; a sent cloudy frame only costs downlink | none, design choice | operators state the cost of each error | open | 7 October 2026 |
+| `A-3.5` | A cloud logit bias chosen on validation (the value closest to 0 with a false discard rate of at most 0.01 and 1 minus the false send rate of at least 0.90) may be folded into the model; the decision threshold stays at 50 percent | it moves the model's errors towards the cheaper one without a new operator; it is chosen for a frame target, so its cost in cloud BOA and mean IoU is reported | none, design choice; a protocol option, off by default (`python -m tiefer_lab.calibrate`, `evaluate --cloud-bias`) | the maintainer decides in its method-change issue | open | 14 October 2026 |
+| `A-3.6` | The predicted cloud fraction may be the mean cloud probability at a temperature fitted on validation instead of the share of argmax cloud pixels | a soft fraction does not jump at the class boundary of thin cloud; the temperature does not change the argmax | none, design choice; a protocol option, off by default (`evaluate --fraction soft`); not yet in the onboard code | the maintainer decides in its method-change issue | open | 14 October 2026 |
 
 ---
 
@@ -85,6 +90,9 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-6.8` | One seed is enough for a provisional decision | the GPU budget limits the number of seeds per config | none yet; checked in v2 | three seeds of the final pair are run | open | 8 October 2026 |
 | `A-6.9` | The placeholder design for missing bands is chosen over the zero design on validation | the choice is measured, not assumed | none, design choice; `configs/l2_flex_1m_zero.toml` has not run | `l2_flex_1m_zero` is evaluated on validation | open | 7 October 2026 |
 | `A-6.10` | L1 weights the loss by median class frequency; L2 does not | the L2 configs keep one change per variant, and `l2_flex_1m_classweights` measures the weighting | none, design choice; `l2_flex_1m_classweights` has not run | `l2_flex_1m_classweights` is evaluated on validation | open | 7 October 2026 |
+| `A-6.11` | The v3 one-change variants run one seed each; the v3 references run three | the GPU budget allows one seed per variant; ACC-09 needs three seeds of the reference | none, design choice | a variant's gain is smaller than the seed spread of its reference | open | 14 October 2026 |
+| `A-6.12` | Export-only variants (`*_int8pct`, `*_int8entropy`, `*_cal1024`, `*_calstrat`, `*_fpends`, `*_inputclip`) reuse the trained run of their reference with `export --settings-from` | their change is in `[export]` only, so training them again would cost GPU time for the same weights | none, design choice | n/a | open | 14 October 2026 |
+| `A-6.13` | The CloudScout re-implementation uses widths 16, 32, 64, 128, 128 (about 0.63 M parameters), whole 512 x 512 patches at 10 m, Level-1C reflectance and this repository's schedule | the CloudScout paper gives no filter numbers, used 512 x 512 tiles at 60 m of radiance, and an exponential learning rate decay | the paper, Remote Sensing 12(14), 2205, 2020, sections 3.3 and 3.4, read on 14 October 2026 [5] | the authors publish the filter numbers | open | 14 October 2026 |
 
 Every setting in which the L1 and L2 configs differ, as the configs and the defaults of `src/tiefer_lab/config.py` resolve them:
 
@@ -104,6 +112,17 @@ Every setting in which the L1 and L2 configs differ, as the configs and the defa
 
 Settings not listed are the same in every config (crop 256, weight decay 0.0001, Dice weight 1.0, minimum improvement 0.001, 150 epochs, brightness and contrast augmentation 0.1). A difference between an L1 and an L2 result can come from any row of this table, not from the model alone.
 
+The v3 references and stages, which change more than one setting of their reference; each is its own reference config. The v3 references are drafts: the winners of the one-change variants are added by the selection rule of [hpc/roihu/plan.md](../hpc/roihu/plan.md), section 3, before their three seeds run.
+
+| Config | Reference | Settings changed | Why |
+| :--- | :---: | :---: | :---: |
+| `l1_v3` | `l1_full` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, stability; then the winners |
+| `l2_flex_1m_v3` | `l2_flex_1m` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, `ACC-09`; then the winners |
+| `l2_flex_1m_v3_frameft` | `l2_flex_1m_v3` | starts from `l2_flex_1m_v3-seed0`; crop 512, batch 16, 20 epochs, warm-up 1, learning rate 0.0004, frame term 0.5 | a fine-tune on whole patches, so the crop's cloud fraction is the frame's (`FRM-01`, `ACC-07`) |
+| `cloudscout_th30` | none (a reference algorithm) | frame classifier of `A-6.13`, labels at 30 percent | step 1 of the CloudScout paper |
+| `cloudscout` | `cloudscout_th30` | labels at 70 percent, only the decision layers trained, starts from `cloudscout_th30-seed0`, 20 epochs | step 2 of the CloudScout paper |
+| `cloudscout_th50` | `cloudscout` | labels at 50 percent | this repository's decision threshold |
+
 ---
 
 ## 7. Product decision
@@ -122,11 +141,13 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 2. S2 Mission, spectral and spatial resolution, ESA SentiWiki, https://sentiwiki.copernicus.eu/web/s2-mission, accessed 7 October 2026.
 3. CloudSEN12+ dataset card, version 1.1.2, TACO Foundation, Hugging Face, https://huggingface.co/datasets/tacofoundation/cloudsen12, accessed 7 October 2026.
 4. GPU and ML guide, CSC, https://docs.csc.fi/support/tutorials/gpu-ml/, accessed 1 October 2026.
+5. CloudScout: A Deep Neural Network for On-Board Cloud Detection on Hyperspectral Images, Remote Sensing 12(14), 2205, 2020, https://doi.org/10.3390/rs12142205, accessed 14 October 2026.
 
 ---
 
 ## Changelog
 
+- 14 October 2026: v3 rows: Landsat 8 band names (`A-1.8`) and the B08 substitution (`A-1.9`), the patch of an independent dataset (`A-2.8`), the cloud logit bias (`A-3.5`) and the soft cloud fraction (`A-3.6`) as protocol options, one seed per variant (`A-6.11`), export-only variants (`A-6.12`), the CloudScout re-implementation (`A-6.13`), and the table of the v3 references and stages; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: `A-5.5`, the sides of the dataset's padding, an assumption until the padding check runs on CSC Roihu.
 - 7 October 2026: every row has an ID, evidence, a status and the date it was last checked; rows without a source say "none, design choice".

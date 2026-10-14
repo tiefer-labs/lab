@@ -95,3 +95,34 @@ def test_nan_reflectance_is_an_error_in_the_histogram() -> None:
     image = _pixels([(np.nan, 0.1, 0.1, 0.1)])
     with pytest.raises(ValueError, match="NaN"):
         baselines.RuleHistogram().add(image, np.zeros((1, 1), dtype=np.uint8))
+
+
+def test_probability_threshold_is_tuned_by_hand() -> None:
+    from tiefer_lab.baselines import (
+        median_cloud_boa_at,
+        probability_histograms,
+        tune_probability_threshold,
+    )
+
+    # One patch: two cloud pixels at 60 and 80 percent, two clear pixels at 10 and 50.
+    prob = np.array([[60, 80], [10, 50]], np.uint8)
+    label = np.array([[1, 2], [0, 0]], np.uint8)
+    hist = probability_histograms([prob], [label])
+    assert hist[0, 1, 60] == 1 and hist[0, 0, 50] == 1
+    # Cloud from 51 percent: every pixel right, BOA 1. From 81: no cloud found, BOA 0.5.
+    assert median_cloud_boa_at(hist, 51) == 1.0
+    assert median_cloud_boa_at(hist, 81) == 0.5
+    threshold, boa = tune_probability_threshold(hist)
+    assert (threshold, boa) == (51, 1.0)
+
+
+def test_probability_masks_are_stored_as_percentages() -> None:
+    from tiefer_lab.data.source import DataSourceError, MaskEncoding, encode_mask
+
+    encoding = MaskEncoding("probability", {255: 255}, max_value=200)
+    raw = np.array([[0, 100], [200, 255]])
+    np.testing.assert_array_equal(encode_mask(raw, encoding, "p"), [[0, 50], [100, 255]])
+    with pytest.raises(DataSourceError, match="outside"):
+        encode_mask(np.array([[201]]), encoding, "p")
+    with pytest.raises(ValueError, match="max_value"):
+        MaskEncoding("cloud", {0: 0}, max_value=1)

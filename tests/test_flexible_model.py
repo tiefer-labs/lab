@@ -137,3 +137,25 @@ def test_band_set_model_matches_the_flexible_model(design: str) -> None:
     with torch.no_grad():
         torch.testing.assert_close(fixed(x[:, positions]), model(x))
     assert fixed.input_bands == 4
+
+
+def test_frame_fraction_loss_and_lovasz_by_hand() -> None:
+    from tiefer_lab.models.losses import (
+        crop_cloud_fractions,
+        frame_fraction_loss,
+        lovasz_softmax,
+    )
+
+    target = torch.tensor([[[0, 1], [2, 255]], [[255, 255], [255, 255]]])
+    fraction, has = crop_cloud_fractions(target)
+    assert has.tolist() == [True, False]
+    assert fraction[0].item() == pytest.approx(2 / 3)
+    # A confident, correct prediction: soft fraction 2 / 3 on the labelled pixels.
+    perfect = torch.nn.functional.one_hot(target.clamp(max=3), 4).permute(0, 3, 1, 2).float() * 50
+    assert frame_fraction_loss(perfect, target).item() == pytest.approx(0.0, abs=1e-6)
+    assert lovasz_softmax(perfect, target).item() == pytest.approx(0.0, abs=1e-6)
+    # Everything called clear: soft fraction 0, error 2 / 3 above the Huber delta 0.1.
+    clear = torch.zeros(2, 4, 2, 2)
+    clear[:, 0] = 50
+    assert frame_fraction_loss(clear, target).item() == pytest.approx(0.1 * (2 / 3 - 0.05))
+    assert lovasz_softmax(clear, target).item() > 0.5

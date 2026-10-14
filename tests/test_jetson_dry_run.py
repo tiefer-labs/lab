@@ -150,3 +150,24 @@ def test_tiles_and_frames_of_the_large_frame_path() -> None:
     assert bench.tiles_per_frame(2000, 512, 64) == 25
     rate = bench.frame_rate(40.0, 2000, 512, 64)
     assert rate["frames_per_second"] == pytest.approx(1000.0 / (40.0 * 25))
+
+
+def test_memory_and_determinism_by_hand(tmp_path: Path) -> None:
+    power = _load("power")
+
+    line = "RAM 3000/7620MB (lfb 1x4MB) VDD_IN 5000mW/5000mW CPU@40.5C"
+    sample = power.parse_line(line)
+    assert sample.ram_mb == 3000
+    idle = [power.parse_line("RAM 1000/7620MB VDD_IN 3000mW/3000mW")] * 2
+    out = power.memory_summary([sample, power.parse_line("RAM 2500/7620MB")], idle)
+    assert (out["peak_mb"], out["idle_mb"], out["peak_above_idle_mb"]) == (3000, 1000, 2000)
+    assert out["peak_gb"] == 2.0
+    data = bench.write_input(tmp_path / "a.bin", (1, 2, 2, 2))
+    again = bench.write_input(tmp_path / "b.bin", (1, 2, 2, 2))
+    assert data.read_bytes() == again.read_bytes() and len(data.read_bytes()) == 8 * 4
+    out_file = tmp_path / "out.json"
+    out_file.write_text(json.dumps([{"name": "logits", "values": [1.0, 2.0]}]))
+    h = bench.output_hash(out_file)
+    assert bench.determinism_summary([h, h, h])["identical"] is True
+    assert bench.determinism_summary([h, "x"])["distinct_outputs"] == 2
+    assert bench.determinism_summary([h])["identical"] is False

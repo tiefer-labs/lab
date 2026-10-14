@@ -62,3 +62,21 @@ def test_false_discard_rate_undefined_without_useful_frames() -> None:
     true = np.array([0.8, 0.9])
     assert np.isnan(metrics.false_discard_rate(true, true, 0.5))
     assert metrics.frame_metrics(true, true)["thresholds"]["0.50"]["false_discard_rate"] is None
+
+
+def test_operating_curve_by_hand() -> None:
+    from tiefer_lab.metrics import cloud_cover_bin, operating_curve
+
+    # Useful at 0.5: frames 0 and 1 (true 0.1, 0.4); cloudy: frames 2 and 3.
+    true = np.array([0.1, 0.4, 0.6, 0.9])
+    pred = np.array([0.2, 0.55, 0.5, 0.95])
+    out = operating_curve(true, pred, 0.5, decision_thresholds=(0.5, 0.6), limits=(0.01,))
+    first, second = out["points"]
+    # At 0.5: frame 1 kept (useful): FDR 0.5; no cloudy frame sent: FSR 0.
+    assert first == {"decision_threshold": 0.5, "false_discard_rate": 0.5, "false_send_rate": 0.0}
+    # At 0.6: nothing useful kept: FDR 0; frame 2 sent: FSR 0.5.
+    assert second["false_discard_rate"] == 0.0 and second["false_send_rate"] == 0.5
+    assert out["lowest_false_send_rate_at_false_discard_rate"]["0.01"] == second
+    assert cloud_cover_bin(0.05) == "[0, 0.1)"
+    assert cloud_cover_bin(0.95) == "[0.9, 1]"
+    assert cloud_cover_bin(1.0) == "[0.9, 1]"

@@ -98,3 +98,75 @@ def distillation(student: torch.Tensor, teacher: torch.Tensor) -> torch.Tensor:
     log_teacher = teacher.detach().float().log_softmax(dim=1)
     kl = (log_teacher.exp() * (log_teacher - log_student)).sum(dim=1)
     return kl.mean()
+
+
+# Delta of the Huber loss of the frame term: quadratic below a cloud fraction error of 0.1.
+FRAME_HUBER_DELTA = 0.1
+
+
+def crop_cloud_fractions(target: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Labelled cloud fraction (thick plus thin) of each crop, and which crops have labels.
+
+    `target` is (batch, H, W); IGNORE_INDEX pixels are left out of both counts.
+    """
+    valid = target != IGNORE_INDEX
+    count = valid.sum(dim=(1, 2)).float()
+    cloud = ((target == 1) | (target == 2)).sum(dim=(1, 2)).float()
+    has = count > 0
+    return cloud / count.clamp(min=1.0), has
+
+
+def frame_fraction_loss(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Huber loss between the soft and the labelled cloud fraction of each crop.
+
+    The soft fraction is the mean of p(thick) + p(thin) over the labelled
+    pixels of the crop, so it describes the same pixels as the label. Crops
+    without a labelled pixel add nothing.
+    """
+    valid = (target != IGNORE_INDEX).float()
+    probs = logits.float().softmax(dim=1)
+    soft = ((probs[:, 1] + probs[:, 2]) * valid).sum(dim=(1, 2)) / valid.sum(dim=(1, 2)).clamp(
+        min=1.0
+    )
+    true, has = crop_cloud_fractions(target)
+    if not bool(has.any()):
+        return logits.sum() * 0.0
+    return F.huber_loss(soft[has], true[has], delta=FRAME_HUBER_DELTA)
+
+
+def _lovasz_grad(gt_sorted: torch.Tensor) -> torch.Tensor:
+    """Gradient of the Lovasz extension of the Jaccard loss (Berman et al., CVPR 2018)."""
+    gts = gt_sorted.sum()
+    intersection = gts - gt_sorted.cumsum(0)
+    union = gts + (1 - gt_sorted).cumsum(0)
+    jaccard = 1.0 - intersection / union
+    if gt_sorted.numel() > 1:
+        jaccard[1:] = jaccard[1:] - jaccard[:-1].clone()
+    return jaccard
+
+
+def lovasz_softmax(logits: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Lovasz-softmax loss over the labelled pixels, mean over the classes present.
+
+    The convex surrogate of 1 - IoU per class of: The Lovasz-Softmax loss: a
+    tractable surrogate for the optimization of the intersection-over-union
+    measure in neural networks, Berman, Rannen Triki and Blaschko, CVPR 2018,
+    https://arxiv.org/abs/1705.08790.
+    """
+    probs = logits.float().softmax(dim=1).permute(0, 2, 3, 1).reshape(-1, logits.shape[1])
+    labels = target.reshape(-1)
+    valid = labels != IGNORE_INDEX
+    probs, labels = probs[valid], labels[valid]
+    if labels.numel() == 0:
+        return logits.sum() * 0.0
+    losses = []
+    for c in range(probs.shape[1]):
+        fg = (labels == c).float()
+        if fg.sum() == 0:
+            continue
+        errors = (fg - probs[:, c]).abs()
+        errors_sorted, order = torch.sort(errors, descending=True)
+        losses.append(torch.dot(errors_sorted, _lovasz_grad(fg[order])))
+    if not losses:
+        return logits.sum() * 0.0
+    return torch.stack(losses).mean()

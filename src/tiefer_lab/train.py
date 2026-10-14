@@ -33,7 +33,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from tiefer_lab import metrics
+from tiefer_lab import decisions, metrics
 from tiefer_lab.config import Config, dump_toml, load_config
 from tiefer_lab.data import cache, padding, sensor
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
@@ -45,7 +45,15 @@ from tiefer_lab.models.cloud_filter import (
     count_parameters,
     predict_masks,
 )
-from tiefer_lab.models.losses import CrossEntropyDice, class_weights, distillation
+from tiefer_lab.models.cloudscout import CloudScoutNet, frame_loss
+from tiefer_lab.models.losses import (
+    CrossEntropyDice,
+    class_weights,
+    crop_cloud_fractions,
+    distillation,
+    frame_fraction_loss,
+    lovasz_softmax,
+)
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
 from tiefer_lab.utils.ema import WeightEMA
 from tiefer_lab.utils.seeding import seed_everything
@@ -76,6 +84,120 @@ def resolve_run_dir(run: str) -> Path:
     if under_runs.is_dir():
         return under_runs.resolve()
     raise TrainingError(f"run {run!r} not found (looked in $TIEFER_RUNS_DIR)")
+
+
+def resolve_run_reference(reference: str) -> Path:
+    """A run named by its run ID or by a prefix that matches exactly one run.
+
+    Configs that start from another run (`init_checkpoint`, `teacher_run`) are
+    committed before that run exists, so they name it by a prefix such as
+    "cloudscout_th30-seed0"; two matching runs are an error, never a guess.
+    """
+    candidate = paths.runs_dir() / reference
+    if candidate.is_dir():
+        return candidate.resolve()
+    matches = sorted(
+        p for p in paths.runs_dir().glob(f"{reference}*") if (p / checkpoint.BEST).is_file()
+    )
+    if len(matches) != 1:
+        found = ", ".join(p.name for p in matches) or "none"
+        raise TrainingError(
+            f"{reference!r} must name exactly one finished run in $TIEFER_RUNS_DIR; found {found}"
+        )
+    return matches[0].resolve()
+
+
+def load_run_model(reference: str, device: torch.device) -> tuple[torch.nn.Module, Config]:
+    """The best.pt model of another run of this repository, in eval mode."""
+    run_dir = resolve_run_reference(reference)
+    config = load_config(run_dir / CONFIG_NAME)
+    model = flexible.build(config.model, config.data.bands)
+    state = checkpoint.load_checkpoint(run_dir / checkpoint.BEST, map_location=device)
+    model.load_state_dict(state["model"])
+    return model.to(device).eval(), config
+
+
+def step_gradients_ok(parameters: Sequence[torch.nn.Parameter], settings: Any) -> bool:
+    """Clip the global gradient norm when configured; False when the step must be skipped.
+
+    With `grad_clip_norm` > 0 the gradients are scaled to that global norm. With
+    `skip_nonfinite`, a step whose gradient norm is not finite is skipped (the
+    caller counts it). With neither, nothing is computed and every step is taken,
+    as before.
+    """
+    clip = float(settings.grad_clip_norm)
+    if clip <= 0 and not settings.skip_nonfinite:
+        return True
+    norm = torch.nn.utils.clip_grad_norm_(
+        [p for p in parameters if p.grad is not None], clip if clip > 0 else float("inf")
+    )
+    return not (settings.skip_nonfinite and not bool(torch.isfinite(norm)))
+
+
+def with_extra_split(
+    train: cache.SplitData, directory: Path, bands: Sequence[str]
+) -> cache.SplitData:
+    """The training split followed by the extra split (scribble and nolabel patches).
+
+    The extra split is built only once its facts are verified (LOCATION_FIELD and
+    SCRIBBLE_UNLABELLED_CODE in data/source.py); without it training stops. Both
+    splits are held in memory together.
+    """
+    try:
+        extra = cache.load_split(directory, cache.EXTRA_SPLIT, "memory", bands=bands)
+    except cache.CacheError as err:
+        raise TrainingError(
+            f"data.include_extra needs the {cache.EXTRA_SPLIT} split, built only after "
+            f"LOCATION_FIELD and SCRIBBLE_UNLABELLED_CODE are verified: {err}"
+        ) from None
+    if train.reference or extra.reference:
+        raise TrainingError("reference masks are not used for training; build without them")
+    combined_padding = (
+        [
+            *(train.padding or [padding.NO_PADDING] * len(train)),
+            *(extra.padding or [padding.NO_PADDING] * len(extra)),
+        ]
+        if train.padding or extra.padding
+        else []
+    )
+    return dataclasses.replace(
+        train,
+        images=np.concatenate([np.asarray(train.images), np.asarray(extra.images)]),
+        labels=np.concatenate([np.asarray(train.labels), np.asarray(extra.labels)]),
+        patch_ids=[*train.patch_ids, *extra.patch_ids],
+        metadata=[*train.metadata, *extra.metadata],
+        in_memory=True,
+        padding=combined_padding,
+    )
+
+
+def frame_targets(labels: torch.Tensor, threshold: float) -> tuple[torch.Tensor, torch.Tensor]:
+    """1.0 for a crop whose labelled cloud fraction is at least `threshold`, and which crops
+    have labelled pixels at all."""
+    fraction, has = crop_cloud_fractions(labels)
+    return (fraction >= threshold).float(), has
+
+
+def validate_frames(
+    model: torch.nn.Module,
+    loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
+    device: torch.device,
+    precision: devices.Precision,
+    threshold: float,
+) -> dict[str, Any]:
+    """Validation of a frame classifier: decision accuracy at its label threshold."""
+    true, pred = [], []
+    for _, mask, label in predict_masks(model, loader, device, precision):
+        f = decisions.frame_fractions(mask, label)
+        true.append(f.true_cloud)
+        pred.append(f.predicted_cloud)
+    accuracy = metrics.decision_accuracy(np.asarray(true), np.asarray(pred), threshold)
+    return {
+        "mean_iou": None,
+        "iou": None,
+        "overall_accuracy": None,
+        "frame_accuracy": None if not np.isfinite(accuracy) else float(accuracy),
+    }
 
 
 def new_run_id(config: Config, commit: str) -> str:
@@ -166,8 +288,13 @@ def validate_band_sets(
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
     device: torch.device,
     precision: devices.Precision,
+    select: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Validation of a band-flexible model on every band set; mean IoU is their mean."""
+    """Validation of a band-flexible model on every band set.
+
+    The mean IoU that chooses best.pt is the mean over the band sets, or, with
+    `select` (train.select_band_set), the mean IoU of that band set alone.
+    """
     per_set = {}
     for bands in band_sets:
         model.set_band_set(bands)  # type: ignore[operator]
@@ -175,8 +302,10 @@ def validate_band_sets(
     model.set_band_set(L1C_BAND_NAMES)  # type: ignore[operator]
     values = [v["mean_iou"] for v in per_set.values() if v["mean_iou"] is not None]
     first = next(iter(per_set.values()))
+    selected = per_set[band_set_name(select)]["mean_iou"] if select else None
     return {
-        "mean_iou": float(np.mean(values)) if values else None,
+        "mean_iou": selected if select else (float(np.mean(values)) if values else None),
+        "mean_iou_over_band_sets": float(np.mean(values)) if values else None,
         "iou": first["iou"],
         "overall_accuracy": first["overall_accuracy"],
         "band_sets": {k: v["mean_iou"] for k, v in per_set.items()},
@@ -262,6 +391,8 @@ def train(
     mean, std = cache.normalisation(index, bands)
     load_started = time.monotonic()
     full_train = cache.load_split(directory, "train", config.data.load_mode, bands=bands)
+    if config.data.include_extra:
+        full_train = with_extra_split(full_train, directory, bands)
     train_data = subset(full_train, config.data.max_train_patches)
     val_data = subset(
         cache.load_split(directory, "val", config.data.load_mode, bands=bands),
@@ -329,6 +460,27 @@ def train(
     if device.type == "cuda":
         model = model.to(memory_format=torch.channels_last)
         torch.backends.cudnn.benchmark = True
+    if config.train.init_checkpoint and not resume:
+        source_dir = resolve_run_reference(config.train.init_checkpoint)
+        state0 = checkpoint.load_checkpoint(source_dir / checkpoint.BEST, map_location=device)
+        model.load_state_dict(state0["model"])
+        meta["init_checkpoint"] = source_dir.name
+        print(f"initialised from {source_dir.name}/{checkpoint.BEST}", flush=True)
+    if config.train.train_only == "decision":
+        if not isinstance(model, CloudScoutNet):
+            raise TrainingError("train_only = decision needs the cloudscout architecture")
+        for name, parameter in model.named_parameters():
+            parameter.requires_grad_(name.startswith("decision."))
+    teacher: torch.nn.Module | None = None
+    teacher_flexible = False
+    if config.train.teacher_run:
+        teacher, teacher_config = load_run_model(config.train.teacher_run, device)
+        teacher_flexible = teacher_config.model.input == "flexible"
+        if tuple(teacher_config.data.bands) != tuple(bands):
+            raise TrainingError("the teacher must read the same bands from the same cache")
+        for parameter in teacher.parameters():
+            parameter.requires_grad_(False)
+        meta["teacher_run"] = resolve_run_reference(config.train.teacher_run).name
     weights = (
         class_weights(training_class_pixels(full_train, index)).to(device)
         if config.train.class_weighting == "median_frequency"
@@ -340,8 +492,9 @@ def train(
     band_sets = [tuple(b) for b in config.train.band_sets]
     all_bands = torch.ones(len(bands), device=device)
     set_masks = [flexible.availability(b).to(device) for b in band_sets]
+    trainable = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(
-        model.parameters(), lr=config.train.learning_rate, weight_decay=config.train.weight_decay
+        trainable, lr=config.train.learning_rate, weight_decay=config.train.weight_decay
     )
     scaler = torch.amp.GradScaler("cuda") if precision == "fp16" else None
 
@@ -437,6 +590,7 @@ def train(
         )
 
     status = "completed"
+    skipped_total = 0
     with StopRequest() as stop:
         for epoch in range(start_epoch, config.train.epochs):
             # One seed per epoch, so a resumed run sees the same batches.
@@ -448,6 +602,7 @@ def train(
             model.train()
             started = time.monotonic()
             losses: list[float] = []
+            skipped = 0
             for step, (images, labels) in enumerate(batches):
                 if stop.requested or (
                     config.train.max_steps_per_epoch and step >= config.train.max_steps_per_epoch
@@ -464,27 +619,67 @@ def train(
                     group["lr"] = config.train.learning_rate * factor
                 optimizer.zero_grad(set_to_none=True)
                 with devices.autocast(device, precision):
-                    if flexible_input:
+                    if config.train.task == "frame":
+                        assert isinstance(model, CloudScoutNet)
+                        logits = model.frame_logits(images)
+                    elif flexible_input:
                         choice = draw_band_set(config.train.seed, epoch, step, len(band_sets))
                         drawn = set_masks[choice].expand(images.shape[0], -1)
                         logits = model(images, drawn)
                     else:
                         logits = model(images)
-                loss = loss_fn(logits, labels)
+                loss: Any
+                if config.train.task == "frame":
+                    cloudy, has = frame_targets(labels, config.train.frame_label_threshold)
+                    loss = (
+                        frame_loss(logits[has], cloudy[has], config.train.false_positive_weight)
+                        if bool(has.any())
+                        else logits.sum() * 0.0
+                    )
+                else:
+                    loss = loss_fn(logits, labels)
+                    if config.train.frame_loss_weight > 0:
+                        loss = loss + config.train.frame_loss_weight * frame_fraction_loss(
+                            logits, labels
+                        )
+                    if config.train.lovasz_weight > 0:
+                        loss = loss + config.train.lovasz_weight * lovasz_softmax(logits, labels)
                 if (
                     flexible_input
                     and config.train.distill_weight > 0
                     and band_sets[choice] != tuple(bands)
                 ):
                     with torch.no_grad(), devices.autocast(device, precision):
-                        teacher = model(images, all_bands.expand(images.shape[0], -1))
-                    loss = loss + config.train.distill_weight * distillation(logits, teacher)
+                        self_teacher = model(images, all_bands.expand(images.shape[0], -1))
+                    loss = loss + config.train.distill_weight * distillation(logits, self_teacher)
+                if teacher is not None:
+                    with torch.no_grad(), devices.autocast(device, precision):
+                        soft = (
+                            teacher(images, all_bands.expand(images.shape[0], -1))
+                            if teacher_flexible
+                            else teacher(images)
+                        )
+                    loss = loss + config.train.teacher_weight * distillation(logits, soft)
+                if config.train.skip_nonfinite and not bool(torch.isfinite(loss.detach())):
+                    skipped += 1
+                    optimizer.zero_grad(set_to_none=True)
+                    continue
                 if scaler is not None:
                     scaler.scale(loss).backward()
+                    if config.train.grad_clip_norm > 0 or config.train.skip_nonfinite:
+                        scaler.unscale_(optimizer)
+                else:
+                    loss.backward()
+                if not step_gradients_ok(trainable, config.train):
+                    skipped += 1
+                    optimizer.zero_grad(set_to_none=True)
+                    if scaler is not None:
+                        scaler.update()
+                    continue
+                if scaler is not None:
                     scaler.step(optimizer)
                     scaler.update()
                 else:
-                    loss.backward()
                     optimizer.step()
                 if ema is not None:
                     ema.update(model)
@@ -493,6 +688,7 @@ def train(
                     print(
                         f"epoch {epoch + 1} step {step + 1} loss {np.mean(losses):.4f}", flush=True
                     )
+            skipped_total += skipped
             if stop.requested:
                 # The epoch is incomplete: record it as not done, so a resume repeats it.
                 save_last(epoch)
@@ -505,12 +701,28 @@ def train(
             val_started = time.monotonic()
             # With EMA, validation and best.pt use the averaged weights.
             eval_model = ema.module if ema is not None else model
-            if flexible_input:
-                val = validate_band_sets(eval_model, band_sets, val_loader, device, precision)
+            if config.train.task == "frame":
+                val = validate_frames(
+                    eval_model, val_loader, device, precision, config.train.frame_label_threshold
+                )
+                selection = val["frame_accuracy"]
+            elif flexible_input:
+                val = validate_band_sets(
+                    eval_model,
+                    band_sets,
+                    val_loader,
+                    device,
+                    precision,
+                    config.train.select_band_set,
+                )
+                selection = val["mean_iou"]
             else:
                 val = validate(eval_model, val_loader, device, precision)
+                selection = val["mean_iou"]
             val_seconds = time.monotonic() - val_started
-            val_miou = val["mean_iou"] if val["mean_iou"] is not None else -1.0
+            # The validation value that chooses best.pt: mean IoU, or the frame decision
+            # accuracy of a frame classifier.
+            val_miou = selection if selection is not None else -1.0
             # Early stopping on validation mean IoU: only a gain of at least
             # min_improvement counts, so noise does not keep training alive.
             improved = val_miou > best_metric + config.train.min_improvement
@@ -537,6 +749,8 @@ def train(
                 "val_iou": val["iou"],
                 "val_overall_accuracy": val["overall_accuracy"],
                 "val_mean_iou_by_band_set": val.get("band_sets"),
+                "val_frame_accuracy": val.get("frame_accuracy"),
+                "skipped_steps": skipped,
                 "best_epoch": best_epoch,
                 "seconds": round(time.monotonic() - started, 2),
                 "time": metadata.now(),
@@ -557,6 +771,7 @@ def train(
                 break
 
     meta["status"] = status
+    meta["skipped_steps"] = int(meta.get("skipped_steps", 0)) + skipped_total
     meta["best_epoch"] = best_epoch
     meta["best_val_mean_iou"] = best_metric if best_epoch > 0 else None
     meta["end_time"] = metadata.now()

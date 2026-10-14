@@ -10,6 +10,7 @@ appears in neither reference nor prediction) is NaN, written as null in JSON.
 
 from __future__ import annotations
 
+import itertools
 from collections.abc import Sequence
 from typing import Any
 
@@ -196,3 +197,66 @@ def _json_float(value: float | None) -> float | None:
     if value is None or not np.isfinite(value):
         return None
     return float(value)
+
+
+# Decision thresholds of the full sweep: 0.05 to 0.95 in steps of 0.05.
+SWEEP_THRESHOLDS = tuple(round(0.05 * i, 2) for i in range(1, 20))
+# False discard rates at which the sweep reports the lowest false send rate.
+SWEEP_FALSE_DISCARD_LIMITS = (0.01, 0.02)
+
+
+def operating_curve(
+    true_fraction: FloatArray,
+    predicted_fraction: FloatArray,
+    reference_threshold: float,
+    decision_thresholds: Sequence[float] = SWEEP_THRESHOLDS,
+    limits: Sequence[float] = SWEEP_FALSE_DISCARD_LIMITS,
+) -> dict[str, Any]:
+    """False discard and false send rates when the decision threshold moves.
+
+    Which frames are useful is fixed by the labels at `reference_threshold`
+    (true cloud fraction below it); the model's frames are kept when their
+    predicted cloud fraction is at or above the decision threshold. For each
+    limit, the point with the lowest false send rate among those whose false
+    discard rate is at most the limit (ties: the higher threshold) gives the
+    operating point that docs/LANDSCAPE.md, section 5, note 3, asks for.
+    """
+    useful = send_mask(true_fraction, reference_threshold)
+    cloudy = ~useful
+    points: list[dict[str, Any]] = []
+    for t in decision_thresholds:
+        sent = send_mask(predicted_fraction, t)
+        fdr = float((~sent & useful).sum() / useful.sum()) if useful.any() else None
+        fsr = float((sent & cloudy).sum() / cloudy.sum()) if cloudy.any() else None
+        points.append({"decision_threshold": t, "false_discard_rate": fdr, "false_send_rate": fsr})
+    at_limit: dict[str, Any] = {}
+    for limit in limits:
+        ok = [
+            p
+            for p in points
+            if p["false_discard_rate"] is not None
+            and p["false_send_rate"] is not None
+            and p["false_discard_rate"] <= limit + 1e-12
+        ]
+        best = min(ok, key=lambda p: (p["false_send_rate"], -p["decision_threshold"]), default=None)
+        at_limit[f"{limit:.2f}"] = best
+    return {
+        "reference_threshold": reference_threshold,
+        "points": points,
+        "lowest_false_send_rate_at_false_discard_rate": at_limit,
+    }
+
+
+# Cloud cover bins of the labelled cloud fraction, named as in data/richness.py.
+CLOUD_COVER_EDGES = (0.0, 0.1, 0.3, 0.7, 0.9, 1.0)
+
+
+def cloud_cover_bin(fraction: float) -> str:
+    """The cloud cover bin of a labelled cloud fraction: "[0, 0.1)" up to "[0.9, 1]"."""
+    edges = CLOUD_COVER_EDGES
+    if not np.isfinite(fraction):
+        return "missing"
+    for low, high in itertools.pairwise(edges[:-1]):
+        if low <= fraction < high:
+            return f"[{low:g}, {high:g})"
+    return f"[{edges[-2]:g}, {edges[-1]:g}]"

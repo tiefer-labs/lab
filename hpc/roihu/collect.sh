@@ -34,10 +34,20 @@ add "${runs_rel}/${run_id}/config.toml"
 add "${runs_rel}/${run_id}/metadata.json"
 add "${runs_rel}/${run_id}/metrics.jsonl"
 add "${runs_rel}/${run_id}/best.pt"
-for f in "${TIEFER_RUNS_DIR}/${run_id}"/export/*.onnx; do
+# ONNX files of every band set, cloud bias and export setting, in subfolders of export/.
+if [[ -d "${TIEFER_RUNS_DIR}/${run_id}/export" ]]; then
+  while IFS= read -r -d '' f; do
+    files+=("${f#"${base}/"}")
+  done < <(find "${TIEFER_RUNS_DIR}/${run_id}/export" -name '*.onnx' -print0 | sort -z)
+fi
+for f in "${TIEFER_RUNS_DIR}/${run_id}"/calibration_*.json; do
   [[ -e "${f}" ]] && files+=("${f#"${base}/"}")
 done
-for f in "${TIEFER_REPORTS_DIR}"/evaluation/"${run_id}"_*.json "${TIEFER_REPORTS_DIR}"/export/"${run_id}".json "${TIEFER_REPORTS_DIR}"/compute/*.json; do
+# A band-flexible export writes export/<run-id>_<band set>.json, one per band set.
+for f in "${TIEFER_REPORTS_DIR}"/evaluation/"${run_id}"_*.json \
+  "${TIEFER_REPORTS_DIR}"/export/"${run_id}".json "${TIEFER_REPORTS_DIR}"/export/"${run_id}"_*.json \
+  "${TIEFER_REPORTS_DIR}"/calibration/"${run_id}"_*.json \
+  "${TIEFER_REPORTS_DIR}"/diagnosis/*"${run_id}"*.json "${TIEFER_REPORTS_DIR}"/compute/*.json; do
   [[ -e "${f}" ]] && files+=("${f#"${base}/"}")
 done
 add "${reports_rel}/test_log.md"

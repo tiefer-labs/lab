@@ -207,3 +207,121 @@ def predict_masks_with_confidence(
                     label.astype(np.int64),
                     crop_back(conf, label.shape).astype(np.float32),
                 )
+
+
+# The thick and thin cloud classes, whose logits a cloud bias moves.
+CLOUD_LOGITS = (1, 2)
+
+
+class CloudBias(nn.Module):
+    """A model with one scalar added to its thick and thin cloud logits.
+
+    The bias is chosen on validation (`python -m tiefer_lab.calibrate`) and is
+    folded into the bias of the last convolution at export (`fold_cloud_bias`),
+    so it adds no operator and no runtime cost. It changes the model, never the
+    decision threshold.
+    """
+
+    def __init__(self, model: nn.Module, bias: float) -> None:
+        super().__init__()
+        self.model = model
+        self.bias = float(bias)
+
+    def forward(self, *args: Any) -> torch.Tensor:
+        out: torch.Tensor = self.model(*args)
+        if self.bias == 0.0:
+            return out
+        shift = torch.zeros(out.shape[1], dtype=out.dtype, device=out.device)
+        shift[list(CLOUD_LOGITS)] = self.bias
+        return out + shift[None, :, None, None]
+
+
+def last_convolution(model: nn.Module) -> nn.Conv2d:
+    """The convolution that writes the class logits of any model of this repository."""
+    for owner in (model, getattr(model, "backbone", None), getattr(model, "model", None)):
+        if owner is None:
+            continue
+        for attr in ("to_classes", "head"):
+            layer = getattr(owner, attr, None)
+            if isinstance(layer, nn.Conv2d):
+                return layer
+        inner = getattr(owner, "backbone", None)
+        if inner is not None and inner is not owner:
+            return last_convolution(inner)
+    raise ValueError(f"no class logit convolution found in {type(model).__name__}")
+
+
+def fold_cloud_bias[M: nn.Module](model: M, bias: float) -> M:
+    """A copy of `model` with the cloud bias added to the bias of its last convolution."""
+    folded = copy.deepcopy(model)
+    conv = last_convolution(folded)
+    with torch.no_grad():
+        if conv.bias is None:
+            conv.bias = nn.Parameter(torch.zeros(conv.out_channels))
+        for c in CLOUD_LOGITS:
+            conv.bias[c] += bias
+    return folded
+
+
+def predict_probabilities(
+    model: nn.Module,
+    loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
+    device: torch.device,
+    precision: Precision,
+    temperature: float = 1.0,
+) -> Iterator[
+    tuple[int, NDArray[np.uint8], NDArray[np.int64], NDArray[np.float32], NDArray[np.float32]]
+]:
+    """As predict_masks_with_confidence, plus p(thick) + p(thin) per pixel at a temperature.
+
+    The temperature divides the logits before the softmax; it never changes the
+    predicted class, only the probabilities.
+    """
+    model.eval()
+    channels_last = device.type == "cuda"
+    with torch.no_grad():
+        for images, labels, indexes in loader:
+            images = images.to(device, non_blocking=True)
+            if channels_last:
+                images = images.contiguous(memory_format=torch.channels_last)
+            with autocast(device, precision):
+                logits = model(images)
+            probs = (logits.float() / temperature).softmax(dim=1)
+            confidence, predicted = probs.max(dim=1)
+            cloud = probs[:, list(CLOUD_LOGITS)].sum(dim=1)
+            for pred, conf, p_cloud, label, index in zip(
+                predicted.to(torch.uint8).cpu().numpy(),
+                confidence.cpu().numpy(),
+                cloud.cpu().numpy(),
+                labels.numpy(),
+                indexes.tolist(),
+                strict=True,
+            ):
+                size = label.shape
+                yield (
+                    int(index),
+                    crop_back(pred, size),
+                    label.astype(np.int64),
+                    crop_back(conf, size).astype(np.float32),
+                    crop_back(p_cloud, size).astype(np.float32),
+                )
+
+
+def predict_logits(
+    model: nn.Module,
+    loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]],
+    device: torch.device,
+    precision: Precision,
+) -> Iterator[tuple[int, NDArray[np.float32], NDArray[np.int64]]]:
+    """(patch position, logits (classes, H, W) cropped to the label, label)."""
+    model.eval()
+    channels_last = device.type == "cuda"
+    with torch.no_grad():
+        for images, labels, indexes in loader:
+            images = images.to(device, non_blocking=True)
+            if channels_last:
+                images = images.contiguous(memory_format=torch.channels_last)
+            with autocast(device, precision):
+                logits = model(images).float().cpu().numpy()
+            for out, label, index in zip(logits, labels.numpy(), indexes.tolist(), strict=True):
+                yield int(index), crop_back(out, label.shape), label.astype(np.int64)

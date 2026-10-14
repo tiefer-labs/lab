@@ -35,6 +35,8 @@ TP, TN, FP and FN are the true positive, true negative, false positive and false
 | BOA | balanced overall accuracy per patch, (PA + TN / (TN + FP)) / 2, median over patches | higher |
 | PA | producer's accuracy per patch, TP / (TP + FN), median over patches | higher |
 | UA | user's accuracy per patch, TP / (TP + FP), median over patches | higher |
+| PA and UA shares (with `--full-metrics`) | share of patches with PA or UA below 0.1, from 0.1 to 0.9 and above 0.9, as in the CloudSEN12 paper's Table 6; the denominator is `TODO(verify)` ([DATASETS.md](DATASETS.md), section 4) | higher in the high group |
+| False send rate at a false discard rate (with `--full-metrics`) | the lowest false send rate of a decision threshold from 0.05 to 0.95 whose false discard rate is at most 0.01 or 0.02 | lower |
 
 A frame whose cloud fraction is at or above the threshold is kept on board; below it, the frame is sent. 50 percent is the configured default ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 3). BOA, PA and UA are defined in `src/tiefer_lab/binary_metrics.py`. Every metric counts only the real image area of each patch: the dataset's padding is masked when the labels are loaded ([DATA.md](DATA.md), section 5).
 
@@ -173,6 +175,9 @@ The reference algorithms are not measured by this repository. Published values o
 | CloudScore+ (cs_cdf) | not measured | not measured | not measured | n/a |
 | SEnSeI v2 | not measured | not measured | not measured | n/a |
 | dtacs4bands | not measured | not measured | not measured | n/a |
+| CloudScout re-implementation trained by Tiefer Lab (not the flown model) | n/a | not measured | n/a | n/a |
+
+How each reference is measured on the same pixels: the extra-table masks with `build_cache --references` (a cloud probability at a threshold tuned on validation only), Fmask, KappaMask and CD-FCNN from the CloudSEN12 release of 2022 or from `references/`, each after its licence is cleared, and CloudScout as `configs/cloudscout*.toml`. The CloudScout re-implementation decides per frame, so its pixel metrics are `n/a`.
 
 ---
 
@@ -333,6 +338,7 @@ Every value on this page waits for the v2 campaign ([hpc/roihu/plan.md](../hpc/r
 
 ## Changelog
 
+- 14 October 2026: section 2 defines the PA and UA shares and the false send rate at a false discard rate of `--full-metrics`; section 10 lists the CloudScout re-implementation and how each reference is measured on the same pixels. No value is added; drafted with an AI-assisted system.
 - 8 October 2026: section 19, the Roihu jobs are submitted from `roihu-cpu.csc.fi`.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: every table of measured values says that it counts padded pixels and that re-evaluation is pending; section 21 lists every run, split and band set to evaluate again with the padding masked, with the old value and the new value pending. No value is changed.

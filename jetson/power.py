@@ -33,6 +33,9 @@ from types import TracebackType
 INPUT_RAILS = ("VDD_IN", "VIN_SYS_5V0", "POM_5V_IN")
 RAIL = re.compile(r"\b([A-Z][A-Z0-9_]*) (\d+)mW/(\d+)mW")
 TEMPERATURE = re.compile(r"\b([A-Za-z][A-Za-z0-9_]*)@(-?\d+(?:\.\d+)?)C\b")
+# Used and total memory, "RAM 2345/7620MB". TODO(verify) on the board: the field and
+# whether MB is decimal or binary in the tegrastats of the JetPack used.
+RAM = re.compile(r"\bRAM (\d+)/(\d+)MB")
 
 
 @dataclass
@@ -40,6 +43,7 @@ class Sample:
     time: float
     rails_mw: dict[str, int] = field(default_factory=dict)
     temperatures_c: dict[str, float] = field(default_factory=dict)
+    ram_mb: int | None = None
 
 
 def parse_line(line: str, timestamp: float = 0.0) -> Sample:
@@ -49,7 +53,32 @@ def parse_line(line: str, timestamp: float = 0.0) -> Sample:
         sample.rails_mw[name] = int(current)
     for name, value in TEMPERATURE.findall(line):
         sample.temperatures_c[name] = float(value)
+    ram = RAM.search(line)
+    if ram:
+        sample.ram_mb = int(ram.group(1))
     return sample
+
+
+def memory_summary(run: list[Sample], idle: list[Sample]) -> dict[str, float | int | str | None]:
+    """Memory used during the run: the peak, the idle mean before it, and the peak above idle.
+
+    A Jetson shares one memory between CPU and GPU, so the RAM of tegrastats
+    includes the engine and its activations. `peak_gb` is the peak above idle in
+    GB as MB / 1000; whether tegrastats' MB is decimal is TODO(verify) on the board.
+    """
+    used = [s.ram_mb for s in run if s.ram_mb is not None]
+    rest = [s.ram_mb for s in idle if s.ram_mb is not None]
+    if not used:
+        return {"peak_mb": None, "idle_mb": None, "peak_above_idle_mb": None, "peak_gb": None}
+    idle_mb = fmean(rest) if rest else None
+    above = max(used) - idle_mb if idle_mb is not None else None
+    return {
+        "peak_mb": max(used),
+        "idle_mb": idle_mb,
+        "peak_above_idle_mb": above,
+        "peak_gb": None if above is None else above / 1000.0,
+        "unit_note": "MB as tegrastats writes it; decimal or binary TODO(verify)",
+    }
 
 
 def input_rail(samples: list[Sample], requested: str | None = None) -> str:

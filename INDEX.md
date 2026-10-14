@@ -23,18 +23,19 @@ For anyone looking for a document by name or by state. This document owns the li
 | [INSTALL.md](INSTALL.md) | every way to install, and the provenance checks | users | installation, provenance checks | in use | 8 October 2026 |
 | [LEARNING-PATH.md](LEARNING-PATH.md) | the concepts needed to understand and change Lab, in order | new contributors, researchers | curriculum | in use | 8 October 2026 |
 | **Results and evidence** | | | | | |
-| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 8 October 2026 |
+| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 14 October 2026 |
 | [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) | which result answers which question, supersession, citation | evaluators | current results, citation form | in use | 8 October 2026 |
-| [CLAIMS.md](CLAIMS.md) | status and evidence of every public capability statement | evaluators, partners, the founder | public claims | in use | 8 October 2026 |
+| [CLAIMS.md](CLAIMS.md) | status and evidence of every public capability statement | evaluators, partners, the founder | public claims | in use | 14 October 2026 |
 | [POLICY.md](POLICY.md) | the gates for numbers, test-split access, model cards, comparisons, data and compute | maintainers, contributors | measurement and release gates | in use | 8 October 2026 |
-| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 8 October 2026 |
-| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 8 October 2026 |
+| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 14 October 2026 |
+| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 14 October 2026 |
 | **Data** | | | | | |
 | [docs/DATA.md](docs/DATA.md) | data card for CloudSEN12+ | researchers | dataset facts, caches | in development | 8 October 2026 |
-| [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 8 October 2026 |
+| [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 14 October 2026 |
+| [docs/INDEPENDENT.md](docs/INDEPENDENT.md) | data card for the four independent test datasets | researchers, evaluators | independent dataset facts | in development | 14 October 2026 |
 | **Specification and standards** | | | | | |
-| [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 8 October 2026 |
-| [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 8 October 2026 |
+| [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 14 October 2026 |
+| [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 14 October 2026 |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | standards, handbooks and formats, clauses read and status | evaluators | standards matrix | in development | 7 October 2026 |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 7 October 2026 |
 | [docs/STYLE.md](docs/STYLE.md) | the documentation standard | contributors | writing rules, document types | in use | 8 October 2026 |
@@ -55,14 +56,15 @@ For anyone looking for a document by name or by state. This document owns the li
 | `.github/ISSUE_TEMPLATE/` | 19 issue forms, one per kind of issue, and the chooser configuration | everyone who opens an issue | issue forms | in use | 7 October 2026 |
 | `.github/pull_request_template.md` and `.github/PULL_REQUEST_TEMPLATE/` | the default pull request template and nine templates by kind of change | contributors | pull request templates | in use | 7 October 2026 |
 | **Folder guides** | | | | | |
-| [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 8 October 2026 |
-| [hpc/roihu/plan.md](hpc/roihu/plan.md) | the v2 run plan: budget, stop line and steps | maintainers, evaluators | run plan, compute budget | in development | 8 October 2026 |
-| [jetson/README.md](jetson/README.md) | how to run the benchmark on a Jetson Orin | hardware testers | Jetson steps | in development | 7 October 2026 |
+| [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 14 October 2026 |
+| [hpc/roihu/plan.md](hpc/roihu/plan.md) | the v2 run plan: budget, stop line and steps | maintainers, evaluators | run plan, compute budget | in development | 14 October 2026 |
+| [jetson/README.md](jetson/README.md) | how to run the benchmark on a Jetson Orin | hardware testers | Jetson steps | in development | 14 October 2026 |
+| [references/README.md](references/README.md) | how published third-party models are run on the same patches | maintainers, evaluators | reference model runs | in development | 14 October 2026 |
 | **Models** | | | | | |
 | [models/cloud-filter/README.md](models/cloud-filter/README.md) | what a release folder contains | users | release folders | in development | 8 October 2026 |
 | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) | template for a model card | maintainers | model card fields | in use | 7 October 2026 |
 | **Reports** | | | | | |
-| [reports/README.md](reports/README.md) | what each report file is and which script writes it | users | report files | in development | 8 October 2026 |
+| [reports/README.md](reports/README.md) | what each report file is and which script writes it | users | report files | in development | 14 October 2026 |
 | [reports/jetson/README.md](reports/jetson/README.md) | where Jetson results land | hardware testers | Jetson reports | in development | 8 October 2026 |
 | [reports/test_log.md](reports/test_log.md) | log of every use of the test split | maintainers, evaluators | test-split log | in use | n/a (append-only log) |
 
@@ -75,7 +77,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 | Status | Meaning | Files |
 | :--- | :---: | :---: |
 | `draft` | written, not yet reviewed or not yet complete | [CLA.md](CLA.md) |
-| `in development` | in use and still changing with the work it describes | [README.md](README.md), [docs/RESULTS.md](docs/RESULTS.md), [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), [docs/LANDSCAPE.md](docs/LANDSCAPE.md), [docs/DATA.md](docs/DATA.md), [docs/DATASETS.md](docs/DATASETS.md), [docs/SPEC.md](docs/SPEC.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/STANDARDS.md](docs/STANDARDS.md), [hpc/roihu/README.md](hpc/roihu/README.md), [hpc/roihu/plan.md](hpc/roihu/plan.md), [jetson/README.md](jetson/README.md), [models/cloud-filter/README.md](models/cloud-filter/README.md), [reports/README.md](reports/README.md), [reports/jetson/README.md](reports/jetson/README.md) |
+| `in development` | in use and still changing with the work it describes | [README.md](README.md), [docs/RESULTS.md](docs/RESULTS.md), [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), [docs/LANDSCAPE.md](docs/LANDSCAPE.md), [docs/DATA.md](docs/DATA.md), [docs/DATASETS.md](docs/DATASETS.md), [docs/INDEPENDENT.md](docs/INDEPENDENT.md), [docs/SPEC.md](docs/SPEC.md), [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), [docs/STANDARDS.md](docs/STANDARDS.md), [hpc/roihu/README.md](hpc/roihu/README.md), [hpc/roihu/plan.md](hpc/roihu/plan.md), [jetson/README.md](jetson/README.md), [references/README.md](references/README.md), [models/cloud-filter/README.md](models/cloud-filter/README.md), [reports/README.md](reports/README.md), [reports/jetson/README.md](reports/jetson/README.md) |
 | `in use` | complete for its purpose; changes are recorded in the changelog | [START-HERE.md](START-HERE.md), [INDEX.md](INDEX.md), [GETTING-STARTED.md](GETTING-STARTED.md), [INSTALL.md](INSTALL.md), [LEARNING-PATH.md](LEARNING-PATH.md), [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md), [CLAIMS.md](CLAIMS.md), [POLICY.md](POLICY.md), [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md), [docs/STYLE.md](docs/STYLE.md), [EXTENDING.md](EXTENDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [AI_ASSISTANCE.md](AI_ASSISTANCE.md), [GOVERNANCE.md](GOVERNANCE.md), [LICENSING.md](LICENSING.md), [NOTICE.md](NOTICE.md), [TRADEMARK.md](TRADEMARK.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SUPPORT.md](SUPPORT.md), [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md), [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md), [reports/test_log.md](reports/test_log.md) |
 | `superseded` | replaced; the document names its successor | none |
 
@@ -83,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 14 October 2026: docs/INDEPENDENT.md and references/README.md added; last-changed dates of the documents changed by v3; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: one row each for the issue forms folder and the pull request templates folder.
 - 7 October 2026: AI_ASSISTANCE.md added to the policies and to the files in use.

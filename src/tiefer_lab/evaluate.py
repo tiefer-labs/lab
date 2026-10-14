@@ -34,12 +34,16 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
-from tiefer_lab.data import cache, padding, sensor
+from tiefer_lab.data import cache, independent, padding, sensor
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
 from tiefer_lab.models import flexible
-from tiefer_lab.models.cloud_filter import predict_masks_with_confidence
+from tiefer_lab.models.cloud_filter import (
+    CloudBias,
+    predict_masks_with_confidence,
+    predict_probabilities,
+)
 from tiefer_lab.tables import header_block
 from tiefer_lab.train import (
     CONFIG_NAME,
@@ -83,10 +87,23 @@ class Scores:
         self.ignored_pixels = 0
 
     def add(
-        self, prediction: NDArray[np.integer[Any]], reference: NDArray[np.integer[Any]]
+        self,
+        prediction: NDArray[np.integer[Any]],
+        reference: NDArray[np.integer[Any]],
+        cloud_probability: NDArray[np.floating[Any]] | None = None,
     ) -> None:
+        """Score one patch. With `cloud_probability` (p(thick) + p(thin) per pixel), the
+        predicted cloud fraction is its mean over the labelled pixels (the soft fraction
+        of `--fraction soft`) instead of the share of pixels whose argmax is cloud."""
         valid = (reference != IGNORE_INDEX) & (prediction != IGNORE_INDEX)
         fractions = decisions.frame_fractions(prediction, reference)
+        if cloud_probability is not None:
+            fractions = decisions.FrameFractions(
+                fractions.true_cloud,
+                float(np.asarray(cloud_probability)[valid].mean()),
+                fractions.predicted_shadow,
+                fractions.pixels,
+            )
         if not valid.all():
             self.ignored_pixels += int((~valid).sum())
             prediction, reference = prediction[valid], reference[valid]
@@ -115,15 +132,29 @@ class Scores:
                 out[problem]["intervals"] = {k: i.as_dict() for k, i in intervals.items()}
         return out
 
-    def report(self, settings: EvaluationConfig, with_intervals: bool = True) -> dict[str, Any]:
+    def report(
+        self, settings: EvaluationConfig, with_intervals: bool = True, full: bool = False
+    ) -> dict[str, Any]:
+        """The metrics of the scored patches.
+
+        `full` adds the full metric set of the v3 protocol option
+        (`--full-metrics`): the paper's summary with the valid against
+        invalid experiment, and the sweep of the decision threshold. Without
+        it the report is exactly that of earlier versions.
+        """
         if not self.confusions:
             raise ValueError("no patches were scored")
         if self.binary_only:
-            return {
+            out_binary: dict[str, Any] = {
                 "patches": len(self),
                 "ignored_pixels": self.ignored_pixels,
                 "binary": self.binary_report(settings, with_intervals),
             }
+            if full:
+                out_binary["paper"] = binary_metrics.paper_summary(
+                    np.stack(self.confusions), ("cloud",)
+                )
+            return out_binary
         cms = np.stack(self.confusions)
         true = np.asarray(self.true_fraction)
         pred = np.asarray(self.pred_fraction)
@@ -140,6 +171,9 @@ class Scores:
         out["false_discard_rate"] = out["frame"]["thresholds"][
             f"{settings.decision_threshold:.2f}"
         ]["false_discard_rate"]
+        if full:
+            out["paper"] = binary_metrics.paper_summary(cms)
+            out["frame_sweep"] = metrics.operating_curve(true, pred, settings.decision_threshold)
         if with_intervals:
             out["intervals"] = {
                 name: interval.as_dict()
@@ -185,6 +219,16 @@ def _statistics(
     return stats
 
 
+def with_cloud_cover_bins(
+    scores: Scores, patch_metadata: Sequence[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """The metadata of every patch plus the cloud cover bin of its labelled cloud fraction."""
+    return [
+        {**m, "cloud_cover_bin": metrics.cloud_cover_bin(f)}
+        for m, f in zip(patch_metadata, scores.true_fraction, strict=True)
+    ]
+
+
 def breakdown(
     scores: Scores, patch_metadata: Sequence[dict[str, Any]], settings: EvaluationConfig
 ) -> dict[str, Any]:
@@ -228,6 +272,25 @@ def worst_stratum(strata: dict[str, Any], min_patches: int = 10) -> dict[str, An
     if not candidates:
         return None
     return min(candidates, key=lambda c: c["cloud_boa"])
+
+
+def shadow_on_marked_tiles(
+    scores: Scores, patch_metadata: Sequence[dict[str, Any]], settings: EvaluationConfig
+) -> dict[str, Any]:
+    """Shadow measures on the tiles whose shadows were marked, where a dataset says so.
+
+    The Sentinel-2 Cloud Mask Catalogue marks shadow only where
+    `shadows_marked` is 1; other tiles say nothing about shadow, so the shadow
+    problem is scored on the marked tiles only. Without the field nothing changes.
+    """
+    marked = [
+        i for i, m in enumerate(patch_metadata) if str(m.get("shadows_marked", "")) in ("1", "True")
+    ]
+    if not patch_metadata or "shadows_marked" not in patch_metadata[0] or not marked:
+        return {}
+    cms = np.stack([scores.confusions[i] for i in marked])
+    shadow = binary_metrics.summary(cms, ("shadow",))["shadow"]
+    return {"shadow_on_marked_tiles": {"tiles": len(marked), **shadow}}
 
 
 def frame_decisions(
@@ -332,11 +395,26 @@ def tuned_threshold_rule(val: cache.SplitData) -> tuple[baselines.ThresholdRule,
 
 
 def evaluate_baselines(
-    data: cache.SplitData, val: cache.SplitData, settings: EvaluationConfig
+    data: cache.SplitData,
+    val: cache.SplitData | None,
+    settings: EvaluationConfig,
+    full: bool = False,
 ) -> dict[str, Any]:
+    """Baselines and reference masks on `data`.
+
+    Without `val` (an independent dataset), the threshold rule and probability
+    masks, which need tuning on CloudSEN12+ validation pixels of the same
+    bands, are left out; the masks shipped with the dataset are scored.
+    """
     out: dict[str, Any] = {}
     always = score_mask_function(data, lambda i: baselines.always_send(data.labels[i].shape))
-    out["always_send"] = {"description": "every frame is sent", **always.report(settings)}
+    out["always_send"] = {
+        "description": "every frame is sent",
+        **always.report(settings, full=full),
+    }
+    if val is None:
+        out.update(_reference_reports(data, None, settings, full))
+        return out
     rule, val_score = tuned_threshold_rule(val)
     scored = score_mask_function(
         data, lambda i: rule.predict(to_reflectance(np.asarray(data.images[i])))
@@ -345,9 +423,53 @@ def evaluate_baselines(
         "description": "brightness and whiteness of the visible bands, tuned on validation",
         "parameters": rule.as_dict(),
         "validation_mean_iou_when_tuned": val_score,
-        **scored.report(settings),
+        **scored.report(settings, full=full),
     }
+    out.update(_reference_reports(data, val, settings, full))
+    return out
+
+
+def _reference_reports(
+    data: cache.SplitData, val: cache.SplitData | None, settings: EvaluationConfig, full: bool
+) -> dict[str, Any]:
+    out: dict[str, Any] = {}
     for name, masks in data.reference.items():
+        if data.reference_kinds.get(name) == "probability":
+            if val is None:
+                out[f"reference_{name}"] = {
+                    "description": "cloud probability; not scored without validation tuning",
+                    "kind": "probability",
+                }
+                continue
+            # A cloud probability: cloud from a threshold tuned on validation only.
+            # The paper scored s2cloudless on the probability without a threshold.
+            val_masks = val.reference.get(name)
+            if val_masks is None:
+                raise ValueError(f"{name}: the validation split has no such reference mask")
+            hist = baselines.probability_histograms(
+                [np.asarray(val_masks[i]) for i in range(len(val))],
+                [np.asarray(val.labels[i]) for i in range(len(val))],
+            )
+            threshold, val_boa = baselines.tune_probability_threshold(hist)
+
+            def probability_mask(
+                i: int, m: NDArray[np.uint8] = masks, t: int = threshold
+            ) -> NDArray[np.uint8]:
+                raw = np.asarray(m[i])
+                out_mask = np.where(raw >= t, THICK_CLOUD, CLEAR).astype(np.uint8)
+                out_mask[raw == IGNORE_INDEX] = IGNORE_INDEX
+                return out_mask
+
+            ref = score_mask_function(data, probability_mask, binary_only=True)
+            out[f"reference_{name}"] = {
+                "description": "cloud probability shipped with the dataset, cloud at or above "
+                "a threshold tuned on validation; the CloudSEN12 paper scored it without one",
+                "kind": "probability",
+                "threshold_percent": threshold,
+                "validation_median_cloud_boa_when_tuned": val_boa,
+                **ref.report(settings, full=full),
+            }
+            continue
         if data.reference_kinds.get(name, "four_class") != "four_class":
             # A cloud against non-cloud mask (1 cloud, 0 not) is scored on the
             # cloud problem only: cloud is shown as thick cloud, the rest as clear.
@@ -361,7 +483,7 @@ def evaluate_baselines(
             out[f"reference_{name}"] = {
                 "description": "mask shipped with the dataset; cloud against non-cloud only",
                 "kind": data.reference_kinds[name],
-                **ref.report(settings),
+                **ref.report(settings, full=full),
             }
             continue
 
@@ -371,7 +493,7 @@ def evaluate_baselines(
         ref = score_mask_function(data, reference_mask)
         out[f"reference_{name}"] = {
             "description": "mask shipped with the dataset; uses more spectral bands",
-            **ref.report(settings),
+            **ref.report(settings, full=full),
         }
     return out
 
@@ -388,6 +510,11 @@ def evaluate_run(
     allow_synthetic: bool = False,
     band_set: Sequence[str] | None = None,
     perturbation: str | None = None,
+    full_metrics: bool = False,
+    data_cache: str | None = None,
+    substitute: bool = False,
+    cloud_bias: str | None = None,
+    fraction: str = "argmax",
 ) -> Path:
     """Evaluate a run on one split; a band-flexible run on one band set.
 
@@ -396,6 +523,11 @@ def evaluate_run(
     sensor effect; the report name and the report record it.
     """
     check_test_guard(split, final, reason)
+    if data_cache is not None and not (reason and reason.strip()):
+        raise TestGuardError(
+            "an independent dataset is a clean check: --data needs --reason, and the "
+            "evaluation is logged like a use of the test split"
+        )
     config = load_config(run_dir / CONFIG_NAME)
     run_meta = json.loads((run_dir / METADATA_NAME).read_text(encoding="utf-8"))
     run_id = str(run_meta["run_id"])
@@ -404,8 +536,18 @@ def evaluate_run(
     index = cache.read_index(directory)
     if cache.is_synthetic(index) and not allow_synthetic:
         raise TrainingError("the cache holds synthetic data; only the smoke pipeline uses it")
-    if split == "test":
+    if split == "test" and data_cache is None:
         log_test_evaluation(run_id, git["commit"], reason or "", which)
+    independent_index: dict[str, Any] | None = None
+    if data_cache is not None:
+        independent_dir = cache.cache_dir(data_cache)
+        independent_index = cache.read_index(independent_dir)
+        log_test_evaluation(
+            run_id,
+            git["commit"],
+            f"independent dataset {independent_index.get('source')}: {reason}",
+            which,
+        )
 
     if config.model.input == "flexible":
         if not band_set:
@@ -417,11 +559,51 @@ def evaluate_run(
     precision = devices.precision_for(device)
     bands = config.data.bands
     mean, std = cache.normalisation(index, bands)
-    data = cache.load_split(directory, split, bands=bands)
+    substitution: dict[str, str] = {}
+    if independent_index is not None:
+        # Normalisation always comes from the run's own training cache (above).
+        block = independent_index["independent"]
+        stored = list(independent_index["bands"])
+        needed = list(band_set or bands)
+        if substitute:
+            substitution = dict(independent.SUBSTITUTIONS.get(block["sensor"], {}))
+        missing = [b for b in needed if substitution.get(b, b) not in stored]
+        if missing:
+            hint = " (--substitute uses B8A for B08 on Landsat 8)" if "B08" in missing else ""
+            raise TrainingError(f"the dataset does not provide {missing}{hint}")
+        data = cache.load_independent(cache.cache_dir(data_cache or ""), bands, substitution)
+    else:
+        data = cache.load_split(directory, split, bands=bands)
     model = load_model(run_dir, config, which, device)
     if isinstance(model, flexible.FlexibleModel):
         model.set_band_set(band_set or bands)
     evaluated_bands = list(band_set or bands)
+    # Protocol options of v3, both off by default: a cloud logit bias and the soft
+    # cloud fraction, each chosen on validation by `python -m tiefer_lab.calibrate`.
+    options: dict[str, Any] = {}
+    if cloud_bias is not None or fraction != "argmax":
+        from tiefer_lab.calibrate import read_calibration
+
+        calibration_file = (
+            read_calibration(run_dir, evaluated_bands)
+            if cloud_bias == "auto" or fraction == "soft"
+            else {}
+        )
+        if cloud_bias is not None:
+            value = (
+                calibration_file["cloud_bias"]["bias"]
+                if cloud_bias == "auto"
+                else float(cloud_bias)
+            )
+            if value is None:
+                raise TrainingError("no cloud bias met the frame targets on validation")
+            options["cloud_bias"] = float(value)
+        if fraction == "soft":
+            options["fraction"] = "soft"
+            options["temperature"] = float(calibration_file["temperature"]["temperature"])
+    eval_model: torch.nn.Module = (
+        CloudBias(model, options["cloud_bias"]) if "cloud_bias" in options else model
+    )
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]] = DataLoader(
         EvalPatches(
             data,
@@ -436,13 +618,22 @@ def evaluate_run(
     scores = Scores()
     calibration = metrics.Calibration()
     positions: list[int] = []
-    for position, pred, label, confidence in predict_masks_with_confidence(
-        model, loader, device, precision
-    ):
-        scores.add(pred, label)
-        calibration.add(confidence, pred, label)
-        positions.append(position)
-    strata = breakdown(scores, data.metadata, config.evaluation)
+    if options.get("fraction") == "soft":
+        for position, pred, label, confidence, p_cloud in predict_probabilities(
+            eval_model, loader, device, precision, options["temperature"]
+        ):
+            scores.add(pred, label, p_cloud)
+            calibration.add(confidence, pred, label)
+            positions.append(position)
+    else:
+        for position, pred, label, confidence in predict_masks_with_confidence(
+            eval_model, loader, device, precision
+        ):
+            scores.add(pred, label)
+            calibration.add(confidence, pred, label)
+            positions.append(position)
+    patch_meta = with_cloud_cover_bins(scores, data.metadata) if full_metrics else data.metadata
+    strata = breakdown(scores, patch_meta, config.evaluation)
 
     report: dict[str, Any] = {
         "kind": "evaluation",
@@ -463,30 +654,57 @@ def evaluate_run(
         "band_set": evaluated_bands,
         "perturbation": perturbation,
         "data": {
-            "cache": paths.portable(directory),
-            "source": index.get("source"),
-            "dataset": index.get("dataset"),
+            "cache": paths.portable(
+                directory if data_cache is None else cache.cache_dir(data_cache)
+            ),
+            "source": (independent_index or index).get("source"),
+            "dataset": (independent_index or index).get("dataset"),
             "split_count": len(data),
-            "split_build_date": index["splits"][split].get("build_date"),
+            "split_build_date": (independent_index or index)["splits"][
+                cache.INDEPENDENT_SPLIT if independent_index is not None else split
+            ].get("build_date"),
             # The dataset's padding, set to IGNORE_INDEX in the labels (data/padding.py).
             "padding_sides": list(padding.PADDING_SIDES),
             "padded_pixels_masked": data.padded_pixels(),
         },
-        "model": scores.report(config.evaluation),
+        "model": scores.report(config.evaluation, full=full_metrics),
         "breakdown": strata,
         "worst_stratum": worst_stratum(strata),
         "calibration": calibration.report(),
         "frames": frame_decisions(scores, positions, data.patch_ids, config.evaluation),
     }
-    if with_baselines:
+    if independent_index is not None:
+        source_name = str(independent_index.get("source"))
+        report["split"] = "independent"
+        report["independent"] = {
+            **independent_index["independent"],
+            "substitution": substitution,
+            "four_band_equivalent": set(evaluated_bands) == set(USED_BANDS)
+            or set(evaluated_bands) == {"B02", "B03", "B04", "B8A"},
+        }
+        report["model"].update(shadow_on_marked_tiles(scores, data.metadata, config.evaluation))
+        if with_baselines:
+            report["baselines"] = evaluate_baselines(data, None, config.evaluation, full_metrics)
+    elif with_baselines:
         # The baselines read blue, green, red and near infrared, in that order.
         base = cache.load_split(directory, split, bands=USED_BANDS)
         val = base if split == "val" else cache.load_split(directory, "val", bands=USED_BANDS)
-        report["baselines"] = evaluate_baselines(base, val, config.evaluation)
+        report["baselines"] = evaluate_baselines(base, val, config.evaluation, full=full_metrics)
+    if full_metrics:
+        report["full_metrics"] = True
+    if options:
+        report["options"] = options
 
     suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
     if perturbation:
         suffix += "_" + sensor.Perturbation.parse(perturbation).name
+    if "cloud_bias" in options:
+        suffix += "_cloudbias"
+    if options.get("fraction") == "soft":
+        suffix += "_soft"
+    if independent_index is not None:
+        suffix = f"_{source_name}{suffix}" + ("_substituted" if substitution else "")
+        split = "independent"
     out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -498,7 +716,31 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         prog="python -m tiefer_lab.evaluate", description="Evaluate a trained run."
     )
     parser.add_argument("--run", required=True, help="run directory or run ID")
-    parser.add_argument("--split", required=True, choices=["val", "test"])
+    parser.add_argument("--split", default=None, choices=["val", "test"])
+    parser.add_argument(
+        "--data",
+        default=None,
+        help="an independent dataset cache (build_cache --source); needs --reason and is logged",
+    )
+    parser.add_argument(
+        "--cloud-bias",
+        default=None,
+        help="protocol option: add this bias to the cloud logits, or 'auto' for the one "
+        "chosen on validation by tiefer_lab.calibrate (default: none)",
+    )
+    parser.add_argument(
+        "--fraction",
+        choices=["argmax", "soft"],
+        default="argmax",
+        help="protocol option: the predicted cloud fraction from the argmax (default) or from "
+        "the mean cloud probability at the temperature fitted on validation",
+    )
+    parser.add_argument(
+        "--substitute",
+        action="store_true",
+        help="with --data on another sensor: read B08 from the band that stands in for it "
+        "(B8A on Landsat 8); recorded in the report",
+    )
     parser.add_argument("--baselines", action="store_true", help="also evaluate the baselines")
     parser.add_argument("--final", action="store_true", help="required for --split test")
     parser.add_argument("--reason", help="why the test split is evaluated (with --final)")
@@ -511,9 +753,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--perturb", default=None, help="a fixed sensor perturbation, for example rescale=0.5"
     )
+    parser.add_argument(
+        "--full-metrics",
+        action="store_true",
+        help="v3 protocol option: also the paper's PA and UA shares, the valid problem, "
+        "the decision threshold sweep and cloud cover bins (default: off)",
+    )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.data is None and args.split is None:
+        parser.error("--split is required unless --data is given")
+    if args.data is not None and args.split is not None:
+        parser.error("--data evaluates the whole independent dataset; leave out --split")
+    if args.data is not None:
+        args.split = "independent"
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -533,6 +788,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_synthetic=args.allow_synthetic,
                 band_set=band_set,
                 perturbation=args.perturb,
+                full_metrics=args.full_metrics,
+                data_cache=args.data,
+                substitute=args.substitute,
+                cloud_bias=args.cloud_bias,
+                fraction=args.fraction,
             )
             for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
         ]
