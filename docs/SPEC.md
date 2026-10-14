@@ -417,6 +417,7 @@ lab/
       smoke.sbatch                gputest, 15 minutes
       train.sbatch                gpumedium, resumable
       evaluate.sbatch             validation, or test with FINAL=1
+      evaluate_all.sh             one evaluation per independent dataset of a run
       export.sbatch               ONNX export and INT8 quantisation
   jetson/
     README.md                     how to run the benchmark on a Jetson Orin
@@ -427,6 +428,7 @@ lab/
   references/
     README.md                     how published third-party models are run on the same patches
     run_reference.py              reference models, licence first; masks added to a cache
+    add_release_2022.py           2022 release masks added to a cache, licence first
   models/
     cloud-filter/
       README.md                   what release folders contain (filled in Part B)
@@ -458,6 +460,7 @@ lab/
       acceptance.py               python -m tiefer_lab.acceptance: reports/acceptance.md
       calibrate.py                python -m tiefer_lab.calibrate: cloud bias and temperature on val
       compare.py                  python -m tiefer_lab.compare: reports/comparison.md
+      paper_models.py             python -m tiefer_lab.paper_models: reports/coverage.md
       diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
       sbom.py                     CycloneDX software bill of materials from uv.lock, run in CI
@@ -552,6 +555,7 @@ lab/
     test_training_options.py      v3 training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
     test_diagnose.py              diagnostics read validation only
+    test_paper_models.py          every paper algorithm and model has a route on every dataset
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
   .gitattributes                  line endings, *.sh and *.sbatch as LF
@@ -644,6 +648,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 14 October 2026: `paper_models.py`, `evaluate_all.sh`, `add_release_2022.py` and their test in the tree; drafted with an AI-assisted system.
 - 14 October 2026: v3, every addition off by default: section 7 adds probability references tuned on validation, the 2022 release masks, reference models from `references/` and the CloudScout re-implementation; section 8 the v3 training options; section 9 the protocol options `--full-metrics`, `--data`, `--cloud-bias` and `--fraction`, which wait for their method-change issues, and the acceptance per config, comparison and diagnosis tools; section 10 the export options; section 11 memory and determinism on the Jetson; sections 12 and 14 the new files; drafted with an AI-assisted system.
 - 8 October 2026: section 14, `http.py` retries every transient read error, and `test_transient_reads.py` tests it.
 - 8 October 2026: sections 12, 14 and 15: every Roihu step runs from `roihu-cpu.csc.fi`; GPU jobs follow CSC's way of submitting across architectures, and `setup_gpu.sbatch` sets up the GPU side; `metadata.py` works without torch, as the CPU jobs need, with its test.

@@ -38,7 +38,7 @@ How published third-party cloud masking models are run on the same patches as Ti
 
 4. Evaluate a run with `--baselines`: every reference mask of the split is scored next to the model.
 
-For KappaMask and the CD-FCNN models, the masks of the CloudSEN12 release of 2022 come first (`src/tiefer_lab/data/cloudsen12_2022.py`); running the models is the fallback. That release is CC BY-NC 4.0 on its record page, so it needs the same decision.
+For KappaMask and the CD-FCNN models, the masks of the CloudSEN12 release of 2022 come first (`src/tiefer_lab/data/cloudsen12_2022.py`); running the models is the fallback; `add_release_2022.py` adds them. Which algorithm is measured on which dataset, and how, is `reports/coverage.md` (`python -m tiefer_lab.paper_models`). That release is CC BY-NC 4.0 on its record page, so it needs the same decision.
 
 ---
 
@@ -46,7 +46,8 @@ For KappaMask and the CD-FCNN models, the masks of the CloudSEN12 release of 202
 
 | File | Purpose |
 | :--- | :---: |
-| `run_reference.py` | the reference models, their licence state and runners; adds their masks to a cache split |
+| `run_reference.py` | the reference models (UNetMobV2, s2cloudless, KappaMask, CD-FCNN, Fmask, dtacs4bands), their licence state and runners; adds their masks to a cache split |
+| `add_release_2022.py` | adds the masks of the CloudSEN12 release of 2022 to a CloudSEN12+ cache split as `2022_<mask>`; stops until the licence decision and the release facts |
 
 ---
 
@@ -63,4 +64,4 @@ For KappaMask and the CD-FCNN models, the masks of the CloudSEN12 release of 202
 
 ## Changelog
 
-- 14 October 2026: first version: reference models stop until their licence is cleared; masks are added next to those of the dataset; drafted with an AI-assisted system.
+- 14 October 2026: first version: reference models stop until their licence is cleared; masks are added next to those of the dataset; UNetMobV2, s2cloudless and the 2022 release masks; drafted with an AI-assisted system.

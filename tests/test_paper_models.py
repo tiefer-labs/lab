@@ -48,6 +48,9 @@ def test_routes_by_hand() -> None:
     # Input bands of the learned models are not verified yet: open, never guessed.
     assert route("unetmobv2", "s2_cloud_catalogue").kind == "open"
     assert route("unetmobv2", "landsat8_95cloud").kind == "open"
+    assert route("fmask", "s2_cesbio").kind == "needs product"
+    hollstein = paper_models.cell("l1_full", "s2_hollstein", {})
+    assert hollstein.startswith("needs product")
 
 
 def test_unread_datasets_stop(tmp_path: Path) -> None:

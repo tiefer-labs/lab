@@ -124,6 +124,10 @@ CLOUDSEN12_SHIPPED: Mapping[str, str] = {
     "qa60": "reference_cloudmask_qa60",
 }
 RELEASE_2022_PREFIX = "reference_2022_"
+IMAGES_REASON = (
+    "the dataset ships labels without images; the Level-1C products it names are "
+    "downloaded with credentials, a decision of the maintainer"
+)
 
 
 @dataclass(frozen=True)
@@ -153,6 +157,8 @@ def route(model: str, dataset: str) -> Route:
             "mask of the 2022 release on the same pixels (references/add_release_2022.py)",
         )
     info = independent.dataset(dataset)
+    if dataset in independent.IMAGES_FROM_PRODUCT:
+        return Route("needs product", None, IMAGES_REASON)
     shipped = independent.SHIPPED_MASKS.get(dataset, {})
     if model in shipped:
         return Route("shipped", f"reference_{model}", f"the dataset ships it ({shipped[model]})")
@@ -233,6 +239,8 @@ def cell(model: str, dataset: str, held: Mapping[tuple[str, str], list[str]]) ->
     if model not in ALGORITHMS:
         if (model, dataset) in held:
             return "measured"
+        if dataset in independent.IMAGES_FROM_PRODUCT:
+            return f"needs product: {IMAGES_REASON}"
         return "not measured: `evaluate --data` (test split: maintainer, FINAL=1)"
     r = route(model, dataset)
     if r.report_name and (r.report_name, dataset) in held:

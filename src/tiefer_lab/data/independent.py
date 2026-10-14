@@ -12,9 +12,9 @@ tests, never for training, selection, calibration or thresholds:
 - `kappaset`: KappaSet, Sentinel-2 KappaZeta cloud and cloud shadow masks
   (Zenodo, 2022);
 - `whus2_cd`: WHUS2-CD+, Sentinel-2 cloud masks over China (Zenodo, 2021);
-- `s2_hollstein`, `s2_cesbio`, `landsat8_38cloud`, `landsat8_95cloud`:
-  registered from the paper's Table 1; their releases are not read yet, so
-  their readers stop.
+- `landsat8_38cloud`, `landsat8_95cloud`: 38-Cloud and 95-Cloud (Kaggle);
+- `s2_hollstein`, `s2_cesbio`: labelled pixels and 60 m masks without images;
+  their images are the Level-1C products they name.
 
 Every fact below is read from the primary source named next to it, with the
 date it was read; the data card is docs/INDEPENDENT.md. A fact that is not
@@ -252,13 +252,37 @@ def _from_paper(
 
 DATASETS.update(
     {
-        "s2_hollstein": _from_paper(
-            "s2_hollstein",
-            SENTINEL2,
-            "https://doi.org/10.3390/rs8080666",
-            True,
-            True,
-            f"59 scenes, Europe, labels are polygons ({PAPER_TABLE_1})",
+        "s2_hollstein": Dataset(
+            name="s2_hollstein",
+            sensor=SENTINEL2,
+            version="GFZ GitLab EnMAP/sentinel2_manual_classification_clouds, file "
+            "20170710_s2_manual_classification_data.h5 (no DOI, no release tag)",
+            url="https://git.gfz-potsdam.de/EnMAP/sentinel2_manual_classification_clouds",
+            # The repository's LICENCE file is CC BY-NC 4.0, the licence field inside
+            # the HDF5 file CC BY-NC-SA 4.0 (read 14 October 2026): both non-commercial,
+            # so the maintainer decides before any use; None until then.
+            licence=None,
+            licence_source="LICENCE file of the repository: CC BY-NC 4.0; `licence` "
+            "dataset of the HDF5 file: CC BY-NC-SA 4.0; read 14 October 2026",
+            gsd_m=20.0,
+            # class_ids and class_names of the HDF5 file: 10 Clear, 20 Water, 30 Shadow,
+            # 40 Cirrus, 50 Cloud, 60 Snow; water and snow are clear, cirrus thin cloud.
+            label_codes={
+                10: CLEAR,
+                20: CLEAR,
+                30: CLOUD_SHADOW,
+                40: THIN_CLOUD,
+                50: THICK_CLOUD,
+                60: CLEAR,
+            },
+            has_thin=True,
+            has_shadow=True,
+            operational_mask=None,
+            strata_fields=("continent",),
+            note="labelled pixels from polygons, 3,028,733 pixels of 48 products in the "
+            "20170710 file (the paper's Table 1 says 59 scenes); spectra of 13 bands at "
+            "20 m with product ID, latitude and longitude per pixel, but no images",
+            bands=L1C_BAND_NAMES,
         ),
         "landsat8_38cloud": Dataset(
             name="landsat8_38cloud",
@@ -285,13 +309,35 @@ DATASETS.update(
             "test patches have no ground truth, only the 20 entire-scene masks",
             bands=("B02", "B03", "B04", "B8A"),
         ),
-        "s2_cesbio": _from_paper(
-            "s2_cesbio",
-            SENTINEL2,
-            "https://doi.org/10.3390/rs11040433",
-            False,
-            True,
-            f"38 scenes, Europe, no thin cloud class ({PAPER_TABLE_1})",
+        "s2_cesbio": Dataset(
+            name="s2_cesbio",
+            sensor=SENTINEL2,
+            version="Zenodo record 1460961, published 12 October 2018, "
+            "doi:10.5281/zenodo.1460961; the 31 scenes of Reference_dataset",
+            url="https://zenodo.org/records/1460961",
+            licence="CC-BY-4.0",
+            licence_source="Zenodo record 1460961, read 14 October 2026",
+            gsd_m=60.0,
+            # Zenodo description: 0 no_data, 1 not used, 2 low clouds, 3 high clouds,
+            # 4 clouds shadows, 5 land, 6 water, 7 snow. Code 1 is left out, so it stops.
+            # No thin cloud class (paper, Table 1): both cloud codes are cloud.
+            label_codes={
+                0: IGNORE_INDEX,
+                2: THICK_CLOUD,
+                3: THICK_CLOUD,
+                4: CLOUD_SHADOW,
+                5: CLEAR,
+                6: CLEAR,
+                7: CLEAR,
+            },
+            has_thin=False,
+            has_shadow=True,
+            operational_mask=None,
+            strata_fields=(),
+            note="masks only (classification_map.tif, 1830 x 1830 at 60 m) in a folder "
+            "named after its Level-1C product; the 7 scenes of the Hollstein folder are "
+            "left out, as the record says they were not used for validation",
+            bands=None,
         ),
         "landsat8_95cloud": Dataset(
             name="landsat8_95cloud",
@@ -383,13 +429,16 @@ OPEN_FACTS: dict[str, dict[str, Any]] = {
     },
 }
 
+# Datasets that ship labels but no images: the images are the Level-1C products
+# named in the dataset, which are downloaded with credentials, a decision of the
+# maintainer. Until then every model's route on them is `needs product`.
+IMAGES_FROM_PRODUCT: frozenset[str] = frozenset({"s2_hollstein", "s2_cesbio"})
 PAPER_ONLY = ("s2_hollstein", "s2_cesbio")
 for _name in PAPER_ONLY:
     OPEN_FACTS[_name] = {
-        "release": None,  # download URL, version and file list of the release
-        "scene_layout": None,  # file names and what each holds
-        "band_scale": None,  # digital numbers or reflectance, and the scale
+        "product_download": None,  # where the Level-1C products are read from
     }
+OPEN_FACTS["s2_hollstein"]["pixel_location"] = None  # latitude and longitude to pixel
 
 # 38-Cloud and 95-Cloud (repository READMEs and Kaggle files, read 14 October 2026):
 # one file per band and patch, {red,green,blue,nir,gt}_patch_<N>_<row>_by_<col>_<product

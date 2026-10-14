@@ -56,7 +56,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 
 | Step | What | Configs and seeds | Partition | GPU BU upper bound | GPU BU estimate | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1a | independent dataset caches (CPU) | `s2_cloud_catalogue`, `kappaset`, `landsat8_biome`, `landsat8_sparcs`; each after its facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | 0 (CPU BU) | 0 | not run |
+| 1a | independent dataset caches (CPU) | the nine datasets of the paper's Table 1 (`DATASETS` of `src/tiefer_lab/data/independent.py`); each after its facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | 0 (CPU BU) | 0 | not run |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
 | 1c | extra training patches (CPU) | `train_extra` of `cloudsen12-l1c-all`, after `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` | `small` | 0 (CPU BU) | 0 | not run |
 | 2a | diagnosis of the v2 runs: seeds and false discards (CPU) | the v2 L1 and L2 runs | `small` | 0 (CPU BU) | 0 | not run |
@@ -89,6 +89,9 @@ bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_biome
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_sparcs
+# every built dataset for one run, then the coverage page
+REASON="<why>" bash hpc/roihu/evaluate_all.sh <run-id>
+python3 -m tiefer_lab.paper_models
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch val --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch test --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train_extra --name cloudsen12-l1c-all --bands all
