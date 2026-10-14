@@ -30,6 +30,24 @@ of patches below 0.1, between 0.1 and 0.9 and above 0.9, not as a median.
 `PAPER_DEFINITION_VERIFIED` stays False because of that difference. Published
 values are placed only in docs/LANDSCAPE.md, never next to these measurements
 in docs/RESULTS.md.
+
+The paper's own summary (`paper_summary`, evaluated only with
+`python -m tiefer_lab.evaluate --full-metrics`, a protocol option whose
+default leaves every report unchanged): per patch PA and UA, NaN where the
+patch has no reference positives (PA) or no predicted positives (UA); then
+the share of patches with the value below 0.1 (low), from 0.1 to 0.9
+(middle) and above 0.9 (high). Source: CloudSEN12, Scientific Data 9, 782,
+2022, https://doi.org/10.1038/s41597-022-01878-2, Technical Validation, Eq. 1
+and the paragraph after it, and the notes of Table 6 ("percentage of IPs";
+the BOA is "the median BOA across all IPs"), read on 14 October 2026 in the
+PMC full text. The denominator of the shares is TODO(verify): the text says
+"percentage of IPs" and "of total IPs" and sets PA and UA of cloudless
+patches to NaN, but does not say whether those NaN patches are in the
+denominator; this code divides by the patches where the value is defined,
+which the rows of Table 6 summing to 100 supports. `PAPER_VERIFIED` records
+what matches the paper: the median BOA does; the share summary waits for the
+denominator. The paper's third experiment, valid against invalid, has thick
+cloud, thin cloud and cloud shadow as positives (`PAPER_PROBLEMS`).
 """
 
 from __future__ import annotations
@@ -44,11 +62,20 @@ from numpy.typing import NDArray
 from tiefer_lab.data.source import CLOUD_SHADOW, NUM_CLASSES, THICK_CLOUD, THIN_CLOUD
 
 PAPER_DEFINITION_VERIFIED = False
+# What matches the paper, by summary (see the module docstring).
+PAPER_VERIFIED: dict[str, bool] = {"median_boa": True, "share_summary": False}
+# Bounds of the paper's low, middle and high groups.
+SHARE_LOW, SHARE_HIGH = 0.1, 0.9
 
 PROBLEMS: dict[str, tuple[int, ...]] = {
     "cloud": (THICK_CLOUD, THIN_CLOUD),
     "shadow": (CLOUD_SHADOW,),
 }
+# The paper's third experiment; scored only with the full metric set.
+PAPER_PROBLEMS: dict[str, tuple[int, ...]] = {
+    "valid": (THICK_CLOUD, THIN_CLOUD, CLOUD_SHADOW),
+}
+ALL_PROBLEMS: dict[str, tuple[int, ...]] = {**PROBLEMS, **PAPER_PROBLEMS}
 MEASURES = ("boa", "pa", "ua", "oa")
 
 
@@ -84,7 +111,7 @@ def per_patch(cms: NDArray[np.integer[Any]], problem: str) -> dict[str, NDArray[
     """Each measure for every patch (NaN where undefined), from (patches, 4, 4) matrices."""
     if cms.ndim != 3 or cms.shape[1:] != (NUM_CLASSES, NUM_CLASSES):
         raise ValueError(f"expected (patches, {NUM_CLASSES}, {NUM_CLASSES}), got {cms.shape}")
-    rows = [patch_measures(*binary_counts(cm, PROBLEMS[problem])) for cm in cms]
+    rows = [patch_measures(*binary_counts(cm, ALL_PROBLEMS[problem])) for cm in cms]
     return {m: np.asarray([r[m] for r in rows], dtype=np.float64) for m in MEASURES}
 
 
@@ -102,7 +129,7 @@ def summary(
     for problem in problems:
         values = per_patch(cms, problem)
         out[problem] = {
-            "positive_classes": list(PROBLEMS[problem]),
+            "positive_classes": list(ALL_PROBLEMS[problem]),
             **{
                 f"median_{m}": None if math.isnan(median(v)) else median(v)
                 for m, v in values.items()
@@ -111,4 +138,42 @@ def summary(
         }
     out["definition"] = "this repository (binary_metrics.py); paper definition TODO(verify)"
     out["paper_definition_verified"] = PAPER_DEFINITION_VERIFIED
+    return out
+
+
+def shares(values: NDArray[np.float64]) -> dict[str, float | int | None]:
+    """The paper's low, middle and high shares over the patches where the value is defined.
+
+    low: below 0.1; middle: from 0.1 to 0.9, both included; high: above 0.9.
+    The shares are None when no patch has a defined value.
+    """
+    finite = values[np.isfinite(values)]
+    n = int(finite.size)
+    if n == 0:
+        return {"low": None, "middle": None, "high": None, "patches_defined": 0}
+    low = int((finite < SHARE_LOW).sum())
+    high = int((finite > SHARE_HIGH).sum())
+    return {
+        "low": low / n,
+        "middle": (n - low - high) / n,
+        "high": high / n,
+        "patches_defined": n,
+    }
+
+
+def paper_summary(
+    cms: NDArray[np.integer[Any]], problems: Sequence[str] = tuple(ALL_PROBLEMS)
+) -> dict[str, Any]:
+    """Median BOA and the low, middle and high shares of PA and UA, per problem."""
+    out: dict[str, Any] = {}
+    for problem in problems:
+        values = per_patch(cms, problem)
+        out[problem] = {
+            "positive_classes": list(ALL_PROBLEMS[problem]),
+            "median_boa": None if math.isnan(median(values["boa"])) else median(values["boa"]),
+            "pa_shares": shares(values["pa"]),
+            "ua_shares": shares(values["ua"]),
+        }
+    out["verified"] = dict(PAPER_VERIFIED)
+    out["share_denominator"] = "patches where the value is defined (TODO(verify))"
     return out

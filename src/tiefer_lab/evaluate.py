@@ -115,15 +115,29 @@ class Scores:
                 out[problem]["intervals"] = {k: i.as_dict() for k, i in intervals.items()}
         return out
 
-    def report(self, settings: EvaluationConfig, with_intervals: bool = True) -> dict[str, Any]:
+    def report(
+        self, settings: EvaluationConfig, with_intervals: bool = True, full: bool = False
+    ) -> dict[str, Any]:
+        """The metrics of the scored patches.
+
+        `full` adds the full metric set of the v3 protocol option
+        (`--full-metrics`): the paper's summary with the valid against
+        invalid experiment, and the sweep of the decision threshold. Without
+        it the report is exactly that of earlier versions.
+        """
         if not self.confusions:
             raise ValueError("no patches were scored")
         if self.binary_only:
-            return {
+            out_binary: dict[str, Any] = {
                 "patches": len(self),
                 "ignored_pixels": self.ignored_pixels,
                 "binary": self.binary_report(settings, with_intervals),
             }
+            if full:
+                out_binary["paper"] = binary_metrics.paper_summary(
+                    np.stack(self.confusions), ("cloud",)
+                )
+            return out_binary
         cms = np.stack(self.confusions)
         true = np.asarray(self.true_fraction)
         pred = np.asarray(self.pred_fraction)
@@ -140,6 +154,9 @@ class Scores:
         out["false_discard_rate"] = out["frame"]["thresholds"][
             f"{settings.decision_threshold:.2f}"
         ]["false_discard_rate"]
+        if full:
+            out["paper"] = binary_metrics.paper_summary(cms)
+            out["frame_sweep"] = metrics.operating_curve(true, pred, settings.decision_threshold)
         if with_intervals:
             out["intervals"] = {
                 name: interval.as_dict()
@@ -183,6 +200,16 @@ def _statistics(
         stats[f"false_discard_rate@{key}"] = frame_stat(metrics.false_discard_rate, t)
         stats[f"decision_accuracy@{key}"] = frame_stat(metrics.decision_accuracy, t)
     return stats
+
+
+def with_cloud_cover_bins(
+    scores: Scores, patch_metadata: Sequence[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """The metadata of every patch plus the cloud cover bin of its labelled cloud fraction."""
+    return [
+        {**m, "cloud_cover_bin": metrics.cloud_cover_bin(f)}
+        for m, f in zip(patch_metadata, scores.true_fraction, strict=True)
+    ]
 
 
 def breakdown(
@@ -332,11 +359,14 @@ def tuned_threshold_rule(val: cache.SplitData) -> tuple[baselines.ThresholdRule,
 
 
 def evaluate_baselines(
-    data: cache.SplitData, val: cache.SplitData, settings: EvaluationConfig
+    data: cache.SplitData, val: cache.SplitData, settings: EvaluationConfig, full: bool = False
 ) -> dict[str, Any]:
     out: dict[str, Any] = {}
     always = score_mask_function(data, lambda i: baselines.always_send(data.labels[i].shape))
-    out["always_send"] = {"description": "every frame is sent", **always.report(settings)}
+    out["always_send"] = {
+        "description": "every frame is sent",
+        **always.report(settings, full=full),
+    }
     rule, val_score = tuned_threshold_rule(val)
     scored = score_mask_function(
         data, lambda i: rule.predict(to_reflectance(np.asarray(data.images[i])))
@@ -345,7 +375,7 @@ def evaluate_baselines(
         "description": "brightness and whiteness of the visible bands, tuned on validation",
         "parameters": rule.as_dict(),
         "validation_mean_iou_when_tuned": val_score,
-        **scored.report(settings),
+        **scored.report(settings, full=full),
     }
     for name, masks in data.reference.items():
         if data.reference_kinds.get(name, "four_class") != "four_class":
@@ -361,7 +391,7 @@ def evaluate_baselines(
             out[f"reference_{name}"] = {
                 "description": "mask shipped with the dataset; cloud against non-cloud only",
                 "kind": data.reference_kinds[name],
-                **ref.report(settings),
+                **ref.report(settings, full=full),
             }
             continue
 
@@ -371,7 +401,7 @@ def evaluate_baselines(
         ref = score_mask_function(data, reference_mask)
         out[f"reference_{name}"] = {
             "description": "mask shipped with the dataset; uses more spectral bands",
-            **ref.report(settings),
+            **ref.report(settings, full=full),
         }
     return out
 
@@ -388,6 +418,7 @@ def evaluate_run(
     allow_synthetic: bool = False,
     band_set: Sequence[str] | None = None,
     perturbation: str | None = None,
+    full_metrics: bool = False,
 ) -> Path:
     """Evaluate a run on one split; a band-flexible run on one band set.
 
@@ -442,7 +473,8 @@ def evaluate_run(
         scores.add(pred, label)
         calibration.add(confidence, pred, label)
         positions.append(position)
-    strata = breakdown(scores, data.metadata, config.evaluation)
+    patch_meta = with_cloud_cover_bins(scores, data.metadata) if full_metrics else data.metadata
+    strata = breakdown(scores, patch_meta, config.evaluation)
 
     report: dict[str, Any] = {
         "kind": "evaluation",
@@ -472,7 +504,7 @@ def evaluate_run(
             "padding_sides": list(padding.PADDING_SIDES),
             "padded_pixels_masked": data.padded_pixels(),
         },
-        "model": scores.report(config.evaluation),
+        "model": scores.report(config.evaluation, full=full_metrics),
         "breakdown": strata,
         "worst_stratum": worst_stratum(strata),
         "calibration": calibration.report(),
@@ -482,7 +514,9 @@ def evaluate_run(
         # The baselines read blue, green, red and near infrared, in that order.
         base = cache.load_split(directory, split, bands=USED_BANDS)
         val = base if split == "val" else cache.load_split(directory, "val", bands=USED_BANDS)
-        report["baselines"] = evaluate_baselines(base, val, config.evaluation)
+        report["baselines"] = evaluate_baselines(base, val, config.evaluation, full=full_metrics)
+    if full_metrics:
+        report["full_metrics"] = True
 
     suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
     if perturbation:
@@ -511,6 +545,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--perturb", default=None, help="a fixed sensor perturbation, for example rescale=0.5"
     )
+    parser.add_argument(
+        "--full-metrics",
+        action="store_true",
+        help="v3 protocol option: also the paper's PA and UA shares, the valid problem, "
+        "the decision threshold sweep and cloud cover bins (default: off)",
+    )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
@@ -533,6 +573,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_synthetic=args.allow_synthetic,
                 band_set=band_set,
                 perturbation=args.perturb,
+                full_metrics=args.full_metrics,
             )
             for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
         ]

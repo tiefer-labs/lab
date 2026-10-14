@@ -127,3 +127,39 @@ def test_int8_comparison_reports_the_boa_change() -> None:
     out = compare_reports(report(0.7, 0.90), report(0.69, 0.885))
     assert out["cloud_boa_change"] == pytest.approx(-0.015)
     assert out["shadow_boa_change"] is None
+
+
+def test_paper_shares_by_hand() -> None:
+    # Values 0.05 (low), 0.1 and 0.9 (middle, bounds included), 0.95 (high), NaN (left out).
+    values = np.array([0.05, 0.1, 0.9, 0.95, math.nan])
+    out = bm.shares(values)
+    assert out == {"low": 0.25, "middle": 0.5, "high": 0.25, "patches_defined": 4}
+    assert bm.shares(np.array([math.nan]))["low"] is None
+
+
+def test_valid_problem_and_paper_summary_by_hand() -> None:
+    # Valid against invalid: positives thick, thin and shadow (rows and columns 1 to 3).
+    # TP 3 + 2 + 1 = 6, FN 1 + 0 + 1 = 2 (called clear), FP 1 (clear called thick), TN 5.
+    assert bm.binary_counts(CM, bm.ALL_PROBLEMS["valid"]) == (6, 2, 1, 5)
+    no_cloud = np.diag([10, 0, 0, 0])
+    out = bm.paper_summary(np.stack([CM, no_cloud]))
+    assert set(out) >= {"cloud", "shadow", "valid", "verified"}
+    # The clear patch has no cloud: PA undefined, so one defined patch.
+    assert out["cloud"]["pa_shares"]["patches_defined"] == 1
+    assert out["cloud"]["pa_shares"]["middle"] == 1.0  # 5 / 6
+    assert out["verified"] == {"median_boa": True, "share_summary": False}
+    assert out["valid"]["median_boa"] == pytest.approx((6 / 8 + 5 / 6) / 2)
+
+
+def test_default_report_is_unchanged_and_full_adds_the_paper_summary() -> None:
+    scores = Scores()
+    scores.add(np.array([[1, 0], [0, 3]], np.uint8), np.array([[1, 1], [0, 3]], np.uint8))
+    scores.add(np.array([[0, 0], [0, 0]], np.uint8), np.array([[0, 0], [0, 1]], np.uint8))
+    settings = EvaluationConfig(bootstrap_resamples=100)
+    plain = scores.report(settings)
+    assert "paper" not in plain and "frame_sweep" not in plain
+    assert "valid" not in plain["binary"]
+    full = scores.report(settings, full=True)
+    assert {k: v for k, v in full.items() if k not in ("paper", "frame_sweep")} == plain
+    assert "valid" in full["paper"]
+    assert len(full["frame_sweep"]["points"]) == 19
