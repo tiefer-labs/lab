@@ -29,6 +29,8 @@ The onboard cloud detection systems, onboard AI platforms and reference algorith
 | Craft Prospect Cloud Detector | images the Earth ahead of the satellite and identifies, classifies and maps cloud cover; up to 4 minutes of forecast to the payload computer | Cloud Detector unit | imagery ahead of the satellite | none published | [7] |
 | SkyServe STORM on D-Orbit ION (announced 22 April 2024) | data processing in orbit including "smart discard", tasking and compression | D-Orbit ION Satellite Carrier onboard compute (ION SCV004 Elysian Eleonora, then a further ION in 2025) | D-Orbit's live Earth observation data feed | none published | [8] |
 
+CloudScout's architecture (a 5 x 5 size reduction layer, groups of 3 x 3, 1 x 1 and 3 x 3 convolutions, global max pooling, fully connected decision layers) and its loss, which doubles the penalty of a false positive, are described in [1], section 3.4 and Figure 7; the paper gives no filter numbers. This repository has a re-implementation trained by Tiefer Lab from random initialisation, not the flown model (`src/tiefer_lab/models/cloudscout.py`, `configs/cloudscout*.toml`), so the frame comparison can be measured on the same frames.
+
 CloudScout's published values come from a test on the ground, on the Eyes of Things board, with a test set derived from Sentinel-2; they are not measurements in orbit. A false positive there is a not-cloudy image classified as cloudy, which would not be sent (the paper reduced false positives by making the network more prone to classify images as cloudless), and the paper states the 1 percent "with respect to the given dataset" [1].
 
 ---
@@ -68,6 +70,36 @@ Published cloud and cloud shadow BOA from the CloudSEN12 paper [13], Table 6: th
 | SEnSeI v2 | not stated in [15] | none published | none published | extra-table mask `cloudmask_sensei_v2` | n/a | [15] |
 | dtacs4bands | NIR, red, green and blue of Level-1C | none published | none published | run the model | licence CC BY-NC 4.0 | [14] |
 
+The paper summarises PA and UA as shares of its 975 test patches, in percent: low below 0.1, middle from 0.1 to 0.9, high above 0.9, with PA and UA of cloudless patches set to NaN [13], Table 6 and Technical Validation. They are written as the paper wrote them, published values on the 2022 labels; this repository computes the same summary with `evaluate --full-metrics` ([DATASETS.md](DATASETS.md), section 4), whose share denominator is still `TODO(verify)`.
+
+| Algorithm | PA low, published | PA middle, published | PA high, published | UA low, published | UA middle, published | UA high, published |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Cloud against no cloud** | | | | | | |
+| Human level | 1.03 | 14.03 | 84.94 | 0.13 | 4.39 | 95.48 |
+| UNetMobV2 | 0.77 | 30.63 | 68.6 | 0.26 | 25.03 | 74.71 |
+| KappaMask L2A | 2.83 | 31.92 | 65.25 | 1.56 | 63.04 | 35.41 |
+| KappaMask L1C | 4.89 | 45.3 | 49.81 | 0.65 | 38.38 | 60.97 |
+| Fmask | 5.92 | 40.54 | 53.54 | 0.26 | 52.65 | 47.09 |
+| s2cloudless | 7.08 | 52.38 | 40.54 | 0.65 | 31.5 | 67.84 |
+| Sen2Cor | 13.13 | 64.86 | 22.01 | 1.58 | 20.05 | 78.36 |
+| QA60 | 24.84 | 49.94 | 25.23 | 1.39 | 37.62 | 60.99 |
+| CD-FCNN-RGBI | 17.50 | 74.00 | 8.49 | 1.62 | 12.58 | 85.79 |
+| CD-FCNN-RGBISWIR | 18.40 | 71.43 | 10.17 | 0.82 | 9.43 | 89.75 |
+| **Cloud shadow** | | | | | | |
+| Human level | 3.11 | 22.04 | 74.85 | 0.60 | 9.97 | 89.43 |
+| UNetMobV2 | 8.88 | 67.16 | 23.96 | 7.99 | 46.65 | 45.36 |
+| KappaMask L2A | 37.28 | 59.76 | 2.96 | 12.24 | 36.9 | 50.85 |
+| KappaMask L1C | 30.03 | 60.95 | 9.02 | 20.67 | 59.36 | 19.97 |
+| Fmask | 22.34 | 76.04 | 1.63 | 14.53 | 77.06 | 8.41 |
+| Sen2Cor | 64.5 | 35.21 | 0.30 | 6.90 | 18.10 | 75.00 |
+| **Valid against invalid** | | | | | | |
+| Human level | 1.03 | 14.8 | 84.17 | 0.13 | 2.33 | 97.55 |
+| UNetMobV2 | 0.77 | 28.57 | 70.66 | 0.00 | 17.14 | 82.86 |
+| KappaMask L2A | 2.96 | 39.38 | 57.66 | 1.29 | 44.32 | 54.39 |
+| KappaMask L1C | 3.99 | 47.62 | 48.39 | 0.65 | 32.64 | 66.71 |
+| Fmask | 4.89 | 45.43 | 49.68 | 0.26 | 44.34 | 55.39 |
+| Sen2Cor | 13.77 | 69.63 | 16.6 | 1.05 | 18.58 | 80.37 |
+
 The extra-table masks are those of the dataset variant `tacofoundation:cloudsen12-extra`, which the dataset card says are not normalised to the CloudSEN12 class schema [15]. `build_cache --references` adds them to a split once their link and encodings are verified ([DATA.md](DATA.md), section 9); until then it stops with a clear message. CD-FCNN-RGBI and dtacs4bands use the same four bands as the L1 models and `l2_spec_1m`.
 
 ---
@@ -82,6 +114,7 @@ The column "This repository" holds values measured here, from [RESULTS.md](RESUL
 | dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | not measured (v2 pending) | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
 | CloudScout false positives against the false discard rate | useful frames discarded | not measured (v2 pending) | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
 | CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | not measured (v2 pending) | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
+| CloudScout re-implementation trained by Tiefer Lab, on the same frames | false discard rate and false send rate at 50 and 70 percent; size, parameters, multiply-accumulates | not measured | not measured here | open (note 7) | `reports/comparison.md` |
 | Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (v2 pending) | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
 | Model size | bytes | not measured (v2 pending) | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
 
@@ -93,6 +126,7 @@ Notes:
 4. Different data, bands and resolution. Deciding measurement: both models on the same frames.
 5. Deciding measurement: `jetson/bench.py` on a Jetson Orin, FP16 and INT8, with the input rail power.
 6. Different models and measures: file size here, memory footprint on the device for CloudScout. Deciding measurement: file size and memory during inference of the selected model on a Jetson Orin.
+7. Deciding measurement: `configs/cloudscout_th30.toml`, then `configs/cloudscout.toml` and `configs/cloudscout_th50.toml`, trained and evaluated on the CloudSEN12+ splits with the same code as Tiefer's models. It decides the comparison with the re-implementation, not with the flown model on its own data.
 
 ---
 
@@ -121,6 +155,7 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 14 October 2026: section 4 gains the published PA and UA shares of the CloudSEN12 paper's Table 6 for all three experiments, read in the Europe PMC full text; section 2 describes CloudScout's architecture and its re-implementation in this repository; section 5 adds the comparison with that re-implementation; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 1 links POLICY.md, gate 5, and BENCHMARK-AUTHORITY.md.
 - 7 October 2026: status `in development`, like the other pages that change with the work.
