@@ -149,6 +149,25 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
         "l2_flex_1m_rescale": ("data", {"rescale_min", "rescale_max"}),
         "l2_flex_1m_gainoffset": ("data", {"gain_jitter", "offset_jitter"}),
         "l2_flex_1m_noiseblur": ("data", {"noise_std", "blur_sigma"}),
+        # v3 variants (hpc/roihu/plan.md, section 3).
+        "l2_flex_1m_clip": ("train", {"grad_clip_norm"}),
+        "l2_flex_1m_guard": ("train", {"skip_nonfinite"}),
+        "l2_flex_1m_warmup10": ("train", {"warmup_epochs"}),
+        "l2_flex_1m_select4": ("train", {"select_band_set"}),
+        "l2_flex_1m_frameloss": ("train", {"frame_loss_weight"}),
+        "l2_flex_1m_lovasz": ("train", {"lovasz_weight"}),
+        "l2_flex_1m_crop384": ("data", {"crop_size"}),
+        "l2_flex_1m_crop512": ("data", {"crop_size"}),
+        "l2_flex_1m_rescale3": ("data", {"rescale_min", "rescale_max"}),
+        "l2_flex_1m_bandsets": ("train", {"band_sets"}),
+        "l2_flex_1m_extra": ("data", {"include_extra"}),
+        "l2_flex_1m_teacher": ("train", {"teacher_run", "teacher_weight"}),
+        "l2_flex_1m_int8pct": ("export", {"calibrate_method"}),
+        "l2_flex_1m_int8entropy": ("export", {"calibrate_method"}),
+        "l2_flex_1m_cal1024": ("export", {"calibration_patches"}),
+        "l2_flex_1m_calstrat": ("export", {"calibration_stratified"}),
+        "l2_flex_1m_fpends": ("export", {"keep_fp_first_last"}),
+        "l2_flex_1m_inputclip": ("export", {"input_clip_percentile"}),
     }
     for name, (section, keys) in variants.items():
         config = load(name)
@@ -157,3 +176,56 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
             b = dataclasses.asdict(getattr(reference, part))
             changed = {k for k in a if a[k] != b[k]}
             assert changed == (keys if part == section else set()), (name, part, changed)
+
+
+def _changed(config: Config, reference: Config) -> dict[str, set[str]]:
+    import dataclasses
+
+    out = {}
+    for part in ("data", "model", "train", "evaluation", "export"):
+        a = dataclasses.asdict(getattr(config, part))
+        b = dataclasses.asdict(getattr(reference, part))
+        changed = {k for k in a if a[k] != b[k]}
+        if changed:
+            out[part] = changed
+    return out
+
+
+def test_l1_and_cloudscout_variants_change_one_setting(repo_root: Path) -> None:
+    def load(name: str) -> Config:
+        return load_config(repo_root / "configs" / f"{name}.toml")
+
+    l1 = {
+        "l1_full_rescale": {"data": {"rescale_min", "rescale_max"}},
+        "l1_full_frameloss": {"train": {"frame_loss_weight"}},
+        "l1_full_lovasz": {"train": {"lovasz_weight"}},
+        "l1_full_clip": {"train": {"grad_clip_norm"}},
+        "l1_full_int8pct": {"export": {"calibrate_method"}},
+        "l1_full_int8entropy": {"export": {"calibrate_method"}},
+        "l1_full_cal1024": {"export": {"calibration_patches"}},
+        "l1_full_calstrat": {"export": {"calibration_stratified"}},
+        "l1_full_fpends": {"export": {"keep_fp_first_last"}},
+        "l1_full_inputclip": {"export": {"input_clip_percentile"}},
+    }
+    for name, expected in l1.items():
+        assert _changed(load(name), load("l1_full")) == expected, name
+    assert _changed(load("cloudscout_th50"), load("cloudscout")) == {
+        "train": {"frame_label_threshold"}
+    }
+
+
+def test_v3_references_are_drafts_with_the_stated_changes(repo_root: Path) -> None:
+    """A combined candidate is its own reference with its row in docs/ASSUMPTIONS.md."""
+
+    def load(name: str) -> Config:
+        return load_config(repo_root / "configs" / f"{name}.toml")
+
+    stated = {
+        "data": {"rescale_min", "rescale_max"},
+        "train": {"grad_clip_norm", "skip_nonfinite"},
+    }
+    assert _changed(load("l1_v3"), load("l1_full")) == stated
+    assert _changed(load("l2_flex_1m_v3"), load("l2_flex_1m")) == stated
+    assumptions = (repo_root / "docs" / "ASSUMPTIONS.md").read_text(encoding="utf-8")
+    for name in ("l1_v3", "l2_flex_1m_v3", "l2_flex_1m_v3_frameft", "cloudscout"):
+        assert f"`{name}`" in assumptions, name

@@ -34,7 +34,11 @@ ALLOWED_OPS = {
 }
 
 
-@pytest.mark.parametrize("name", ["l1_base.toml", "smoke.toml"])
+@pytest.mark.parametrize(
+    "name",
+    ["smoke.toml"]
+    + sorted(p.name for p in (Path(__file__).resolve().parents[1] / "configs").glob("l1_*.toml")),
+)
 def test_parameter_budget(repo_root: Path, name: str) -> None:
     config = load_config(repo_root / "configs" / name)
     model = cloud_filter.build_model(config.model.widths)
