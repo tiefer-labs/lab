@@ -39,7 +39,11 @@ from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
 from tiefer_lab.models import flexible
-from tiefer_lab.models.cloud_filter import predict_masks_with_confidence
+from tiefer_lab.models.cloud_filter import (
+    CloudBias,
+    predict_masks_with_confidence,
+    predict_probabilities,
+)
 from tiefer_lab.tables import header_block
 from tiefer_lab.train import (
     CONFIG_NAME,
@@ -83,10 +87,23 @@ class Scores:
         self.ignored_pixels = 0
 
     def add(
-        self, prediction: NDArray[np.integer[Any]], reference: NDArray[np.integer[Any]]
+        self,
+        prediction: NDArray[np.integer[Any]],
+        reference: NDArray[np.integer[Any]],
+        cloud_probability: NDArray[np.floating[Any]] | None = None,
     ) -> None:
+        """Score one patch. With `cloud_probability` (p(thick) + p(thin) per pixel), the
+        predicted cloud fraction is its mean over the labelled pixels (the soft fraction
+        of `--fraction soft`) instead of the share of pixels whose argmax is cloud."""
         valid = (reference != IGNORE_INDEX) & (prediction != IGNORE_INDEX)
         fractions = decisions.frame_fractions(prediction, reference)
+        if cloud_probability is not None:
+            fractions = decisions.FrameFractions(
+                fractions.true_cloud,
+                float(np.asarray(cloud_probability)[valid].mean()),
+                fractions.predicted_shadow,
+                fractions.pixels,
+            )
         if not valid.all():
             self.ignored_pixels += int((~valid).sum())
             prediction, reference = prediction[valid], reference[valid]
@@ -496,6 +513,8 @@ def evaluate_run(
     full_metrics: bool = False,
     data_cache: str | None = None,
     substitute: bool = False,
+    cloud_bias: str | None = None,
+    fraction: str = "argmax",
 ) -> Path:
     """Evaluate a run on one split; a band-flexible run on one band set.
 
@@ -559,6 +578,32 @@ def evaluate_run(
     if isinstance(model, flexible.FlexibleModel):
         model.set_band_set(band_set or bands)
     evaluated_bands = list(band_set or bands)
+    # Protocol options of v3, both off by default: a cloud logit bias and the soft
+    # cloud fraction, each chosen on validation by `python -m tiefer_lab.calibrate`.
+    options: dict[str, Any] = {}
+    if cloud_bias is not None or fraction != "argmax":
+        from tiefer_lab.calibrate import read_calibration
+
+        calibration_file = (
+            read_calibration(run_dir, evaluated_bands)
+            if cloud_bias == "auto" or fraction == "soft"
+            else {}
+        )
+        if cloud_bias is not None:
+            value = (
+                calibration_file["cloud_bias"]["bias"]
+                if cloud_bias == "auto"
+                else float(cloud_bias)
+            )
+            if value is None:
+                raise TrainingError("no cloud bias met the frame targets on validation")
+            options["cloud_bias"] = float(value)
+        if fraction == "soft":
+            options["fraction"] = "soft"
+            options["temperature"] = float(calibration_file["temperature"]["temperature"])
+    eval_model: torch.nn.Module = (
+        CloudBias(model, options["cloud_bias"]) if "cloud_bias" in options else model
+    )
     loader: DataLoader[tuple[torch.Tensor, torch.Tensor, int]] = DataLoader(
         EvalPatches(
             data,
@@ -573,12 +618,20 @@ def evaluate_run(
     scores = Scores()
     calibration = metrics.Calibration()
     positions: list[int] = []
-    for position, pred, label, confidence in predict_masks_with_confidence(
-        model, loader, device, precision
-    ):
-        scores.add(pred, label)
-        calibration.add(confidence, pred, label)
-        positions.append(position)
+    if options.get("fraction") == "soft":
+        for position, pred, label, confidence, p_cloud in predict_probabilities(
+            eval_model, loader, device, precision, options["temperature"]
+        ):
+            scores.add(pred, label, p_cloud)
+            calibration.add(confidence, pred, label)
+            positions.append(position)
+    else:
+        for position, pred, label, confidence in predict_masks_with_confidence(
+            eval_model, loader, device, precision
+        ):
+            scores.add(pred, label)
+            calibration.add(confidence, pred, label)
+            positions.append(position)
     patch_meta = with_cloud_cover_bins(scores, data.metadata) if full_metrics else data.metadata
     strata = breakdown(scores, patch_meta, config.evaluation)
 
@@ -639,10 +692,16 @@ def evaluate_run(
         report["baselines"] = evaluate_baselines(base, val, config.evaluation, full=full_metrics)
     if full_metrics:
         report["full_metrics"] = True
+    if options:
+        report["options"] = options
 
     suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
     if perturbation:
         suffix += "_" + sensor.Perturbation.parse(perturbation).name
+    if "cloud_bias" in options:
+        suffix += "_cloudbias"
+    if options.get("fraction") == "soft":
+        suffix += "_soft"
     if independent_index is not None:
         suffix = f"_{source_name}{suffix}" + ("_substituted" if substitution else "")
         split = "independent"
@@ -662,6 +721,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--data",
         default=None,
         help="an independent dataset cache (build_cache --source); needs --reason and is logged",
+    )
+    parser.add_argument(
+        "--cloud-bias",
+        default=None,
+        help="protocol option: add this bias to the cloud logits, or 'auto' for the one "
+        "chosen on validation by tiefer_lab.calibrate (default: none)",
+    )
+    parser.add_argument(
+        "--fraction",
+        choices=["argmax", "soft"],
+        default="argmax",
+        help="protocol option: the predicted cloud fraction from the argmax (default) or from "
+        "the mean cloud probability at the temperature fitted on validation",
     )
     parser.add_argument(
         "--substitute",
@@ -719,6 +791,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 full_metrics=args.full_metrics,
                 data_cache=args.data,
                 substitute=args.substitute,
+                cloud_bias=args.cloud_bias,
+                fraction=args.fraction,
             )
             for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
         ]

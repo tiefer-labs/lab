@@ -6,6 +6,13 @@
 Calibration uses patches from the training split only. The quantised model
 uses the QDQ format with symmetric INT8 activations and per-channel
 symmetric INT8 weights, which TensorRT reads as explicit quantisation.
+
+Options of the export config, each off by default (the defaults give the
+files of earlier versions): the calibration method (MinMax, Percentile or
+Entropy of ONNX Runtime), calibration patches drawn evenly from the cloud
+cover bins of the training split, the first and the last convolution kept in
+floating point, and a clip of the normalised input to percentiles of the
+training split (an ONNX Clip node in front of the network).
 """
 
 from __future__ import annotations
@@ -16,8 +23,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import onnx
+import torch
 from numpy.typing import NDArray
 from onnxruntime import quantization as ortq
+from torch import nn
 
 from tiefer_lab.config import EvaluationConfig
 from tiefer_lab.data import cache
@@ -43,12 +53,16 @@ class CalibrationReader(ortq.CalibrationDataReader):  # type: ignore[misc]
         input_size: int,
         count: int,
         seed: int = 0,
+        stratified: bool = False,
     ) -> None:
         if data.split != "train":
             raise ValueError("calibration uses the training split only")
         n = min(count, len(data))
         rng = np.random.default_rng(seed)
-        self.positions = sorted(int(i) for i in rng.choice(len(data), size=n, replace=False))
+        if stratified:
+            self.positions = stratified_positions(data, n, rng)
+        else:
+            self.positions = sorted(int(i) for i in rng.choice(len(data), size=n, replace=False))
         self.data, self.mean, self.std, self.input_size = data, mean, std, input_size
         self._iter: Iterator[dict[str, NDArray[np.float32]]] | None = None
 
@@ -66,7 +80,86 @@ class CalibrationReader(ortq.CalibrationDataReader):  # type: ignore[misc]
         self._iter = None
 
 
-def quantise_int8(fp32_path: Path, out_path: Path, reader: CalibrationReader) -> Path:
+CALIBRATION_METHODS = {
+    "minmax": ortq.CalibrationMethod.MinMax,
+    "percentile": ortq.CalibrationMethod.Percentile,
+    "entropy": ortq.CalibrationMethod.Entropy,
+}
+
+
+def stratified_positions(data: cache.SplitData, count: int, rng: np.random.Generator) -> list[int]:
+    """`count` patches drawn evenly from the cloud cover bins of their labels.
+
+    The bins are those of the richness report (data/richness.py); a bin with
+    fewer patches than its share gives them all and the rest is drawn from the
+    other bins. Fixed seed, so the same patches are drawn every time.
+    """
+    from tiefer_lab.decisions import cloud_fractions
+    from tiefer_lab.metrics import cloud_cover_bin
+
+    bins: dict[str, list[int]] = {}
+    for start in range(0, len(data), 64):
+        block = np.asarray(data.labels[start : start + 64])
+        for offset, f in enumerate(cloud_fractions(block)):
+            bins.setdefault(cloud_cover_bin(float(f)), []).append(start + offset)
+    chosen: list[int] = []
+    groups = [rng.permutation(v).tolist() for _, v in sorted(bins.items())]
+    while len(chosen) < count and any(groups):
+        for g in groups:
+            if g and len(chosen) < count:
+                chosen.append(int(g.pop()))
+    return sorted(chosen)
+
+
+def first_and_last_convolutions(path: Path) -> list[str]:
+    """Names of the first and the last Conv node of an ONNX graph, in graph order."""
+    convs = [n.name for n in onnx.load(str(path)).graph.node if n.op_type == "Conv"]
+    if not convs:
+        raise ValueError(f"{path.name} has no Conv node")
+    return sorted({convs[0], convs[-1]})
+
+
+class ClipInput(nn.Module):
+    """Clips the normalised input to [low, high] before the network (an ONNX Clip node)."""
+
+    def __init__(self, model: nn.Module, low: float, high: float) -> None:
+        super().__init__()
+        self.model = model
+        self.low, self.high = float(low), float(high)
+
+    @property
+    def input_bands(self) -> int:
+        return int(getattr(self.model, "input_bands", 4))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out: torch.Tensor = self.model(x.clamp(self.low, self.high))
+        return out
+
+
+def input_clip_bounds(reader: CalibrationReader, percentile: float) -> tuple[float, float]:
+    """The [p, 100 - p] percentiles of the normalised calibration inputs, over every band.
+
+    One pair for all bands, so the exported clip is one Clip node with scalar
+    bounds; the calibration patches come from the training split only.
+    """
+    values = []
+    for i in reader.positions:
+        image = normalised_patch(reader.data, i, reader.mean, reader.std)
+        values.append(np.asarray(image).ravel()[:: max(1, image.size // 65536)])
+    flat = np.concatenate(values)
+    low, high = np.percentile(flat, [percentile, 100.0 - percentile])
+    return float(low), float(high)
+
+
+def quantise_int8(
+    fp32_path: Path,
+    out_path: Path,
+    reader: CalibrationReader,
+    method: str = "minmax",
+    keep_fp_first_last: bool = False,
+) -> Path:
+    """Static INT8 quantisation; with `keep_fp_first_last` the first and last Conv
+    nodes (named after pre-processing) stay in floating point."""
     with tempfile.TemporaryDirectory() as tmp:
         prepared = Path(tmp) / "prepared.onnx"
         ortq.quant_pre_process(fp32_path, prepared, skip_symbolic_shape=True)
@@ -78,7 +171,8 @@ def quantise_int8(fp32_path: Path, out_path: Path, reader: CalibrationReader) ->
             per_channel=True,
             activation_type=ortq.QuantType.QInt8,
             weight_type=ortq.QuantType.QInt8,
-            calibrate_method=ortq.CalibrationMethod.MinMax,
+            calibrate_method=CALIBRATION_METHODS[method],
+            nodes_to_exclude=first_and_last_convolutions(prepared) if keep_fp_first_last else [],
             extra_options={"ActivationSymmetric": True, "WeightSymmetric": True},
         )
     return out_path

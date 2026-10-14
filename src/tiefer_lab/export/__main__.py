@@ -21,6 +21,7 @@ to INT8 on validation (and on test with `--final`, logged in test_log.md).
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import sys
 from collections.abc import Sequence
@@ -35,7 +36,7 @@ from tiefer_lab.data import cache, padding
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, log_test_evaluation
 from tiefer_lab.export import onnx_export, quantise, verify
 from tiefer_lab.models import flexible
-from tiefer_lab.models.cloud_filter import count_macs, count_parameters
+from tiefer_lab.models.cloud_filter import count_macs, count_parameters, fold_cloud_bias
 from tiefer_lab.train import (
     CONFIG_NAME,
     METADATA_NAME,
@@ -63,6 +64,8 @@ def export_run(
     reason: str | None = None,
     allow_synthetic: bool = False,
     band_set: Sequence[str] | None = None,
+    cloud_bias: str | None = None,
+    export_config: Path | None = None,
 ) -> Path:
     """Export a run; a band-flexible run is exported for one band set at a time.
 
@@ -72,6 +75,12 @@ def export_run(
     if final:
         check_test_guard("test", final, reason)
     config = load_config(run_dir / CONFIG_NAME)
+    export_from = None
+    if export_config is not None:
+        # Export settings from a committed config, so export variants need no training.
+        other = load_config(export_config)
+        config = dataclasses.replace(config, export=other.export)
+        export_from = other.name
     run_meta = json.loads((run_dir / METADATA_NAME).read_text(encoding="utf-8"))
     run_id = str(run_meta["run_id"])
     directory = cache.cache_dir(config.data.cache_name)
@@ -102,6 +111,34 @@ def export_run(
         out_dir = run_dir / "export"
         report_name = f"{run_id}.json"
     mean, std = cache.normalisation(index, bands)
+    options: dict[str, Any] = {}
+    if cloud_bias is not None:
+        from tiefer_lab.calibrate import read_calibration
+
+        value = (
+            read_calibration(run_dir, bands)["cloud_bias"]["bias"]
+            if cloud_bias == "auto"
+            else float(cloud_bias)
+        )
+        if value is None:
+            raise TrainingError("no cloud bias met the frame targets on validation")
+        model = fold_cloud_bias(model, float(value))
+        options["cloud_bias"] = float(value)
+        out_dir = out_dir / "cloudbias"
+        report_name = report_name.replace(".json", "_cloudbias.json")
+    if export_from is not None:
+        out_dir = out_dir / export_from
+        report_name = report_name.replace(".json", f"_{export_from}.json")
+        options["export_config"] = export_from
+    train_data = None
+    if config.export.input_clip_percentile > 0:
+        train_data = cache.load_split(directory, "train", bands=bands)
+        clip_reader = quantise.CalibrationReader(
+            train_data, mean, std, size, config.export.calibration_patches
+        )
+        low, high = quantise.input_clip_bounds(clip_reader, config.export.input_clip_percentile)
+        model = quantise.ClipInput(model, low, high).eval()
+        options["input_clip"] = {"low": low, "high": high}
     files = {k: out_dir / v for k, v in FILES.items()}
     onnx_export.export_fp32(model, files["fp32"], size, config.export.opset)
     onnx_export.export_fp32(
@@ -143,13 +180,37 @@ def export_run(
     }
 
     if with_int8:
-        train_data = cache.load_split(directory, "train", bands=bands)
+        if train_data is None:
+            train_data = cache.load_split(directory, "train", bands=bands)
         reader = quantise.CalibrationReader(
-            train_data, mean, std, size, config.export.calibration_patches
+            train_data,
+            mean,
+            std,
+            size,
+            config.export.calibration_patches,
+            stratified=config.export.calibration_stratified,
         )
-        quantise.quantise_int8(files["fp32"], files["int8"], reader)
+        quantise.quantise_int8(
+            files["fp32"],
+            files["int8"],
+            reader,
+            method=config.export.calibrate_method,
+            keep_fp_first_last=config.export.keep_fp_first_last,
+        )
         report["operators"]["int8"] = onnx_export.operator_types(files["int8"])
         report["calibration"] = {"split": "train", "patches": len(reader.positions)}
+        if (
+            config.export.calibrate_method != "minmax"
+            or config.export.calibration_stratified
+            or config.export.keep_fp_first_last
+        ):
+            report["calibration"].update(
+                {
+                    "method": config.export.calibrate_method,
+                    "stratified": config.export.calibration_stratified,
+                    "keep_fp_first_last": config.export.keep_fp_first_last,
+                }
+            )
         quant: dict[str, Any] = {}
         splits = ["val", "test"] if final else ["val"]
         for split in splits:
@@ -166,6 +227,8 @@ def export_run(
             }
         report["quantisation"] = quant
 
+    if options:
+        report["options"] = options
     report["files"] = {
         k: {
             "name": p.name,
@@ -199,6 +262,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         help="bands of a band-flexible run, for example B02,B03,B04, or 'all' for every band set",
     )
+    parser.add_argument(
+        "--cloud-bias",
+        default=None,
+        help="fold a cloud logit bias into the last convolution: a value, or 'auto' for the "
+        "one chosen on validation by tiefer_lab.calibrate (protocol option, default none)",
+    )
+    parser.add_argument(
+        "--settings-from",
+        type=Path,
+        default=None,
+        help="take the [export] settings from this committed config (export variants)",
+    )
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
 
@@ -216,6 +291,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 reason=args.reason,
                 allow_synthetic=args.allow_synthetic,
                 band_set=band_set,
+                cloud_bias=args.cloud_bias,
+                export_config=args.settings_from,
             )
             for band_set in band_set_option(run_dir, args.band_set)
         ]
