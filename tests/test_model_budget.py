@@ -100,3 +100,25 @@ def test_loss_and_class_weights() -> None:
     target = torch.randint(0, 3, (2, 8, 8))
     perfect = torch.nn.functional.one_hot(target, 4).permute(0, 3, 1, 2).float() * 20.0
     assert loss(perfect, target) < loss(torch.zeros(2, 4, 8, 8), target)
+
+
+def test_cloudscout_operators_are_allowed() -> None:
+    """The re-implemented frame classifier exports to allowed operators only."""
+    from tiefer_lab.models.cloudscout import CloudScoutNet
+
+    model = cloud_filter.fold_batch_norm(CloudScoutNet((8, 16, 32), in_channels=3))
+    buffer = io.BytesIO()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        torch.onnx.export(
+            model, (torch.zeros(1, 3, 64, 64),), buffer, opset_version=17, dynamo=False
+        )
+    graph = onnx.load_from_string(buffer.getvalue()).graph
+    constants = {init.name for init in graph.initializer}
+    ops = {
+        node.op_type
+        for node in graph.node
+        if not (node.op_type == "Identity" and set(node.input) <= constants)
+    }
+    assert ops <= ALLOWED_OPS, f"unexpected operators: {ops - ALLOWED_OPS}"
+    assert "BatchNormalization" not in ops and "MaxPool" in ops

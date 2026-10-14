@@ -26,10 +26,11 @@ from torch import nn
 
 from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.models.cloud_filter import CloudFilterNet
+from tiefer_lab.models.cloudscout import CloudScoutNet
 from tiefer_lab.models.convnext_unet import ConvNeXtUNet
 
 DESIGNS = ("placeholder", "zero")
-ARCHITECTURES = ("separable_unet", "convnext_unet")
+ARCHITECTURES = ("separable_unet", "convnext_unet", "cloudscout")
 
 
 def availability(bands: Sequence[str], names: Sequence[str] = L1C_BAND_NAMES) -> torch.Tensor:
@@ -58,7 +59,7 @@ class BandInput(nn.Module):
         return torch.cat([filled, flags.expand_as(x)], dim=1)
 
 
-Backbone = CloudFilterNet | ConvNeXtUNet
+Backbone = CloudFilterNet | ConvNeXtUNet | CloudScoutNet
 
 
 class FlexibleModel(nn.Module):
@@ -97,6 +98,8 @@ def backbone(architecture: str, widths: Sequence[int], in_channels: int) -> Back
         return CloudFilterNet(widths, in_channels)
     if architecture == "convnext_unet":
         return ConvNeXtUNet(widths, in_channels)
+    if architecture == "cloudscout":
+        return CloudScoutNet(widths, in_channels)
     raise ValueError(f"architecture must be one of {ARCHITECTURES}, got {architecture!r}")
 
 
@@ -150,7 +153,7 @@ class BandSetModel(nn.Module):
         return out
 
 
-Model = FlexibleModel | CloudFilterNet | ConvNeXtUNet
+Model = FlexibleModel | CloudFilterNet | ConvNeXtUNet | CloudScoutNet
 
 
 def build(model_config: Any, bands: Sequence[str]) -> Model:
