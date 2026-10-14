@@ -131,7 +131,10 @@ Evaluated with the same code and splits as the model:
 
 1. **Always send:** every frame is sent. Shows the cost of doing nothing.
 2. **Threshold rule:** a brightness and whiteness rule on the four bands, thresholds tuned on validation only.
-3. **Reference masks:** masks from established algorithms shipped with the dataset (check the card for which). State clearly that they use more spectral bands, so the comparison favours them.
+3. **Reference masks:** masks from established algorithms shipped with the dataset (check the card for which). State clearly that they use more spectral bands, so the comparison favours them. A mask that is a cloud probability (s2cloudless, CloudScore+) is scored at a threshold tuned on validation only; the CloudSEN12 paper scored it without one.
+4. **Masks of the CloudSEN12 release of 2022** (Fmask, KappaMask, CD-FCNN): linked one to one to CloudSEN12+ patches by `src/tiefer_lab/data/cloudsen12_2022.py`, once the maintainer has decided on its non-commercial licence and its facts are verified.
+5. **Reference models with their own weights** (for example dtacs4bands): run from `references/` outside `src/`, never trained further, only after their licence is read and the maintainer has decided ([references/README.md](../references/README.md)).
+6. **CloudScout re-implementation:** the frame classifier of ESA Phi-sat-1, re-implemented from its paper and trained by Tiefer Lab from random initialisation, not the flown model (`src/tiefer_lab/models/cloudscout.py`, `configs/cloudscout*.toml`).
 
 ---
 
@@ -149,6 +152,10 @@ Evaluated with the same code and splits as the model:
 - From the mask, derive per frame: cloud fraction (thick plus thin), shadow fraction, and a **send or keep decision** at an operator-configurable threshold.
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--seed N] [--run-id <name>] [--resume <run-dir>] [--device ...]`; `--cache-name`, `--epochs` and `--max-steps-per-epoch` are for the smoke pipeline and timing runs, which are marked as smoke.
 - Configs: `configs/smoke.toml` (tiny, minutes on CPU), `configs/l1_base.toml` (full training on one GH200 GPU) and `configs/l1_full.toml` (`l1_base` to the end of its schedule, with warm-up and a moving average of the weights); the L2 configs are listed in section 14. Batch size, learning rate and the other settings of each family are in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
+
+### v3 training options
+
+Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each v3 variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
 
 ### Milestone L2: one band-flexible model family
 
@@ -174,6 +181,14 @@ Evaluated with the same code and splits as the model:
 ## 9. Evaluation
 
 `python -m tiefer_lab.evaluate --run <run-dir> --split val|test [--baselines] [--checkpoint best|last] [--band-set <bands>|all] [--perturb <name>=<value>] [--device ...]`; the test split also needs `--final --reason <text>`.
+
+Protocol options of v3, each off by default, so that without them every report is as before; each waits for the maintainer's agreement in its method-change issue before it is used for a result ([GOVERNANCE.md](../GOVERNANCE.md), section 2):
+
+- `--full-metrics`: the CloudSEN12 paper's PA and UA shares per problem, its valid against invalid experiment, a sweep of the decision threshold from 0.05 to 0.95 with the lowest false send rate at false discard rates of 0.01 and 0.02, and cloud cover bins as strata;
+- `--data <cache> --reason <text> [--substitute]`: an independent dataset ([INDEPENDENT.md](INDEPENDENT.md)), normalised with the run's own training statistics, logged in `reports/test_log.md` like a test use, never used to train or select;
+- `--cloud-bias <value>|auto` and `--fraction argmax|soft`: a cloud logit bias and the soft cloud fraction, chosen on validation by `python -m tiefer_lab.calibrate`.
+
+Further read-only tools: `python -m tiefer_lab.acceptance [--config <name> ...]` writes one acceptance table per config; `python -m tiefer_lab.compare` writes `reports/comparison.md` from the report files only; `python -m tiefer_lab.diagnose seeds|frames|int8` reads validation and training data only.
 
 - Pixel level: IoU and F1 per class, mean IoU, overall accuracy, confusion matrix.
 - Frame level: mean absolute error of the cloud fraction; decision accuracy at 30, 50 and 70 percent cloud thresholds.
@@ -210,6 +225,7 @@ The inputs the filter is designed for (`tiefer_lab.onboard.Domain`). A frame out
 - Verify ONNX Runtime against PyTorch: maximum absolute logit difference, and identical argmax on at least 99.9 percent of validation pixels. Fail loudly otherwise.
 - FP16 variant.
 - INT8: static post-training quantisation with ONNX Runtime, calibration on a few hundred patches from the **training** split. Measure the change in mean IoU and false discard rate on validation (and on test only with `--final`, logged). If mean IoU drops by more than one point, say so and propose quantisation-aware training as future work.
+- Export options: `--cloud-bias <value>|auto` folds the cloud logit bias into the bias of the last convolution (no new operator); `--settings-from configs/<name>.toml` takes the `[export]` settings of a committed config: `calibrate_method` (`minmax`, `percentile`, `entropy`), `calibration_stratified`, `keep_fp_first_last` and `input_clip_percentile` (a Clip node in front of the network). The defaults give the files of earlier versions.
 - Release folder `models/cloud-filter/<version>/`: `MODEL_CARD.md`, `SHA256SUMS`, `config.toml` committed. **Trained models are never published from this repository**: checkpoints and `.onnx` files are gitignored, are not attached to GitHub Releases, and stay with Tiefer. The checksums let Tiefer prove which model produced which result.
 
 ---
@@ -222,6 +238,7 @@ Folder `jetson/`, scripts meant to run on an NVIDIA Jetson Orin (flight-like ref
 - Build TensorRT engines (FP16; INT8 with a calibration cache) with `trtexec`.
 - Latency after warm-up over at least 1,000 runs: p50, p95, p99; throughput in tiles per second and square kilometres per second (a 512 x 512 tile at 10 m is 5.12 km x 5.12 km, about 26.2 square kilometres; show the formula).
 - Power from `tegrastats` sampled during the run (input power rail); energy per tile in millijoules. Board temperature at start and end.
+- Memory during inference: the peak `tegrastats` RAM during the run above its idle level. Determinism: the engine runs several times on one fixed input, and the SHA-256 of every output must be the same.
 - JSON output to `reports/jetson/`.
 - On a non-Jetson machine the scripts run in **dry-run mode** (validate inputs, print the plan), tested in CI.
 - Radiation, vacuum and thermal effects are out of scope; say so in the output.
@@ -273,6 +290,10 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `submit.sh` | Wrapper that passes `--account=$TIEFER_CSC_PROJECT`, `--chdir` and the log location to `sbatch`, since `#SBATCH` lines cannot read environment variables; CPU jobs use sbatch's default export and are refused unless submitted from an `x86_64` host (`roihu-cpu.csc.fi`); GPU jobs are accepted from either login node and get only `HOME`, `CSC_ENV_INIT_NON_INTERACTIVE=yes` and, by name, the variables the jobs read (`TIEFER_CSC_PROJECT`, the `TIEFER_*` paths, `SEED`, `FINAL`, `REASON` and the others listed in the script); `sbatch` options such as `--test-only` go before the job script |
 | `usage.sh` | Prints `sacct` usage of a job for the results |
 | `timing.sbatch` | One cut epoch on `gputest`: the real cost of a config |
+| `calibrate.sbatch` | `gputest`: cloud logit bias and temperature of a run, on validation only |
+| `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
+| `diagnose.sbatch` | CPU job: seed and false discard diagnostics, validation only |
+| `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
 | `plan.md` | The run plan of the v2 campaign: budget, stop line and steps |
 | `requirements.txt` | Generated from `uv.lock` with `uv export`, without the packages of the CSC module |
@@ -331,6 +352,14 @@ lab/
       codeql.yml                  CodeQL for python and actions
   configs/
     smoke.toml                    tiny run, minutes on CPU or MPS
+    cloudscout_th30.toml          CloudScout re-implementation, step 1 (labels at 30 percent)
+    cloudscout.toml               CloudScout re-implementation, step 2 (70 percent, decision layers)
+    cloudscout_th50.toml          as cloudscout, labels at 50 percent
+    l1_full_<variant>.toml        v3 one-change variants of l1_full
+    l1_v3.toml                    v3 candidate reference of L1, a draft
+    l2_flex_1m_<variant>.toml     v3 one-change variants of l2_flex_1m
+    l2_flex_1m_v3.toml            v3 candidate reference of L2, a draft
+    l2_flex_1m_v3_frameft.toml    fine-tune stage of l2_flex_1m_v3 on whole patches
     l1_base.toml                  full training on one GH200 GPU
     l1_full.toml                  l1_base to the end of its schedule, with warm-up and moving average
     l2_flex_1m.toml               band-flexible, about 1 M parameters: reference run of the family
@@ -356,6 +385,7 @@ lab/
       tiefer-logo-white.svg       the logo in white, for dark backgrounds
     DATA.md                       data card with verified dataset facts and links
     DATASETS.md                   dataset catalogue, roles per split, harmonisation, comparison metrics
+    INDEPENDENT.md                data card of the four independent test datasets
     LANDSCAPE.md                  related systems, their published values, what decides each comparison
     ASSUMPTIONS.md                sensor and data assumptions to revisit
     REQUIREMENTS.md               every requirement and acceptance target with its verification
@@ -378,6 +408,10 @@ lab/
       data.sbatch                 builds the data cache in /scratch
       survey.sbatch               survey of the dataset metadata and item encodings
       timing.sbatch               one cut epoch on gputest: the real cost of a config
+      calibrate.sbatch            cloud logit bias and temperature, validation only
+      independent.sbatch          independent dataset download and cache, CPU
+      diagnose.sbatch             seed and false discard diagnostics, CPU
+      diagnose_gpu.sbatch         INT8 sensitivity per Conv node, GPU node
       sweep.sh                    configs and seeds as separate one-GPU jobs
       plan.md                     run plan of the v2 campaign: budget, stop line, steps
       smoke.sbatch                gputest, 15 minutes
@@ -390,6 +424,9 @@ lab/
     build_engines.sh              trtexec FP16 and INT8 engines
     bench.py                      latency, throughput, energy; dry-run mode off-device
     power.py                      tegrastats sampler and parser
+  references/
+    README.md                     how published third-party models are run on the same patches
+    run_reference.py              reference models, licence first; masks added to a cache
   models/
     cloud-filter/
       README.md                   what release folders contain (filled in Part B)
@@ -419,6 +456,9 @@ lab/
       experiments.py              python -m tiefer_lab.experiments: one row per run
       onboard.py                  fail-safe decision per frame, model hash check, tiled large frames
       acceptance.py               python -m tiefer_lab.acceptance: reports/acceptance.md
+      calibrate.py                python -m tiefer_lab.calibrate: cloud bias and temperature on val
+      compare.py                  python -m tiefer_lab.compare: reports/comparison.md
+      diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
       sbom.py                     CycloneDX software bill of materials from uv.lock, run in CI
       smoke.py                    python -m tiefer_lab.smoke, the full local smoke pipeline
@@ -426,6 +466,8 @@ lab/
       data/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
+        independent.py            independent test datasets: facts, readers, reflectance, tiles
+        cloudsen12_2022.py        masks of the 2022 release, linked to CloudSEN12+, licence first
         build_cache.py            python -m tiefer_lab.data.build_cache
         http.py                   backoff on HTTP 429 and other transient read errors; the token
         sensor.py                 sensor robustness augmentations and evaluation perturbations
@@ -439,6 +481,7 @@ lab/
         __init__.py
         cloud_filter.py           the compact network
         convnext_unet.py          U-Net with ConvNeXt-style encoder blocks, for the largest size
+        cloudscout.py             CloudScout re-implementation, a frame classifier
         flexible.py               band-flexible input: 13 bands, availability flags, two designs
         losses.py                 cross-entropy plus Dice
       export/
@@ -502,6 +545,13 @@ lab/
     test_reports.py               report loading: smoke reports left out, provenance required
     test_roihu_scripts.py         CSC Roihu helper scripts with stub sbatch, sacct and module
     test_tables.py                Markdown table helper
+    test_compare.py               the comparison page from report values
+    test_independent.py           independent datasets: reflectance, labels, tiles, stops
+    test_cloudsen12_2022.py       2022 release masks wait for the licence
+    test_reference_scripts.py     reference models stop until their licence is cleared
+    test_training_options.py      v3 training options and the frame classifier
+    test_frame_options.py         cloud bias, soft fraction and INT8 export options
+    test_diagnose.py              diagnostics read validation only
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
   .gitattributes                  line endings, *.sh and *.sbatch as LF
@@ -594,6 +644,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 14 October 2026: v3, every addition off by default: section 7 adds probability references tuned on validation, the 2022 release masks, reference models from `references/` and the CloudScout re-implementation; section 8 the v3 training options; section 9 the protocol options `--full-metrics`, `--data`, `--cloud-bias` and `--fraction`, which wait for their method-change issues, and the acceptance per config, comparison and diagnosis tools; section 10 the export options; section 11 memory and determinism on the Jetson; sections 12 and 14 the new files; drafted with an AI-assisted system.
 - 8 October 2026: section 14, `http.py` retries every transient read error, and `test_transient_reads.py` tests it.
 - 8 October 2026: sections 12, 14 and 15: every Roihu step runs from `roihu-cpu.csc.fi`; GPU jobs follow CSC's way of submitting across architectures, and `setup_gpu.sbatch` sets up the GPU side; `metadata.py` works without torch, as the CPU jobs need, with its test.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
