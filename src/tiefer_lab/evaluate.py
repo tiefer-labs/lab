@@ -378,6 +378,36 @@ def evaluate_baselines(
         **scored.report(settings, full=full),
     }
     for name, masks in data.reference.items():
+        if data.reference_kinds.get(name) == "probability":
+            # A cloud probability: cloud from a threshold tuned on validation only.
+            # The paper scored s2cloudless on the probability without a threshold.
+            val_masks = val.reference.get(name)
+            if val_masks is None:
+                raise ValueError(f"{name}: the validation split has no such reference mask")
+            hist = baselines.probability_histograms(
+                [np.asarray(val_masks[i]) for i in range(len(val))],
+                [np.asarray(val.labels[i]) for i in range(len(val))],
+            )
+            threshold, val_boa = baselines.tune_probability_threshold(hist)
+
+            def probability_mask(
+                i: int, m: NDArray[np.uint8] = masks, t: int = threshold
+            ) -> NDArray[np.uint8]:
+                raw = np.asarray(m[i])
+                out_mask = np.where(raw >= t, THICK_CLOUD, CLEAR).astype(np.uint8)
+                out_mask[raw == IGNORE_INDEX] = IGNORE_INDEX
+                return out_mask
+
+            ref = score_mask_function(data, probability_mask, binary_only=True)
+            out[f"reference_{name}"] = {
+                "description": "cloud probability shipped with the dataset, cloud at or above "
+                "a threshold tuned on validation; the CloudSEN12 paper scored it without one",
+                "kind": "probability",
+                "threshold_percent": threshold,
+                "validation_median_cloud_boa_when_tuned": val_boa,
+                **ref.report(settings, full=full),
+            }
+            continue
         if data.reference_kinds.get(name, "four_class") != "four_class":
             # A cloud against non-cloud mask (1 cloud, 0 not) is scored on the
             # cloud problem only: cloud is shown as thick cloud, the rest as clear.

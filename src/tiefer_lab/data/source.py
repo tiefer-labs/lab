@@ -139,18 +139,26 @@ REFERENCE_LINK_FIELD: str | None = None
 class MaskEncoding:
     """How one reference mask is encoded, read from the survey.
 
-    `kind` is "four_class" when the mask has our four classes, or "cloud"
-    when it only separates cloud from non-cloud. `codes` maps every raw value
+    `kind` is "four_class" when the mask has our four classes, "cloud" when
+    it only separates cloud from non-cloud, or "probability" when it is a
+    cloud probability (s2cloudless, CloudScore+). `codes` maps every raw value
     to a class index (four_class), to 1 for cloud and 0 for non-cloud (cloud),
-    or to IGNORE_INDEX for no data. Any other raw value is an error.
+    or to IGNORE_INDEX for no data. Any other raw value is an error, except
+    for a probability: there every raw value from 0 to `max_value` is a
+    probability, stored as a percentage from 0 to 100, and `codes` lists only
+    the no-data values. A probability is scored with a threshold tuned on the
+    validation split only (baselines.tune_probability_threshold).
     """
 
     kind: str
     codes: Mapping[int, int]
+    max_value: int | None = None
 
     def __post_init__(self) -> None:
-        if self.kind not in ("four_class", "cloud"):
-            raise ValueError(f"kind must be four_class or cloud, got {self.kind!r}")
+        if self.kind not in ("four_class", "cloud", "probability"):
+            raise ValueError(f"kind must be four_class, cloud or probability, got {self.kind!r}")
+        if (self.kind == "probability") != (self.max_value is not None):
+            raise ValueError("max_value is set for a probability mask, and only for one")
 
 
 # {mask name: encoding}. TODO(verify) from the survey (value histograms and
@@ -169,6 +177,16 @@ def encode_mask(
     raw: NDArray[np.integer[Any]], encoding: MaskEncoding, name: str
 ) -> NDArray[np.uint8]:
     """Apply a verified encoding; a raw value it does not list is an error."""
+    if encoding.kind == "probability":
+        assert encoding.max_value is not None
+        values = raw.astype(np.int64)
+        nodata = np.isin(values, list(encoding.codes))
+        bad = sorted(int(v) for v in np.unique(values[~nodata]) if not 0 <= v <= encoding.max_value)
+        if bad:
+            raise DataSourceError(f"{name}: raw values {bad} are outside 0 to {encoding.max_value}")
+        percent = np.rint(values * (100.0 / encoding.max_value)).clip(0, 100).astype(np.uint8)
+        percent[nodata] = IGNORE_INDEX
+        return percent
     unknown = sorted(int(v) for v in np.unique(raw) if int(v) not in encoding.codes)
     if unknown:
         raise DataSourceError(f"{name}: raw values {unknown} are not in its verified encoding")

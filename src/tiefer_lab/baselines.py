@@ -19,6 +19,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from tiefer_lab import binary_metrics
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, NUM_CLASSES, THICK_CLOUD, THIN_CLOUD
 from tiefer_lab.metrics import mean_iou
 
@@ -166,4 +167,51 @@ def tune_threshold_rule(
                     best = (rule, score)
     if best is None:
         raise ValueError("no valid rule in the grid")
+    return best
+
+
+def probability_histograms(
+    probabilities: list[NDArray[np.uint8]], labels: list[NDArray[np.integer[Any]]]
+) -> NDArray[np.int64]:
+    """Per patch, pixel counts by probability percentage (0 to 100) for cloud and non-cloud.
+
+    Shape (patches, 2, 101): index 0 non-cloud, 1 cloud (thick or thin). Pixels
+    without a label or without a probability are left out.
+    """
+    out = np.zeros((len(probabilities), 2, 101), dtype=np.int64)
+    for i, (prob, label) in enumerate(zip(probabilities, labels, strict=True)):
+        valid = (label != IGNORE_INDEX) & (prob != IGNORE_INDEX)
+        cloud = np.isin(label, (THICK_CLOUD, THIN_CLOUD)) & valid
+        out[i, 1] = np.bincount(prob[cloud].astype(np.int64), minlength=101)[:101]
+        out[i, 0] = np.bincount(prob[valid & ~cloud].astype(np.int64), minlength=101)[:101]
+    return out
+
+
+def median_cloud_boa_at(histograms: NDArray[np.int64], threshold: int) -> float:
+    """Median cloud BOA over patches when a probability of at least `threshold` percent is cloud."""
+    tp = histograms[:, 1, threshold:].sum(axis=1)
+    fn = histograms[:, 1, :threshold].sum(axis=1)
+    fp = histograms[:, 0, threshold:].sum(axis=1)
+    tn = histograms[:, 0, :threshold].sum(axis=1)
+    boa = np.asarray(
+        [
+            binary_metrics.patch_measures(int(a), int(b), int(c), int(d))["boa"]
+            for a, b, c, d in zip(tp, fn, fp, tn, strict=True)
+        ]
+    )
+    return binary_metrics.median(boa)
+
+
+def tune_probability_threshold(histograms: NDArray[np.int64]) -> tuple[int, float]:
+    """The threshold (1 to 100 percent) with the highest median cloud BOA on these patches.
+
+    Call it with the validation split only. Ties keep the lowest threshold.
+    """
+    best: tuple[int, float] | None = None
+    for t in range(1, 101):
+        score = median_cloud_boa_at(histograms, t)
+        if np.isfinite(score) and (best is None or score > best[1]):
+            best = (t, score)
+    if best is None:
+        raise ValueError("no patch with both cloud and non-cloud pixels")
     return best
