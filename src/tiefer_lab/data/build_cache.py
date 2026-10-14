@@ -42,7 +42,7 @@ from typing import Any, Literal
 import numpy as np
 from numpy.typing import NDArray
 
-from tiefer_lab.data import cache, http, source
+from tiefer_lab.data import cache, http, independent, source
 from tiefer_lab.data.transforms import band_statistics
 from tiefer_lab.utils import paths
 
@@ -88,9 +88,8 @@ def _open_index(directory: Path, source_name: str, dataset: dict[str, Any]) -> d
                 f"{paths.portable(directory)} holds a {index.get('source')!r} cache; "
                 f"use another --name for {source_name!r} data"
             )
-        if (
-            source_name != cache.SYNTHETIC_SOURCE
-            and index["dataset"].get("taco") != dataset["taco"]
+        if source_name != cache.SYNTHETIC_SOURCE and index["dataset"].get("taco") != dataset.get(
+            "taco"
         ):
             raise cache.CacheError(
                 "the cache was built from other dataset files; use another --name"
@@ -900,6 +899,115 @@ def build_synthetic_split(
     _finish_split(directory, index, split, ids, metadata, count, [])
 
 
+# Independent datasets ---------------------------------------------------------
+#
+# A dataset of data/independent.py becomes one split ("test") of its own cache,
+# never used for training, selection, calibration or thresholds. Each scene is
+# tiled into its own file under work/, so a build that stops resumes at the next
+# scene; the split is written when every scene is done.
+
+
+def build_independent(
+    directory: Path,
+    name: str,
+    root: Path,
+    bands: Sequence[str],
+    resolution: str = "10m",
+    max_nodata: float = independent.MAX_NODATA_SHARE,
+    cloudsen12_cache: str | None = None,
+    limit: int | None = None,
+) -> None:
+    info = independent.dataset(name)
+    stored = independent.stored_bands(name, bands)
+    if not stored:
+        raise cache.CacheError(f"{name} provides none of the bands {list(bands)}")
+    if info.sensor == independent.SENTINEL2 and cloudsen12_cache is None:
+        raise cache.CacheError(
+            f"{name} is Sentinel-2: pass --cloudsen12-cache so that products used by "
+            "CloudSEN12+ are dropped first (independence check)"
+        )
+    dataset_info = {
+        "name": info.name,
+        "version": info.version,
+        "url": info.url,
+        "licence": info.licence,
+        "licence_source": info.licence_source,
+        "root": "outside the repository",
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    index = _open_index(directory, name, dataset_info)
+    index["bands"] = list(stored)
+    index["band_labels"] = list(stored)
+    index["independent"] = {
+        **independent.independent_block(name),
+        "resolution": resolution,
+        "max_nodata": max_nodata,
+        "tile": independent.TILE,
+    }
+    work = directory / "work"
+    work.mkdir(exist_ok=True)
+    counts = {"scenes": 0, "kept": 0, "dropped_nodata": 0, "dropped_overlap": 0}
+    used_metadata: list[dict[str, Any]] = []
+    if cloudsen12_cache is not None:
+        cs = cache.read_index(cache.cache_dir(cloudsen12_cache))
+        for entry in cs.get("splits", {}).values():
+            used_metadata.extend(entry.get("metadata", []))
+    reader = independent.READERS[name]
+    target = independent.TRAINING_GSD_M if resolution == "10m" else info.gsd_m
+    for scene in reader(root, stored):
+        if limit is not None and counts["scenes"] >= limit:
+            break
+        counts["scenes"] += 1
+        out = work / f"{scene.scene_id}.npz"
+        if out.is_file():
+            continue
+        if used_metadata:
+            check = independent.overlap([scene.scene_id], used_metadata)
+            if check["kept"] == 0:
+                counts["dropped_overlap"] += 1
+                np.savez(out, dropped=np.array(True))
+                continue
+        cube = np.stack([scene.bands[b] for b in stored]).astype(np.float32)
+        image, label, masks = independent.resample(
+            cube, scene.label, info.gsd_m, target, scene.masks
+        )
+        kept, tile_counts = independent.tiles(
+            scene.scene_id, image, label, scene.metadata, masks, max_nodata=max_nodata
+        )
+        counts["dropped_nodata"] += tile_counts["dropped_nodata"]
+        np.savez(
+            out,
+            images=np.stack([independent.to_cache_dn(t.image) for t in kept])
+            if kept
+            else np.zeros((0, len(stored), independent.TILE, independent.TILE), np.uint16),
+            labels=np.stack([t.label for t in kept])
+            if kept
+            else np.zeros((0, independent.TILE, independent.TILE), np.uint8),
+            ids=np.array([t.tile_id for t in kept]),
+            metadata=np.array([json.dumps(t.metadata, sort_keys=True) for t in kept]),
+        )
+        print(f"{name}: {scene.scene_id} {tile_counts['kept']} tiles", flush=True)
+    images: list[NDArray[np.uint16]] = []
+    labels: list[NDArray[np.uint8]] = []
+    ids: list[str] = []
+    metadata: list[dict[str, Any]] = []
+    for path in sorted(work.glob("*.npz")):
+        with np.load(path, allow_pickle=False) as part:
+            if "dropped" in part:
+                continue
+            images.append(part["images"])
+            labels.append(part["labels"])
+            ids.extend(str(v) for v in part["ids"])
+            metadata.extend(json.loads(str(v)) for v in part["metadata"])
+    counts["kept"] = len(ids)
+    if not ids:
+        raise cache.CacheError(f"{name}: no tile was kept")
+    split = cache.INDEPENDENT_SPLIT
+    np.save(cache.images_path(directory, split), np.concatenate(images), allow_pickle=False)
+    np.save(cache.labels_path(directory, split), np.concatenate(labels), allow_pickle=False)
+    _finish_split(directory, index, split, ids, metadata, limit, [], selection=counts)
+
+
 # Command line --------------------------------------------------------------
 
 
@@ -957,6 +1065,30 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="replace a split built or being built with another selection",
     )
+    parser.add_argument(
+        "--source",
+        choices=sorted(independent.DATASETS),
+        default=None,
+        help="build an independent dataset cache from its download folder (--root)",
+    )
+    parser.add_argument("--root", type=Path, default=None, help="download folder of --source")
+    parser.add_argument(
+        "--resolution",
+        choices=["10m", "native"],
+        default="10m",
+        help="resample to 10 m (default) or keep the native resolution (a perturbation)",
+    )
+    parser.add_argument(
+        "--max-nodata",
+        type=float,
+        default=independent.MAX_NODATA_SHARE,
+        help="largest share of unlabelled pixels in a kept tile",
+    )
+    parser.add_argument(
+        "--cloudsen12-cache",
+        default=None,
+        help="CloudSEN12+ cache whose products are dropped from a Sentinel-2 dataset",
+    )
     parser.add_argument("--synthetic", action="store_true", help="write synthetic scenes")
     parser.add_argument("--patch-size", type=int, default=128, help="synthetic patch size")
     parser.add_argument("--seed", type=int, default=0, help="synthetic data seed")
@@ -979,12 +1111,33 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--shard and --merge are separate steps")
     if args.max_rate is not None and args.max_rate <= 0:
         parser.error("--max-rate must be positive")
+    if (args.source is None) != (args.root is None):
+        parser.error("--source and --root go together")
+    if args.source is not None and args.split != "test":
+        parser.error("an independent dataset is one split: --split test")
+    if not 0.0 <= args.max_nodata < 1.0:
+        parser.error("--max-nodata must be in [0, 1)")
     return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     splits = list(cache.SPLITS) if args.split == "all" else [args.split]
+    if args.source is not None:
+        directory = cache.cache_dir(args.name or args.source)
+        bands = source.L1C_BAND_NAMES if args.bands == "all" else (*source.USED_BANDS, "B8A")
+        build_independent(
+            directory,
+            args.source,
+            args.root,
+            bands,
+            args.resolution,
+            args.max_nodata,
+            args.cloudsen12_cache,
+            args.limit,
+        )
+        print(f"cache: {paths.portable(directory)}", flush=True)
+        return 0
     if args.synthetic:
         directory = cache.cache_dir(args.name or SYNTHETIC_NAME)
         for split in splits:

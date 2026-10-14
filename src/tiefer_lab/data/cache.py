@@ -25,7 +25,7 @@ import json
 import os
 import sys
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -479,3 +479,60 @@ def add_reference_masks(
     entry["reference_masks"] = [*present, *masks]
     entry["reference_kinds"] = {**entry.get("reference_kinds", {}), **kinds}
     write_index(directory, index)
+
+
+INDEPENDENT_SPLIT = "test"
+
+
+class ComposedBands:
+    """Images of an independent dataset in the band order a model reads.
+
+    A band the cache does not store is all zeros (a band-flexible model marks
+    it unavailable, so it never sees the zeros as data); a substituted band is
+    read from the stored band that stands in for it, for example B08 from B8A
+    on Landsat 8 (data/independent.py, SUBSTITUTIONS).
+    """
+
+    def __init__(
+        self,
+        base: NDArray[np.uint16],
+        stored: Sequence[str],
+        wanted: Sequence[str],
+        substitution: dict[str, str] | None = None,
+    ) -> None:
+        substitution = substitution or {}
+        self.base = base
+        self.sources: list[int | None] = []
+        for band in wanted:
+            name = substitution.get(band, band)
+            self.sources.append(list(stored).index(name) if name in stored else None)
+        self.shape = (base.shape[0], len(self.sources), *base.shape[2:])
+        self.dtype = base.dtype
+        self.ndim = base.ndim
+
+    def __len__(self) -> int:
+        return int(self.shape[0])
+
+    def __getitem__(self, key: Any) -> NDArray[np.uint16]:
+        if not isinstance(key, int | np.integer):
+            raise TypeError("ComposedBands is indexed by one patch at a time")
+        block = np.asarray(self.base[key])
+        out = np.zeros((len(self.sources), *block.shape[1:]), dtype=block.dtype)
+        for i, s in enumerate(self.sources):
+            if s is not None:
+                out[i] = block[s]
+        return out
+
+
+def load_independent(
+    directory: Path, wanted: Sequence[str], substitution: dict[str, str] | None = None
+) -> SplitData:
+    """The tiles of an independent dataset cache, with the images in the model's band order."""
+    index = read_index(directory)
+    if index.get("source") in (None, "cloudsen12", SYNTHETIC_SOURCE) or not index.get(
+        "independent"
+    ):
+        raise CacheError(f"{paths.portable(directory)} is not an independent dataset cache")
+    data = load_split(directory, INDEPENDENT_SPLIT, "mmap")
+    images: Any = ComposedBands(data.images, index["bands"], wanted, substitution)
+    return replace(data, images=images)

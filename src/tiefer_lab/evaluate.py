@@ -34,7 +34,7 @@ from torch.utils.data import DataLoader
 
 from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
-from tiefer_lab.data import cache, padding, sensor
+from tiefer_lab.data import cache, independent, padding, sensor
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
 from tiefer_lab.data.transforms import to_reflectance
@@ -257,6 +257,25 @@ def worst_stratum(strata: dict[str, Any], min_patches: int = 10) -> dict[str, An
     return min(candidates, key=lambda c: c["cloud_boa"])
 
 
+def shadow_on_marked_tiles(
+    scores: Scores, patch_metadata: Sequence[dict[str, Any]], settings: EvaluationConfig
+) -> dict[str, Any]:
+    """Shadow measures on the tiles whose shadows were marked, where a dataset says so.
+
+    The Sentinel-2 Cloud Mask Catalogue marks shadow only where
+    `shadows_marked` is 1; other tiles say nothing about shadow, so the shadow
+    problem is scored on the marked tiles only. Without the field nothing changes.
+    """
+    marked = [
+        i for i, m in enumerate(patch_metadata) if str(m.get("shadows_marked", "")) in ("1", "True")
+    ]
+    if not patch_metadata or "shadows_marked" not in patch_metadata[0] or not marked:
+        return {}
+    cms = np.stack([scores.confusions[i] for i in marked])
+    shadow = binary_metrics.summary(cms, ("shadow",))["shadow"]
+    return {"shadow_on_marked_tiles": {"tiles": len(marked), **shadow}}
+
+
 def frame_decisions(
     scores: Scores, positions: Sequence[int], patch_ids: Sequence[str], settings: EvaluationConfig
 ) -> list[dict[str, Any]]:
@@ -359,14 +378,26 @@ def tuned_threshold_rule(val: cache.SplitData) -> tuple[baselines.ThresholdRule,
 
 
 def evaluate_baselines(
-    data: cache.SplitData, val: cache.SplitData, settings: EvaluationConfig, full: bool = False
+    data: cache.SplitData,
+    val: cache.SplitData | None,
+    settings: EvaluationConfig,
+    full: bool = False,
 ) -> dict[str, Any]:
+    """Baselines and reference masks on `data`.
+
+    Without `val` (an independent dataset), the threshold rule and probability
+    masks, which need tuning on CloudSEN12+ validation pixels of the same
+    bands, are left out; the masks shipped with the dataset are scored.
+    """
     out: dict[str, Any] = {}
     always = score_mask_function(data, lambda i: baselines.always_send(data.labels[i].shape))
     out["always_send"] = {
         "description": "every frame is sent",
         **always.report(settings, full=full),
     }
+    if val is None:
+        out.update(_reference_reports(data, None, settings, full))
+        return out
     rule, val_score = tuned_threshold_rule(val)
     scored = score_mask_function(
         data, lambda i: rule.predict(to_reflectance(np.asarray(data.images[i])))
@@ -377,8 +408,22 @@ def evaluate_baselines(
         "validation_mean_iou_when_tuned": val_score,
         **scored.report(settings, full=full),
     }
+    out.update(_reference_reports(data, val, settings, full))
+    return out
+
+
+def _reference_reports(
+    data: cache.SplitData, val: cache.SplitData | None, settings: EvaluationConfig, full: bool
+) -> dict[str, Any]:
+    out: dict[str, Any] = {}
     for name, masks in data.reference.items():
         if data.reference_kinds.get(name) == "probability":
+            if val is None:
+                out[f"reference_{name}"] = {
+                    "description": "cloud probability; not scored without validation tuning",
+                    "kind": "probability",
+                }
+                continue
             # A cloud probability: cloud from a threshold tuned on validation only.
             # The paper scored s2cloudless on the probability without a threshold.
             val_masks = val.reference.get(name)
@@ -449,6 +494,8 @@ def evaluate_run(
     band_set: Sequence[str] | None = None,
     perturbation: str | None = None,
     full_metrics: bool = False,
+    data_cache: str | None = None,
+    substitute: bool = False,
 ) -> Path:
     """Evaluate a run on one split; a band-flexible run on one band set.
 
@@ -457,6 +504,11 @@ def evaluate_run(
     sensor effect; the report name and the report record it.
     """
     check_test_guard(split, final, reason)
+    if data_cache is not None and not (reason and reason.strip()):
+        raise TestGuardError(
+            "an independent dataset is a clean check: --data needs --reason, and the "
+            "evaluation is logged like a use of the test split"
+        )
     config = load_config(run_dir / CONFIG_NAME)
     run_meta = json.loads((run_dir / METADATA_NAME).read_text(encoding="utf-8"))
     run_id = str(run_meta["run_id"])
@@ -465,8 +517,18 @@ def evaluate_run(
     index = cache.read_index(directory)
     if cache.is_synthetic(index) and not allow_synthetic:
         raise TrainingError("the cache holds synthetic data; only the smoke pipeline uses it")
-    if split == "test":
+    if split == "test" and data_cache is None:
         log_test_evaluation(run_id, git["commit"], reason or "", which)
+    independent_index: dict[str, Any] | None = None
+    if data_cache is not None:
+        independent_dir = cache.cache_dir(data_cache)
+        independent_index = cache.read_index(independent_dir)
+        log_test_evaluation(
+            run_id,
+            git["commit"],
+            f"independent dataset {independent_index.get('source')}: {reason}",
+            which,
+        )
 
     if config.model.input == "flexible":
         if not band_set:
@@ -478,7 +540,21 @@ def evaluate_run(
     precision = devices.precision_for(device)
     bands = config.data.bands
     mean, std = cache.normalisation(index, bands)
-    data = cache.load_split(directory, split, bands=bands)
+    substitution: dict[str, str] = {}
+    if independent_index is not None:
+        # Normalisation always comes from the run's own training cache (above).
+        block = independent_index["independent"]
+        stored = list(independent_index["bands"])
+        needed = list(band_set or bands)
+        if substitute:
+            substitution = dict(independent.SUBSTITUTIONS.get(block["sensor"], {}))
+        missing = [b for b in needed if substitution.get(b, b) not in stored]
+        if missing:
+            hint = " (--substitute uses B8A for B08 on Landsat 8)" if "B08" in missing else ""
+            raise TrainingError(f"the dataset does not provide {missing}{hint}")
+        data = cache.load_independent(cache.cache_dir(data_cache or ""), bands, substitution)
+    else:
+        data = cache.load_split(directory, split, bands=bands)
     model = load_model(run_dir, config, which, device)
     if isinstance(model, flexible.FlexibleModel):
         model.set_band_set(band_set or bands)
@@ -525,11 +601,15 @@ def evaluate_run(
         "band_set": evaluated_bands,
         "perturbation": perturbation,
         "data": {
-            "cache": paths.portable(directory),
-            "source": index.get("source"),
-            "dataset": index.get("dataset"),
+            "cache": paths.portable(
+                directory if data_cache is None else cache.cache_dir(data_cache)
+            ),
+            "source": (independent_index or index).get("source"),
+            "dataset": (independent_index or index).get("dataset"),
             "split_count": len(data),
-            "split_build_date": index["splits"][split].get("build_date"),
+            "split_build_date": (independent_index or index)["splits"][
+                cache.INDEPENDENT_SPLIT if independent_index is not None else split
+            ].get("build_date"),
             # The dataset's padding, set to IGNORE_INDEX in the labels (data/padding.py).
             "padding_sides": list(padding.PADDING_SIDES),
             "padded_pixels_masked": data.padded_pixels(),
@@ -540,7 +620,19 @@ def evaluate_run(
         "calibration": calibration.report(),
         "frames": frame_decisions(scores, positions, data.patch_ids, config.evaluation),
     }
-    if with_baselines:
+    if independent_index is not None:
+        source_name = str(independent_index.get("source"))
+        report["split"] = "independent"
+        report["independent"] = {
+            **independent_index["independent"],
+            "substitution": substitution,
+            "four_band_equivalent": set(evaluated_bands) == set(USED_BANDS)
+            or set(evaluated_bands) == {"B02", "B03", "B04", "B8A"},
+        }
+        report["model"].update(shadow_on_marked_tiles(scores, data.metadata, config.evaluation))
+        if with_baselines:
+            report["baselines"] = evaluate_baselines(data, None, config.evaluation, full_metrics)
+    elif with_baselines:
         # The baselines read blue, green, red and near infrared, in that order.
         base = cache.load_split(directory, split, bands=USED_BANDS)
         val = base if split == "val" else cache.load_split(directory, "val", bands=USED_BANDS)
@@ -551,6 +643,9 @@ def evaluate_run(
     suffix = "" if config.model.input == "fixed" else "_" + band_set_name(evaluated_bands)
     if perturbation:
         suffix += "_" + sensor.Perturbation.parse(perturbation).name
+    if independent_index is not None:
+        suffix = f"_{source_name}{suffix}" + ("_substituted" if substitution else "")
+        split = "independent"
     out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -562,7 +657,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         prog="python -m tiefer_lab.evaluate", description="Evaluate a trained run."
     )
     parser.add_argument("--run", required=True, help="run directory or run ID")
-    parser.add_argument("--split", required=True, choices=["val", "test"])
+    parser.add_argument("--split", default=None, choices=["val", "test"])
+    parser.add_argument(
+        "--data",
+        default=None,
+        help="an independent dataset cache (build_cache --source); needs --reason and is logged",
+    )
+    parser.add_argument(
+        "--substitute",
+        action="store_true",
+        help="with --data on another sensor: read B08 from the band that stands in for it "
+        "(B8A on Landsat 8); recorded in the report",
+    )
     parser.add_argument("--baselines", action="store_true", help="also evaluate the baselines")
     parser.add_argument("--final", action="store_true", help="required for --split test")
     parser.add_argument("--reason", help="why the test split is evaluated (with --final)")
@@ -583,7 +689,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.data is None and args.split is None:
+        parser.error("--split is required unless --data is given")
+    if args.data is not None and args.split is not None:
+        parser.error("--data evaluates the whole independent dataset; leave out --split")
+    if args.data is not None:
+        args.split = "independent"
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -604,6 +717,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 band_set=band_set,
                 perturbation=args.perturb,
                 full_metrics=args.full_metrics,
+                data_cache=args.data,
+                substitute=args.substitute,
             )
             for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
         ]

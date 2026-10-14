@@ -566,6 +566,9 @@ def independent_worst_stratum(
             fields = r.data["independent"].get("strata_fields") or []
             for field_name in fields:
                 for value, entry in (r.data.get("breakdown", {}).get(field_name) or {}).items():
+                    # A boolean tag (the Catalogue's surface types) counts where it is present.
+                    if str(value).lower() in ("false", "0"):
+                        continue
                     if entry.get("cloud_boa") is not None and entry["patches"] >= min_patches:
                         candidates.append((entry["cloud_boa"], r, field_name, value, entry))
         if not candidates:
