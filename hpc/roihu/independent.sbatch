@@ -7,7 +7,9 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset> [extra build_cache arguments]
 #
-# <dataset>: s2_cloud_catalogue, kappaset, landsat8_biome or landsat8_sparcs
+# <dataset>: a key of DATASETS in src/tiefer_lab/data/independent.py: s2_cloud_catalogue,
+# kappaset, landsat8_biome, landsat8_sparcs, s2_hollstein, landsat8_38cloud, s2_cesbio,
+# landsat8_95cloud or whus2_cd
 # (src/tiefer_lab/data/independent.py). The Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
@@ -47,7 +49,7 @@ case "${dataset}" in
     record="7100327"
     files=(kappaset.zip README.pdf)
     ;;
-  landsat8_biome | landsat8_sparcs)
+  landsat8_biome | landsat8_sparcs | landsat8_38cloud | landsat8_95cloud | s2_hollstein | s2_cesbio | whus2_cd)
     record=""
     files=()
     ;;
@@ -80,12 +82,12 @@ for name in "${files[@]}"; do
   touch "${root}/${name}.done"
 done
 if [[ -z "${record}" && -z "$(ls -A "${root}")" ]]; then
-  echo "error: download ${dataset} by hand from its USGS page into \$TIEFER_DATA_DIR/downloads/${dataset}/" >&2
+  echo "error: download ${dataset} by hand from its source page into \$TIEFER_DATA_DIR/downloads/${dataset}/" >&2
   exit 2
 fi
 
 extra=()
-if [[ "${dataset}" == s2_cloud_catalogue || "${dataset}" == kappaset ]]; then
+if [[ "${dataset}" == s2_* || "${dataset}" == kappaset || "${dataset}" == whus2_cd ]]; then
   extra=(--cloudsen12-cache "${TIEFER_CLOUDSEN12_CACHE:-cloudsen12-l1c-all}")
 fi
 python3 -m tiefer_lab.data.build_cache --split test --source "${dataset}" --root "${root}" \

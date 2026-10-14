@@ -38,6 +38,7 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-2.6` | Operational design domain: top-of-atmosphere reflectance in [0, 2], ground sampling 0.5 to 20 m, at most 1 percent invalid pixels, at least 32 pixels per side; a frame outside it is sent and flagged | outside the domain the filter is not validated, and a doubtful frame costs downlink, never a lost frame | `tiefer_lab.onboard.Domain` and [SPEC.md](SPEC.md), section 9; validated on Sentinel-2 Level-1C at 10 m only | data of another sensor is evaluated | open | 7 October 2026 |
 | `A-2.7` | Compression happens after the filter | the training data has no compression artefacts | none, design choice | the onboard compression and its position in the pipeline are known | open | 7 October 2026 |
 | `A-2.8` | On an independent dataset a patch is a non-overlapping 509 x 509 tile cut from the top left after resampling to 10 m, and a tile with more than 0.1 unlabelled pixels is dropped; the native resolution is evaluated as a perturbation | 509 x 509 at 10 m is the CloudSEN12 patch, so per-patch medians stay comparable; the onboard filter resamples to 10 m (`tiefer_lab.onboard.predict_frame`) | none, design choice; a protocol decision proposed in a method-change issue; [INDEPENDENT.md](INDEPENDENT.md), section 4 | the maintainer agrees or changes it in that issue | open | 14 October 2026 |
+| `A-2.9` | On 95-Cloud only the 57 scenes it adds to 38-Cloud are scored, and on 38-Cloud only its 20 test scenes and 18 training scenes with entire-scene masks | 95-Cloud holds every 38-Cloud scene (95-Cloud README; Cloud-Net+ paper), so scoring both whole would count 38 scenes twice | none, design choice; `DATASETS["landsat8_95cloud"].note` in `src/tiefer_lab/data/independent.py` | the maintainer agrees or changes it in the method-change issue of the independent datasets | open | 14 October 2026 |
 
 ---
 
@@ -147,6 +148,7 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 
 ## Changelog
 
+- 14 October 2026: `A-2.9`, the scenes of 38-Cloud and 95-Cloud that are scored, so that no scene counts twice; drafted with an AI-assisted system.
 - 14 October 2026: v3 rows: Landsat 8 band names (`A-1.8`) and the B08 substitution (`A-1.9`), the patch of an independent dataset (`A-2.8`), the cloud logit bias (`A-3.5`) and the soft cloud fraction (`A-3.6`) as protocol options, one seed per variant (`A-6.11`), export-only variants (`A-6.12`), the CloudScout re-implementation (`A-6.13`), and the table of the v3 references and stages; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: `A-5.5`, the sides of the dataset's padding, an assumption until the padding check runs on CSC Roihu.

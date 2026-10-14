@@ -56,6 +56,23 @@ class Reference:
 
 
 REFERENCES: dict[str, Reference] = {
+    "unetmobv2": Reference(
+        "unetmobv2",
+        "UNetMobV2 of the CloudSEN12 paper; primary page of the weights TODO(verify)",
+        None,
+        None,
+        "four_class",
+        note="CloudSEN12+ ships its mask (cloudmask_unetmobv2_v1); this runner is for the "
+        "independent datasets",
+    ),
+    "s2cloudless": Reference(
+        "s2cloudless",
+        "s2cloudless, Sentinel Hub; primary page TODO(verify)",
+        None,
+        None,
+        "probability",
+        note="CloudSEN12+ ships its probability; this runner is for the independent datasets",
+    ),
     "dtacs4bands": Reference(
         "dtacs4bands",
         "https://huggingface.co/isp-uv-es/cloudsen12_models",
