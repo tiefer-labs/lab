@@ -23,6 +23,7 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-1.7` | Nothing is assumed about the bands of target satellites whose specifications are not public | an assumption without a source cannot be checked | none, design choice | a target sensor's specification is available | open | 7 October 2026 |
 | `A-1.8` | Landsat 8 OLI bands are named after the Sentinel-2 band of the closest centre wavelength and width: band 1 B01, 2 B02, 3 B03, 4 B04, 5 (865 nm, narrow) B8A, 6 B11, 7 B12, 9 (cirrus) B10 | the band-flexible model reads Sentinel-2 band names; the decision of the open fact of [DATASETS.md](DATASETS.md), section 3 | none, design choice; the numeric tolerance stays open; `LANDSAT8_TO_S2` in `src/tiefer_lab/data/independent.py` | the first Landsat 8 evaluation is read, or the Landsat 8 band specification is cited here | open | 14 October 2026 |
 | `A-1.9` | A four-band model run on Landsat 8 reads band 5 in place of B08; such a result is a substitution, reported apart from the band-flexible model run with B8A | the four-band models were trained on B08 (842 nm, wide); Landsat 8 has no band at that position | none, design choice; `evaluate --substitute` records it in the report | the substitution and the B8A run are compared | open | 14 October 2026 |
+| `A-1.10` | A learned Sentinel-2 reference algorithm of the paper's Table 6 may run on Landsat 8 through the band names of `A-1.8` and the B08 substitution of `A-1.9`, only when every input band it reads is then available, and such a result is reported apart as a substitution; Sentinel-2 processors and product bands (Sen2Cor, QA60) never run on Landsat 8 | the coverage of `reports/coverage.md` then names a route for every learned algorithm on Landsat 8 instead of ruling it out by sensor alone | none, design choice; `route` in `src/tiefer_lab/paper_models.py`; no input band list of these algorithms is verified yet, so every such route is `open` | the input bands of an algorithm are verified, or the maintainer rules cross-sensor reference runs out | open | 15 October 2026 |
 
 ---
 
@@ -149,6 +150,7 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 
 ## Changelog
 
+- 15 October 2026: `A-1.10`, the band substitution of `paper_models.route` for learned reference algorithms on Landsat 8; drafted with an AI-assisted system.
 - 15 October 2026: `A-5.6` links the licence decision issue 7; drafted with an AI-assisted system.
 - 15 October 2026: `A-5.6` names WHUS2-CD+ as a candidate without a decision, treated as not used; drafted with an AI-assisted system.
 - 15 October 2026: `A-5.6`, the maintainer's licence decisions; `A-2.9` waits for a later decision on 38-Cloud and 95-Cloud; drafted with an AI-assisted system.
