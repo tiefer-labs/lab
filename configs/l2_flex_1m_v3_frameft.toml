@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Fine-tune stage of the v3 L2 reference: starts from the best.pt of the one finished run
+# Fine-tune stage of the L2 candidate reference: starts from the best.pt of the one finished run
 # whose ID starts with l2_flex_1m_v3-seed0 and trains on whole 512 x 512 patches, so that the
 # cloud fraction of a crop is that of the frame the decision sees, with the frame term
 # (FRM-01, ACC-07). A stage, not a one-change variant: docs/ASSUMPTIONS.md, section 6.
@@ -12,9 +12,10 @@ name = "l2_flex_1m_v3_frameft"
 cache_name = "cloudsen12-l1c-all"
 crop_size = 512
 # Batch 64 and learning rate 0.004 (0.008 x 64 / 128, the linear scaling of
-# l1_base) so that 13 bands fit in the memory of one GH200; confirmed by the
-# v2 timing run. Every L2 config uses the same values so that the L2 results
-# stay comparable (docs/ASSUMPTIONS.md).
+# l1_base) so that 13 bands fit in the memory of one GH200. The values were set
+# before Project Schatten and are confirmed or changed by a Project Schatten
+# timing run. Every L2 config uses the same values so that the L2 results stay
+# comparable (docs/ASSUMPTIONS.md).
 batch_size = 16
 eval_batch_size = 8
 num_workers = 16

@@ -231,7 +231,7 @@ The test split is only for the final evaluation. It needs `FINAL=1` and a reason
 FINAL=1 REASON="<why>" bash hpc/roihu/submit.sh hpc/roihu/evaluate.sbatch <run-id>
 ```
 
-The v3 options of the jobs, each off unless set: `FULL_METRICS=1` adds the full metric set; `DATA=<cache>` with `REASON` evaluates an independent dataset (logged), and `SUBSTITUTE=1` reads B08 from B8A on Landsat 8; `CLOUD_BIAS=auto` and `FRACTION=soft` use the values of `calibrate.sbatch`; `EXPORT_CONFIG=configs/<name>.toml` takes the export settings of a committed config. The order of the v3 jobs and their commands are in [plan.md](plan.md), section 3.
+The protocol options of the jobs, each off unless set: `FULL_METRICS=1` adds the full metric set; `DATA=<cache>` with `REASON` evaluates an independent dataset (logged), and `SUBSTITUTE=1` reads B08 from B8A on Landsat 8; `CLOUD_BIAS=auto` and `FRACTION=soft` use the values of `calibrate.sbatch`; `EXPORT_CONFIG=configs/<name>.toml` takes the export settings of a committed config. The order of the v3 jobs and their commands are in [plan.md](plan.md), section 3.
 
 Record the compute used by each job, then pack the results:
 
@@ -274,7 +274,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, validation only |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 GPU, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
-| `plan.md` | the v2 run plan: budget, stop line and steps |
+| `plan.md` | the run plan of Project Schatten: budget, stop line and steps |
 | `usage.sh` | `sacct` record of a job, written to `reports/compute/<job-id>.json` |
 | `collect.sh` | packs reports, run metadata, best checkpoint and ONNX files, with relative paths only |
 
@@ -359,6 +359,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: `evaluate_all.sh` lists each dataset without a cache and exits non-zero; drafted with an AI-assisted system.
 - 14 October 2026: the files table lists the calibration, independent dataset and diagnosis jobs and `evaluate_all.sh`; step 6 names the v3 options of the jobs; drafted with an AI-assisted system.
 - 8 October 2026: step 3, a read that fails part way pauses every reader and is read again; run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120`; troubleshooting row for `Read failed` after HTTP 429.

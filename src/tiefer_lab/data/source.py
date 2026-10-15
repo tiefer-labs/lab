@@ -83,7 +83,7 @@ LABEL_CODES: Mapping[int, int] = {0: CLEAR, 1: THICK_CLOUD, 2: THIN_CLOUD, 3: CL
 # nolabel), patch identifier `roi_id` (also `old_roi_id`) and patch size
 # `real_proj_shape` (509 or 2000). The split field is not named on the card;
 # the reader expects it with these values and stops if it is missing, so the
-# v2 build confirms it (docs/DATA.md, section 9).
+# first cache build confirms it (docs/DATA.md, section 9).
 SPLIT_FIELD = "tortilla:data_split"
 SPLIT_VALUES: Mapping[str, str] = {"train": "train", "val": "validation", "test": "test"}
 QUALITY_FIELD = "label_type"

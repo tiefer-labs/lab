@@ -10,7 +10,7 @@ Measured results of milestones L1 (four-band cloud filter) and L2 (model size, b
 
 ## 1. Summary
 
-No results yet. The v2 campaign runs from commit <to be filled> on CSC Roihu; see [hpc/roihu/plan.md](../hpc/roihu/plan.md).
+No results yet. Project Schatten runs from commit <to be filled> on CSC Roihu; see [hpc/roihu/plan.md](../hpc/roihu/plan.md).
 
 ---
 
@@ -18,7 +18,7 @@ No results yet. The v2 campaign runs from commit <to be filled> on CSC Roihu; se
 
 - Numbers are rounded to 3 decimals, half up (0.0075 becomes 0.008); counts, bytes and times are exact.
 - Intervals in brackets are 95 percent bootstrap intervals over patches, with 1,000 resamples and seed 0 (`[evaluation]` of every config). A value without brackets has no interval in its source.
-- `pending`, `not measured` and `n/a` have the meanings of [docs/STYLE.md](STYLE.md), section 4: measured but not yet in the repository; never measured; does not apply. "v2 pending" marks a row that waits for the v2 campaign; the rows per run are added when the v2 campaign plan is written.
+- `pending`, `not measured` and `n/a` have the meanings of [docs/STYLE.md](STYLE.md), section 4: measured but not yet in the repository; never measured; does not apply. "Project Schatten pending" marks a row that waits for Project Schatten; the rows per run are added when the plan of Project Schatten is written.
 - Times are in UTC. Durations are written `hh:mm:ss`; CPU time as Slurm prints it. GPU BU means GPU billing units of CSC.
 - Which value answers which question, what supersedes what and how to cite a value are in [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md); the gates a value must pass before it appears here or is quoted outside the repository are in [POLICY.md](../POLICY.md), gates 1 and 2.
 - Every table has a source column, written `key (kind)`: the key of a report file, defined in Appendix A, and the kind of source the value was copied from: `report` (a report file in `reports/`), `log` (Slurm or terminal output, with the job ID) or `config` (a configuration file at the commit named).
@@ -46,15 +46,15 @@ A frame whose cloud fraction is at or above the threshold is kept on board; belo
 
 | Run | Full run ID | Source |
 | :--- | :---: | :---: |
-| v2 pending | pending | pending |
+| Project Schatten pending | pending | pending |
 
 | Run | Config | Bands | Parameters | Multiply-accumulates per 512 x 512 tile | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 | Run | Batch size | Learning rate | Epochs and stop | Best epoch | Training job | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending |
 
 ---
 
@@ -62,9 +62,9 @@ A frame whose cloud fraction is at or above the threshold is kept on board; belo
 
 | Item | Value | Source |
 | :--- | :---: | :---: |
-| v2 pending | pending | pending |
+| Project Schatten pending | pending | pending |
 
-The commit of each report and whether it was made from a clean working tree are listed in Appendix A. Every v2 run starts from one tagged, clean commit.
+The commit of each report and whether it was made from a clean working tree are listed in Appendix A. Every Project Schatten run starts from one tagged, clean commit.
 
 ---
 
@@ -74,17 +74,17 @@ CloudSEN12+, Level-1C, high quality labels, 509 x 509 pixel patches; see [DATA.m
 
 | Split | Patches | Use | Source |
 | :--- | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending |
 
-Labelled pixels per class of each split are recorded by the v2 build and its evaluation reports.
+Labelled pixels per class of each split are recorded by the cache build and its evaluation reports.
 
 | Class | Pixels | Share | Source |
 | :--- | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending |
 
 | Cache | Bands | Size on disk | Built | Used by | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 ---
 
@@ -92,7 +92,7 @@ Labelled pixels per class of each split are recorded by the v2 build and its eva
 
 | Run | Val mean IoU | Test mean IoU | Val false discard rate at 50 percent | Test false discard rate at 50 percent | Test decision accuracy at 50 percent | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending |
 
 ---
 
@@ -100,7 +100,7 @@ Labelled pixels per class of each split are recorded by the v2 build and its eva
 
 | Metric | Validation | Test | Source |
 | :--- | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending |
 
 No model is selected yet. The model is selected on the validation split only.
 
@@ -112,25 +112,25 @@ IoU per class:
 
 | Run | Clear | Thick cloud | Thin cloud | Cloud shadow | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 Overall accuracy and cloud fraction mean absolute error:
 
 | Run | Overall accuracy, val | Overall accuracy, test | Mean absolute error, val | Mean absolute error, test | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 Confusion matrix on the validation split, in pixels; rows are the labelled class, columns the predicted class:
 
 | Labelled class | Predicted clear | Predicted thick cloud | Predicted thin cloud | Predicted cloud shadow | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 Frame metrics at each threshold. Useful frames are those whose labelled cloud fraction is below the threshold; they depend only on the labels (`src/tiefer_lab/metrics.py`).
 
 | Run, split and threshold | Decision accuracy | False discard rate | False send rate | Useful frames | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 ---
 
@@ -140,7 +140,7 @@ Broken down by the dataset field `equi_zone`, the continental zone of the Equi7G
 
 | `equi_zone` | Patches | Mean IoU | False discard rate at 50 percent | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending |
 
 ---
 
@@ -148,13 +148,13 @@ Broken down by the dataset field `equi_zone`, the continental zone of the Equi7G
 
 | Baseline | Split | Mean IoU | False discard rate at 50 percent | Decision accuracy at 50 percent | Overall accuracy | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending |
 
 IoU per class of the threshold rule on the validation split:
 
 | Baseline | IoU clear | IoU thick cloud | IoU thin cloud | IoU cloud shadow | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 The threshold rule is tuned on the validation split; its validation values are scored on the data it was tuned on, and the test values are the comparison that counts.
 
@@ -189,13 +189,13 @@ Cloud against the rest:
 
 | Run | Cloud BOA | Cloud PA | Cloud UA | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending |
 
 Cloud shadow against the rest:
 
 | Run | Shadow BOA | Shadow PA | Shadow UA | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending |
 
 ---
 
@@ -203,7 +203,7 @@ Cloud shadow against the rest:
 
 | Model and band set | Bands | Val mean IoU | Test mean IoU | Test false discard rate at 50 percent | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 Product decision. Under the rule of [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7, the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor. The rule is applied on validation only; no decision is recorded yet.
 
@@ -215,15 +215,15 @@ A fixed perturbation is applied to the input before the model sees it. The pertu
 
 | Perturbation | What it simulates | Mean IoU | False discard rate at 50 percent | Decision accuracy at 50 percent | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 | Perturbation | IoU clear | IoU thick cloud | IoU thin cloud | IoU cloud shadow | Overall accuracy | Mean absolute error | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending | pending |
 
 | Perturbation | Cloud BOA | Shadow BOA | Source |
 | :--- | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending |
 
 ---
 
@@ -233,13 +233,13 @@ Scored with ONNX Runtime on the validation split; INT8 calibrated on training pa
 
 | Format | File size in bytes | Mean IoU | False discard rate at 50 percent | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending |
 
 INT8 change against FP32 for every exported run, on the validation split:
 
 | Run | FP32 mean IoU | INT8 mean IoU | Change | FP32 false discard rate | INT8 false discard rate | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending |
 
 [SPEC.md](SPEC.md), section 10, says that a drop of more than one point in mean IoU is reported and that quantisation-aware training is proposed. An export passes when the ONNX FP32 logits differ from PyTorch by at most 0.01 and the predicted class agrees on at least 0.999 of the pixels (`[export]` of the config).
 
@@ -260,17 +260,17 @@ CSC bills GPU and CPU jobs in different units, so they are listed in two tables.
 
 | Job | Name | Run and task | State | Elapsed (hh:mm:ss) | GPU hours | GPU BU | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending | pending | pending |
 
 | Job | Task | State | Elapsed (hh:mm:ss) | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending |
 
 ---
 
 ## 17. Training notes
 
-None yet; v2 pending.
+None yet; Project Schatten pending.
 
 ---
 
@@ -294,7 +294,7 @@ None yet; v2 pending.
 
 | Run | Config | Seed | Commit | Cache | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| v2 pending | pending | pending | pending | pending | pending |
+| Project Schatten pending | pending | pending | pending | pending | pending |
 
 Check out the commit of the run first, then run the steps. Locally, one command per step:
 
@@ -328,7 +328,7 @@ Then copy the report files into `reports/` unchanged and their values into this 
 
 ## 20. Values pending
 
-Every value on this page waits for the v2 campaign ([hpc/roihu/plan.md](../hpc/roihu/plan.md)).
+Every value on this page waits for Project Schatten ([hpc/roihu/plan.md](../hpc/roihu/plan.md)).
 
 ---
 
@@ -338,6 +338,7 @@ Every value on this page waits for the v2 campaign ([hpc/roihu/plan.md](../hpc/r
 
 ## Changelog
 
+- 15 October 2026: the pending rows name Project Schatten instead of a withdrawn campaign; drafted with an AI-assisted system.
 - 14 October 2026: section 2 defines the PA and UA shares and the false send rate at a false discard rate of `--full-metrics`; section 10 lists the CloudScout re-implementation and how each reference is measured on the same pixels. No value is added; drafted with an AI-assisted system.
 - 8 October 2026: section 19, the Roihu jobs are submitted from `roihu-cpu.csc.fi`.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).

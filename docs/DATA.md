@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-What data milestones L1 and L2 train and evaluate on, answered in the order of the usual datasheet questions, followed by the facts the code depends on and the caches of the v2 campaign on CSC Roihu.
+What data milestones L1 and L2 train and evaluate on, answered in the order of the usual datasheet questions, followed by the facts the code depends on and the caches of Project Schatten on CSC Roihu.
 
 ---
 
@@ -65,12 +65,12 @@ The dataset's own train, validation and test splits are used. The cache builder 
 
 | Split | High quality patches | Kept (509 x 509) | Dropped (other size) | Class shares | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| train | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
-| validation | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
-| test | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `index.json` |
-| total | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | sum of the rows |
+| train | recorded by the cache build | recorded by the cache build | recorded by the cache build | recorded by the cache build | `index.json` |
+| validation | recorded by the cache build | recorded by the cache build | recorded by the cache build | recorded by the cache build | `index.json` |
+| test | recorded by the cache build | recorded by the cache build | recorded by the cache build | recorded by the cache build | `index.json` |
+| total | recorded by the cache build | recorded by the cache build | recorded by the cache build | recorded by the cache build | sum of the rows |
 
-Every count and share of this table is recorded by the v2 build in `index.json` (`splits.<split>.selection` and `class_pixels`).
+Every count and share of this table is recorded by the cache build in `index.json` (`splits.<split>.selection` and `class_pixels`).
 
 ### 2.4 Metadata fields
 
@@ -141,7 +141,7 @@ It reads up to 50 patches spread evenly over the split, memory-mapped, and print
 
 The 2000 x 2000 patches are left out: the export input is fixed at 512 x 512, and a 2000 x 2000 patch holds 15.4 times the pixels of a 509 x 509 patch.
 
-The normalisation values of each cache are recorded by the v2 build in `index.json` (section 10).
+The normalisation values of each cache are recorded by the cache build in `index.json` (section 10).
 
 ---
 
@@ -162,7 +162,7 @@ Training and evaluation of the cloud filter of milestones L1 and L2, and scoring
 
 Evaluation reports break results down by every scalar metadata field with between 2 and 30 distinct values (`MAX_GROUPS` = 30 in `src/tiefer_lab/evaluate.py`), with the patch count of each group, so imbalances become visible in the results. Any statement about bias in this card cites such a report.
 
-No breakdown is measured yet (v2 pending). The seasonal and land cover distribution is not analysed.
+No breakdown is measured yet (Project Schatten pending). The seasonal and land cover distribution is not analysed.
 
 ### 6.4 Leakage between splits
 
@@ -200,7 +200,7 @@ Titles and authors are listed at the DOI links; this repository names no individ
 | Revision read | `f9490f7de11b4f387f72ef800e73ccbb754711de`, the `sha` field of the Hugging Face dataset API, last modified 5 January 2025, 14:47:21 UTC | [2] |
 | How the revision is recorded | the builder writes the `sha` field to `index.json` at build time, and every evaluation report copies it | `src/tiefer_lab/data/source.py` |
 | Is the revision pinned? | no; it is recorded, not pinned: the reader reads the current revision, so a rebuild, a resumed build or a merge of shards can read a newer revision than the one recorded first | `src/tiefer_lab/data/source.py` |
-| Revision of each cache | recorded by the v2 build | section 10 |
+| Revision of each cache | recorded by the cache build | section 10 |
 | What changes when the dataset changes | a new revision means a new cache; the facts of section 9 are checked again against the card | this card |
 
 ---
@@ -224,14 +224,14 @@ Each fact is defined once, in `src/tiefer_lab/data/source.py`, and checked at ru
 | **Labels and metadata** | | | |
 | Label codes | 0 clear, 1 thick cloud, 2 thin cloud, 3 cloud shadow | [1] | yes: any other code stops the build |
 | Item positions in a sample | `read(0)` image, `read(1)` label | [1] | yes: label shape equals image shape |
-| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`; checked again by the v2 build | yes: the reader stops when the field is missing |
+| Split field and values | `tortilla:data_split`: `train`, `validation`, `test` | `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`; checked again by the first cache build | yes: the reader stops when the field is missing |
 | Quality field and value | `label_type` = `high` | [1] | yes |
 | Patch ID field | `roi_id` | [1] | no |
 | Row key | `tortilla:id`, used only to sort rows and to resume a build | source of `tacoreader` 0.5.6 | no |
 | Reference mask names | `cloudmask_qa60`, `cloudmask_sen2cor`, `cloudmask_s2cloudless`, `cloudmask_cloudscore_cs_v1`, `cloudmask_cloudscore_cs_cdf_v1`, `cloudmask_unetmobv2_v1`, `cloudmask_unetmobv2_v2`, `cloudmask_sensei_v2` | [1] | no |
 | Reference mask link, item names and encodings | `REFERENCE_LINK_FIELD`, `REFERENCE_MASK_ITEMS`, `REFERENCE_ENCODINGS`: not set | open fact (section 13) | `build_cache --references` stops with a clear message |
 
-The card does not name the split field. The code reads `tortilla:data_split` with the values `train`, `validation` and `test`; the reader stops when the field is missing, so the v2 build confirms the field and its values for the revision it records.
+The card does not name the split field. The code reads `tortilla:data_split` with the values `train`, `validation` and `test`; the reader stops when the field is missing, so the first cache build confirms the field and its values for the revision it records.
 
 ---
 
@@ -269,14 +269,14 @@ python -m tiefer_lab.data.build_cache --split all --bands all --name cloudsen12-
 
 A 509 x 509 patch takes 13 x 509 x 509 x 2 + 509 x 509 bytes, 6.67 MiB, with all bands, and 4 x 509 x 509 x 2 + 509 x 509 bytes, 2.22 MiB, with four; the builder prints the estimate for each split before it starts. The build is resumable: run the same command again after an interruption, and a split that is already complete is left as it is. A build with another selection into a folder that holds a complete or partly built split stops with an error instead of replacing it; use another `--name` or `$TIEFER_DATA_DIR`, or pass `--restart`. On CSC Roihu use `hpc/roihu/data.sbatch` ([hpc/roihu/README.md](../hpc/roihu/README.md)).
 
-The caches of the v2 campaign on CSC Roihu:
+The caches of Project Schatten on CSC Roihu:
 
 | Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | `l1_base`, `l1_full` | recorded by the v2 build |
-| `cloudsen12-l1c-all` | all 13 | recorded by the v2 build | recorded by the v2 build | recorded by the v2 build | every L2 config | recorded by the v2 build |
+| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | recorded by the cache build | recorded by the cache build | recorded by the cache build | `l1_base`, `l1_full` | recorded by the cache build |
+| `cloudsen12-l1c-all` | all 13 | recorded by the cache build | recorded by the cache build | recorded by the cache build | every L2 config | recorded by the cache build |
 
-Each cache is built from the commit of the v2 campaign; the build jobs, the revision, the size and the normalisation values are recorded here from `index.json` when the build is done.
+Each cache is built from the commit of Project Schatten; the build jobs, the revision, the size and the normalisation values are recorded here from `index.json` when the build is done.
 
 ---
 
@@ -311,7 +311,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 | Label code of the padded pixels of a cached patch | `python -m tiefer_lab.data.cache padding` on `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, validation and test | section 5; every metric |
 | Sides of each patch that hold the padding: the card says left and bottom [1]; `PADDING_SIDES` in `src/tiefer_lab/data/padding.py` holds the card's statement as `TODO(verify)` | the same check: the sides whose image strips are zero in every band of every sampled patch | section 5; `PADDING_SIDES` |
 | Stored height and width of the training and test patches | `index.json` of each cache (`splits.<split>.height`, `width`) | section 5 |
-| Dataset revision of each cache | `index.json` of the v2 build | sections 8 and 10 |
+| Dataset revision of each cache | `index.json` of the first cache build | sections 8 and 10 |
 | High quality and dropped counts per split | `index.json` (`splits.<split>.selection`) | section 2.3 |
 | Normalisation values of each cache | `index.json` (`normalisation`) | sections 5 and 10 |
 | Field that identifies a patch's location (candidates: `roi_id`, `stac:centroid`) | survey report (`overlap_with_val_test`) | sections 6.4 and 11; `LOCATION_FIELD` |
@@ -334,6 +334,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 5 names the commit that masks the padding.
 - 7 October 2026: section 5, the padding is masked in the labels at load time; the class weights are counted over the masked labels; the normalisation statistics still include the padding.

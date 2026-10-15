@@ -18,7 +18,7 @@ What a release folder of the cloud filter contains. The model files themselves a
 
 ## Steps
 
-Release folders are written after the runs on CSC Roihu. No release folder exists yet; the first is written from the v2 campaign ([hpc/roihu/plan.md](../../hpc/roihu/plan.md)).
+Release folders are written after the runs on CSC Roihu. No release folder exists yet; the first is written from Project Schatten ([hpc/roihu/plan.md](../../hpc/roihu/plan.md)).
 
 1. Create the folder `models/cloud-filter/<version>/`, for example `models/cloud-filter/v<version>/`.
 2. Copy the resolved configuration of the run:
@@ -65,6 +65,7 @@ Release folders are written after the runs on CSC Roihu. No release folder exist
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the purpose links POLICY.md, INSTALL.md and LICENSING.md.
 - 7 October 2026: step 4 links docs/STYLE.md, section 12.11, after the sections of STYLE.md were renumbered.

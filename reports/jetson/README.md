@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-Where the Jetson Orin benchmark results land. Each file is written by `jetson/bench.py` on the board and copied here unchanged. No file is here yet: report files are committed when the v2 campaign collects them.
+Where the Jetson Orin benchmark results land. Each file is written by `jetson/bench.py` on the board and copied here unchanged. No file is here yet: report files are committed when Project Schatten collects them.
 
 ---
 
@@ -43,6 +43,7 @@ No Jetson measurements exist yet: every hardware value in [docs/RESULTS.md](../.
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: hardware values are `not measured` in docs/RESULTS.md, section 15.
 - 7 October 2026: Jetson values are copied into docs/RESULTS.md by hand; `make results` is removed.
