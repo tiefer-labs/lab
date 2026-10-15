@@ -1,0 +1,61 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Reference, not a Tiefer model: a re-implementation of CloudScout (ESA Phi-sat-1)
+# trained by Tiefer Lab from random initialisation, not the flown model
+# (src/tiefer_lab/models/cloudscout.py). Step 1 of the paper's two training steps:
+# frame labels at 30 percent cloudy pixels ("TH30"), every layer trained.
+# Source: Remote Sensing 12(14), 2205, 2020, https://doi.org/10.3390/rs12142205,
+# sections 3.3 and 3.4, read on 14 October 2026. Deviations from the paper, each a
+# design choice: CloudSEN12+ patches at 10 m instead of 512 x 512 tiles at 60 m;
+# Level-1C reflectance instead of HyperScout-2 radiance; the schedule of this
+# repository (warm-up and cosine) instead of lr = lr_old x e^(-0.6 epoch).
+name = "cloudscout_reimpl_step1_th30"
+
+[data]
+cache_name = "cloudsen12-l1c-all"
+# The whole 509 x 509 patch (stored as 512 x 512, padding masked) is one frame.
+crop_size = 512
+batch_size = 32
+eval_batch_size = 8
+num_workers = 16
+load_mode = "auto"
+brightness = 0.1
+contrast = 0.1
+bands = ["B01", "B02", "B08"]
+
+[model]
+# The paper gives no filter numbers; these widths are a design choice
+# (docs/ASSUMPTIONS.md, section 6): about 0.63 M parameters.
+widths = [16, 32, 64, 128, 128]
+architecture = "cloudscout"
+input = "fixed"
+
+[train]
+seed = 0
+epochs = 40
+learning_rate = 0.01
+weight_decay = 0.0001
+patience = 40
+min_improvement = 0.001
+log_every = 20
+warmup_epochs = 1
+ema_decay = 0.0
+class_weighting = "none"
+task = "frame"
+frame_label_threshold = 0.3
+false_positive_weight = 2.0
+
+[evaluation]
+thresholds = [0.3, 0.5, 0.7]
+decision_threshold = 0.5
+bootstrap_resamples = 1000
+bootstrap_seed = 0
+
+[export]
+opset = 17
+input_size = 512
+calibration_patches = 256
+max_logit_difference = 0.01
+min_argmax_agreement = 0.999

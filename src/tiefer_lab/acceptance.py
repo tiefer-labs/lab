@@ -44,9 +44,9 @@ REPORT = "acceptance.md"
 REPO = Path(__file__).resolve().parents[2]
 NOT_MEASURED = "not measured"
 
-ONE_M = ("l2_flex_1m", "l2_flex_1m_zero")
-SPECIALIST_1M = ("l2_spec_1m",)
-LARGEST = ("l2_flex_22m", "l2_flex_cnx_21m")
+ONE_M = ("wandler_1m", "wandler_1m_zero_design")
+SPECIALIST_1M = ("lupe_1m",)
+LARGEST = ("wandler_22m", "wandler_convnext_21m")
 RGB = ("B02", "B03", "B04")
 
 # The basis of the throughput targets, as stated by the founder.
@@ -317,7 +317,7 @@ def _export_matches(run_id: str, configs: Sequence[str], strict: bool) -> bool:
     """Whether an export report belongs to the configs.
 
     The default (not strict) keeps the prefix match of earlier versions, under
-    which a variant such as `l2_flex_1m_rescale` also matches `l2_flex_1m`;
+    which a variant such as `wandler_1m_rescale_2x` also matches `wandler_1m`;
     the per-model tables match `<config>-seed` exactly.
     """
     if strict:
@@ -637,7 +637,7 @@ def build_targets(configs: Sequence[str] = ONE_M, strict: bool = False) -> tuple
     if not own and not set(configs) & set(LARGEST):
         acc02 = not_available("defined on the largest models with all 13 bands")
     if not own and not set(configs) & set(ONE_M + SPECIALIST_1M):
-        cmp04 = not_available("defined on l2_flex_1m against l2_spec_1m")
+        cmp04 = not_available("defined on wandler_1m against lupe_1m")
     return (
         Target(
             "ACC-01",

@@ -29,7 +29,7 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
 
    ```bash
    bash hpc/roihu/submit.sh --test-only hpc/roihu/smoke.sbatch
-   bash hpc/roihu/submit.sh --test-only hpc/roihu/train.sbatch configs/l1_full.toml
+   bash hpc/roihu/submit.sh --test-only hpc/roihu/train.sbatch configs/sieb.toml
    ```
 
 3. Know where things run. Everything is submitted from `roihu-cpu.csc.fi`; the jobs run on the nodes below:
@@ -178,7 +178,7 @@ They must say `(aarch64)`, `module environment built on this node`, `module pyth
 
 The smoke job checks the environment, trains `configs/smoke.toml` for a few steps and evaluates it on validation; its outputs are labelled smoke and are never results. If the train and val splits of the full cache from step 3 are not complete yet (missing, or `data.sbatch` still building them), it builds a tiny cache (32 training and 16 validation patches) in `/scratch/<project>/tiefer-lab/smoke/data/` instead and skips the timing run. Its log names the folder it uses (`full cache: ...` or `tiny smoke cache: ...`). The smoke job only reads the full cache and never writes to it, so it can run while `data.sbatch` is running.
 
-With the full cache, the job ends with a timing run of `configs/l1_base.toml` (one epoch cut to 50 steps). Its log line `full epoch ... s (estimated)` is the time per epoch of the real training on this GPU; multiply by the number of epochs to plan the `--time` of the training job:
+With the full cache, the job ends with a timing run of `configs/sieb_base.toml` (one epoch cut to 50 steps). Its log line `full epoch ... s (estimated)` is the time per epoch of the real training on this GPU; multiply by the number of epochs to plan the `--time` of the training job:
 
 ```bash
 grep "full epoch" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>.out
@@ -186,26 +186,26 @@ grep "full epoch" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>
 
 ### Step 5: train on `gpumedium`
 
-Train `configs/l1_full.toml`: `l1_base` run to the end of its 150-epoch cosine schedule, with a learning rate warm-up and a moving average of the weights (the reasons are in [ASSUMPTIONS.md](../../docs/ASSUMPTIONS.md), section 6). Its time per epoch comes from the timing job of step 4. `configs/l1_base.toml` stays unchanged.
+Train `configs/sieb.toml`: `sieb_base` run to the end of its 150-epoch cosine schedule, with a learning rate warm-up and a moving average of the weights (the reasons are in [ASSUMPTIONS.md](../../docs/ASSUMPTIONS.md), section 6). Its time per epoch comes from the timing job of step 4. `configs/sieb_base.toml` stays unchanged.
 
-Each training job uses one GPU. The run ID is printed in the log (`run directory: $TIEFER_RUNS_DIR/<run-id>`) and contains the seed, for example `l1_base-seed0-<time>-<commit>`. If the time limit is reached, the job saves `last.pt` and stops; submit again with the run ID to continue:
+Each training job uses one GPU. The run ID is printed in the log (`run directory: $TIEFER_RUNS_DIR/<run-id>`) and contains the seed, for example `sieb_base-seed0-<time>-<commit>`. If the time limit is reached, the job saves `last.pt` and stops; submit again with the run ID to continue:
 
 ```bash
-bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
-bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml <run-id>
+bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb.toml
+bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb.toml <run-id>
 ```
 
 The default time is 12 hours; `gpumedium` allows up to 36 hours. Set a longer time from the estimate of step 4:
 
 ```bash
-bash hpc/roihu/submit.sh --time=24:00:00 hpc/roihu/train.sbatch configs/l1_full.toml
+bash hpc/roihu/submit.sh --time=24:00:00 hpc/roihu/train.sbatch configs/sieb.toml
 ```
 
 Optional: two seeds. Submit two separate one-GPU jobs. `SEED` overrides the seed of the configuration and is recorded in the run metadata and the run ID, so the two runs never share a run folder. Each job is billed for its own GPU hours:
 
 ```bash
-SEED=0 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
-SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_full.toml
+SEED=0 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb.toml
+SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb.toml
 ```
 
 To resume one of them, pass its run ID as above; the seed then comes from the run itself.
@@ -263,7 +263,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `submit.sh` | `sbatch` with `--account`, `--chdir` and the log location; GPU jobs from either login node with a short `--export` list, CPU jobs from `roihu-cpu.csc.fi` with sbatch's default export; `SEED`, `FINAL`, `REASON`, `ROBUSTNESS` and `PERTURBATIONS` reach the job as environment variables |
 | `survey.sbatch` | short CPU job: counts, splits, locations and item encodings of the dataset, written to `reports/data/survey.json` |
 | `data.sbatch` | builds the cache in `/scratch` on a CPU node; submitted from `roihu-cpu.csc.fi` |
-| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/l1_base.toml` |
+| `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: check, smoke training, validation evaluation, timing run of `configs/sieb_base.toml` |
 | `train.sbatch` | `gpumedium`, 1 GPU, 12 hours by default, SIGUSR1 300 s before the limit, resumable, optional `SEED` |
 | `evaluate.sbatch` | validation with baselines on every band set of the run; test only with `FINAL=1` and `REASON`; `ROBUSTNESS=1` adds the fixed sensor perturbations in `PERTURBATIONS` |
 | `export.sbatch` | ONNX export per band set, check against PyTorch, INT8 quantisation |
@@ -359,6 +359,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the facts observed on Roihu predate Project Schatten and are to be confirmed by step 0 (setup) of the plan; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: `evaluate_all.sh` lists each dataset without a cache and exits non-zero; drafted with an AI-assisted system.

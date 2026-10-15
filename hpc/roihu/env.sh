@@ -85,7 +85,7 @@ unset tiefer_module tiefer_status
 
 # GPU jobs: expandable segments in the PyTorch CUDA allocator reduce memory
 # fragmentation. This setting alone may not let a 13-band model fit at batch
-# 128; the L2 configs halve the batch size instead (configs/l2_flex_1m.toml).
+# 128; the L2 configs halve the batch size instead (configs/wandler_1m.toml).
 # A value set before the job is kept.
 if [[ "${TIEFER_ARCH}" == "aarch64" ]]; then
   export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"

@@ -132,7 +132,7 @@ class TrainConfig:
     # step of the CloudScout training; "all": every layer.
     train_only: Literal["all", "decision"] = "all"
     # Start from the best.pt of another run of this repository, given by its run ID
-    # or by a prefix that names exactly one run, for example "cloudscout_th30-seed0".
+    # or by a prefix that names exactly one run, for example "cloudscout_reimpl_step1_th30-seed0".
     # Random initialisation stays the rule; this loads only Tiefer's own weights.
     init_checkpoint: str | None = None
     # Clip the global norm of the gradient to this value; 0 is off.

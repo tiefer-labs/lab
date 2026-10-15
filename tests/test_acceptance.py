@@ -63,7 +63,7 @@ def test_without_reports_every_measured_target_is_not_measured() -> None:
 
 
 def test_minimum_and_target_are_judged_separately() -> None:
-    reports = Reports(evaluation=[_evaluation("l2_flex_1m", cloud=0.88, shadow=0.84)])
+    reports = Reports(evaluation=[_evaluation("wandler_1m", cloud=0.88, shadow=0.84)])
     rows = _rows(reports)
     assert (rows["ACC-01"]["minimum_status"], rows["ACC-01"]["target_status"]) == ("met", "not met")
     assert (rows["ACC-03"]["minimum_status"], rows["ACC-03"]["target_status"]) == ("met", "not met")
@@ -78,13 +78,13 @@ def test_minimum_and_target_are_judged_separately() -> None:
 
 
 def test_a_minimum_written_as_above_is_strict() -> None:
-    rows = _rows(Reports(evaluation=[_evaluation("l2_flex_1m", cloud=0.84, shadow=0.75)]))
+    rows = _rows(Reports(evaluation=[_evaluation("wandler_1m", cloud=0.84, shadow=0.75)]))
     assert rows["ACC-01"]["minimum_status"] == "not met"
 
 
 def test_three_seeds_give_a_spread_and_a_mean() -> None:
     reports = Reports(
-        evaluation=[_evaluation("l2_flex_1m", 0.90 + 0.01 * s, 0.8, seed=s) for s in range(3)]
+        evaluation=[_evaluation("wandler_1m", 0.90 + 0.01 * s, 0.8, seed=s) for s in range(3)]
     )
     rows = _rows(reports)
     assert abs(rows["ACC-01"]["measurement"].value - 0.91) < 1e-9
@@ -93,7 +93,7 @@ def test_three_seeds_give_a_spread_and_a_mean() -> None:
 
 def test_flexible_against_specialist() -> None:
     reports = Reports(
-        evaluation=[_evaluation("l2_flex_1m", 0.900, 0.8), _evaluation("l2_spec_1m", 0.905, 0.8)]
+        evaluation=[_evaluation("wandler_1m", 0.900, 0.8), _evaluation("lupe_1m", 0.905, 0.8)]
     )
     row = _rows(reports)["CMP-04"]
     assert abs(row["measurement"].value - 0.005) < 1e-9
@@ -171,19 +171,19 @@ def _independent(
 def test_independent_targets_by_hand() -> None:
     reports = Reports(
         evaluation=[
-            _evaluation("l2_flex_1m", cloud=0.90, shadow=0.8),
+            _evaluation("wandler_1m", cloud=0.90, shadow=0.8),
             _independent(
-                "l2_flex_1m",
+                "wandler_1m",
                 "s2_cloud_catalogue",
                 "Sentinel-2 MSI",
                 0.89,
                 ("reference_sen2cor", 0.80),
             ),
             _independent(
-                "l2_flex_1m", "kappaset", "Sentinel-2 MSI", 0.85, ("reference_sen2cor", 0.70)
+                "wandler_1m", "kappaset", "Sentinel-2 MSI", 0.85, ("reference_sen2cor", 0.70)
             ),
             _independent(
-                "l2_flex_1m",
+                "wandler_1m",
                 "landsat8_biome",
                 "Landsat 8 OLI",
                 0.86,
@@ -216,25 +216,25 @@ def test_independent_targets_by_hand() -> None:
 def test_per_model_targets_read_only_that_config() -> None:
     reports = Reports(
         evaluation=[
-            _evaluation("l2_flex_1m", cloud=0.86, shadow=0.8),
-            _evaluation("l1_full", cloud=0.92, shadow=0.8),
+            _evaluation("wandler_1m", cloud=0.86, shadow=0.8),
+            _evaluation("sieb", cloud=0.92, shadow=0.8),
         ]
     )
     rows = {
         r["target"].id: r
-        for r in acceptance.evaluate(reports, acceptance.build_targets(("l1_full",), strict=True))
+        for r in acceptance.evaluate(reports, acceptance.build_targets(("sieb",), strict=True))
     }
     assert rows["ACC-01"]["measurement"].value == 0.92
     assert "largest" in rows["ACC-02"]["measurement"].note
-    assert "l2_spec_1m" in rows["CMP-04"]["measurement"].note
+    assert "lupe_1m" in rows["CMP-04"]["measurement"].note
     # The default table still reads the 1 M band-flexible model only.
     assert _rows(reports)["ACC-01"]["measurement"].value == 0.86
 
 
 def test_export_match_is_strict_only_in_per_model_tables() -> None:
-    assert acceptance._export_matches("l2_flex_1m_rescale-seed0-x", ("l2_flex_1m",), False)
-    assert not acceptance._export_matches("l2_flex_1m_rescale-seed0-x", ("l2_flex_1m",), True)
-    assert acceptance._export_matches("l2_flex_1m-seed0-x", ("l2_flex_1m",), True)
+    assert acceptance._export_matches("wandler_1m_rescale_2x-seed0-x", ("wandler_1m",), False)
+    assert not acceptance._export_matches("wandler_1m_rescale_2x-seed0-x", ("wandler_1m",), True)
+    assert acceptance._export_matches("wandler_1m-seed0-x", ("wandler_1m",), True)
 
 
 def test_jetson_memory_and_determinism() -> None:
@@ -253,7 +253,7 @@ def test_jetson_memory_and_determinism() -> None:
 
 
 def test_per_model_page_follows_the_markdown_standard() -> None:
-    rows = acceptance.evaluate(Reports(), acceptance.build_targets(("l1_full",), strict=True))
-    text = acceptance.render(rows, dt.date(2026, 10, 14), "l1_full")
+    rows = acceptance.evaluate(Reports(), acceptance.build_targets(("sieb",), strict=True))
+    text = acceptance.render(rows, dt.date(2026, 10, 14), "sieb")
     assert not check_header(Path("reports/acceptance_l1_full.md"), text.split("\n"))
-    assert "Acceptance of l1_full" in text
+    assert "Acceptance of sieb" in text

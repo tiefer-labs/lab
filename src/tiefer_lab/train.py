@@ -91,7 +91,7 @@ def resolve_run_reference(reference: str) -> Path:
 
     Configs that start from another run (`init_checkpoint`, `teacher_run`) are
     committed before that run exists, so they name it by a prefix such as
-    "cloudscout_th30-seed0"; two matching runs are an error, never a guess.
+    "cloudscout_reimpl_step1_th30-seed0"; two matching runs are an error, never a guess.
     """
     candidate = paths.runs_dir() / reference
     if candidate.is_dir():
@@ -785,7 +785,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         prog="python -m tiefer_lab.train", description="Train the cloud filter."
     )
     parser.add_argument(
-        "--config", type=Path, help="configuration file, for example configs/l1_base.toml"
+        "--config", type=Path, help="configuration file, for example configs/sieb_base.toml"
     )
     parser.add_argument("--resume", help="run directory or run ID to continue from last.pt")
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)

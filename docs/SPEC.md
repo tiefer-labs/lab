@@ -140,18 +140,39 @@ Evaluated with the same code and splits as the model:
 
 ## 8. Model and training
 
-- `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. The L1 configs (`configs/l1_*.toml`) stay at most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types). The L2 family below has its own sizes.
+- `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. The Sieb configs of milestone L1 (`configs/sieb*.toml`) stay at most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types). The L2 family below has its own sizes.
 - Report parameter count and multiply-accumulate operations for a 1 x 4 x 512 x 512 input.
-- Loss: cross-entropy plus Dice. Class weights: the L1 configs use median-frequency weights from the training split (`class_weighting = "median_frequency"`, the default of `src/tiefer_lab/config.py`); the L2 configs set `none`, except `l2_flex_1m_classweights` ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6).
+- Loss: cross-entropy plus Dice. Class weights: the L1 configs use median-frequency weights from the training split (`class_weighting = "median_frequency"`, the default of `src/tiefer_lab/config.py`); the L2 configs set `none`, except `wandler_1m_class_weights` ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6).
 - Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS.
 - `channels_last` memory format on CUDA.
-- Early stopping on validation mean IoU, with the patience of the config (15 for `l1_base`, 150 for `l1_full` and every L2 config, which is the full schedule).
+- Early stopping on validation mean IoU, with the patience of the config (15 for `sieb_base`, 150 for `sieb` and every L2 config, which is the full schedule).
 - **Resumable:** checkpoint at the end of every epoch and on SIGTERM or SIGUSR1; `--resume <run-dir>` continues from the last checkpoint. Load checkpoints with `torch.load(..., weights_only=True)`.
 - **In-memory data:** load the cached training split into memory once per job when it fits (check size against available memory first), otherwise memory-map it.
 - Every run writes to `$TIEFER_RUNS_DIR/<run-id>/`: resolved config, git commit, seed, device and GPU name, CPU architecture, Python and library versions, Slurm job ID, node and partition when present, start and end time, metrics per epoch (JSON lines), best checkpoint.
 - From the mask, derive per frame: cloud fraction (thick plus thin), shadow fraction, and a **send or keep decision** at an operator-configurable threshold.
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--seed N] [--run-id <name>] [--resume <run-dir>] [--device ...]`; `--cache-name`, `--epochs` and `--max-steps-per-epoch` are for the smoke pipeline and timing runs, which are marked as smoke.
-- Configs: `configs/smoke.toml` (tiny, minutes on CPU), `configs/l1_base.toml` (full training on one GH200 GPU) and `configs/l1_full.toml` (`l1_base` to the end of its schedule, with warm-up and a moving average of the weights); the L2 configs are listed in section 14. Batch size, learning rate and the other settings of each family are in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
+- Configs: `configs/smoke.toml` (tiny, minutes on CPU), `configs/sieb_base.toml` (full training on one GH200 GPU) and `configs/sieb.toml` (`sieb_base` to the end of its schedule, with warm-up and a moving average of the weights); the L2 configs are listed in section 14. Batch size, learning rate and the other settings of each family are in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
+
+### Model names
+
+Every config is named `<family>[_<size>][_<change>]`, in ASCII and lower case. This section is the only place the code names are explained; other documents link here. The milestones keep their names: Sieb is the model of milestone L1, and Wandler and Lupe are the models of milestone L2. Python class names in `src/tiefer_lab/models/` stay technical.
+
+| Family | Meaning | What the family is |
+| :--- | :---: | :---: |
+| `sieb` | German for "sieve": it lets the useful frames through | the four-band onboard filter that keeps or discards a frame, at most 1.0 M parameters; it has one size, so its names carry none |
+| `wandler` | German for "converter": it converts whichever bands it is given into one mask | the band-flexible model, which adapts to the band set it is given |
+| `lupe` | German for "magnifying glass": it looks closely at four bands | the four-band specialist, the control of the band-flexible model |
+| `cloudscout_reimpl` | not a code name of this repository | a re-implementation of another team's system, trained by Tiefer Lab; not the flown model |
+| `smoke` | not a code name | the test config of the smoke pipeline |
+
+Rules of the scheme:
+
+- `<size>` is the approximate parameter count, for example `wandler_500k`, `wandler_1m`, `lupe_22m`; an architecture other than the default is named before it, as in `wandler_convnext_21m`.
+- `<change>` names the one setting a variant changes against its reference, for example `sieb_grad_clip`, `wandler_1m_crop384` or `wandler_1m_zero_design` (a band that is not available is filled with 0 instead of a learned value).
+- A change that touches only the INT8 export starts with `int8_`, for example `sieb_int8_percentile` or `wandler_1m_int8_float_ends` (the first and last Conv nodes stay in floating point).
+- `wandler_1m_best_by_four_bands` trains on every band set and only `best.pt` is chosen on the validation mean IoU of B02 B03 B04 B08.
+- A combined candidate ends in `_candidate`, its fine-tune stage in `_candidate_finetune`, for example `sieb_candidate` and `wandler_1m_candidate_finetune`.
+- A run ID starts with its config name, followed by `-seed<N>-`, as in `wandler_1m_candidate-seed0`.
 
 ### Training options
 
@@ -351,31 +372,24 @@ lab/
       audit.yml                   vulnerability audit of uv.lock on push and weekly
       codeql.yml                  CodeQL for python and actions
   configs/
-    smoke.toml                    tiny run, minutes on CPU or MPS
-    cloudscout_th30.toml          CloudScout re-implementation, step 1 (labels at 30 percent)
-    cloudscout.toml               CloudScout re-implementation, step 2 (70 percent, decision layers)
-    cloudscout_th50.toml          as cloudscout, labels at 50 percent
-    l1_full_<variant>.toml        one-change variants of l1_full
-    l1_v3.toml                    candidate reference of L1, a draft
-    l2_flex_1m_<variant>.toml     one-change variants of l2_flex_1m
-    l2_flex_1m_v3.toml            candidate reference of L2, a draft
-    l2_flex_1m_v3_frameft.toml    fine-tune stage of l2_flex_1m_v3 on whole patches
-    l1_base.toml                  full training on one GH200 GPU
-    l1_full.toml                  l1_base to the end of its schedule, with warm-up and moving average
-    l2_flex_1m.toml               band-flexible, about 1 M parameters: reference run of the family
-    l2_flex_1m_zero.toml          as l2_flex_1m with the zero input design
-    l2_flex_0p5m.toml             size ladder, about 0.5 M parameters
-    l2_flex_4m.toml               size ladder, about 4 M parameters
-    l2_flex_22m.toml              size ladder, about 22 M parameters, separable U-Net
-    l2_flex_cnx_21m.toml          size ladder, about 21 M parameters, ConvNeXt-style U-Net
-    l2_spec_1m.toml               four-band specialist, about 1 M parameters (control)
-    l2_spec_22m.toml              four-band specialist, about 22 M parameters (control)
-    l2_flex_1m_classweights.toml  as l2_flex_1m with class weights
-    l2_flex_1m_focal.toml         as l2_flex_1m with a focal term
-    l2_flex_1m_nodistill.toml     as l2_flex_1m without self-distillation
-    l2_flex_1m_rescale.toml       as l2_flex_1m with random rescaling, 0.5 to 2
-    l2_flex_1m_gainoffset.toml    as l2_flex_1m with per-band gain and offset jitter
-    l2_flex_1m_noiseblur.toml     as l2_flex_1m with sensor noise and mild blur
+    smoke.toml                          tiny run, minutes on CPU or MPS
+    sieb_base.toml                      Sieb: full training on one GH200 GPU
+    sieb.toml                           sieb_base to the end of its schedule, with warm-up and moving average
+    sieb_<change>.toml                  one-change variants of sieb; sieb_int8_<change> change the INT8 export only
+    sieb_candidate.toml                 candidate reference of Sieb, a draft
+    wandler_1m.toml                     Wandler, about 1 M parameters: reference run of the family
+    wandler_500k.toml                   size ladder, about 0.5 M parameters
+    wandler_4m.toml                     size ladder, about 4 M parameters
+    wandler_22m.toml                    size ladder, about 22 M parameters, separable U-Net
+    wandler_convnext_21m.toml           size ladder, about 21 M parameters, ConvNeXt-style U-Net
+    wandler_1m_<change>.toml            one-change variants of wandler_1m; wandler_1m_int8_<change> change the INT8 export only
+    wandler_1m_candidate.toml           candidate reference of Wandler, a draft
+    wandler_1m_candidate_finetune.toml  fine-tune stage of wandler_1m_candidate on whole patches
+    lupe_1m.toml                        Lupe, four-band specialist, about 1 M parameters (control)
+    lupe_22m.toml                       Lupe, four-band specialist, about 22 M parameters (control)
+    cloudscout_reimpl_step1_th30.toml   CloudScout re-implementation, step 1 (labels at 30 percent)
+    cloudscout_reimpl_th70.toml         CloudScout re-implementation, step 2 (70 percent, decision layers)
+    cloudscout_reimpl_th50.toml         as cloudscout_reimpl_th70, labels at 50 percent
   docs/
     SPEC.md                       this specification
     STYLE.md                      the documentation standard, for every Tiefer repository
@@ -556,6 +570,8 @@ lab/
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
     test_diagnose.py              diagnostics read validation only
     test_paper_models.py          every paper algorithm and model has a route on every dataset
+    test_model_names.py           config names follow section 8; the rename changed no setting
+    data/                         configs_before_rename.json: every config field before the rename of 15 October 2026
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
   .gitattributes                  line endings, *.sh and *.sbatch as LF
@@ -648,6 +664,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 15 October 2026: section 8, model names: the families Sieb, Wandler, Lupe, the CloudScout re-implementation and smoke, and the naming scheme; section 14 lists the renamed configs; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: `paper_models.py`, `evaluate_all.sh`, `add_release_2022.py` and their test in the tree; drafted with an AI-assisted system.
 - 14 October 2026: v3, every addition off by default: section 7 adds probability references tuned on validation, the 2022 release masks, reference models from `references/` and the CloudScout re-implementation; section 8 the v3 training options; section 9 the protocol options `--full-metrics`, `--data`, `--cloud-bias` and `--fraction`, which wait for their method-change issues, and the acceptance per config, comparison and diagnosis tools; section 10 the export options; section 11 memory and determinism on the Jetson; sections 12 and 14 the new files; drafted with an AI-assisted system.

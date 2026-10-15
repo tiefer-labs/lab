@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Every model of the CloudSEN12 paper against every dataset of its Table 1.
 
-    python -m tiefer_lab.paper_models [--models l1_full,l2_flex_1m]
+    python -m tiefer_lab.paper_models [--models sieb,wandler_1m]
 
 Writes `reports/coverage.md`: one row per model (this repository's own models
 and the nine algorithms of the paper's Table 6) and one column per dataset
@@ -82,7 +82,7 @@ PAPER_MODELS: tuple[str, ...] = (
     "cd_fcnn_rgbiswir",
 )
 # This repository's models that every dataset is evaluated with.
-OWN_MODELS: tuple[str, ...] = ("l1_full", "l2_flex_1m")
+OWN_MODELS: tuple[str, ...] = ("sieb", "wandler_1m")
 
 
 @dataclass(frozen=True)

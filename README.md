@@ -30,14 +30,16 @@ The repository is public because results are published with their method: measur
 
 Project Schatten is the only campaign: every campaign before it is withdrawn, and none of its results, checkpoints or reports is used ([hpc/roihu/plan.md](hpc/roihu/plan.md), section 1). Its selection is at risk of adaptive overfitting to the test split, so the independent datasets are its clean check ([POLICY.md](POLICY.md), gate 3).
 
+The model names and what they mean are in [docs/SPEC.md](docs/SPEC.md), section 8, "Model names".
+
 | Milestone or component | Status | Evidence |
 | :--- | :---: | :---: |
-| **Milestone L1: four-band cloud filter** | | |
+| **Milestone L1: four-band cloud filter, the model Sieb** | | |
 | Data cache (CloudSEN12+, Level-1C, four bands) | pending (Project Schatten) | [docs/DATA.md](docs/DATA.md), section 10 |
 | Training and evaluation on CSC Roihu | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
 | ONNX export and INT8 quantisation | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
 | Model card and checksums | pending (Project Schatten) | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) |
-| **Milestone L2: band-flexible model and four-band specialist** | | |
+| **Milestone L2: band-flexible model Wandler and four-band specialist Lupe** | | |
 | 13-band data cache | pending (Project Schatten) | [docs/DATA.md](docs/DATA.md), section 10 |
 | Training and evaluation on CSC Roihu | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
 | Export of the L2 models | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
@@ -127,6 +129,7 @@ The repository is licensed under the Mozilla Public License 2.0, see [LICENSE](L
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the status table describes Project Schatten; the sentence that the test log has no entries is removed; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the first screen says what Lab is and what it is not; "What Lab is not", a status table with evidence, "Where to go next", a minimal quick start that defers to GETTING-STARTED.md and INSTALL.md, and a documentation section that points to INDEX.md and START-HERE.md; the community files of this repository replace the links to tiefer-labs/.github.

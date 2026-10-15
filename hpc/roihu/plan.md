@@ -46,7 +46,7 @@ Written on 14 October 2026, before any run of these steps, and changed only by a
 
 1. **Validation minimums.** A candidate is eligible when, on validation with the four bands B02, B03, B04 and B08, it meets every minimum of `src/tiefer_lab/acceptance.py` that validation can measure: `ACC-01`, `ACC-03`, `ACC-05`, `ACC-07`, `ACC-08`, `FRM-01`, `FRM-02` and `STD-01`; with three seeds also `ACC-09`.
 2. **A variant wins** when it improves the metric of the target it is made for (table of step 3) over its reference by more than the larger of 0.005 and the standard deviation over the seeds of the reference on validation, and no validation minimum that the reference met becomes missed. The metric is the false discard rate at 50 percent for `FRM-01` variants, mean IoU for `ACC-05` variants, the cloud BOA loss at `rescale=0.5` and `rescale=2` for `CMP-05` variants, and the INT8 cloud BOA loss for `CMP-03` export variants.
-3. **Candidate references.** `l1_v3` and `l2_flex_1m_v3` are their drafts plus every winner of their family; when two winners change the same setting, the larger gain is kept. The completed configs are committed before step 5.
+3. **Candidate references.** `sieb_candidate` and `wandler_1m_candidate` are their drafts plus every winner of their family; when two winners change the same setting, the larger gain is kept. The completed configs are committed before step 5.
 4. **Final candidate per family.** Among the eligible seeds and options of the candidate reference: the highest validation cloud BOA; a difference below 0.002 is a tie, broken by the higher mean IoU.
 5. **Export setting.** Among the export variants of the selected run: the smallest validation INT8 cloud BOA loss whose INT8 file meets the `OBD-03` target; ties go to the default MinMax calibration.
 6. **Cloud logit bias and soft fraction.** Used only if the maintainer agrees to their method-change issues; then the bias is the one `python -m tiefer_lab.calibrate` chooses on validation, and the run with the bias is a separate candidate under rule 4.
@@ -63,17 +63,17 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 | 1a | independent dataset caches (CPU) | none for now: no download is planned in this row; which of the datasets that the licence decisions allow are downloaded is decided in a later revision of this plan ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1) | `small` | 0 (CPU BU) | 0 | not planned |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
 | 1c | extra training patches (CPU) | `train_extra` of `cloudsen12-l1c-all`, after `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` | `small` | 0 (CPU BU) | 0 | not run |
-| 3a | timing of every new training config | 12 configs below and `cloudscout_th30` | `gputest` | 650 | estimate pending a Project Schatten timing run | not run |
-| 3b | `FRM-01` variants, seed 0 | `l2_flex_1m_frameloss`, `l2_flex_1m_crop512`, `l1_full_frameloss` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
-| 3c | stability variants, seed 0 | `l2_flex_1m_clip`, `l2_flex_1m_guard`, `l2_flex_1m_warmup10`, `l2_flex_1m_select4`, `l1_full_clip` | `gpumedium` | 12,000 | estimate pending a Project Schatten timing run | not run |
-| 3d | `ACC-05` variants, seed 0 | `l2_flex_1m_lovasz`, `l2_flex_1m_crop384`, `l1_full_lovasz` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
-| 3e | `CMP-03` export variants of a Project Schatten run of `l1_full` and of `l2_flex_1m`, no training; those runs are not yet a step of this plan | `*_int8pct`, `*_int8entropy`, `*_cal1024`, `*_calstrat`, `*_fpends`, `*_inputclip` of `l1_full` and `l2_flex_1m` | `gpumedium` | 4,800 | estimate pending a Project Schatten timing run | not run |
-| 3f | `CMP-05` and `CMP-06` variants, seed 0 | `l2_flex_1m_rescale3`, `l1_full_rescale`, `l2_flex_1m_bandsets` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
-| 3g | runs never made | `l2_spec_1m` seed 0 (`CMP-04`); `cloudscout_th30`, then `cloudscout` and `cloudscout_th50` | `gpumedium` | 9,600 | estimate pending a Project Schatten timing run | not run |
-| 3h | extra training data, seed 0 | `l2_flex_1m_extra`, after step 1c | `gpumedium` | 2,400 | estimate pending a Project Schatten timing run | not run |
-| 4a | largest model, all 13 bands (`ACC-02`, teacher) | `l2_flex_22m` seed 0 | `gpumedium` | 7,200 (36 hours) | estimate pending a Project Schatten timing run | not run |
-| 4b | distillation from it | `l2_flex_1m_teacher` seed 0 | `gpumedium` | 2,400 | estimate pending a Project Schatten timing run | not run |
-| 5 | candidate references, three seeds; then the fine-tune stage | `l1_v3`, `l2_flex_1m_v3` seeds 0, 1, 2; `l2_flex_1m_v3_frameft` seed 0 | `gpumedium` | 16,800 | estimate pending a Project Schatten timing run | not run |
+| 3a | timing of every new training config | 12 configs below and `cloudscout_reimpl_step1_th30` | `gputest` | 650 | estimate pending a Project Schatten timing run | not run |
+| 3b | `FRM-01` variants, seed 0 | `wandler_1m_frame_loss`, `wandler_1m_crop512`, `sieb_frame_loss` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
+| 3c | stability variants, seed 0 | `wandler_1m_grad_clip`, `wandler_1m_skip_nonfinite`, `wandler_1m_warmup10`, `wandler_1m_best_by_four_bands`, `sieb_grad_clip` | `gpumedium` | 12,000 | estimate pending a Project Schatten timing run | not run |
+| 3d | `ACC-05` variants, seed 0 | `wandler_1m_lovasz`, `wandler_1m_crop384`, `sieb_lovasz` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
+| 3e | `CMP-03` export variants of a Project Schatten run of `sieb` and of `wandler_1m`, no training; those runs are not yet a step of this plan | `*_int8_percentile`, `*_int8_entropy`, `*_int8_calib1024`, `*_int8_calib_stratified`, `*_int8_float_ends`, `*_int8_input_clip` of `sieb` and `wandler_1m` | `gpumedium` | 4,800 | estimate pending a Project Schatten timing run | not run |
+| 3f | `CMP-05` and `CMP-06` variants, seed 0 | `wandler_1m_rescale_3x`, `sieb_rescale_2x`, `wandler_1m_landsat_bandsets` | `gpumedium` | 7,200 | estimate pending a Project Schatten timing run | not run |
+| 3g | runs never made | `lupe_1m` seed 0 (`CMP-04`); `cloudscout_reimpl_step1_th30`, then `cloudscout_reimpl_th70` and `cloudscout_reimpl_th50` | `gpumedium` | 9,600 | estimate pending a Project Schatten timing run | not run |
+| 3h | extra training data, seed 0 | `wandler_1m_extra_data`, after step 1c | `gpumedium` | 2,400 | estimate pending a Project Schatten timing run | not run |
+| 4a | largest model, all 13 bands (`ACC-02`, teacher) | `wandler_22m` seed 0 | `gpumedium` | 7,200 (36 hours) | estimate pending a Project Schatten timing run | not run |
+| 4b | distillation from it | `wandler_1m_distill_22m` seed 0 | `gpumedium` | 2,400 | estimate pending a Project Schatten timing run | not run |
+| 5 | candidate references, three seeds; then the fine-tune stage | `sieb_candidate`, `wandler_1m_candidate` seeds 0, 1, 2; `wandler_1m_candidate_finetune` seed 0 | `gpumedium` | 16,800 | estimate pending a Project Schatten timing run | not run |
 | 6 | exports of every candidate, with the export setting of rule 5 and `CLOUD_BIAS=auto` where agreed | the runs of steps 3 to 5 | `gpumedium` | 400 per run | estimate pending a Project Schatten timing run | not run |
 | 7 | validation evaluations with references, full metrics and robustness; calibration; selection by section 3.2 | the runs of steps 3 to 5 | `gpumedium`, `gputest` | 850 per run (two evaluations, one calibration) | estimate pending a Project Schatten timing run | not run |
 | 8 | independent dataset evaluations of the frozen candidates | the candidates of rule 4, each verified dataset | `gpumedium` | 400 per candidate and dataset | estimate pending a Project Schatten timing run | not run |
@@ -110,32 +110,32 @@ bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train_extra --name cloudsen12-l1c
 Step 3, timing first, then one seed of each variant, in the order of the table:
 
 ```bash
-bash hpc/roihu/sweep.sh --timing configs/l2_flex_1m_frameloss.toml configs/l2_flex_1m_crop512.toml configs/l1_full_frameloss.toml configs/l2_flex_1m_clip.toml configs/l2_flex_1m_guard.toml configs/l2_flex_1m_warmup10.toml configs/l2_flex_1m_select4.toml configs/l1_full_clip.toml configs/l2_flex_1m_lovasz.toml configs/l2_flex_1m_crop384.toml configs/l1_full_lovasz.toml configs/l2_flex_1m_rescale3.toml configs/cloudscout_th30.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_frameloss.toml configs/l2_flex_1m_crop512.toml configs/l1_full_frameloss.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_clip.toml configs/l2_flex_1m_guard.toml configs/l2_flex_1m_warmup10.toml configs/l2_flex_1m_select4.toml configs/l1_full_clip.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_lovasz.toml configs/l2_flex_1m_crop384.toml configs/l1_full_lovasz.toml
-EXPORT_CONFIG=configs/l1_full_int8pct.toml bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <l1_full-run-id>
-EXPORT_CONFIG=configs/l2_flex_1m_int8pct.toml bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <l2_flex_1m-run-id>
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_rescale3.toml configs/l1_full_rescale.toml configs/l2_flex_1m_bandsets.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_spec_1m.toml configs/cloudscout_th30.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/cloudscout.toml configs/cloudscout_th50.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_extra.toml
+bash hpc/roihu/sweep.sh --timing configs/wandler_1m_frame_loss.toml configs/wandler_1m_crop512.toml configs/sieb_frame_loss.toml configs/wandler_1m_grad_clip.toml configs/wandler_1m_skip_nonfinite.toml configs/wandler_1m_warmup10.toml configs/wandler_1m_best_by_four_bands.toml configs/sieb_grad_clip.toml configs/wandler_1m_lovasz.toml configs/wandler_1m_crop384.toml configs/sieb_lovasz.toml configs/wandler_1m_rescale_3x.toml configs/cloudscout_reimpl_step1_th30.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_frame_loss.toml configs/wandler_1m_crop512.toml configs/sieb_frame_loss.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_grad_clip.toml configs/wandler_1m_skip_nonfinite.toml configs/wandler_1m_warmup10.toml configs/wandler_1m_best_by_four_bands.toml configs/sieb_grad_clip.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_lovasz.toml configs/wandler_1m_crop384.toml configs/sieb_lovasz.toml
+EXPORT_CONFIG=configs/sieb_int8_percentile.toml bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <sieb-run-id>
+EXPORT_CONFIG=configs/wandler_1m_int8_percentile.toml bash hpc/roihu/submit.sh hpc/roihu/export.sbatch <wandler_1m-run-id>
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_rescale_3x.toml configs/sieb_rescale_2x.toml configs/wandler_1m_landsat_bandsets.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/lupe_1m.toml configs/cloudscout_reimpl_step1_th30.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/cloudscout_reimpl_th70.toml configs/cloudscout_reimpl_th50.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_extra_data.toml
 ```
 
-The other export variants run like the `int8pct` lines, one job per config (`int8entropy`, `cal1024`, `calstrat`, `fpends`, `inputclip`). `cloudscout` and `cloudscout_th50` start only after `cloudscout_th30-seed0` has finished.
+The other export variants run like the `int8_percentile` lines, one job per config (`int8_entropy`, `int8_calib1024`, `int8_calib_stratified`, `int8_float_ends`, `int8_input_clip`). `cloudscout_reimpl_th70` and `cloudscout_reimpl_th50` start only after `cloudscout_reimpl_step1_th30-seed0` has finished.
 
 Step 4, the largest model, then distillation once it has finished:
 
 ```bash
-bash hpc/roihu/submit.sh --time=36:00:00 hpc/roihu/train.sbatch configs/l2_flex_22m.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_teacher.toml
+bash hpc/roihu/submit.sh --time=36:00:00 hpc/roihu/train.sbatch configs/wandler_22m.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_distill_22m.toml
 ```
 
 Step 5, after the completed candidate configs are committed (rule 3):
 
 ```bash
-bash hpc/roihu/sweep.sh --seeds 0,1,2 configs/l1_v3.toml configs/l2_flex_1m_v3.toml
-bash hpc/roihu/sweep.sh --seeds 0 configs/l2_flex_1m_v3_frameft.toml
+bash hpc/roihu/sweep.sh --seeds 0,1,2 configs/sieb_candidate.toml configs/wandler_1m_candidate.toml
+bash hpc/roihu/sweep.sh --seeds 0 configs/wandler_1m_candidate_finetune.toml
 ```
 
 Steps 6 and 7, per run:
@@ -171,6 +171,7 @@ FINAL=1 REASON="final export check of <run-id>" EXPORT_CONFIG=configs/<selected-
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the stop line is pending maintainer input; the selection rule is marked as a draft, not frozen; drafted with an AI-assisted system.
 - 15 October 2026: the plan of Project Schatten: earlier campaigns withdrawn; Roihu restarts from zero, with a setup step and a CloudSEN12+ cache step; the budget is pending maintainer input; the steps that used withdrawn runs are removed, and every estimate is pending a Project Schatten timing run; the stop line is kept; drafted with an AI-assisted system.
 - 15 October 2026: step 1a plans no download, and its download and evaluation commands are removed from section 3.4; WHUS2-CD is a candidate without a licence decision and has no row; drafted with an AI-assisted system.

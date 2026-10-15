@@ -41,8 +41,8 @@ def _report() -> Report:
     data = {
         "kind": "evaluation",
         "split": "val",
-        "run_id": "l1_full-seed0-x",
-        "config": {"name": "l1_full"},
+        "run_id": "sieb-seed0-x",
+        "config": {"name": "sieb"},
         "band_set": ["B02", "B03", "B04", "B08"],
         "run": {"seed": 0, "model": {"parameters": 250000, "macs_512x512": 123456789}},
         "calibration": {"ece": 0.04},
@@ -54,17 +54,17 @@ def _report() -> Report:
             }
         },
     }
-    return Report(Path("evaluation/l1_full-seed0-x_val.json"), data)
+    return Report(Path("evaluation/sieb-seed0-x_val.json"), data)
 
 
 def _export() -> Report:
     data = {
-        "run_id": "l1_full-seed0-x",
+        "run_id": "sieb-seed0-x",
         "band_set": ["B02", "B03", "B04", "B08"],
         "operators": {"fp32": ["Conv", "Clip"], "int8": ["Conv", "QuantizeLinear"]},
         "files": {"fp32": {"bytes": 1000}, "fp16": {"bytes": 500}, "int8": {"bytes": 300}},
     }
-    return Report(Path("export/l1_full-seed0-x.json"), data)
+    return Report(Path("export/sieb-seed0-x.json"), data)
 
 
 def test_rows_metrics_and_cost_block() -> None:
@@ -72,7 +72,7 @@ def test_rows_metrics_and_cost_block() -> None:
     text = compare.render(reports, dt.date(2026, 10, 14))
     assert not check_header(Path("reports/comparison.md"), text.split("\n"))
     assert not check_structure(text)
-    assert "l1_full s0 (B02,B03,B04,B08)" in text
+    assert "sieb s0 (B02,B03,B04,B08)" in text
     assert "0.900 [0.890, 0.910]" in text
     # A cloud-only reference has n/a for shadow and the pixel metrics.
     qa60 = [line for line in text.splitlines() if line.startswith("| reference_cloudmask_qa60")]

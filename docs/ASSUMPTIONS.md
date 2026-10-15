@@ -88,18 +88,18 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-6.3` | 509 x 509 patches stand in for 2000 x 2000 patches and for larger frames | the export input is fixed at 512 x 512 | none, design choice ([DATA.md](DATA.md), section 5) | the 2000 x 2000 patches are evaluated | open | 7 October 2026 |
 | `A-6.4` | Final runs train to the end of the cosine schedule (`patience` equal to `epochs`), and `best.pt` keeps the epoch with the best validation mean IoU | an early stop can end a run while its training loss is still falling, long before the cosine schedule has decayed the learning rate | none yet; checked in Project Schatten | a full run shows validation mean IoU falling for many epochs before the end | open | 8 October 2026 |
 | `A-6.5` | A linear warm-up of the learning rate (5 epochs) and an exponential moving average of the weights (decay 0.999) make validation steadier | validation mean IoU can swing between nearby epochs | none, design choice; the values are not measured optima; checked in Project Schatten | the per-epoch validation values of the Project Schatten runs show whether the swing is smaller | open | 15 October 2026 |
-| `A-6.6` | `l1_full` changes three settings of `l1_base` at once (warm-up, moving average, patience) | one run that changes the three settings costs less GPU time than three ablation runs | none, design choice | the budget allows ablation runs | open | 8 October 2026 |
+| `A-6.6` | `sieb` changes three settings of `sieb_base` at once (warm-up, moving average, patience) | one run that changes the three settings costs less GPU time than three ablation runs | none, design choice | the budget allows ablation runs | open | 8 October 2026 |
 | `A-6.7` | Every L2 config trains with batch 64 and learning rate 0.004; the L1 configs keep batch 128 and learning rate 0.008 | 13 bands at batch 128 may not fit in the memory of one GH200; batch size and learning rate are halved together, following the linear scaling of the L1 configs (0.008 x 64 / 128), and the whole L2 family uses the same values so that its results stay comparable | none yet; checked by a Project Schatten timing run | an L2 run with batch 128 fits in memory, or the L1 and L2 results are compared at the same settings | open | 8 October 2026 |
 | `A-6.8` | One seed is enough for a provisional decision | the GPU budget limits the number of seeds per config | none yet; checked in Project Schatten | three seeds of the final pair are run | open | 8 October 2026 |
-| `A-6.9` | The placeholder design for missing bands is chosen over the zero design on validation | the choice is measured, not assumed | none, design choice; `configs/l2_flex_1m_zero.toml` has not run | `l2_flex_1m_zero` is evaluated on validation | open | 7 October 2026 |
-| `A-6.10` | L1 weights the loss by median class frequency; L2 does not | the L2 configs keep one change per variant, and `l2_flex_1m_classweights` measures the weighting | none, design choice; `l2_flex_1m_classweights` has not run | `l2_flex_1m_classweights` is evaluated on validation | open | 7 October 2026 |
+| `A-6.9` | The placeholder design for missing bands is chosen over the zero design on validation | the choice is measured, not assumed | none, design choice; `configs/wandler_1m_zero_design.toml` has not run | `wandler_1m_zero_design` is evaluated on validation | open | 7 October 2026 |
+| `A-6.10` | L1 weights the loss by median class frequency; L2 does not | the L2 configs keep one change per variant, and `wandler_1m_class_weights` measures the weighting | none, design choice; `wandler_1m_class_weights` has not run | `wandler_1m_class_weights` is evaluated on validation | open | 7 October 2026 |
 | `A-6.11` | The one-change variants run one seed each; the candidate references run three | the GPU budget allows one seed per variant; ACC-09 needs three seeds of the reference | none, design choice | a variant's gain is smaller than the seed spread of its reference | open | 14 October 2026 |
-| `A-6.12` | Export-only variants (`*_int8pct`, `*_int8entropy`, `*_cal1024`, `*_calstrat`, `*_fpends`, `*_inputclip`) reuse the trained run of their reference with `export --settings-from` | their change is in `[export]` only, so training them again would cost GPU time for the same weights | none, design choice | n/a | open | 14 October 2026 |
+| `A-6.12` | Export-only variants (`*_int8_percentile`, `*_int8_entropy`, `*_int8_calib1024`, `*_int8_calib_stratified`, `*_int8_float_ends`, `*_int8_input_clip`) reuse the trained run of their reference with `export --settings-from` | their change is in `[export]` only, so training them again would cost GPU time for the same weights | none, design choice | n/a | open | 14 October 2026 |
 | `A-6.13` | The CloudScout re-implementation uses widths 16, 32, 64, 128, 128 (about 0.63 M parameters), whole 512 x 512 patches at 10 m, Level-1C reflectance and this repository's schedule | the CloudScout paper gives no filter numbers, used 512 x 512 tiles at 60 m of radiance, and an exponential learning rate decay | the paper, Remote Sensing 12(14), 2205, 2020, sections 3.3 and 3.4, read on 14 October 2026 [5] | the authors publish the filter numbers | open | 14 October 2026 |
 
 Every setting in which the L1 and L2 configs differ, as the configs and the defaults of `src/tiefer_lab/config.py` resolve them:
 
-| Setting | `l1_base` | `l1_full` | L2 band-flexible (`l2_flex_*`) | L2 specialists (`l2_spec_*`) |
+| Setting | `sieb_base` | `sieb` | L2 band-flexible (`wandler_*`) | L2 specialists (`lupe_*`) |
 | :--- | :---: | :---: | :---: | :---: |
 | Input bands | 4, fixed | 4, fixed | 13, one band set drawn per batch | 4, fixed |
 | Cache (`data.cache_name`) | `cloudsen12-l1c-high` | `cloudsen12-l1c-high` | `cloudsen12-l1c-all` | `cloudsen12-l1c-all` |
@@ -109,9 +109,9 @@ Every setting in which the L1 and L2 configs differ, as the configs and the defa
 | Warm-up epochs | 0 | 5 | 5 | 5 |
 | Moving average of the weights (`ema_decay`) | none (0.0) | 0.999 | 0.999 | 0.999 |
 | Patience | 15 | 150 | 150 | 150 |
-| Class weighting | `median_frequency`, the default of `config.py`; not set in the file | `median_frequency`, the default; not set in the file | `none`, except `l2_flex_1m_classweights`: `median_frequency` | `none` |
-| Self-distillation (`distill_weight`) | 0.0 | 0.0 | 1.0, except `l2_flex_1m_nodistill`: 0.0 | 0.0 |
-| `load_mode` | `auto` | `auto` | `memory` for `l2_flex_1m` and its single-change variants; `auto` for the other sizes | `auto` |
+| Class weighting | `median_frequency`, the default of `config.py`; not set in the file | `median_frequency`, the default; not set in the file | `none`, except `wandler_1m_class_weights`: `median_frequency` | `none` |
+| Self-distillation (`distill_weight`) | 0.0 | 0.0 | 1.0, except `wandler_1m_no_self_distill`: 0.0 | 0.0 |
+| `load_mode` | `auto` | `auto` | `memory` for `wandler_1m` and its single-change variants; `auto` for the other sizes | `auto` |
 
 Settings not listed are the same in every config (crop 256, weight decay 0.0001, Dice weight 1.0, minimum improvement 0.001, 150 epochs, brightness and contrast augmentation 0.1). A difference between an L1 and an L2 result can come from any row of this table, not from the model alone.
 
@@ -119,12 +119,12 @@ The candidate references and stages, which change more than one setting of their
 
 | Config | Reference | Settings changed | Why |
 | :--- | :---: | :---: | :---: |
-| `l1_v3` | `l1_full` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, stability; then the winners |
-| `l2_flex_1m_v3` | `l2_flex_1m` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, `ACC-09`; then the winners |
-| `l2_flex_1m_v3_frameft` | `l2_flex_1m_v3` | starts from `l2_flex_1m_v3-seed0`; crop 512, batch 16, 20 epochs, warm-up 1, learning rate 0.0004, frame term 0.5 | a fine-tune on whole patches, so the crop's cloud fraction is the frame's (`FRM-01`, `ACC-07`) |
-| `cloudscout_th30` | none (a reference algorithm) | frame classifier of `A-6.13`, labels at 30 percent | step 1 of the CloudScout paper |
-| `cloudscout` | `cloudscout_th30` | labels at 70 percent, only the decision layers trained, starts from `cloudscout_th30-seed0`, 20 epochs | step 2 of the CloudScout paper |
-| `cloudscout_th50` | `cloudscout` | labels at 50 percent | this repository's decision threshold |
+| `sieb_candidate` | `sieb` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, stability; then the winners |
+| `wandler_1m_candidate` | `wandler_1m` | rescaling 0.5 to 2, gradient norm clip 1.0, skip of non-finite steps | `CMP-05`, `ACC-09`; then the winners |
+| `wandler_1m_candidate_finetune` | `wandler_1m_candidate` | starts from `wandler_1m_candidate-seed0`; crop 512, batch 16, 20 epochs, warm-up 1, learning rate 0.0004, frame term 0.5 | a fine-tune on whole patches, so the crop's cloud fraction is the frame's (`FRM-01`, `ACC-07`) |
+| `cloudscout_reimpl_step1_th30` | none (a reference algorithm) | frame classifier of `A-6.13`, labels at 30 percent | step 1 of the CloudScout paper |
+| `cloudscout_reimpl_th70` | `cloudscout_reimpl_step1_th30` | labels at 70 percent, only the decision layers trained, starts from `cloudscout_reimpl_step1_th30-seed0`, 20 epochs | step 2 of the CloudScout paper |
+| `cloudscout_reimpl_th50` | `cloudscout_reimpl_th70` | labels at 50 percent | this repository's decision threshold |
 
 ---
 
@@ -132,7 +132,7 @@ The candidate references and stages, which change more than one setting of their
 
 | ID | Assumption | Reason | Evidence | Revisit when | Status | Last checked |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `A-7.1` | Product rule: the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor | one model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | none, design choice | the first comparison of `l2_flex_1m` and `l2_spec_1m` on validation | open | 7 October 2026 |
+| `A-7.1` | Product rule: the band-flexible model is the product if its validation mean IoU on the band set B02 B03 B04 B08 lies within the 95 percent bootstrap interval of the validation mean IoU of the four-band specialist of the same size (1 M), with as many seeds as are available for both; otherwise specialists are shipped per sensor | one model for every sensor is simpler to qualify and update, but not at a measurable cost in accuracy on the sensors that matter most | none, design choice | the first comparison of `wandler_1m` and `lupe_1m` on validation | open | 7 October 2026 |
 
 Status: no decision is recorded. The rule is applied on validation only; the test split never selects a model or a setting ([SPEC.md](SPEC.md), section 2, rule 5).
 
@@ -150,6 +150,7 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: `A-5.2` is open again: its module observation predates Project Schatten and is confirmed by step 0 (setup) of the plan; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: `A-5.6` records the Catalogue and KappaSet as used, L8 Biome and L8 SPARCS as candidates, and fail-closed reading; drafted with an AI-assisted system.

@@ -5,9 +5,9 @@
 #
 # Train on one GH200 GPU. Resumable.
 #
-#   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml
-#   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml <run-id>   # resume
-#   SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/l1_base.toml      # other seed
+#   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb_base.toml
+#   bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb_base.toml <run-id>   # resume
+#   SEED=1 bash hpc/roihu/submit.sh hpc/roihu/train.sbatch configs/sieb_base.toml      # other seed
 #
 # Slurm sends SIGUSR1 to this script 300 s before the time limit; it is
 # forwarded to the training process, which saves last.pt and stops. Submit

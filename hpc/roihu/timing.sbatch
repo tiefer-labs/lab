@@ -9,7 +9,7 @@
 # which replaces the upper-bound estimate in hpc/roihu/plan.md. The run is
 # marked as a timing run and never appears in results.
 #
-#   bash hpc/roihu/submit.sh hpc/roihu/timing.sbatch configs/l2_flex_1m.toml
+#   bash hpc/roihu/submit.sh hpc/roihu/timing.sbatch configs/wandler_1m.toml
 #SBATCH --job-name=tiefer-timing
 #SBATCH --partition=gputest
 #SBATCH --gres=gpu:gh200:1

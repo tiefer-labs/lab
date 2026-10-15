@@ -122,7 +122,7 @@ def _report(source: str, baselines: dict[str, object]) -> Report:
         {
             "split": "independent",
             "data": {"source": source},
-            "config": {"name": "l1_full"},
+            "config": {"name": "sieb"},
             "model": {},
             "baselines": baselines,
         },
@@ -139,11 +139,11 @@ def test_comparison_and_coverage_drop_refused_rows() -> None:
     groups = compare.collect_rows(reports)
     assert [k[1] for k in groups] == ["kappaset"]
     assert [r.name for r in groups[("independent", "kappaset", "none")]] == [
-        "l1_full",
+        "sieb",
         "reference_sen2cor",
     ]
     held = paper_models.measured(reports)
-    assert ("l1_full", "s2_cesbio") not in held
+    assert ("sieb", "s2_cesbio") not in held
     assert ("reference_2022_fmask", "kappaset") not in held
     page = paper_models.render(reports, dt.date(2026, 10, 15))
     assert all("S2-CESBIO" not in line for line in page.splitlines() if line.startswith("|"))
