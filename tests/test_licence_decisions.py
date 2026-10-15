@@ -17,14 +17,15 @@ from tiefer_lab.data import build_cache, cache, cloudsen12_2022, independent
 from tiefer_lab.data.source import NO_DECISION, DataSourceError, LicenceRefusedError
 from tiefer_lab.reports import Report, Reports
 
-REFUSED = ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio")
+REFUSED = ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio", "whus2_cd")
 
 
 def test_the_decisions_are_recorded_next_to_the_facts() -> None:
     for name in REFUSED:
         decision = independent.DATASETS[name].decision
-        assert decision.status == "not used" and decision.date == "15 October 2026"
+        assert decision.refused and decision.date == "15 October 2026"
         assert decision.reason
+    assert independent.DATASETS["whus2_cd"].decision.status == "candidate, no decision yet"
     assert independent.PRODUCT_IMAGERY.status == "not used"
     assert cloudsen12_2022.LICENCE_DECISION.status == "declined, pending legal review"
     for name in ("s2_cloud_catalogue", "kappaset", "landsat8_biome", "landsat8_sparcs"):
@@ -35,7 +36,7 @@ def test_every_refused_source_raises(tmp_path: Path) -> None:
     for name in REFUSED:
         with pytest.raises(LicenceRefusedError, match="15 October 2026"):
             list(independent.READERS[name](tmp_path, ["B02"]))
-        with pytest.raises(LicenceRefusedError, match="not used"):
+        with pytest.raises(LicenceRefusedError, match=independent.DATASETS[name].decision.status):
             build_cache.build_independent(tmp_path / name, name, tmp_path, ["B02"])
     with pytest.raises(LicenceRefusedError, match="declined, pending legal review"):
         cloudsen12_2022.check_ready()
@@ -67,8 +68,16 @@ def test_refused_sources_leave_every_default_list(repo_root: Path) -> None:
         for name in REFUSED:
             assert name not in text, (script, name)
     page = paper_models.render(Reports(), dt.date(2026, 10, 15))
+    headers = [line for line in page.splitlines() if line.startswith("|  |")]
+    assert headers
     for paper_name, name in paper_models.PAPER_DATASETS.items():
-        assert (paper_name in page) == (name in allowed)
+        for header in headers:
+            assert (paper_name in header) == (name in allowed)
+    # The omission is visible: one note names each left-out dataset and links the decisions.
+    note = next(line for line in page.splitlines() if line.startswith("Left out by licence"))
+    for paper_name, name in paper_models.PAPER_DATASETS.items():
+        assert (paper_name in note) == (name not in allowed)
+    assert "../docs/DATASETS.md" in note and "section 1.1" in note
 
 
 def _report(source: str, baselines: dict[str, object]) -> Report:
@@ -101,7 +110,7 @@ def test_comparison_and_coverage_drop_refused_rows() -> None:
     assert ("l1_full", "s2_cesbio") not in held
     assert ("reference_2022_fmask", "kappaset") not in held
     page = paper_models.render(reports, dt.date(2026, 10, 15))
-    assert "S2-CESBIO" not in page
+    assert all("S2-CESBIO" not in line for line in page.splitlines() if line.startswith("|"))
 
 
 def test_only_a_changed_record_changes_a_decision(

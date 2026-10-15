@@ -53,8 +53,8 @@ def test_routes_by_hand() -> None:
         assert paper_models.cell("l1_full", dataset, {}) == "not used: licence decision"
 
 
-def test_unread_datasets_stop(tmp_path: Path) -> None:
-    with pytest.raises(DataSourceError, match="not verified yet"):
+def test_undecided_whus2_stops_like_a_refused_source(tmp_path: Path) -> None:
+    with pytest.raises(DataSourceError, match="candidate, no decision yet"):
         list(independent.READERS["whus2_cd"](tmp_path, ["B02"]))
 
 
@@ -72,14 +72,12 @@ def _report(source: str, config: str, baselines: dict[str, object]) -> Report:
 
 def test_coverage_page_counts_measured_cells() -> None:
     empty = paper_models.render(Reports(), dt.date(2026, 10, 15))
-    # CloudSEN12+ and the five allowed datasets, 2 own models and 9 algorithms.
-    assert "0 of 66 cells are measured" in empty
+    # CloudSEN12+ and the four allowed datasets, 2 own models and 9 algorithms.
+    assert "0 of 55 cells are measured" in empty
     assert "not used: licence decision" in empty
-    for paper_name in ("S2-Hollstein", "L8-38Cloud", "L8-95Cloud", "S2-CESBIO"):
-        assert paper_name not in empty
     reports = Reports(evaluation=[_report("kappaset", "l1_full", {"reference_sen2cor": {}})])
     page = paper_models.render(reports, dt.date(2026, 10, 15))
-    assert "2 of 66 cells are measured" in page
+    assert "2 of 55 cells are measured" in page
 
 
 def test_evaluate_all_lists_every_allowed_dataset(repo_root: Path) -> None:

@@ -299,6 +299,17 @@ def render(reports: Reports, date: dt.date, own: Sequence[str] = OWN_MODELS) -> 
             "../docs/assets/header.png",
         )
     ]
+    left_out = [
+        f"{paper} ({independent.DATASETS[key].decision.status})"
+        for paper, key in PAPER_DATASETS.items()
+        if key not in columns
+    ]
+    if left_out:
+        blocks.append(
+            "\nLeft out by licence decision, so without a column: "
+            f"{'; '.join(left_out)}. The decisions are in "
+            "[docs/DATASETS.md](../docs/DATASETS.md), section 1.1.\n"
+        )
     for number, (title, models) in enumerate(
         (("Models of this repository", list(own)), ("Algorithms of the paper", PAPER_MODELS)),
         start=1,

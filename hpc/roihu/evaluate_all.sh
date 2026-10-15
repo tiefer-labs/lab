@@ -29,7 +29,6 @@ datasets=(
   landsat8_sparcs
   landsat8_biome
   s2_cloud_catalogue
-  whus2_cd
   kappaset
 )
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -265,10 +265,21 @@ def map_labels(
 
 # Licence decisions ---------------------------------------------------------------
 
-DecisionStatus = Literal["no decision", "used", "not used", "declined, pending legal review"]
+DecisionStatus = Literal[
+    "no decision",
+    "used",
+    "not used",
+    "declined, pending legal review",
+    "candidate, no decision yet",
+]
 # Statuses under which a source is never downloaded, cached, evaluated, used as
-# a reference mask or shown in a comparison or coverage report.
-REFUSED: tuple[DecisionStatus, ...] = ("not used", "declined, pending legal review")
+# a reference mask or shown in a comparison or coverage report. A candidate the
+# maintainer has not decided yet is treated as not used.
+REFUSED: tuple[DecisionStatus, ...] = (
+    "not used",
+    "declined, pending legal review",
+    "candidate, no decision yet",
+)
 # Issue of the maintainer's licence decisions of 15 October 2026; None until linked.
 LICENCE_ISSUE_15_OCTOBER_2026: str | None = None
 
@@ -294,6 +305,8 @@ class LicenceDecision:
 
     def describe(self) -> str:
         issue = self.issue or "issue not linked yet"
+        if self.status == "candidate, no decision yet":
+            return f"{self.status}, recorded on {self.date} ({issue}): {self.reason}"
         return f"{self.status}, licence decision of {self.date} ({issue}): {self.reason}"
 
 

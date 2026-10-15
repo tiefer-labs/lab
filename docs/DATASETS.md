@@ -37,7 +37,7 @@ Status words of this table: `in use` (read by a run or a test), `not used` (avai
 | Landsat 7 Irish cloud validation masks | USGS data release, 2016, [10.5066/F7XD0ZWC](https://doi.org/10.5066/F7XD0ZWC) | not stated on the page | [usgs.gov](https://www.usgs.gov/landsat-missions/landsat-7-cloud-cover-assessment-validation-data) | third sensor for the `IND-01` target, the maintainer decides | none | candidate | 14 October 2026 |
 | 38-Cloud | Kaggle, version 4 of 12 April 2021 | Unknown on Kaggle; the repository's Apache 2.0 file covers its code | [kaggle.com](https://www.kaggle.com/datasets/sorour/38cloud-cloud-segmentation-in-satellite-images) | none, licence decision (section 1.1) | none; its reader stops with the decision | not used | 15 October 2026 |
 | 95-Cloud | Kaggle, version 3 of 12 April 2021; its 57 scenes added to 38-Cloud | CC0 on Kaggle | [kaggle.com](https://www.kaggle.com/datasets/sorour/95cloud-cloud-segmentation-on-satellite-images) | none, licence decision (section 1.1) | none; its reader stops with the decision | not used | 15 October 2026 |
-| WHUS2-CD+ | record 5511793, published 16 September 2021 | CC BY 4.0 | [zenodo.org](https://zenodo.org/records/5511793) | independent test on Sentinel-2 over China, cloud only (`IND-01`) | `src/tiefer_lab/data/independent.py`; [INDEPENDENT.md](INDEPENDENT.md) | candidate | 14 October 2026 |
+| WHUS2-CD+ | record 5511793, published 16 September 2021 | CC BY 4.0 | [zenodo.org](https://zenodo.org/records/5511793) | none until a licence decision (section 1.1) | none; its reader stops with its status | candidate | 15 October 2026 |
 | S2-Hollstein manual classification database | GFZ GitLab, file of 10 July 2017, no DOI | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file) | [git.gfz-potsdam.de](https://git.gfz-potsdam.de/EnMAP/sentinel2_manual_classification_clouds) | none, licence decision (section 1.1) | none; its reader stops with the decision | not used | 15 October 2026 |
 | S2-CESBIO reference cloud masks | record 1460961, published 12 October 2018 | CC BY 4.0 | [zenodo.org](https://zenodo.org/records/1460961) | none, licence decision (section 1.1) | none; its reader stops with the decision | not used | 15 October 2026 |
 | Data from the target sensor | n/a | n/a | n/a | the decisive test for a mission | none | not available | 7 October 2026 |
@@ -52,7 +52,7 @@ The facts of the independent test datasets of the paper's Table 1, the coverage 
 
 ### 1.1 Licence decisions
 
-The maintainer's licence decisions on third-party sources. "Not used" means no download, no cache, no evaluation, no reference mask and no row in a comparison or coverage report, internal use included. "Declined, pending legal review" is treated as not used until a later decision is recorded the same way. Each decision is recorded in the code next to the facts of its source (`LicenceDecision` of `src/tiefer_lab/data/source.py`); only a new decision of the maintainer, recorded there and in this table, changes it. Proposed in the licence decision issue (number not known yet).
+The maintainer's licence decisions on third-party sources. "Not used" means no download, no cache, no evaluation, no reference mask and no row in a comparison or coverage report, internal use included. "Declined, pending legal review" and "candidate, no decision yet" are treated as not used until a later decision is recorded the same way. Each decision is recorded in the code next to the facts of its source (`LicenceDecision` of `src/tiefer_lab/data/source.py`); only a new decision of the maintainer, recorded there and in this table, changes it. Proposed in the licence decision issue (number not known yet).
 
 | Source | Licence as recorded | Source page | Decision | Date | Reason | Record in the code |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -63,6 +63,7 @@ The maintainer's licence decisions on third-party sources. "Not used" means no d
 | S2-CESBIO | CC BY 4.0, masks only | [zenodo.org](https://zenodo.org/records/1460961) | not used | 15 October 2026 | its imagery is not downloaded | `DATASETS["s2_cesbio"].decision` |
 | dtacs4bands | CC BY-NC 4.0 | [huggingface.co](https://huggingface.co/isp-uv-es/cloudsen12_models) | declined, pending legal review | 15 October 2026 | non-commercial licence | `REFERENCES["dtacs4bands"].decision` of `references/run_reference.py` |
 | CloudSEN12 release of 2022 | CC BY-NC 4.0 | [scidb.cn](https://www.scidb.cn/detail?dataSetId=f72d622ff4ea4fa18070456a98222b1a) | declined, pending legal review | 15 October 2026 | non-commercial licence | `LICENCE_DECISION` of `src/tiefer_lab/data/cloudsen12_2022.py` |
+| WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | [zenodo.org](https://zenodo.org/records/5511793) | candidate, no decision yet; treated as not used | 15 October 2026 | the maintainer has not decided it | `DATASETS["whus2_cd"].decision` |
 
 What the candidates' primary pages say, read on 7 October 2026:
 
@@ -132,6 +133,7 @@ The cloud problem is thick plus thin cloud against the rest, as in the paper; th
 
 ## Changelog
 
+- 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used (section 1.1); drafted with an AI-assisted system.
 - 15 October 2026: section 1.1, the maintainer's licence decisions; S2-Hollstein, L8-38Cloud, L8-95Cloud, S2-CESBIO and the 2022 release are not used; drafted with an AI-assisted system.
 - 14 October 2026: all nine datasets of the paper's Table 1 in the catalogue: WHUS2-CD+, S2-Hollstein and S2-CESBIO added, 38-Cloud and 95-Cloud checked again on Kaggle; drafted with an AI-assisted system.
 - 14 October 2026: the four independent test datasets (the Catalogue, KappaSet, Landsat 8 Biome and the new row Landsat 8 SPARCS) checked again from their primary pages, with their roles; the 2022 CloudSEN12 release (CC BY-NC 4.0) and a third-sensor candidate added; the Landsat 8 band names and the paper's Table 5 mapping recorded in section 3; section 4 describes the paper summary of `--full-metrics`; drafted with an AI-assisted system.

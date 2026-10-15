@@ -48,7 +48,7 @@ Which datasets the maintainer's licence decisions allow. The licence, the decisi
 | L8 SPARCS | allowed |
 | Sentinel-2 Cloud Mask Catalogue | allowed |
 | KappaSet | allowed |
-| WHUS2-CD+ | allowed |
+| WHUS2-CD+ | candidate, no decision yet; treated as not used |
 | 38-Cloud | not used, licence decision of 15 October 2026 |
 | 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
 | S2-Hollstein | not used, licence decision of 15 October 2026 |
@@ -108,7 +108,6 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | KappaSet band scale, product ID of a sub-tile, NetCDF read with the locked GDAL | one KappaSet file read on CSC Roihu | `read_kappaset` |
 | Sen2Cor SCL codes | the Sen2Cor product documentation, with Table 5 of [1] | `COMPARISON_CODES["reference_sen2cor"]` |
 | Licence of L8 Biome and L8 SPARCS | their pages state none; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
-| JP2 read of the WHUS2-CD products with the locked GDAL | one product read on CSC Roihu | `read_whus2` |
 | Input bands of each algorithm of the paper's Table 6 | its primary source | `ALGORITHMS` in `src/tiefer_lab/paper_models.py` |
 | Download sizes and storage billing units of the Landsat datasets | the maintainer's download on CSC Roihu | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
 
@@ -134,7 +133,7 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 
 ## 8. Coverage of every model on every dataset
 
-`python -m tiefer_lab.paper_models` writes `reports/coverage.md`: one row for each model of this repository and each algorithm of the paper's Table 6, one column for CloudSEN12+ and for each dataset of the paper's Table 1 that the licence decisions allow (section 2.1); a refused dataset has no column. A cell is `measured` when an evaluation report holds it; otherwise it names the route and its reason:
+`python -m tiefer_lab.paper_models` writes `reports/coverage.md`: one row for each model of this repository and each algorithm of the paper's Table 6, one column for CloudSEN12+ and for each dataset of the paper's Table 1 that the licence decisions allow (section 2.1); a refused or undecided dataset has no column, and a note at the top of the page names each one left out. A cell is `measured` when an evaluation report holds it; otherwise it names the route and its reason:
 
 | Route | Meaning |
 | :--- | :---: |
@@ -178,6 +177,7 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 
 ## Changelog
 
+- 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used; the coverage page names the datasets it leaves out; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the status of each dataset under the maintainer's licence decisions; the refused datasets leave the open facts, the coverage and the evaluation steps; drafted with an AI-assisted system.
 - 14 October 2026: all nine datasets of the paper's Table 1: WHUS2-CD+, 38-Cloud, 95-Cloud, S2-Hollstein and S2-CESBIO added with their facts and sources; section 8 is the coverage of every model on every dataset; drafted with an AI-assisted system.
 - 14 October 2026: first version: four independent test datasets from the CloudSEN12 paper, their facts with sources, preprocessing, independence, comparison masks, open facts, distribution, the datasets left out and a third-sensor candidate; drafted with an AI-assisted system.

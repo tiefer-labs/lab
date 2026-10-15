@@ -12,6 +12,7 @@ tests, never for training, selection, calibration or thresholds:
 - `kappaset`: KappaSet, Sentinel-2 KappaZeta cloud and cloud shadow masks
   (Zenodo, 2022);
 - `whus2_cd`: WHUS2-CD+, Sentinel-2 cloud masks over China (Zenodo, 2021);
+  a candidate without a licence decision yet, treated as not used;
 - `s2_hollstein`, `landsat8_38cloud`, `landsat8_95cloud`, `s2_cesbio`: not
   used, licence decision of 15 October 2026 (`Dataset.decision`); their
   readers are kept and stop with it.
@@ -408,6 +409,12 @@ DATASETS.update(
             "is labelled cloud, other thin cloud clear; the masks are 10980 x 10980 tiles "
             "without georeferencing, on the 10 m grid of their product",
             bands=L1C_BAND_NAMES,
+            decision=decided_15_october_2026(
+                "candidate, no decision yet",
+                "CC BY 4.0 on Zenodo; the GitHub repository states none",
+                "the maintainer has not decided it; treated as not used until a decision "
+                "is recorded here",
+            ),
         ),
     }
 )

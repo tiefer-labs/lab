@@ -7,13 +7,13 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset> [extra build_cache arguments]
 #
-# <dataset>: s2_cloud_catalogue, kappaset, landsat8_biome, landsat8_sparcs or whus2_cd,
+# <dataset>: s2_cloud_catalogue, kappaset, landsat8_biome or landsat8_sparcs,
 # the datasets of src/tiefer_lab/data/independent.py that the maintainer's licence
 # decisions allow (docs/DATASETS.md); a refused dataset stops with its decision
 # before anything is downloaded. The Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
-# unpacked once. The Landsat 8 datasets and WHUS2-CD are downloaded by hand from
+# unpacked once. The Landsat 8 datasets are downloaded by hand from
 # their source pages into the same folder, because their file URLs are not
 # verified yet.
 # The build stops on every fact that is not verified (docs/INDEPENDENT.md,
@@ -50,7 +50,7 @@ case "${dataset}" in
     record="7100327"
     files=(kappaset.zip README.pdf)
     ;;
-  landsat8_biome | landsat8_sparcs | whus2_cd)
+  landsat8_biome | landsat8_sparcs)
     record=""
     files=()
     ;;
@@ -96,7 +96,7 @@ if [[ -z "${record}" && -z "$(ls -A "${root}")" ]]; then
 fi
 
 extra=()
-if [[ "${dataset}" == s2_cloud_catalogue || "${dataset}" == kappaset || "${dataset}" == whus2_cd ]]; then
+if [[ "${dataset}" == s2_cloud_catalogue || "${dataset}" == kappaset ]]; then
   extra=(--cloudsen12-cache "${TIEFER_CLOUDSEN12_CACHE:-cloudsen12-l1c-all}")
 fi
 python3 -m tiefer_lab.data.build_cache --split test --source "${dataset}" --root "${root}" \
