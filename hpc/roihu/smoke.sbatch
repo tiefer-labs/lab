@@ -4,7 +4,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Smoke run on one GPU: environment check, configs/smoke.toml on the real
-# cache, a validation evaluation, and a timing run of configs/l1_base.toml.
+# cache, a validation evaluation, and a timing run of configs/sieb_base.toml.
 # Its outputs are labelled smoke and are never results.
 #
 # If the train and val splits of the full cache are not complete (missing, or
@@ -64,11 +64,11 @@ python3 -m tiefer_lab.evaluate --run "${run_id}" --split val --baselines
 
 # Real duration: the full training configuration, cut to one epoch of 50
 # steps. Its line "full epoch ... s (estimated)" is the time per epoch of
-# configs/l1_base.toml on this GPU; the run is marked as smoke.
+# configs/sieb_base.toml on this GPU; the run is marked as smoke.
 if [[ "${tiny_cache}" == "1" ]]; then
   echo "timing run skipped: it needs the full cache (hpc/roihu/data.sbatch)"
 else
-  python3 -m tiefer_lab.train --config configs/l1_base.toml --run-id "timing-${SLURM_JOB_ID}" \
+  python3 -m tiefer_lab.train --config configs/sieb_base.toml --run-id "timing-${SLURM_JOB_ID}" \
     --epochs 1 --max-steps-per-epoch 50
 fi
 echo "smoke run ${run_id} finished"

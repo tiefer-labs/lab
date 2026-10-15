@@ -23,7 +23,7 @@ def _evaluation(smoke: bool, time: str) -> dict:
     return {
         "kind": "evaluation",
         "smoke": smoke,
-        "run_id": "l1_base-test",
+        "run_id": "sieb_base-test",
         "split": "val",
         "provenance": {"git": {"commit": "0123456789abcdef"}, "time": time},
     }

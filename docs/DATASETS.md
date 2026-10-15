@@ -15,7 +15,7 @@ Status words of this table: `in use` (read by a run or a test), `not used` (avai
 | Dataset | Version or revision | Licence | URL | Role | Used by | Status | Checked on |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **CloudSEN12+** | | | | | | | |
-| Level-1C, high quality labels, 509 x 509, four bands (cache `cloudsen12-l1c-high`) | card 1.1.2; revision recorded by the cache build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | `l1_base`, `l1_full` | in use | 7 October 2026 |
+| Level-1C, high quality labels, 509 x 509, four bands (cache `cloudsen12-l1c-high`) | card 1.1.2; revision recorded by the cache build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | `sieb_base`, `sieb` | in use | 7 October 2026 |
 | Level-1C, high quality labels, 509 x 509, 13 bands (cache `cloudsen12-l1c-all`) | card 1.1.2; revision recorded by the cache build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | every L2 config | in use | 7 October 2026 |
 | Level-1C, high quality labels, 2000 x 2000 | card 1.1.2 | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | none | none | not used | 7 October 2026 |
 | Level-1C, scribble and nolabel patches of the training split | card 1.1.2 | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | extra training data only, away from validation and test locations | none | not used (note 1) | 7 October 2026 |
@@ -28,7 +28,7 @@ Status words of this table: `in use` (read by a run or a test), `not used` (avai
 | Perturbed validation split (rescale, gain, offset, noise, blur) | computed at evaluation time | CC0 1.0 | `src/tiefer_lab/data/sensor.py` | robustness measurement | `evaluate --perturb` | in use | 7 October 2026 |
 | Jetson benchmark input | `trtexec` input of the engine, no dataset | n/a | `jetson/bench.py` | latency, throughput and power | none yet | not used | 7 October 2026 |
 | **Reference data** | | | | | | | |
-| Sentinel-2 equivalent wavelengths and resolutions | ESA SentiWiki, S2 Mission | not checked | [sentiwiki.copernicus.eu](https://sentiwiki.copernicus.eu/web/s2-mission) | band facts and band matching (section 3) | `configs/l2_*.toml` comments, [DATA.md](DATA.md) | in use | 7 October 2026 |
+| Sentinel-2 equivalent wavelengths and resolutions | ESA SentiWiki, S2 Mission | not checked | [sentiwiki.copernicus.eu](https://sentiwiki.copernicus.eu/web/s2-mission) | band facts and band matching (section 3) | `configs/wandler_*.toml` and `configs/lupe_*.toml` comments, [DATA.md](DATA.md) | in use | 7 October 2026 |
 | **Candidates for independent tests** | | | | | | | |
 | Sentinel-2 Cloud Mask Catalogue | record 4172871, published 1 November 2020 | CC BY 4.0 | [zenodo.org](https://zenodo.org/records/4172871) | independent test on Sentinel-2 (`IND-01`, `IND-02`, `IND-04`) | `src/tiefer_lab/data/independent.py`; [INDEPENDENT.md](INDEPENDENT.md) | in use | 15 October 2026 |
 | KappaSet | record 7100327, version 1, published 21 September 2022 | CC BY 4.0 | [zenodo.org](https://zenodo.org/records/7100327) | independent test on Sentinel-2 (`IND-01`, `IND-02`), thin cloud on independent data | `src/tiefer_lab/data/independent.py`; [INDEPENDENT.md](INDEPENDENT.md) | in use | 15 October 2026 |
@@ -137,6 +137,7 @@ The cloud problem is thick plus thin cloud against the rest, as in the paper; th
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: section 1.1 records the Catalogue and KappaSet as used and L8 Biome and L8 SPARCS as candidates without a decision; a source without a record is not read; drafted with an AI-assisted system.
 - 15 October 2026: section 1.1 links the licence decision issue 7; drafted with an AI-assisted system.

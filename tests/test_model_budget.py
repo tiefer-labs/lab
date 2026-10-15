@@ -39,7 +39,7 @@ ALLOWED_OPS = {
     [
         "smoke.toml",
         *sorted(
-            p.name for p in (Path(__file__).resolve().parents[1] / "configs").glob("l1_*.toml")
+            p.name for p in (Path(__file__).resolve().parents[1] / "configs").glob("sieb*.toml")
         ),
     ],
 )

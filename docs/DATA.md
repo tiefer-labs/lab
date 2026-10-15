@@ -43,7 +43,7 @@ The 13 bands of the Level-1C image item, in the order of the card [1]. The resol
 | B11 | SWIR 1 | 20 m | 1613.5 nm | 1613.7 nm | L2 sets of 6 and 13 |
 | B12 | SWIR 2 | 20 m | 2199.5 nm | 2202.4 nm | L2 sets of 6 and 13 |
 
-The four band sets of the band-flexible L2 model (`train.band_sets` in the `l2_flex_*` configs): 3 bands B02, B03, B04; 4 bands B02, B03, B04, B08; 6 bands B02, B03, B04, B08, B11, B12; and all 13 bands.
+The four band sets of the band-flexible L2 model (`train.band_sets` in the `wandler_*` configs): 3 bands B02, B03, B04; 4 bands B02, B03, B04, B08; 6 bands B02, B03, B04, B08, B11, B12; and all 13 bands.
 
 Milestone L1 and the four-band L2 specialist use B02, B03, B04 and B08 (rasterio indexes 2, 3, 4 and 8). Very high resolution optical satellites, the sensors Tiefer targets, carry these four bands and often a panchromatic band, and not the shortwave infrared bands that classic cloud algorithms rely on ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 1). The band-flexible L2 model is trained on these band sets and scored per band set. The data is Level-1C, top-of-atmosphere reflectance, because there is no atmospheric correction on board.
 
@@ -122,7 +122,7 @@ The agreement values are for the labels of the 2022 release and its test set, no
 | Labels | maps the label codes 0 to 3 to the class indexes 0 to 3; any other code stops the build | `src/tiefer_lab/data/source.py` |
 | Reflectance | reflectance = DN x 0.0001 | `src/tiefer_lab/data/source.py` |
 | Normalisation | per-band mean and standard deviation of reflectance, computed on the training split only over all pixels of the cached patches, the padding included, stored in `index.json` (`normalisation`) and used for every split | `src/tiefer_lab/data/build_cache.py` |
-| Class weights | the pixels per class of the training split give median-frequency weights for the loss; since 7 October 2026 they are counted over the masked labels when the split is padded, otherwise taken from `class_pixels` in `index.json`, which includes the padding; L1 configs use them (the default), every L2 config except `l2_flex_1m_classweights` sets `class_weighting = "none"` | `src/tiefer_lab/train.py`; [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6 |
+| Class weights | the pixels per class of the training split give median-frequency weights for the loss; since 7 October 2026 they are counted over the masked labels when the split is padded, otherwise taken from `class_pixels` in `index.json`, which includes the padding; L1 configs use them (the default), every L2 config except `wandler_1m_class_weights` sets `class_weighting = "none"` | `src/tiefer_lab/train.py`; [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6 |
 | Training crops | random crops with flips and rescaling | `src/tiefer_lab/data/dataset.py` |
 | Dataset padding | every padded label pixel is set to `IGNORE_INDEX` when a split is loaded, since 7 October 2026; the loss, the class weights, every metric and every cloud fraction leave it out; images and the cache files are not changed | `src/tiefer_lab/data/padding.py`, `src/tiefer_lab/data/cache.py` |
 | Evaluation padding | each full patch is reflect-padded at the bottom and right to a multiple of 32, and the prediction is cropped back to the label's size | `src/tiefer_lab/data/dataset.py`, `src/tiefer_lab/data/transforms.py` |
@@ -273,7 +273,7 @@ The caches of Project Schatten on CSC Roihu:
 
 | Cache | Bands | Dataset revision | Build jobs and dates | Size on disk | Configs that use it | Normalisation |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | recorded by the cache build | recorded by the cache build | recorded by the cache build | `l1_base`, `l1_full` | recorded by the cache build |
+| `cloudsen12-l1c-high` | 4: B02, B03, B04, B08 | recorded by the cache build | recorded by the cache build | recorded by the cache build | `sieb_base`, `sieb` | recorded by the cache build |
 | `cloudsen12-l1c-all` | all 13 | recorded by the cache build | recorded by the cache build | recorded by the cache build | every L2 config | recorded by the cache build |
 
 Each cache is built from the commit of Project Schatten; the build jobs, the revision, the size and the normalisation values are recorded here from `index.json` when the build is done.
@@ -334,6 +334,7 @@ Other metadata fields are listed by name only, and the report draws no conclusio
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 5 names the commit that masks the padding.

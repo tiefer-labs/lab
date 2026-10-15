@@ -20,7 +20,7 @@ from tiefer_lab.config import (
 
 def test_repository_configs_load(repo_root: Path) -> None:
     configs = sorted((repo_root / "configs").glob("*.toml"))
-    assert {p.name for p in configs} >= {"smoke.toml", "l1_base.toml"}
+    assert {p.name for p in configs} >= {"smoke.toml", "sieb_base.toml"}
     for path in configs:
         config = load_config(path)
         assert config.name == path.stem
@@ -76,7 +76,7 @@ def test_data_workers_follow_slurm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_l1_base_scales_learning_rate_with_batch_size(repo_root: Path) -> None:
-    config = load_config(repo_root / "configs" / "l1_base.toml")
+    config = load_config(repo_root / "configs" / "sieb_base.toml")
     assert config.data.batch_size == 128
     # Linear scaling from 0.002 at a batch size of 32.
     assert config.train.learning_rate == pytest.approx(0.002 * 128 / 32)
@@ -87,12 +87,12 @@ def test_l1_base_scales_learning_rate_with_batch_size(repo_root: Path) -> None:
 
 
 def test_l1_full_runs_its_cosine_schedule_to_the_end(repo_root: Path) -> None:
-    base = load_config(repo_root / "configs" / "l1_base.toml")
-    full = load_config(repo_root / "configs" / "l1_full.toml")
-    assert full.name == "l1_full"
+    base = load_config(repo_root / "configs" / "sieb_base.toml")
+    full = load_config(repo_root / "configs" / "sieb.toml")
+    assert full.name == "sieb"
     assert full.train.patience >= full.train.epochs, "early stopping never ends the schedule"
     assert full.train.warmup_epochs == 5 and full.train.ema_decay == pytest.approx(0.999)
-    # Everything else is l1_base.
+    # Everything else is sieb_base.
     import dataclasses
 
     same = dataclasses.replace(
@@ -121,15 +121,15 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
         return load_config(repo_root / "configs" / f"{name}.toml")
 
     targets = {
-        "l2_flex_0p5m": (0.4e6, 0.6e6),
-        "l2_flex_1m": (0.8e6, 1.2e6),
-        "l2_flex_4m": (3.0e6, 5.0e6),
-        "l2_flex_22m": (20e6, 30e6),
-        "l2_flex_cnx_21m": (20e6, 30e6),
-        "l2_spec_1m": (0.8e6, 1.2e6),
-        "l2_spec_22m": (20e6, 30e6),
+        "wandler_500k": (0.4e6, 0.6e6),
+        "wandler_1m": (0.8e6, 1.2e6),
+        "wandler_4m": (3.0e6, 5.0e6),
+        "wandler_22m": (20e6, 30e6),
+        "wandler_convnext_21m": (20e6, 30e6),
+        "lupe_1m": (0.8e6, 1.2e6),
+        "lupe_22m": (20e6, 30e6),
     }
-    reference = load("l2_flex_1m")
+    reference = load("wandler_1m")
     for name, (low, high) in targets.items():
         config = load(name)
         n = count_parameters(flexible.build(config.model, config.data.bands))
@@ -142,32 +142,32 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
         )
         assert config.train == expected_train, name
     variants = {
-        "l2_flex_1m_zero": ("model", {"flexible_design"}),
-        "l2_flex_1m_classweights": ("train", {"class_weighting"}),
-        "l2_flex_1m_focal": ("train", {"focal_gamma"}),
-        "l2_flex_1m_nodistill": ("train", {"distill_weight"}),
-        "l2_flex_1m_rescale": ("data", {"rescale_min", "rescale_max"}),
-        "l2_flex_1m_gainoffset": ("data", {"gain_jitter", "offset_jitter"}),
-        "l2_flex_1m_noiseblur": ("data", {"noise_std", "blur_sigma"}),
+        "wandler_1m_zero_design": ("model", {"flexible_design"}),
+        "wandler_1m_class_weights": ("train", {"class_weighting"}),
+        "wandler_1m_focal": ("train", {"focal_gamma"}),
+        "wandler_1m_no_self_distill": ("train", {"distill_weight"}),
+        "wandler_1m_rescale_2x": ("data", {"rescale_min", "rescale_max"}),
+        "wandler_1m_gain_offset": ("data", {"gain_jitter", "offset_jitter"}),
+        "wandler_1m_noise_blur": ("data", {"noise_std", "blur_sigma"}),
         # Variants of the stability, frame, IoU, rescale and export options.
-        "l2_flex_1m_clip": ("train", {"grad_clip_norm"}),
-        "l2_flex_1m_guard": ("train", {"skip_nonfinite"}),
-        "l2_flex_1m_warmup10": ("train", {"warmup_epochs"}),
-        "l2_flex_1m_select4": ("train", {"select_band_set"}),
-        "l2_flex_1m_frameloss": ("train", {"frame_loss_weight"}),
-        "l2_flex_1m_lovasz": ("train", {"lovasz_weight"}),
-        "l2_flex_1m_crop384": ("data", {"crop_size"}),
-        "l2_flex_1m_crop512": ("data", {"crop_size"}),
-        "l2_flex_1m_rescale3": ("data", {"rescale_min", "rescale_max"}),
-        "l2_flex_1m_bandsets": ("train", {"band_sets"}),
-        "l2_flex_1m_extra": ("data", {"include_extra"}),
-        "l2_flex_1m_teacher": ("train", {"teacher_run", "teacher_weight"}),
-        "l2_flex_1m_int8pct": ("export", {"calibrate_method"}),
-        "l2_flex_1m_int8entropy": ("export", {"calibrate_method"}),
-        "l2_flex_1m_cal1024": ("export", {"calibration_patches"}),
-        "l2_flex_1m_calstrat": ("export", {"calibration_stratified"}),
-        "l2_flex_1m_fpends": ("export", {"keep_fp_first_last"}),
-        "l2_flex_1m_inputclip": ("export", {"input_clip_percentile"}),
+        "wandler_1m_grad_clip": ("train", {"grad_clip_norm"}),
+        "wandler_1m_skip_nonfinite": ("train", {"skip_nonfinite"}),
+        "wandler_1m_warmup10": ("train", {"warmup_epochs"}),
+        "wandler_1m_best_by_four_bands": ("train", {"select_band_set"}),
+        "wandler_1m_frame_loss": ("train", {"frame_loss_weight"}),
+        "wandler_1m_lovasz": ("train", {"lovasz_weight"}),
+        "wandler_1m_crop384": ("data", {"crop_size"}),
+        "wandler_1m_crop512": ("data", {"crop_size"}),
+        "wandler_1m_rescale_3x": ("data", {"rescale_min", "rescale_max"}),
+        "wandler_1m_landsat_bandsets": ("train", {"band_sets"}),
+        "wandler_1m_extra_data": ("data", {"include_extra"}),
+        "wandler_1m_distill_22m": ("train", {"teacher_run", "teacher_weight"}),
+        "wandler_1m_int8_percentile": ("export", {"calibrate_method"}),
+        "wandler_1m_int8_entropy": ("export", {"calibrate_method"}),
+        "wandler_1m_int8_calib1024": ("export", {"calibration_patches"}),
+        "wandler_1m_int8_calib_stratified": ("export", {"calibration_stratified"}),
+        "wandler_1m_int8_float_ends": ("export", {"keep_fp_first_last"}),
+        "wandler_1m_int8_input_clip": ("export", {"input_clip_percentile"}),
     }
     for name, (section, keys) in variants.items():
         config = load(name)
@@ -196,25 +196,25 @@ def test_l1_and_cloudscout_variants_change_one_setting(repo_root: Path) -> None:
         return load_config(repo_root / "configs" / f"{name}.toml")
 
     l1 = {
-        "l1_full_rescale": {"data": {"rescale_min", "rescale_max"}},
-        "l1_full_frameloss": {"train": {"frame_loss_weight"}},
-        "l1_full_lovasz": {"train": {"lovasz_weight"}},
-        "l1_full_clip": {"train": {"grad_clip_norm"}},
-        "l1_full_int8pct": {"export": {"calibrate_method"}},
-        "l1_full_int8entropy": {"export": {"calibrate_method"}},
-        "l1_full_cal1024": {"export": {"calibration_patches"}},
-        "l1_full_calstrat": {"export": {"calibration_stratified"}},
-        "l1_full_fpends": {"export": {"keep_fp_first_last"}},
-        "l1_full_inputclip": {"export": {"input_clip_percentile"}},
+        "sieb_rescale_2x": {"data": {"rescale_min", "rescale_max"}},
+        "sieb_frame_loss": {"train": {"frame_loss_weight"}},
+        "sieb_lovasz": {"train": {"lovasz_weight"}},
+        "sieb_grad_clip": {"train": {"grad_clip_norm"}},
+        "sieb_int8_percentile": {"export": {"calibrate_method"}},
+        "sieb_int8_entropy": {"export": {"calibrate_method"}},
+        "sieb_int8_calib1024": {"export": {"calibration_patches"}},
+        "sieb_int8_calib_stratified": {"export": {"calibration_stratified"}},
+        "sieb_int8_float_ends": {"export": {"keep_fp_first_last"}},
+        "sieb_int8_input_clip": {"export": {"input_clip_percentile"}},
     }
     for name, expected in l1.items():
-        assert _changed(load(name), load("l1_full")) == expected, name
-    assert _changed(load("cloudscout_th50"), load("cloudscout")) == {
+        assert _changed(load(name), load("sieb")) == expected, name
+    assert _changed(load("cloudscout_reimpl_th50"), load("cloudscout_reimpl_th70")) == {
         "train": {"frame_label_threshold"}
     }
 
 
-def test_v3_references_are_drafts_with_the_stated_changes(repo_root: Path) -> None:
+def test_candidate_references_are_drafts_with_the_stated_changes(repo_root: Path) -> None:
     """A combined candidate is its own reference with its row in docs/ASSUMPTIONS.md."""
 
     def load(name: str) -> Config:
@@ -224,8 +224,13 @@ def test_v3_references_are_drafts_with_the_stated_changes(repo_root: Path) -> No
         "data": {"rescale_min", "rescale_max"},
         "train": {"grad_clip_norm", "skip_nonfinite"},
     }
-    assert _changed(load("l1_v3"), load("l1_full")) == stated
-    assert _changed(load("l2_flex_1m_v3"), load("l2_flex_1m")) == stated
+    assert _changed(load("sieb_candidate"), load("sieb")) == stated
+    assert _changed(load("wandler_1m_candidate"), load("wandler_1m")) == stated
     assumptions = (repo_root / "docs" / "ASSUMPTIONS.md").read_text(encoding="utf-8")
-    for name in ("l1_v3", "l2_flex_1m_v3", "l2_flex_1m_v3_frameft", "cloudscout"):
+    for name in (
+        "sieb_candidate",
+        "wandler_1m_candidate",
+        "wandler_1m_candidate_finetune",
+        "cloudscout_reimpl_th70",
+    ):
         assert f"`{name}`" in assumptions, name

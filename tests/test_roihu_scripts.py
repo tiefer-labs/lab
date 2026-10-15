@@ -79,12 +79,12 @@ def test_env_requires_project(roihu_env: dict[str, str]) -> None:
 
 def test_submit_adds_account_and_log_location(roihu_env: dict[str, str], tmp_path: Path) -> None:
     env = {**roihu_env, "STUB_ARCH": "aarch64"}
-    result = _run("submit.sh", ["hpc/roihu/train.sbatch", "configs/l1_base.toml"], env)
+    result = _run("submit.sh", ["hpc/roihu/train.sbatch", "configs/sieb_base.toml"], env)
     assert result.returncode == 0, result.stderr
     sbatch_args = (tmp_path / "sbatch.log").read_text()
     assert "--account=testproject" in sbatch_args
     assert f"--output={tmp_path}/scratch/runs/slurm/%x-%j.out" in sbatch_args
-    assert sbatch_args.strip().endswith("hpc/roihu/train.sbatch configs/l1_base.toml")
+    assert sbatch_args.strip().endswith("hpc/roihu/train.sbatch configs/sieb_base.toml")
 
 
 def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
@@ -93,7 +93,7 @@ def test_submit_passes_seed_final_reason_as_environment_and_sbatch_options(
     env = {**roihu_env, "STUB_ARCH": "aarch64", "SEED": "1", "FINAL": "1"}
     env["REASON"] = "final L1 check, once"
     env["HF_TOKEN"] = "synthetic-token-value"
-    args = ["--test-only", "--time=24:00:00", "hpc/roihu/train.sbatch", "configs/l1_base.toml"]
+    args = ["--test-only", "--time=24:00:00", "hpc/roihu/train.sbatch", "configs/sieb_base.toml"]
     result = _run("submit.sh", args, env)
     assert result.returncode == 0, result.stderr
     sbatch_args = (tmp_path / "sbatch.log").read_text()
@@ -252,7 +252,7 @@ def test_setup_gpu_job_requests_one_gpu_on_gputest() -> None:
 
 @pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke", "setup_gpu"])
 def test_gpu_jobs_stop_on_a_non_arm_node(roihu_env: dict[str, str], name: str) -> None:
-    result = _run(f"{name}.sbatch", ["configs/l1_base.toml"], roihu_env)
+    result = _run(f"{name}.sbatch", ["configs/sieb_base.toml"], roihu_env)
     assert result.returncode == 1
     assert "needs an aarch64 GH200 node, but runs on x86_64" in result.stderr
     assert not Path(roihu_env["STUB_LOG"] + ".module").exists(), "nothing loaded"
@@ -328,7 +328,7 @@ def test_smoke_builds_its_tiny_cache_apart_and_never_touches_the_full_cache(
     assert len(builds) == 2 and all(c.startswith(f"{smoke_dir} |") for c in builds)
     assert "--split train --limit 32" in builds[0] and "--split val --limit 16" in builds[1]
     assert all(c.startswith(f"{smoke_dir} |") for c in calls if "tiefer_lab." in c)
-    assert not any("l1_base" in c for c in calls), "no timing run on the tiny cache"
+    assert not any("sieb_base" in c for c in calls), "no timing run on the tiny cache"
 
 
 def test_smoke_reads_a_complete_full_cache_without_building(
@@ -342,7 +342,7 @@ def test_smoke_reads_a_complete_full_cache_without_building(
     assert result.returncode == 0, result.stderr
     calls = (tmp_path / "python.log").read_text().splitlines()
     assert not any("build_cache" in c for c in calls)
-    assert any("configs/l1_base.toml" in c for c in calls), "timing run on the full cache"
+    assert any("configs/sieb_base.toml" in c for c in calls), "timing run on the full cache"
     assert all(c.startswith(f"{full} |") for c in calls if "tiefer_lab." in c)
     assert _tree(full) == before
     assert not (tmp_path / "scratch" / "smoke").exists()
@@ -497,30 +497,30 @@ def test_sweep_submits_one_job_per_config_and_seed(
 ) -> None:
     log = _appending_sbatch(roihu_env, tmp_path)
     env = {**roihu_env, "STUB_ARCH": "aarch64"}
-    configs = ["configs/l2_flex_1m.toml", "configs/l2_spec_1m.toml"]
+    configs = ["configs/wandler_1m.toml", "configs/lupe_1m.toml"]
     result = _run("sweep.sh", ["--seeds", "0,1,2", *configs], env)
     assert result.returncode == 0, result.stderr
     calls = log.read_text().splitlines()
     assert len(calls) == 6
     assert calls[0].startswith("SEED=0 ") and calls[0].endswith(
-        "hpc/roihu/train.sbatch configs/l2_flex_1m.toml"
+        "hpc/roihu/train.sbatch configs/wandler_1m.toml"
     )
-    assert calls[5].startswith("SEED=2 ") and calls[5].endswith("configs/l2_spec_1m.toml")
+    assert calls[5].startswith("SEED=2 ") and calls[5].endswith("configs/lupe_1m.toml")
 
 
 def test_sweep_timing_and_test_only(roihu_env: dict[str, str], tmp_path: Path) -> None:
     log = _appending_sbatch(roihu_env, tmp_path)
     env = {**roihu_env, "STUB_ARCH": "aarch64"}
-    args = ["--timing", "--test-only", "--seeds", "0,1", "configs/l2_flex_1m.toml"]
+    args = ["--timing", "--test-only", "--seeds", "0,1", "configs/wandler_1m.toml"]
     assert _run("sweep.sh", args, env).returncode == 0
     calls = log.read_text().splitlines()
     assert len(calls) == 1 and "--test-only" in calls[0]
-    assert calls[0].endswith("hpc/roihu/timing.sbatch configs/l2_flex_1m.toml")
+    assert calls[0].endswith("hpc/roihu/timing.sbatch configs/wandler_1m.toml")
 
 
 @pytest.mark.parametrize(
     "args",
-    [[], ["--seeds", "a", "configs/l2_flex_1m.toml"], ["configs/missing.toml"], ["--bogus", "x"]],
+    [[], ["--seeds", "a", "configs/wandler_1m.toml"], ["configs/missing.toml"], ["--bogus", "x"]],
 )
 def test_sweep_rejects_bad_input(
     roihu_env: dict[str, str], tmp_path: Path, args: list[str]

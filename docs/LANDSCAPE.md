@@ -100,7 +100,7 @@ The paper summarises PA and UA as shares of its 975 test patches, in percent: lo
 | Fmask | 4.89 | 45.43 | 49.68 | 0.26 | 44.34 | 55.39 |
 | Sen2Cor | 13.77 | 69.63 | 16.6 | 1.05 | 18.58 | 80.37 |
 
-The extra-table masks are those of the dataset variant `tacofoundation:cloudsen12-extra`, which the dataset card says are not normalised to the CloudSEN12 class schema [15]. `build_cache --references` adds them to a split once their link and encodings are verified ([DATA.md](DATA.md), section 9); until then it stops with a clear message. CD-FCNN-RGBI and dtacs4bands use the same four bands as the L1 models and `l2_spec_1m`.
+The extra-table masks are those of the dataset variant `tacofoundation:cloudsen12-extra`, which the dataset card says are not normalised to the CloudSEN12 class schema [15]. `build_cache --references` adds them to a split once their link and encodings are verified ([DATA.md](DATA.md), section 9); until then it stops with a clear message. CD-FCNN-RGBI and dtacs4bands use the same four bands as the L1 models and `lupe_1m`.
 
 ---
 
@@ -126,7 +126,7 @@ Notes:
 4. Different data, bands and resolution. Deciding measurement: both models on the same frames.
 5. Deciding measurement: `jetson/bench.py` on a Jetson Orin, FP16 and INT8, with the input rail power.
 6. Different models and measures: file size here, memory footprint on the device for CloudScout. Deciding measurement: file size and memory during inference of the selected model on a Jetson Orin.
-7. Deciding measurement: `configs/cloudscout_th30.toml`, then `configs/cloudscout.toml` and `configs/cloudscout_th50.toml`, trained and evaluated on the CloudSEN12+ splits with the same code as Tiefer's models. It decides the comparison with the re-implementation, not with the flown model on its own data.
+7. Deciding measurement: `configs/cloudscout_reimpl_step1_th30.toml`, then `configs/cloudscout_reimpl_th70.toml` and `configs/cloudscout_reimpl_th50.toml`, trained and evaluated on the CloudSEN12+ splits with the same code as Tiefer's models. It decides the comparison with the re-implementation, not with the flown model on its own data.
 
 ---
 
@@ -155,6 +155,7 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: section 4 gains the published PA and UA shares of the CloudSEN12 paper's Table 6 for all three experiments, read in the Europe PMC full text; section 2 describes CloudScout's architecture and its re-implementation in this repository; section 5 adds the comparison with that re-implementation; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).

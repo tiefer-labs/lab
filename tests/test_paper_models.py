@@ -57,7 +57,7 @@ def test_routes_by_hand() -> None:
         "landsat8_sparcs",
     ):
         assert route("fmask", dataset).kind == "not used"
-        assert paper_models.cell("l1_full", dataset, {}) == "not used: licence decision"
+        assert paper_models.cell("sieb", dataset, {}) == "not used: licence decision"
 
 
 def test_undecided_whus2_stops_like_a_refused_source(tmp_path: Path) -> None:
@@ -82,7 +82,7 @@ def test_coverage_page_counts_measured_cells() -> None:
     # CloudSEN12+ and the two datasets used, 2 own models and 9 algorithms.
     assert "0 of 33 cells are measured" in empty
     assert "not used: licence decision" in empty
-    reports = Reports(evaluation=[_report("kappaset", "l1_full", {"reference_sen2cor": {}})])
+    reports = Reports(evaluation=[_report("kappaset", "sieb", {"reference_sen2cor": {}})])
     page = paper_models.render(reports, dt.date(2026, 10, 15))
     assert "2 of 33 cells are measured" in page
 
