@@ -917,6 +917,7 @@ def build_independent(
     cloudsen12_cache: str | None = None,
     limit: int | None = None,
 ) -> None:
+    independent.require_dataset_allowed(name)
     info = independent.dataset(name)
     stored = independent.stored_bands(name, bands)
     if not stored:
@@ -953,6 +954,9 @@ def build_independent(
         for entry in cs.get("splits", {}).values():
             used_metadata.extend(entry.get("metadata", []))
     reader = independent.READERS[name]
+    # Masks of other algorithms the dataset ships on the same pixels, kept as
+    # reference masks of the split (data/independent.py, SHIPPED_MASKS).
+    shipped = independent.SHIPPED_MASKS.get(name, {})
     target = independent.TRAINING_GSD_M if resolution == "10m" else info.gsd_m
     for scene in reader(root, stored):
         if limit is not None and counts["scenes"] >= limit:
@@ -975,28 +979,32 @@ def build_independent(
             scene.scene_id, image, label, scene.metadata, masks, max_nodata=max_nodata
         )
         counts["dropped_nodata"] += tile_counts["dropped_nodata"]
-        np.savez(
-            out,
-            images=np.stack([independent.to_cache_dn(t.image) for t in kept])
+        empty = np.zeros((0, independent.TILE, independent.TILE), np.uint8)
+        arrays: dict[str, NDArray[Any]] = {
+            "images": np.stack([independent.to_cache_dn(t.image) for t in kept])
             if kept
             else np.zeros((0, len(stored), independent.TILE, independent.TILE), np.uint16),
-            labels=np.stack([t.label for t in kept])
-            if kept
-            else np.zeros((0, independent.TILE, independent.TILE), np.uint8),
-            ids=np.array([t.tile_id for t in kept]),
-            metadata=np.array([json.dumps(t.metadata, sort_keys=True) for t in kept]),
-        )
+            "labels": np.stack([t.label for t in kept]) if kept else empty,
+            "ids": np.array([t.tile_id for t in kept]),
+            "metadata": np.array([json.dumps(t.metadata, sort_keys=True) for t in kept]),
+        }
+        for m in shipped:
+            arrays[f"mask_{m}"] = np.stack([t.masks[m] for t in kept]) if kept else empty
+        np.savez(out, allow_pickle=False, **arrays)
         print(f"{name}: {scene.scene_id} {tile_counts['kept']} tiles", flush=True)
     images: list[NDArray[np.uint16]] = []
     labels: list[NDArray[np.uint8]] = []
     ids: list[str] = []
     metadata: list[dict[str, Any]] = []
+    shipped_parts: dict[str, list[NDArray[np.uint8]]] = {m: [] for m in shipped}
     for path in sorted(work.glob("*.npz")):
         with np.load(path, allow_pickle=False) as part:
             if "dropped" in part:
                 continue
             images.append(part["images"])
             labels.append(part["labels"])
+            for m in shipped:
+                shipped_parts[m].append(part[f"mask_{m}"])
             ids.extend(str(v) for v in part["ids"])
             metadata.extend(json.loads(str(v)) for v in part["metadata"])
     counts["kept"] = len(ids)
@@ -1006,6 +1014,13 @@ def build_independent(
     np.save(cache.images_path(directory, split), np.concatenate(images), allow_pickle=False)
     np.save(cache.labels_path(directory, split), np.concatenate(labels), allow_pickle=False)
     _finish_split(directory, index, split, ids, metadata, limit, [], selection=counts)
+    if shipped:
+        cache.add_reference_masks(
+            directory,
+            split,
+            {m: np.concatenate(parts) for m, parts in shipped_parts.items()},
+            {m: shipped[m].kind for m in shipped},
+        )
 
 
 # Command line --------------------------------------------------------------
@@ -1067,7 +1082,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--source",
-        choices=sorted(independent.DATASETS),
+        choices=independent.allowed_datasets(),
         default=None,
         help="build an independent dataset cache from its download folder (--root)",
     )

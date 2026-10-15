@@ -3,14 +3,22 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Independent test datasets: facts, readers, harmonisation and tiling.
 
-Four datasets of the CloudSEN12 paper's Table 1 are used as independent
+The nine datasets of the CloudSEN12 paper's Table 1 are used as independent
 tests, never for training, selection, calibration or thresholds:
 
 - `landsat8_biome`: L8 Biome cloud validation masks (USGS, 2016);
 - `landsat8_sparcs`: L8 SPARCS cloud validation masks (USGS, 2016);
 - `s2_cloud_catalogue`: Sentinel-2 Cloud Mask Catalogue (Zenodo, 2020);
 - `kappaset`: KappaSet, Sentinel-2 KappaZeta cloud and cloud shadow masks
-  (Zenodo, 2022).
+  (Zenodo, 2022);
+- `whus2_cd`: WHUS2-CD+, Sentinel-2 cloud masks over China (Zenodo, 2021);
+- `s2_hollstein`, `landsat8_38cloud`, `landsat8_95cloud`, `s2_cesbio`: not
+  used, licence decision of 15 October 2026 (`Dataset.decision`); their
+  readers are kept and stop with it.
+
+Each dataset carries the maintainer's licence decision next to its facts. A
+refused dataset is never downloaded, cached, evaluated or reported; only a
+new decision, recorded in `decision`, changes that.
 
 Every fact below is read from the primary source named next to it, with the
 date it was read; the data card is docs/INDEPENDENT.md. A fact that is not
@@ -33,7 +41,7 @@ from __future__ import annotations
 import csv
 import math
 import re
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -46,9 +54,13 @@ from tiefer_lab.data.source import (
     CLOUD_SHADOW,
     IGNORE_INDEX,
     L1C_BAND_NAMES,
+    NO_DECISION,
     THICK_CLOUD,
     THIN_CLOUD,
     DataSourceError,
+    LicenceDecision,
+    decided_15_october_2026,
+    require_allowed,
     require_verified,
 )
 
@@ -80,6 +92,19 @@ class Dataset:
     # Metadata fields that are biomes or surface classes (IND-04).
     strata_fields: tuple[str, ...]
     note: str = ""
+    # Sentinel-2 band names the dataset provides (Landsat bands under their
+    # matched names); None until verified from its source.
+    bands: tuple[str, ...] | None = None
+    # The maintainer's licence decision; a refused source is never read.
+    decision: LicenceDecision = NO_DECISION
+
+
+@dataclass(frozen=True)
+class ShippedMask:
+    """A mask of another algorithm that a dataset ships on the same pixels."""
+
+    item: str  # file or variable name in the dataset, from its source
+    kind: str  # "four_class", "cloud" or "probability", as stored in the cache
 
 
 # Landsat 8 OLI band number to the Sentinel-2 band of the closest centre wavelength
@@ -118,6 +143,7 @@ DATASETS: dict[str, Dataset] = {
         operational_mask="reference_landsat_qa",
         strata_fields=("biome",),
         note="shadow is labelled in part of the scenes only",
+        bands=tuple(LANDSAT8_TO_S2.values()),
     ),
     "landsat8_sparcs": Dataset(
         name="landsat8_sparcs",
@@ -177,6 +203,7 @@ DATASETS: dict[str, Dataset] = {
             "enclosed_water",
         ),
         note="shadow is scored only on subscenes with shadows_marked = 1",
+        bands=L1C_BAND_NAMES,
     ),
     "kappaset": Dataset(
         name="kappaset",
@@ -206,6 +233,201 @@ DATASETS: dict[str, Dataset] = {
     ),
 }
 
+# The five other datasets of the paper's Table 1, registered so that every model
+# is evaluated on all nine. Only what the paper states is set (Table 1 and its
+# reference list); the rest is None and stops the build until read from the
+# dataset's own source (docs/INDEPENDENT.md, section 6).
+PAPER_TABLE_1 = "CloudSEN12 paper, Table 1 and references, read 14 October 2026"
+
+
+def _from_paper(
+    name: str, sensor: str, paper: str, has_thin: bool, has_shadow: bool, note: str
+) -> Dataset:
+    return Dataset(
+        name=name,
+        sensor=sensor,
+        version="TODO(verify): the release is not read yet",
+        url=paper,
+        licence=None,
+        licence_source="TODO(verify): not read yet",
+        gsd_m=30.0 if sensor == LANDSAT8 else 10.0,
+        label_codes=None,
+        has_thin=has_thin,
+        has_shadow=has_shadow,
+        operational_mask="reference_landsat_qa" if sensor == LANDSAT8 else None,
+        strata_fields=(),
+        note=note,
+    )
+
+
+DATASETS.update(
+    {
+        "s2_hollstein": Dataset(
+            name="s2_hollstein",
+            sensor=SENTINEL2,
+            version="GFZ GitLab EnMAP/sentinel2_manual_classification_clouds, file "
+            "20170710_s2_manual_classification_data.h5 (no DOI, no release tag)",
+            url="https://git.gfz-potsdam.de/EnMAP/sentinel2_manual_classification_clouds",
+            # The repository's LICENCE file is CC BY-NC 4.0, the licence field inside
+            # the HDF5 file CC BY-NC-SA 4.0 (read 14 October 2026): both non-commercial,
+            # so the maintainer decides before any use; None until then.
+            licence=None,
+            licence_source="LICENCE file of the repository: CC BY-NC 4.0; `licence` "
+            "dataset of the HDF5 file: CC BY-NC-SA 4.0; read 14 October 2026",
+            gsd_m=20.0,
+            # class_ids and class_names of the HDF5 file: 10 Clear, 20 Water, 30 Shadow,
+            # 40 Cirrus, 50 Cloud, 60 Snow; water and snow are clear, cirrus thin cloud.
+            label_codes={
+                10: CLEAR,
+                20: CLEAR,
+                30: CLOUD_SHADOW,
+                40: THIN_CLOUD,
+                50: THICK_CLOUD,
+                60: CLEAR,
+            },
+            has_thin=True,
+            has_shadow=True,
+            operational_mask=None,
+            strata_fields=("continent",),
+            note="labelled pixels from polygons, 3,028,733 pixels of 48 products in the "
+            "20170710 file (the paper's Table 1 says 59 scenes); spectra of 13 bands at "
+            "20 m with product ID, latitude and longitude per pixel, but no images",
+            bands=L1C_BAND_NAMES,
+            decision=decided_15_october_2026(
+                "not used",
+                "CC BY-NC 4.0 (LICENCE file) and CC BY-NC-SA 4.0 (inside the HDF5 file)",
+                "non-commercial licence",
+            ),
+        ),
+        "landsat8_38cloud": Dataset(
+            name="landsat8_38cloud",
+            sensor=LANDSAT8,
+            version="Kaggle dataset sorour/38cloud-cloud-segmentation-in-satellite-images, "
+            "version 4 of 12 April 2021; 18 training and 20 test Landsat 8 Collection 1 "
+            "Level-1 scenes",
+            url="https://www.kaggle.com/datasets/sorour/38cloud-cloud-segmentation-in-satellite-images",
+            # Kaggle states the licence as "Unknown"; the GitHub repository's Apache 2.0
+            # file covers its code and samples, not the data (read 14 October 2026).
+            licence=None,
+            licence_source="Kaggle record: licence Unknown; github.com/SorourMo/"
+            "38-Cloud-A-Cloud-Segmentation-Dataset LICENSE is Apache 2.0 for the repository",
+            gsd_m=30.0,
+            # README of the repository and evaluation/evaluation.m: patch ground truths
+            # 0 clear, 255 cloud; entire-scene ground truths 0 clear, 1 cloud. Thin
+            # cloud and haze are labelled cloud. The reader maps the scene masks.
+            label_codes={0: CLEAR, 1: THICK_CLOUD},
+            has_thin=False,
+            has_shadow=False,
+            operational_mask="reference_landsat_qa",
+            strata_fields=(),
+            note="North America mainly; four bands only (Landsat 8 bands 2, 3, 4, 5); "
+            "test patches have no ground truth, only the 20 entire-scene masks",
+            bands=("B02", "B03", "B04", "B8A"),
+            decision=decided_15_october_2026(
+                "not used", "Unknown on Kaggle", "no licence is stated for the data"
+            ),
+        ),
+        "s2_cesbio": Dataset(
+            name="s2_cesbio",
+            sensor=SENTINEL2,
+            version="Zenodo record 1460961, published 12 October 2018, "
+            "doi:10.5281/zenodo.1460961; the 31 scenes of Reference_dataset",
+            url="https://zenodo.org/records/1460961",
+            licence="CC-BY-4.0",
+            licence_source="Zenodo record 1460961, read 14 October 2026",
+            gsd_m=60.0,
+            # Zenodo description: 0 no_data, 1 not used, 2 low clouds, 3 high clouds,
+            # 4 clouds shadows, 5 land, 6 water, 7 snow. Code 1 is left out, so it stops.
+            # No thin cloud class (paper, Table 1): both cloud codes are cloud.
+            label_codes={
+                0: IGNORE_INDEX,
+                2: THICK_CLOUD,
+                3: THICK_CLOUD,
+                4: CLOUD_SHADOW,
+                5: CLEAR,
+                6: CLEAR,
+                7: CLEAR,
+            },
+            has_thin=False,
+            has_shadow=True,
+            operational_mask=None,
+            strata_fields=(),
+            note="masks only (classification_map.tif, 1830 x 1830 at 60 m) in a folder "
+            "named after its Level-1C product; the 7 scenes of the Hollstein folder are "
+            "left out, as the record says they were not used for validation",
+            bands=None,
+            decision=decided_15_october_2026(
+                "not used", "CC BY 4.0", "masks only, and its imagery is not downloaded"
+            ),
+        ),
+        "landsat8_95cloud": Dataset(
+            name="landsat8_95cloud",
+            sensor=LANDSAT8,
+            version="Kaggle dataset sorour/95cloud-cloud-segmentation-on-satellite-images, "
+            "version 3 of 12 April 2021; the 57 training scenes it adds to 38-Cloud",
+            url="https://www.kaggle.com/datasets/sorour/95cloud-cloud-segmentation-on-satellite-images",
+            licence="CC0-1.0",
+            licence_source="Kaggle record, licence CC0: Public Domain, read 14 October 2026; "
+            "the rest of 95-Cloud is the 38-Cloud record, whose licence is Unknown",
+            gsd_m=30.0,
+            # Same encoding as 38-Cloud (README of the repository; files read 14 October
+            # 2026); thin cloud and haze are labelled cloud.
+            label_codes={0: CLEAR, 1: THICK_CLOUD},
+            has_thin=False,
+            has_shadow=False,
+            operational_mask="reference_landsat_qa",
+            strata_fields=(),
+            note="95-Cloud holds every 38-Cloud scene; only its 57 added scenes are used, "
+            "so that the two never share a scene (docs/ASSUMPTIONS.md, A-2.9)",
+            bands=("B02", "B03", "B04", "B8A"),
+            decision=decided_15_october_2026(
+                "not used",
+                "CC0 on Kaggle",
+                "the download needs a Kaggle account (credentials rule); not used while it does",
+            ),
+        ),
+        "whus2_cd": Dataset(
+            name="whus2_cd",
+            sensor=SENTINEL2,
+            version="Zenodo record 5511793, WHUS2-CD+ (the 32 scenes of WHUS2-CD and 4 snow "
+            "and ice scenes), published 16 September 2021, doi:10.5281/zenodo.5511793",
+            url="https://zenodo.org/records/5511793",
+            licence="CC-BY-4.0",
+            licence_source="Zenodo record 5511793, read 14 October 2026; the GitHub "
+            "repository Neooolee/WHUS2-CD states no licence",
+            gsd_m=10.0,
+            # Li et al. 2021, arXiv 2105.00967, section B: cloud 255, background 128;
+            # the README legend gives 0 for no data. The 36 masks of ReferenceMask.zip
+            # hold only 0, 128 and 255 (read 14 October 2026).
+            label_codes={0: IGNORE_INDEX, 128: CLEAR, 255: THICK_CLOUD},
+            has_thin=False,
+            has_shadow=False,
+            operational_mask=None,
+            strata_fields=(),
+            note="mainland China, Sentinel-2A only; thin cloud whose surface cannot be seen "
+            "is labelled cloud, other thin cloud clear; the masks are 10980 x 10980 tiles "
+            "without georeferencing, on the 10 m grid of their product",
+            bands=L1C_BAND_NAMES,
+        ),
+    }
+)
+
+# Masks of other algorithms a dataset ships on the same pixels, by the paper
+# algorithm name of src/tiefer_lab/paper_models.py. KappaSet README (14 October
+# 2026): the test folder holds SCL (Sen2Cor), FMC (Fmask) and SS2C (s2cloudless).
+# Their codes are open (COMPARISON_CODES); the reader stops until they are set.
+SHIPPED_MASKS: dict[str, dict[str, ShippedMask]] = {
+    "kappaset": {
+        "sen2cor": ShippedMask("SCL", "four_class"),
+        "fmask": ShippedMask("FMC", "four_class"),
+        "s2cloudless": ShippedMask("SS2C", "cloud"),
+    },
+}
+
+# Datasets that ship the full Level-1 product with its metadata (bands, MTL or
+# angles), so a processor such as Fmask can run on them.
+FULL_PRODUCT: frozenset[str] = frozenset({"landsat8_biome"})
+
 
 # Facts still open, by dataset. Each is None until set from its source; the build
 # stops on the first one it needs (docs/INDEPENDENT.md, section 6).
@@ -233,6 +455,32 @@ OPEN_FACTS: dict[str, dict[str, Any]] = {
     },
 }
 
+# Datasets that ship labels but no images: the images are the Level-1C products
+# named in the dataset, downloaded from Copernicus with credentials.
+IMAGES_FROM_PRODUCT: frozenset[str] = frozenset({"s2_hollstein", "s2_cesbio"})
+PRODUCT_IMAGERY = decided_15_october_2026(
+    "not used",
+    None,
+    "the Level-1C products of S2-Hollstein and S2-CESBIO are not downloaded from Copernicus",
+)
+PAPER_ONLY = ("s2_hollstein", "s2_cesbio")
+
+# 38-Cloud and 95-Cloud (repository READMEs and Kaggle files, read 14 October 2026):
+# one file per band and patch, {red,green,blue,nir,gt}_patch_<N>_<row>_by_<col>_<product
+# ID>.TIF, 384 x 384 uint16, cut from zero-padded scenes; Entire_scene_gts/ holds
+# the scene masks; MTL files of every scene are in the metadata folders.
+for _name in ("landsat8_38cloud", "landsat8_95cloud"):
+    OPEN_FACTS[_name] = {
+        "band_scale": None,  # Level-1 digital numbers or not: the sources do not say
+        "scene_padding": None,  # the zero padding to undo before the patches are a scene
+    }
+
+# WHUS2-CD: every image is a zipped Level-1C SAFE product with its JP2 bands, and
+# ReferenceMask/<product ID>_Mask.tif (Zenodo record 5511793, read 14 October 2026).
+OPEN_FACTS["whus2_cd"] = {
+    "jp2_driver": None,  # that GDAL in the locked rasterio reads the JP2 bands
+}
+
 # Raw codes of the operational and comparison masks, once verified.
 COMPARISON_CODES: dict[str, Mapping[int, int] | None] = {
     "reference_landsat_qa": None,
@@ -244,6 +492,18 @@ def dataset(name: str) -> Dataset:
     if name not in DATASETS:
         raise DataSourceError(f"unknown independent dataset {name!r}; known: {sorted(DATASETS)}")
     return DATASETS[name]
+
+
+def require_dataset_allowed(name: str) -> None:
+    """Stop with the recorded licence decision of a dataset, or of its imagery."""
+    require_allowed(name, dataset(name).decision)
+    if name in IMAGES_FROM_PRODUCT:
+        require_allowed(f"the imagery of {name}", PRODUCT_IMAGERY)
+
+
+def allowed_datasets() -> list[str]:
+    """The datasets whose licence decision does not refuse them, in registry order."""
+    return [name for name, info in DATASETS.items() if not info.decision.refused]
 
 
 def require_fact(name: str, fact: str) -> Any:
@@ -459,6 +719,7 @@ def read_catalogue(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     used, its processing baseline is read from its ID: the README's division by
     10,000 is right only before baseline 04.00, so a later product stops.
     """
+    require_dataset_allowed("s2_cloud_catalogue")
     info = dataset("s2_cloud_catalogue")
     codes = info.label_codes
     assert codes is not None
@@ -500,6 +761,7 @@ def read_kappaset(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     and in test also SCL, FMC, SS2C, IDPX and MAJAC. Stops until the band scale,
     the product ID of a sub-tile, the SCL codes and the NetCDF driver are verified.
     """
+    require_dataset_allowed("kappaset")
     require_fact("kappaset", "netcdf_driver")
     scale = require_fact("kappaset", "band_scale")
     require_fact("kappaset", "product_id")
@@ -514,6 +776,7 @@ def read_kappaset(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
 
 def read_biome(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     """L8 Biome scenes: band TIFs, BQA TIF, MTL.txt and the ENVI mask (USGS page)."""
+    require_dataset_allowed("landsat8_biome")
     require_verified(
         "DATASETS['landsat8_biome'].label_codes", DATASETS["landsat8_biome"].label_codes
     )
@@ -525,17 +788,48 @@ def read_biome(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
 
 def read_sparcs(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     """L8 SPARCS subsets: band stack, QA band, MTL.txt and the PNG mask (USGS page)."""
+    require_dataset_allowed("landsat8_sparcs")
     require_fact("landsat8_sparcs", "scene_layout")
     require_fact("landsat8_sparcs", "band_stack_order")
     require_fact("landsat8_sparcs", "qa_bit_layout")
     raise DataSourceError("landsat8_sparcs reader: write the scene read with the verified layout")
 
 
-READERS = {
+def read_whus2(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
+    """WHUS2-CD+ products: <product ID>.zip (SAFE) and ReferenceMask/<product ID>_Mask.tif.
+
+    The product ID gives the processing baseline; a product of baseline 04.00 or
+    later stops until its radiometric offset is applied. Stops until the JP2
+    read with the locked GDAL is verified.
+    """
+    require_dataset_allowed("whus2_cd")
+    require_fact("whus2_cd", "jp2_driver")
+    raise DataSourceError("whus2_cd reader: write the JP2 read in the pull request that records it")
+
+
+def _unread(name: str) -> Callable[[Path, Sequence[str]], Iterator[Scene]]:
+    """Reader of a dataset whose layout, licence and label codes are not read yet."""
+
+    def read(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
+        require_dataset_allowed(name)
+        info = dataset(name)
+        require_verified(f"DATASETS[{name!r}].licence", info.licence)
+        require_verified(f"DATASETS[{name!r}].label_codes", info.label_codes)
+        require_verified(f"DATASETS[{name!r}].bands", info.bands)
+        for fact in OPEN_FACTS.get(name, {}):
+            require_fact(name, fact)
+        raise DataSourceError(f"{name} reader: write the scene read with the verified layout")
+
+    return read
+
+
+READERS: dict[str, Callable[[Path, Sequence[str]], Iterator[Scene]]] = {
     "s2_cloud_catalogue": read_catalogue,
     "kappaset": read_kappaset,
     "landsat8_biome": read_biome,
     "landsat8_sparcs": read_sparcs,
+    "whus2_cd": read_whus2,
+    **{name: _unread(name) for name in (*PAPER_ONLY, "landsat8_38cloud", "landsat8_95cloud")},
 }
 
 

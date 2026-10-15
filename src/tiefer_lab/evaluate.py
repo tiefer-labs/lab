@@ -36,7 +36,7 @@ from tiefer_lab import baselines, binary_metrics, bootstrap, decisions, metrics
 from tiefer_lab.config import Config, EvaluationConfig, config_to_dict, load_config
 from tiefer_lab.data import cache, independent, padding, sensor
 from tiefer_lab.data.dataset import EvalPatches
-from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS
+from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS, DataSourceError
 from tiefer_lab.data.transforms import to_reflectance
 from tiefer_lab.models import flexible
 from tiefer_lab.models.cloud_filter import (
@@ -796,7 +796,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             for i, band_set in enumerate(band_set_option(run_dir, args.band_set))
         ]
-    except (TestGuardError, TrainingError, cache.CacheError, ValueError) as err:
+    except (TestGuardError, TrainingError, cache.CacheError, DataSourceError, ValueError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     for out in outs:

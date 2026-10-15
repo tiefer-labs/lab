@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-The four datasets that test the cloud filter on data it never saw: what each one is, the facts the code depends on with their sources, how they are made comparable with CloudSEN12+, and the facts still open. They are never used for training, selection, calibration or thresholds. The catalogue row of each is in [DATASETS.md](DATASETS.md), section 1; the code is `src/tiefer_lab/data/independent.py`.
+The nine datasets of the CloudSEN12 paper's Table 1 as candidates to test the cloud filter on data it never saw, and which of them the licence decisions allow: what each one is, the facts the code depends on with their sources, how they are made comparable with CloudSEN12+, the coverage of every model on every dataset, and the facts still open. They are never used for training, selection, calibration or thresholds. The catalogue row of each is in [DATASETS.md](DATASETS.md), section 1; the code is `src/tiefer_lab/data/independent.py`.
 
 ---
 
@@ -13,8 +13,7 @@ The four datasets that test the cloud filter on data it never saw: what each one
 | Question | Answer | Source |
 | :--- | :---: | :---: |
 | Why are independent datasets used? | a result on the CloudSEN12+ test split shares its labelling protocol, sensor and processing level with the training data; acceptance targets `IND-01` to `IND-04` and `CMP-06` need data labelled by others, on Sentinel-2 and on another sensor | [REQUIREMENTS.md](REQUIREMENTS.md), section 8 |
-| Why these four? | they are four of the nine datasets the CloudSEN12 paper lists next to CloudSEN12 (Table 1): worldwide or broad coverage, full or partial scenes with cloud shadow, and two sensors | [1], Table 1 |
-| Why not the others? | see section 8 | [1], Table 1 |
+| Why these nine? | they are all the datasets the CloudSEN12 paper lists next to CloudSEN12 (Table 1); every model of this repository and every algorithm of the paper's Table 6 is scored on each of them that the licence decisions allow, where it can be (sections 2.1 and 8) | [1], Table 1 |
 | Are they independent of the models? | yes for training: no model of this repository reads them before its selection is frozen; Sentinel-2 products that CloudSEN12+ also uses are dropped first (section 5) | `build_cache --source` |
 
 ---
@@ -27,10 +26,33 @@ The four datasets that test the cloud filter on data it never saw: what each one
 | L8 SPARCS (`landsat8_sparcs`) | Landsat 8, pre-collection Level-1 | 80 subsets of 1000 x 1000 pixels | 0 shadow, 1 shadow over water, 2 water, 3 snow, 4 land, 5 cloud, 6 flooded | none | [3] |
 | Sentinel-2 Cloud Mask Catalogue (`s2_cloud_catalogue`) | Sentinel-2 Level-1C, 2018 archive | 513 subscenes of 1022 x 1022 pixels at 20 m | CLEAR, CLOUD, CLOUD_SHADOW (one-hot) | 11 surface type tags, difficulty, shadows marked or not | [4], [5] |
 | KappaSet (`kappaset`) | Sentinel-2 Level-1C | 9,251 sub-tiles of 512 x 512 pixels at 10 m from 1,038 products | 0 undefined, 1 clear, 2 cloud shadow, 3 semi-transparent cloud, 4 cloud, 5 missing | season | [6], [7] |
+| WHUS2-CD+ (`whus2_cd`) | Sentinel-2A Level-1C, full SAFE products | 36 scenes (the 32 of WHUS2-CD and 4 snow and ice scenes), masks of 10980 x 10980 pixels at 10 m | 0 no data, 128 clear, 255 cloud | none | [11], [12] |
+| 38-Cloud (`landsat8_38cloud`) | Landsat 8 Collection 1 Level-1 | 18 training and 20 test scenes; patches of 384 x 384 pixels, red, green, blue and near infrared only | entire-scene masks 0 clear, 1 cloud; patch masks 0 and 255 | none | [13], [14] |
+| 95-Cloud (`landsat8_95cloud`) | Landsat 8 Collection 1 Level-1 | 38-Cloud and 57 more training scenes; only the 57 are used | as 38-Cloud | none | [15], [16] |
+| S2-Hollstein (`s2_hollstein`) | Sentinel-2 Level-1C spectra at 20 m | 3,028,733 labelled pixels of 48 products (file of 10 July 2017); no images | 10 clear, 20 water, 30 shadow, 40 cirrus, 50 cloud, 60 snow | continent | [17], [18] |
+| S2-CESBIO (`s2_cesbio`) | Sentinel-2 Level-1C, masks only | 31 scenes of `Reference_dataset`, 1830 x 1830 pixels at 60 m; no images | 0 no data, 1 not used, 2 low clouds, 3 high clouds, 4 cloud shadows, 5 land, 6 water, 7 snow | none | [19], [20] |
 
 - The Catalogue marks shadow in 424 subscenes; in 89, shadow could not be annotated, so the shadow problem is scored only on tiles with `shadows_marked` = 1 [5].
 - The KappaSet README says the data mostly covers land (about 91 percent) with some water (about 9 percent), about 7 percent contains snow, and the sub-tiles have no georeferencing [7].
+- The paper's Table 1 gives 59 scenes for S2-Hollstein and 38 for S2-CESBIO. The Hollstein file of 10 July 2017 holds 48 products; the CESBIO record holds 31 plus 7 scenes, one of them in both folders, and its paper speaks of 32 reference scenes [17], [19], [20]. This card uses the files.
+- WHUS2-CD labels thin cloud whose surface cannot be seen as cloud and other thin cloud as clear; 38-Cloud and 95-Cloud label thin cloud and haze as cloud [12], [13]. These datasets are scored on the cloud problem only.
 - The paper's Table 1 lists the KappaZeta dataset with 155 scenes in Northern Europe [1]; the KappaSet record of 2022 has 1,038 products distributed over the globe [6]. This card uses the record of 2022.
+
+### 2.1 Status
+
+Which datasets the maintainer's licence decisions allow. The licence, the decision, its date and its reason are recorded once, in [DATASETS.md](DATASETS.md), section 1.1; a refused dataset is never downloaded, cached, evaluated or reported, and its reader stops with the decision.
+
+| Dataset | Status |
+| :--- | :---: |
+| L8 Biome | allowed |
+| L8 SPARCS | allowed |
+| Sentinel-2 Cloud Mask Catalogue | allowed |
+| KappaSet | allowed |
+| WHUS2-CD+ | allowed |
+| 38-Cloud | not used, licence decision of 15 October 2026 |
+| 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
+| S2-Hollstein | not used, licence decision of 15 October 2026 |
+| S2-CESBIO | not used, licence decision of 15 October 2026 (its imagery is not downloaded) |
 
 ---
 
@@ -86,6 +108,8 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | KappaSet band scale, product ID of a sub-tile, NetCDF read with the locked GDAL | one KappaSet file read on CSC Roihu | `read_kappaset` |
 | Sen2Cor SCL codes | the Sen2Cor product documentation, with Table 5 of [1] | `COMPARISON_CODES["reference_sen2cor"]` |
 | Licence of L8 Biome and L8 SPARCS | their pages state none; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
+| JP2 read of the WHUS2-CD products with the locked GDAL | one product read on CSC Roihu | `read_whus2` |
+| Input bands of each algorithm of the paper's Table 6 | its primary source | `ALGORITHMS` in `src/tiefer_lab/paper_models.py` |
 | Download sizes and storage billing units of the Landsat datasets | the maintainer's download on CSC Roihu | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
 
 ---
@@ -98,21 +122,32 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | L8 SPARCS | as L8 Biome | the USGS page | 1.4 GB | [3], [9] |
 | Catalogue | CC BY 4.0 | Zenodo record 4172871 | `subscenes.zip` 15,197,196,473 bytes, `masks.zip` 7,241,097 bytes | [4] |
 | KappaSet | CC BY 4.0 | Zenodo record 7100327 | `kappaset.zip` 56,186,308,652 bytes | [6] |
+| WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | Zenodo record 5511793 | 36 product zips of 0.6 to 0.92 GB, `ReferenceMask.zip` 20,946,052 bytes | [11] |
+| 38-Cloud | Unknown on Kaggle; the repository's Apache 2.0 file covers its code | Kaggle | 17,051,954,786 bytes | [14] |
+| 95-Cloud | CC0 on Kaggle, for the 57 added scenes | Kaggle | 18,563,733,339 bytes | [16] |
+| S2-Hollstein | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file) | GFZ GitLab | one HDF5 file | [17] |
+| S2-CESBIO | CC BY 4.0 | Zenodo record 1460961 | 234,569,318 bytes | [19] |
 
 None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and [NOTICE.md](../NOTICE.md) gains the attribution when the first such result is published. `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
 
 ---
 
-## 8. Datasets left out
+## 8. Coverage of every model on every dataset
 
-| Dataset (paper name) | Why it is left out | Source |
-| :--- | :---: | :---: |
-| S2-Hollstein | labels are polygons over 59 scenes, very few pixels | [1], Table 1 |
-| L8-38Cloud, L8-95Cloud | United States only, cloud class only; kept as candidates | [1], Table 1; [DATASETS.md](DATASETS.md) |
-| WHUS2-CD | China only, cloud class only | [1], Table 1 |
-| S2-CESBIO | small (38 scenes, Europe); kept as the replacement if the overlap check removes too much of KappaSet | [1], Table 1 |
+`python -m tiefer_lab.paper_models` writes `reports/coverage.md`: one row for each model of this repository and each algorithm of the paper's Table 6, one column for CloudSEN12+ and for each dataset of the paper's Table 1 that the licence decisions allow (section 2.1); a refused dataset has no column. A cell is `measured` when an evaluation report holds it; otherwise it names the route and its reason:
 
-**Third sensor (candidate, for the `IND-01` target).** The target asks for datasets from at least 3 sensors; the four above cover two. A candidate outside the paper: the L7 Irish cloud validation masks, 206 pre-collection Landsat 7 ETM+ Level-1G scenes stratified by latitude zone, with manual cloud masks, doi:10.5066/F7XD0ZWC [10]. Its classes, licence and size are not stated on the page; it stays a candidate until the maintainer decides.
+| Route | Meaning |
+| :--- | :---: |
+| `shipped` | the dataset ships the algorithm's mask on the same pixels (CloudSEN12+: Sen2Cor, QA60, s2cloudless, UNetMobV2; KappaSet: Sen2Cor, Fmask, s2cloudless) |
+| `not used: licence decision` | the source is refused by a licence decision, for example the masks of the CloudSEN12 release of 2022 on the CloudSEN12+ pixels ([DATASETS.md](DATASETS.md), section 1.1) |
+| `run` | the published model is run with `references/run_reference.py` on the dataset's cache |
+| `needs product` | the full Level-1C product is needed (Sen2Cor, QA60, Fmask on most Sentinel-2 datasets) |
+| `open` | a fact is not verified yet, such as the input bands of a learned algorithm |
+| `n/a` | it cannot be measured there, for example Sen2Cor or QA60 on Landsat 8, or a model that needs a band the dataset lacks |
+
+`hpc/roihu/evaluate_all.sh` evaluates one run on every allowed dataset whose cache is built, with the baselines and the reference masks each cache holds, and lists the datasets not built yet.
+
+**Third sensor (candidate, for the `IND-01` target).** The target asks for datasets from at least 3 sensors; the allowed datasets of the paper cover two. A candidate outside the paper: the L7 Irish cloud validation masks, 206 pre-collection Landsat 7 ETM+ Level-1G scenes stratified by latitude zone, with manual cloud masks, doi:10.5066/F7XD0ZWC [10]. Its classes, licence and size are not stated on the page; it stays a candidate until the maintainer decides.
 
 ---
 
@@ -128,9 +163,21 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 8. Using the USGS Landsat Level-1 Data Product, USGS, https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product, accessed 14 October 2026.
 9. Copyrights and Credits, USGS, https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits, accessed 14 October 2026.
 10. Landsat 7 Cloud Cover Assessment Validation Data, USGS, https://www.usgs.gov/landsat-missions/landsat-7-cloud-cover-assessment-validation-data, accessed 14 October 2026.
+11. WHUS2-CD+ dataset for Sentinel-2 cloud detection validation, Zenodo record 5511793, https://zenodo.org/records/5511793, accessed 14 October 2026.
+12. Li, J. et al., A lightweight deep learning-based cloud detection method for Sentinel-2A imagery fusing multiscale spectral and spatial features, IEEE TGRS, 2021, doi:10.1109/TGRS.2021.3069641, arXiv 2105.00967, accessed 14 October 2026.
+13. 38-Cloud README, https://github.com/SorourMo/38-Cloud-A-Cloud-Segmentation-Dataset, accessed 14 October 2026.
+14. 38-Cloud on Kaggle, https://www.kaggle.com/datasets/sorour/38cloud-cloud-segmentation-in-satellite-images, version 4, accessed 14 October 2026.
+15. 95-Cloud README, https://github.com/SorourMo/95-Cloud-An-Extension-to-38-Cloud-Dataset, accessed 14 October 2026.
+16. 95-Cloud on Kaggle, https://www.kaggle.com/datasets/sorour/95cloud-cloud-segmentation-on-satellite-images, version 3, accessed 14 October 2026.
+17. Sentinel-2 manual classification database, GFZ GitLab, https://git.gfz-potsdam.de/EnMAP/sentinel2_manual_classification_clouds, accessed 14 October 2026.
+18. Hollstein, A. et al., Ready-to-use methods for the detection of clouds, cirrus, snow, shadow, water and clear sky pixels in Sentinel-2 MSI images, Remote Sensing 8, 666, 2016, https://doi.org/10.3390/rs8080666, accessed 14 October 2026.
+19. Sentinel-2 reference cloud masks generated by an active learning method, Zenodo record 1460961, https://zenodo.org/records/1460961, accessed 14 October 2026.
+20. Baetens, L., Desjardins, C. and Hagolle, O., Validation of Copernicus Sentinel-2 cloud masks obtained from MAJA, Sen2Cor and FMask processors using reference cloud masks generated with a supervised active learning procedure, Remote Sensing 11, 433, 2019, https://doi.org/10.3390/rs11040433, accessed 14 October 2026.
 
 ---
 
 ## Changelog
 
+- 15 October 2026: section 2.1, the status of each dataset under the maintainer's licence decisions; the refused datasets leave the open facts, the coverage and the evaluation steps; drafted with an AI-assisted system.
+- 14 October 2026: all nine datasets of the paper's Table 1: WHUS2-CD+, 38-Cloud, 95-Cloud, S2-Hollstein and S2-CESBIO added with their facts and sources; section 8 is the coverage of every model on every dataset; drafted with an AI-assisted system.
 - 14 October 2026: first version: four independent test datasets from the CloudSEN12 paper, their facts with sources, preprocessing, independence, comparison masks, open facts, distribution, the datasets left out and a third-sensor candidate; drafted with an AI-assisted system.

@@ -533,6 +533,11 @@ def load_independent(
         "independent"
     ):
         raise CacheError(f"{paths.portable(directory)} is not an independent dataset cache")
+    from tiefer_lab.data import independent
+
+    if index["source"] in independent.DATASETS:
+        # A cache built before its licence decision is never evaluated.
+        independent.require_dataset_allowed(str(index["source"]))
     data = load_split(directory, INDEPENDENT_SPLIT, "mmap")
     images: Any = ComposedBands(data.images, index["bands"], wanted, substitution)
     return replace(data, images=images)

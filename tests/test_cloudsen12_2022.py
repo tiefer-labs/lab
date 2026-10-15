@@ -9,14 +9,29 @@ import numpy as np
 import pytest
 
 from tiefer_lab.data import cloudsen12_2022 as release
-from tiefer_lab.data.source import DataSourceError, MaskEncoding
+from tiefer_lab.data.source import (
+    DataSourceError,
+    LicenceDecision,
+    LicenceRefusedError,
+    MaskEncoding,
+)
 
 
-def test_masks_wait_for_the_licence_decision_and_the_facts() -> None:
-    with pytest.raises(DataSourceError, match="LICENCE_DECISION"):
+def test_the_declined_release_stops_with_its_decision() -> None:
+    assert release.LICENCE_DECISION.status == "declined, pending legal review"
+    with pytest.raises(LicenceRefusedError, match="declined, pending legal review"):
         release.check_ready()
-    with pytest.raises(DataSourceError, match="LICENCE_DECISION"):
+    with pytest.raises(LicenceRefusedError, match="15 October 2026"):
         release.encode("fmask", np.zeros((2, 2), np.uint8))
+
+
+def test_only_a_changed_record_changes_the_decision(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(release, "LICENCE_DECISION", LicenceDecision("no decision"))
+    with pytest.raises(DataSourceError, match="no licence decision"):
+        release.check_ready()
+    monkeypatch.setattr(release, "LICENCE_DECISION", LicenceDecision("used", "CC BY-NC 4.0"))
+    with pytest.raises(DataSourceError, match="LINK_FIELDS"):
+        release.check_ready()
 
 
 def test_link_is_one_to_one_and_counts_the_rest(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -37,7 +52,7 @@ def test_link_is_one_to_one_and_counts_the_rest(monkeypatch: pytest.MonkeyPatch)
 
 
 def test_verified_encoding_is_applied(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(release, "LICENCE_DECISION", "allowed for this use")
+    monkeypatch.setattr(release, "LICENCE_DECISION", LicenceDecision("used", "CC BY-NC 4.0"))
     monkeypatch.setattr(release, "LINK_FIELDS", ("old_roi_id",))
     monkeypatch.setattr(release, "MASK_FILES", {"fmask": "fmask"})
     monkeypatch.setattr(release, "ENCODINGS", {"fmask": MaskEncoding("cloud", {0: 0, 4: 1})})

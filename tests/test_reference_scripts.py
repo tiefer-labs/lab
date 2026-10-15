@@ -33,8 +33,25 @@ def test_every_reference_stops_before_its_licence_is_cleared(repo_root: Path) ->
         with pytest.raises(ref.ReferenceError):
             ref.run(name, "any", "val")
     dtacs = ref.REFERENCES["dtacs4bands"]
-    assert dtacs.licence == "CC-BY-NC-4.0" and dtacs.decision is None
-    assert ref.main(["--model", "dtacs4bands", "--cache", "x", "--split", "val"]) == 2
+    assert dtacs.licence == "CC-BY-NC-4.0"
+    assert dtacs.decision.status == "declined, pending legal review"
+    with pytest.raises(ref.ReferenceError, match="declined, pending legal review"):
+        ref.run("dtacs4bands", "any", "val")
+    # A declined reference leaves the command's choices.
+    assert "dtacs4bands" not in ref.allowed_references()
+    with pytest.raises(SystemExit):
+        ref.main(["--model", "dtacs4bands", "--cache", "x", "--split", "val"])
+
+
+def test_release_2022_script_stops_with_its_decision(repo_root: Path, tmp_path: Path) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "add_release_2022", repo_root / "references" / "add_release_2022.py"
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    args = ["--root", str(tmp_path), "--cache", "x", "--split", "val"]
+    assert module.main(args) == 2
 
 
 def test_the_test_split_needs_final_and_a_reason(repo_root: Path) -> None:

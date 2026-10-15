@@ -14,7 +14,8 @@ scored on different numbers of patches says so instead of comparing them.
 It never contains a published value of another system: those stay in
 docs/LANDSCAPE.md, section 4. A reference that has no shadow class has `n/a`
 for the shadow and valid problems; a value that no report holds is
-`not measured`.
+`not measured`. A dataset or a reference mask refused by the maintainer's
+licence decision has no row.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from tiefer_lab import paper_models
 from tiefer_lab.reports import Report, Reports, load_reports
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
@@ -116,10 +118,13 @@ def collect_rows(reports: Reports) -> dict[tuple[str, str, str], list[Row]]:
     seen_baselines: dict[tuple[str, str, str], set[str]] = {}
     for r in reports.evaluation:
         key = _group_key(r)
+        # A source refused by a licence decision has no row (data/source.py).
+        if paper_models.declined_source(key[1]):
+            continue
         rows = groups.setdefault(key, [])
         rows.append(Row(_model_name(r), "model", r.data.get("model") or {}, r))
         for name, block in (r.data.get("baselines") or {}).items():
-            if name in seen_baselines.setdefault(key, set()):
+            if name in seen_baselines.setdefault(key, set()) or paper_models.declined_mask(name):
                 continue
             seen_baselines[key].add(name)
             rows.append(Row(name, "baseline", block, r, binary_only="pixel" not in block))

@@ -14,8 +14,9 @@ only way to score them on the same pixels without running them.
 Before any mask is read, four facts must be verified, each with its source:
 
 1. the licence allows the use: the record page gives CC BY-NC 4.0 (read on
-   14 October 2026), a non-commercial licence; Tiefer is a company, so the
-   maintainer decides (`LICENCE_DECISION`);
+   14 October 2026), a non-commercial licence; the maintainer declined it on
+   15 October 2026, pending legal review (`LICENCE_DECISION`), so nothing of
+   the release is read until a later decision is recorded there;
 2. the file layout and the item name of every mask (`MASK_FILES`);
 3. the link of a 2022 patch to a CloudSEN12+ patch (`LINK_FIELDS`, for
    example `old_roi_id` and the Sentinel-2 product ID); patches that do not
@@ -38,14 +39,23 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from tiefer_lab.data.source import DataSourceError, MaskEncoding, encode_mask, require_verified
+from tiefer_lab.data.source import (
+    DataSourceError,
+    MaskEncoding,
+    decided_15_october_2026,
+    encode_mask,
+    require_used,
+    require_verified,
+)
 
 RELEASE_DOI = "https://doi.org/10.57760/sciencedb.06669"
 # Licence on the record page, read on 14 October 2026.
 RELEASE_LICENCE = "CC-BY-NC-4.0"
-# The maintainer's decision whether the non-commercial licence allows this use.
-# TODO(verify): None until the maintainer records it in docs/DATASETS.md.
-LICENCE_DECISION: str | None = None
+# The maintainer's decision on the non-commercial licence; until a later decision
+# is recorded here the same way, the release is not read.
+LICENCE_DECISION = decided_15_october_2026(
+    "declined, pending legal review", "CC BY-NC 4.0", "non-commercial licence"
+)
 
 # Masks of the labels/ folder (paper, Table 2), by the name used in reports.
 MASKS: tuple[str, ...] = (
@@ -74,7 +84,7 @@ LABEL_NOTE = (
 
 def check_ready(names: Sequence[str] = MASKS) -> None:
     """Stop with a clear message unless every fact needed for `names` is verified."""
-    require_verified("cloudsen12_2022.LICENCE_DECISION", LICENCE_DECISION)
+    require_used("the CloudSEN12 release of 2022", LICENCE_DECISION)
     require_verified("cloudsen12_2022.LINK_FIELDS", LINK_FIELDS)
     for name in names:
         if name not in MASKS:

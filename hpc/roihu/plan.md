@@ -56,7 +56,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 
 | Step | What | Configs and seeds | Partition | GPU BU upper bound | GPU BU estimate | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1a | independent dataset caches (CPU) | `s2_cloud_catalogue`, `kappaset`, `landsat8_biome`, `landsat8_sparcs`; each after its facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | 0 (CPU BU) | 0 | not run |
+| 1a | independent dataset caches (CPU) | the datasets of the paper's Table 1 that the licence decisions allow: `s2_cloud_catalogue`, `kappaset`, `landsat8_biome`, `landsat8_sparcs`, `whus2_cd` ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1); each after its facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | 0 (CPU BU) | 0 | not run |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
 | 1c | extra training patches (CPU) | `train_extra` of `cloudsen12-l1c-all`, after `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` | `small` | 0 (CPU BU) | 0 | not run |
 | 2a | diagnosis of the v2 runs: seeds and false discards (CPU) | the v2 L1 and L2 runs | `small` | 0 (CPU BU) | 0 | not run |
@@ -89,6 +89,9 @@ bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_biome
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_sparcs
+# every built dataset that the licence decisions allow, for one run, then the coverage page
+REASON="<why>" bash hpc/roihu/evaluate_all.sh <run-id>
+python3 -m tiefer_lab.paper_models
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch val --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch test --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train_extra --name cloudsen12-l1c-all --bands all
@@ -171,6 +174,7 @@ FINAL=1 REASON="v3 final export check of <run-id>" EXPORT_CONFIG=configs/<select
 
 ## Changelog
 
+- 15 October 2026: step 1a lists only the datasets that the licence decisions of 15 October 2026 allow; no row downloads, caches or evaluates S2-Hollstein, L8-38Cloud, L8-95Cloud, S2-CESBIO, the Copernicus imagery for them, dtacs4bands or the 2022 release; drafted with an AI-assisted system.
 - 14 October 2026: section 3: the state of the v2 campaign, the selection rule frozen before any v3 run, the v3 steps in order of priority with upper bounds of their cost, the commands and the final test requests; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: links to docs/DATA.md follow its new section numbers.
