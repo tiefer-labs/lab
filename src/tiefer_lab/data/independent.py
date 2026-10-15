@@ -7,7 +7,8 @@ The nine datasets of the CloudSEN12 paper's Table 1 are used as independent
 tests, never for training, selection, calibration or thresholds:
 
 - `landsat8_biome`: L8 Biome cloud validation masks (USGS, 2016);
-- `landsat8_sparcs`: L8 SPARCS cloud validation masks (USGS, 2016);
+- `landsat8_sparcs`: L8 SPARCS cloud validation masks (USGS, 2016); both
+  candidates without a licence decision yet, treated as not used;
 - `s2_cloud_catalogue`: Sentinel-2 Cloud Mask Catalogue (Zenodo, 2020);
 - `kappaset`: KappaSet, Sentinel-2 KappaZeta cloud and cloud shadow masks
   (Zenodo, 2022);
@@ -17,9 +18,10 @@ tests, never for training, selection, calibration or thresholds:
   used, licence decision of 15 October 2026 (`Dataset.decision`); their
   readers are kept and stop with it.
 
-Each dataset carries the maintainer's licence decision next to its facts. A
-refused dataset is never downloaded, cached, evaluated or reported; only a
-new decision, recorded in `decision`, changes that.
+Each dataset carries the maintainer's licence decision next to its facts.
+Only a dataset recorded as "used" is read (fail closed): a refused, undecided
+or unrecorded dataset is never downloaded, cached, evaluated or reported;
+only a new decision, recorded in `decision`, changes that.
 
 Every fact below is read from the primary source named next to it, with the
 date it was read; the data card is docs/INDEPENDENT.md. A fact that is not
@@ -96,7 +98,7 @@ class Dataset:
     # Sentinel-2 band names the dataset provides (Landsat bands under their
     # matched names); None until verified from its source.
     bands: tuple[str, ...] | None = None
-    # The maintainer's licence decision; a refused source is never read.
+    # The maintainer's licence decision; only "used" lets the source be read.
     decision: LicenceDecision = NO_DECISION
 
 
@@ -147,6 +149,12 @@ DATASETS: dict[str, Dataset] = {
         strata_fields=("biome",),
         note="shadow is labelled in part of the scenes only",
         bands=tuple(LANDSAT8_TO_S2.values()),
+        decision=decided_15_october_2026(
+            "candidate, no decision yet",
+            None,
+            "the licence is not stated on the page; treated as not used until a decision "
+            "is recorded here",
+        ),
     ),
     "landsat8_sparcs": Dataset(
         name="landsat8_sparcs",
@@ -177,6 +185,12 @@ DATASETS: dict[str, Dataset] = {
         has_shadow=True,
         operational_mask="reference_landsat_qa",
         strata_fields=(),
+        decision=decided_15_october_2026(
+            "candidate, no decision yet",
+            None,
+            "the licence is not stated on the page; treated as not used until a decision "
+            "is recorded here",
+        ),
     ),
     "s2_cloud_catalogue": Dataset(
         name="s2_cloud_catalogue",
@@ -207,6 +221,11 @@ DATASETS: dict[str, Dataset] = {
         ),
         note="shadow is scored only on subscenes with shadows_marked = 1",
         bands=L1C_BAND_NAMES,
+        decision=decided_15_october_2026(
+            "used",
+            "CC BY 4.0",
+            "primary page read 14 October 2026; attribution in NOTICE.md",
+        ),
     ),
     "kappaset": Dataset(
         name="kappaset",
@@ -233,6 +252,11 @@ DATASETS: dict[str, Dataset] = {
         strata_fields=(),
         note="the test folder also holds Sen2Cor (SCL), Fmask (FMC) and s2cloudless (SS2C) "
         "maps on the same pixels",
+        decision=decided_15_october_2026(
+            "used",
+            "CC BY 4.0",
+            "primary page read 14 October 2026; attribution in NOTICE.md",
+        ),
     ),
 }
 
@@ -490,8 +514,8 @@ def require_dataset_allowed(name: str) -> None:
 
 
 def allowed_datasets() -> list[str]:
-    """The datasets whose licence decision does not refuse them, in registry order."""
-    return [name for name, info in DATASETS.items() if not info.decision.refused]
+    """The datasets recorded as used by a licence decision, in registry order."""
+    return [name for name, info in DATASETS.items() if info.decision.allowed]
 
 
 def require_fact(name: str, fact: str) -> Any:

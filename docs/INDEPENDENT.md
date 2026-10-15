@@ -40,14 +40,14 @@ The nine datasets of the CloudSEN12 paper's Table 1 as candidates to test the cl
 
 ### 2.1 Status
 
-Which datasets the maintainer's licence decisions allow. The licence, the decision, its date and its reason are recorded once, in [DATASETS.md](DATASETS.md), section 1.1; a refused dataset is never downloaded, cached, evaluated or reported, and its reader stops with the decision.
+Which datasets the maintainer's licence decisions allow; only a dataset recorded as used is read. The licence, the decision, its date and its reason are recorded once, in [DATASETS.md](DATASETS.md), section 1.1; a refused dataset is never downloaded, cached, evaluated or reported, and its reader stops with the decision.
 
 | Dataset | Status |
 | :--- | :---: |
-| L8 Biome | allowed |
-| L8 SPARCS | allowed |
-| Sentinel-2 Cloud Mask Catalogue | allowed |
-| KappaSet | allowed |
+| L8 Biome | candidate, no decision yet; treated as not used |
+| L8 SPARCS | candidate, no decision yet; treated as not used |
+| Sentinel-2 Cloud Mask Catalogue | used |
+| KappaSet | used |
 | WHUS2-CD+ | candidate, no decision yet; treated as not used |
 | 38-Cloud | not used, licence decision of 15 October 2026 |
 | 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
@@ -127,7 +127,7 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | S2-Hollstein | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file) | GFZ GitLab | one HDF5 file | [17] |
 | S2-CESBIO | CC BY 4.0 | Zenodo record 1460961 | 234,569,318 bytes | [19] |
 
-None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and [NOTICE.md](../NOTICE.md) gains the attribution when the first such result is published. `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
+None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and the attribution of both is in [NOTICE.md](../NOTICE.md). `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
 
 ---
 
@@ -177,6 +177,7 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 
 ## Changelog
 
+- 15 October 2026: section 2.1, the Catalogue and KappaSet are used, L8 Biome and L8 SPARCS are candidates without a decision; section 7 points to the attribution in NOTICE.md; drafted with an AI-assisted system.
 - 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used; the coverage page names the datasets it leaves out; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the status of each dataset under the maintainer's licence decisions; the refused datasets leave the open facts, the coverage and the evaluation steps; drafted with an AI-assisted system.
 - 14 October 2026: all nine datasets of the paper's Table 1: WHUS2-CD+, 38-Cloud, 95-Cloud, S2-Hollstein and S2-CESBIO added with their facts and sources; section 8 is the coverage of every model on every dataset; drafted with an AI-assisted system.

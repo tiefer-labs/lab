@@ -26,7 +26,16 @@ from tiefer_lab.data.source import (
 )
 from tiefer_lab.reports import Report, Reports
 
-REFUSED = ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio", "whus2_cd")
+REFUSED = (
+    "s2_hollstein",
+    "landsat8_38cloud",
+    "landsat8_95cloud",
+    "s2_cesbio",
+    "whus2_cd",
+    "landsat8_biome",
+    "landsat8_sparcs",
+)
+USED = ("s2_cloud_catalogue", "kappaset")
 
 
 def test_the_decisions_are_recorded_next_to_the_facts() -> None:
@@ -34,11 +43,26 @@ def test_the_decisions_are_recorded_next_to_the_facts() -> None:
         decision = independent.DATASETS[name].decision
         assert decision.refused and decision.date == "15 October 2026"
         assert decision.reason
-    assert independent.DATASETS["whus2_cd"].decision.status == "candidate, no decision yet"
+    for name in ("whus2_cd", "landsat8_biome", "landsat8_sparcs"):
+        assert independent.DATASETS[name].decision.status == "candidate, no decision yet"
     assert independent.PRODUCT_IMAGERY.status == "not used"
     assert cloudsen12_2022.LICENCE_DECISION.status == "declined, pending legal review"
-    for name in ("s2_cloud_catalogue", "kappaset", "landsat8_biome", "landsat8_sparcs"):
-        assert not independent.DATASETS[name].decision.refused
+    for name in USED:
+        decision = independent.DATASETS[name].decision
+        assert decision.status == "used" and decision.licence == "CC BY 4.0"
+    assert independent.allowed_datasets() == list(USED)
+    # Every dataset has a record: none is left at "no decision".
+    assert all(i.decision.status != "no decision" for i in independent.DATASETS.values())
+
+
+def test_a_dataset_without_a_record_stops(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    info = independent.DATASETS["s2_cloud_catalogue"]
+    monkeypatch.setitem(
+        independent.DATASETS, "s2_cloud_catalogue", dataclasses.replace(info, decision=NO_DECISION)
+    )
+    assert "s2_cloud_catalogue" not in independent.allowed_datasets()
+    with pytest.raises(LicenceRefusedError, match="no licence decision"):
+        list(independent.READERS["s2_cloud_catalogue"](tmp_path, ["B02"]))
 
 
 def test_every_refused_source_raises(tmp_path: Path) -> None:
@@ -130,7 +154,9 @@ def test_only_a_changed_record_changes_a_decision(
 ) -> None:
     info = independent.DATASETS["landsat8_95cloud"]
     monkeypatch.setitem(
-        independent.DATASETS, "landsat8_95cloud", dataclasses.replace(info, decision=NO_DECISION)
+        independent.DATASETS,
+        "landsat8_95cloud",
+        dataclasses.replace(info, decision=LicenceDecision("used", "CC0")),
     )
     assert "landsat8_95cloud" in independent.allowed_datasets()
     assert "landsat8_95cloud" in paper_models.dataset_columns()

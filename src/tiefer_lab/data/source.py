@@ -301,7 +301,13 @@ class LicenceDecision:
 
     @property
     def refused(self) -> bool:
+        """An explicit refusal, or a candidate the maintainer has not decided yet."""
         return self.status in REFUSED
+
+    @property
+    def allowed(self) -> bool:
+        """Only a recorded "used" allows a source: no record is no permission."""
+        return self.status == "used"
 
     def describe(self) -> str:
         issue = self.issue or "issue not linked yet"
@@ -327,22 +333,22 @@ class LicenceRefusedError(DataSourceError):
 
 
 def require_allowed(name: str, decision: LicenceDecision) -> None:
-    """Stop with the recorded decision when it refuses the source."""
+    """Stop unless the maintainer recorded that the source is used (fail closed)."""
     if decision.refused:
         raise LicenceRefusedError(
             f"{name} is {decision.describe()}. Only a new decision of the maintainer, "
             "recorded in its decision record, changes this"
         )
+    if not decision.allowed:
+        raise LicenceRefusedError(
+            f"{name}: no licence decision of the maintainer is recorded; a source is read "
+            'only after a decision "used" is recorded in its decision record'
+        )
 
 
 def require_used(name: str, decision: LicenceDecision) -> None:
-    """Stop unless the maintainer recorded that the source may be used."""
+    """The same check as `require_allowed`, for sources outside the dataset registry."""
     require_allowed(name, decision)
-    if decision.status != "used":
-        raise DataSourceError(
-            f"{name}: no licence decision of the maintainer is recorded; it is recorded in "
-            "the source's decision record before any use"
-        )
 
 
 def require_verified[T](name: str, value: T | None) -> T:

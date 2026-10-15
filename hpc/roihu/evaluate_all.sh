@@ -26,8 +26,6 @@ fi
 run_id="${1:?${usage}}"
 : "${REASON:?${usage}}"
 datasets=(
-  landsat8_sparcs
-  landsat8_biome
   s2_cloud_catalogue
   kappaset
 )

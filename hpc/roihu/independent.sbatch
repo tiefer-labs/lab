@@ -7,15 +7,13 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset> [extra build_cache arguments]
 #
-# <dataset>: s2_cloud_catalogue, kappaset, landsat8_biome or landsat8_sparcs,
+# <dataset>: s2_cloud_catalogue or kappaset,
 # the datasets of src/tiefer_lab/data/independent.py that the maintainer's licence
-# decisions allow (docs/DATASETS.md); a refused dataset stops with its decision
+# decisions record as used (docs/DATASETS.md); any other dataset stops with its decision
 # before anything is downloaded. The Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
-# unpacked once. The Landsat 8 datasets are downloaded by hand from
-# their source pages into the same folder, because their file URLs are not
-# verified yet.
+# unpacked once.
 # The build stops on every fact that is not verified (docs/INDEPENDENT.md,
 # section 6) and resumes at the next scene when submitted again. Sentinel-2
 # datasets drop the products used by CloudSEN12+ first, so the CloudSEN12+
@@ -49,10 +47,6 @@ case "${dataset}" in
   kappaset)
     record="7100327"
     files=(kappaset.zip README.pdf)
-    ;;
-  landsat8_biome | landsat8_sparcs)
-    record=""
-    files=()
     ;;
   *)
     record=""
