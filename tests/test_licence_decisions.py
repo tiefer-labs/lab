@@ -40,6 +40,9 @@ def test_every_refused_source_raises(tmp_path: Path) -> None:
             build_cache.build_independent(tmp_path / name, name, tmp_path, ["B02"])
     with pytest.raises(LicenceRefusedError, match="declined, pending legal review"):
         cloudsen12_2022.check_ready()
+    # The message names the decision's issue.
+    with pytest.raises(LicenceRefusedError, match="issue 7"):
+        list(independent.READERS["s2_cesbio"](tmp_path, ["B02"]))
 
 
 def test_a_cache_of_a_refused_dataset_is_never_evaluated(tmp_path: Path) -> None:

@@ -52,7 +52,7 @@ The facts of the independent test datasets of the paper's Table 1, the coverage 
 
 ### 1.1 Licence decisions
 
-The maintainer's licence decisions on third-party sources. "Not used" means no download, no cache, no evaluation, no reference mask and no row in a comparison or coverage report, internal use included. "Declined, pending legal review" and "candidate, no decision yet" are treated as not used until a later decision is recorded the same way. Each decision is recorded in the code next to the facts of its source (`LicenceDecision` of `src/tiefer_lab/data/source.py`); only a new decision of the maintainer, recorded there and in this table, changes it. Proposed in the licence decision issue (number not known yet).
+The maintainer's licence decisions on third-party sources. "Not used" means no download, no cache, no evaluation, no reference mask and no row in a comparison or coverage report, internal use included. "Declined, pending legal review" and "candidate, no decision yet" are treated as not used until a later decision is recorded the same way. Each decision is recorded in the code next to the facts of its source (`LicenceDecision` of `src/tiefer_lab/data/source.py`); only a new decision of the maintainer, recorded there and in this table, changes it. Recorded in the licence decision [issue 7](https://github.com/tiefer-labs/lab/issues/7).
 
 | Source | Licence as recorded | Source page | Decision | Date | Reason | Record in the code |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -133,6 +133,7 @@ The cloud problem is thick plus thin cloud against the rest, as in the paper; th
 
 ## Changelog
 
+- 15 October 2026: section 1.1 links the licence decision issue 7; drafted with an AI-assisted system.
 - 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used (section 1.1); drafted with an AI-assisted system.
 - 15 October 2026: section 1.1, the maintainer's licence decisions; S2-Hollstein, L8-38Cloud, L8-95Cloud, S2-CESBIO and the 2022 release are not used; drafted with an AI-assisted system.
 - 14 October 2026: all nine datasets of the paper's Table 1 in the catalogue: WHUS2-CD+, S2-Hollstein and S2-CESBIO added, 38-Cloud and 95-Cloud checked again on Kaggle; drafted with an AI-assisted system.

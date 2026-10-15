@@ -280,8 +280,8 @@ REFUSED: tuple[DecisionStatus, ...] = (
     "declined, pending legal review",
     "candidate, no decision yet",
 )
-# Issue of the maintainer's licence decisions of 15 October 2026; None until linked.
-LICENCE_ISSUE_15_OCTOBER_2026: str | None = None
+# Issue of the maintainer's licence decisions of 15 October 2026.
+LICENCE_ISSUE_15_OCTOBER_2026: str | None = "issue 7, https://github.com/tiefer-labs/lab/issues/7"
 
 
 @dataclass(frozen=True)
