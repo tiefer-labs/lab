@@ -957,6 +957,9 @@ def build_independent(
     # Masks of other algorithms the dataset ships on the same pixels, kept as
     # reference masks of the split (data/independent.py, SHIPPED_MASKS).
     shipped = independent.SHIPPED_MASKS.get(name, {})
+    for m, mask in shipped.items():
+        # Stop before any scene is read while a mask kind is not verified.
+        source.require_verified(f"independent.SHIPPED_MASKS[{name!r}][{m!r}].kind", mask.kind)
     target = independent.TRAINING_GSD_M if resolution == "10m" else info.gsd_m
     for scene in reader(root, stored):
         if limit is not None and counts["scenes"] >= limit:
@@ -1019,7 +1022,12 @@ def build_independent(
             directory,
             split,
             {m: np.concatenate(parts) for m, parts in shipped_parts.items()},
-            {m: shipped[m].kind for m in shipped},
+            {
+                m: source.require_verified(
+                    f"independent.SHIPPED_MASKS[{name!r}][{m!r}].kind", shipped[m].kind
+                )
+                for m in shipped
+            },
         )
 
 

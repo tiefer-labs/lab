@@ -105,7 +105,9 @@ class ShippedMask:
     """A mask of another algorithm that a dataset ships on the same pixels."""
 
     item: str  # file or variable name in the dataset, from its source
-    kind: str  # "four_class", "cloud" or "probability", as stored in the cache
+    # "four_class", "cloud" or "probability", as stored in the cache; None until
+    # verified (TODO(verify)), and the build stops on it.
+    kind: str | None
 
 
 # Landsat 8 OLI band number to the Sentinel-2 band of the closest centre wavelength
@@ -399,11 +401,14 @@ DATASETS.update(
 # algorithm name of src/tiefer_lab/paper_models.py. KappaSet README (14 October
 # 2026): the test folder holds SCL (Sen2Cor), FMC (Fmask) and SS2C (s2cloudless).
 # Their codes are open (COMPARISON_CODES); the reader stops until they are set.
+# TODO(verify): the kind of each (four classes, cloud against the rest, or a
+# probability) from the value histograms of one KappaSet test file read on CSC
+# Roihu, with the Sen2Cor and Fmask product documentation for SCL and FMC.
 SHIPPED_MASKS: dict[str, dict[str, ShippedMask]] = {
     "kappaset": {
-        "sen2cor": ShippedMask("SCL", "four_class"),
-        "fmask": ShippedMask("FMC", "four_class"),
-        "s2cloudless": ShippedMask("SS2C", "cloud"),
+        "sen2cor": ShippedMask("SCL", None),
+        "fmask": ShippedMask("FMC", None),
+        "s2cloudless": ShippedMask("SS2C", None),
     },
 }
 

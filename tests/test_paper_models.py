@@ -46,6 +46,8 @@ def test_routes_by_hand() -> None:
     assert route("kappamask_l2a", "s2_cloud_catalogue").kind == "n/a"
     # Input bands of the learned models are not verified yet: open, never guessed.
     assert route("unetmobv2", "s2_cloud_catalogue").kind == "open"
+    # Which shipped UNetMobV2 version is the paper's is not verified either.
+    assert route("unetmobv2", "cloudsen12").kind == "open"
     # Refused by a licence decision: the 2022 release and four datasets.
     assert route("fmask", "cloudsen12").kind == "not used"
     for dataset in ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio"):

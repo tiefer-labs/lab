@@ -128,8 +128,11 @@ ALGORITHMS: Mapping[str, Algorithm] = {
 
 # Report names of the masks CloudSEN12+ ships (data/source.py, REFERENCE_MASK_NAMES)
 # and of the 2022 release masks (data/cloudsen12_2022.py, MASKS).
-CLOUDSEN12_SHIPPED: Mapping[str, str] = {
-    "unetmobv2": "reference_cloudmask_unetmobv2_v1",
+CLOUDSEN12_SHIPPED: Mapping[str, str | None] = {
+    # TODO(verify): which shipped version, cloudmask_unetmobv2_v1 or _v2, is the
+    # UNetMobV2 of the paper's Table 6; resolved by the CloudSEN12+ dataset card
+    # (tacofoundation/cloudsen12 on Hugging Face) read with the CloudSEN12 paper.
+    "unetmobv2": None,
     "s2cloudless": "reference_cloudmask_s2cloudless",
     "sen2cor": "reference_cloudmask_sen2cor",
     "qa60": "reference_cloudmask_qa60",
@@ -166,7 +169,14 @@ def route(model: str, dataset: str) -> Route:
         return NOT_USED
     if dataset == CLOUDSEN12:
         if model in CLOUDSEN12_SHIPPED:
-            return Route("shipped", CLOUDSEN12_SHIPPED[model], "mask shipped with CloudSEN12+")
+            shipped_name = CLOUDSEN12_SHIPPED[model]
+            if shipped_name is None:
+                return Route(
+                    "open",
+                    None,
+                    "which shipped version is the paper's model is not verified (TODO(verify))",
+                )
+            return Route("shipped", shipped_name, "mask shipped with CloudSEN12+")
         if cloudsen12_2022.LICENCE_DECISION.refused:
             return NOT_USED
         return Route(
