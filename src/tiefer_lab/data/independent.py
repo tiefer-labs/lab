@@ -234,33 +234,9 @@ DATASETS: dict[str, Dataset] = {
     ),
 }
 
-# The five other datasets of the paper's Table 1, registered so that every model
-# is evaluated on all nine. Only what the paper states is set (Table 1 and its
-# reference list); the rest is None and stops the build until read from the
-# dataset's own source (docs/INDEPENDENT.md, section 6).
-PAPER_TABLE_1 = "CloudSEN12 paper, Table 1 and references, read 14 October 2026"
-
-
-def _from_paper(
-    name: str, sensor: str, paper: str, has_thin: bool, has_shadow: bool, note: str
-) -> Dataset:
-    return Dataset(
-        name=name,
-        sensor=sensor,
-        version="TODO(verify): the release is not read yet",
-        url=paper,
-        licence=None,
-        licence_source="TODO(verify): not read yet",
-        gsd_m=30.0 if sensor == LANDSAT8 else 10.0,
-        label_codes=None,
-        has_thin=has_thin,
-        has_shadow=has_shadow,
-        operational_mask="reference_landsat_qa" if sensor == LANDSAT8 else None,
-        strata_fields=(),
-        note=note,
-    )
-
-
+# The five other datasets of the paper's Table 1, with the facts read from their
+# own sources on 14 October 2026; what is not verified is None and stops the
+# build (docs/INDEPENDENT.md, section 6).
 DATASETS.update(
     {
         "s2_hollstein": Dataset(
