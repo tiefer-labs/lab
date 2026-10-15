@@ -576,3 +576,23 @@ def test_check_env_needs_a_visible_gpu_inside_a_gpu_job(gpu_job: bool, code: int
     assert result.returncode == code, result.stdout + result.stderr
     if gpu_job:
         assert "no GPU visible inside a GPU job" in result.stderr
+
+
+def test_evaluate_all_lists_missing_caches_and_fails(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    data = tmp_path / "data"
+    (data / "s2_cloud_catalogue").mkdir(parents=True)
+    (data / "s2_cloud_catalogue" / "index.json").write_text("{}")
+    env = {
+        **roihu_env,
+        "TIEFER_DATA_DIR": str(data),
+        "TIEFER_RUNS_DIR": str(tmp_path / "runs"),
+        "REASON": "clean check",
+    }
+    result = _run("evaluate_all.sh", ["run-x"], env)
+    # The built cache is submitted; the missing one is listed and the script fails.
+    assert result.returncode != 0
+    assert "not evaluated: no cache: kappaset" in result.stderr
+    assert "s2_cloud_catalogue" not in result.stderr
+    assert (tmp_path / "sbatch.log").is_file()

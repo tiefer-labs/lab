@@ -270,7 +270,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
 | `calibrate.sbatch` | `gputest`, 1 GPU: the cloud logit bias and the temperature of a run, on validation only |
 | `independent.sbatch` | CPU job: downloads an independent dataset (Zenodo, capped rate, resumable) and caches it; the Landsat 8, Kaggle and GitLab datasets are downloaded by hand into `$TIEFER_DATA_DIR/downloads/<dataset>/` |
-| `evaluate_all.sh` | submits one `evaluate.sbatch` job per independent dataset whose cache is built, for one run, with `DATA`, `FULL_METRICS=1` and `REASON`; lists the datasets not built yet |
+| `evaluate_all.sh` | submits one `evaluate.sbatch` job per independent dataset recorded as used whose cache is built, for one run, with `DATA`, `FULL_METRICS=1` and `REASON`; lists each one without a cache as `not evaluated: no cache` and then exits non-zero |
 | `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, validation only |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 GPU, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
@@ -359,6 +359,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 15 October 2026: `evaluate_all.sh` lists each dataset without a cache and exits non-zero; drafted with an AI-assisted system.
 - 14 October 2026: the files table lists the calibration, independent dataset and diagnosis jobs and `evaluate_all.sh`; step 6 names the v3 options of the jobs; drafted with an AI-assisted system.
 - 8 October 2026: step 3, a read that fails part way pauses every reader and is read again; run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120`; troubleshooting row for `Read failed` after HTTP 429.
 - 8 October 2026: everything is done from `roihu-cpu.csc.fi`: GPU jobs follow CSC's way of submitting across architectures and build their environment on the GPU node; the GPU setup is the job `setup_gpu.sbatch`; step 4 and the troubleshooting table say how to check a job's environment in its log.

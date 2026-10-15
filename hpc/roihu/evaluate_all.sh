@@ -10,8 +10,9 @@
 #
 #   REASON="<why>" bash hpc/roihu/evaluate_all.sh [--test-only] <run-id>
 #
-# A dataset whose cache is not built yet (independent.sbatch) is listed and
-# skipped, never guessed. The list is allowed_datasets() of
+# A dataset whose cache is not built yet (independent.sbatch) is listed at the
+# end as "not evaluated: no cache", and the script then exits non-zero, so a
+# missing evaluation is never silent. The list is allowed_datasets() of
 # src/tiefer_lab/data/independent.py, in the order of the paper's Table 1
 # (tests/test_paper_models.py checks it); reports/coverage.md
 # (python -m tiefer_lab.paper_models) shows what is still not measured.
@@ -40,5 +41,8 @@ for dataset in "${datasets[@]}"; do
     hpc/roihu/evaluate.sbatch "${run_id}"
 done
 if [[ ${#missing[@]} -gt 0 ]]; then
-  echo "not built yet, skipped: ${missing[*]} (bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset>)" >&2
+  for dataset in "${missing[@]}"; do
+    echo "not evaluated: no cache: ${dataset} (bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch ${dataset})" >&2
+  done
+  exit 1
 fi
