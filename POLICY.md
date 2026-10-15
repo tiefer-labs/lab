@@ -48,7 +48,7 @@ Outside means the website, the organisation profile, posts, slides, applications
 | Who checks | the maintainer, before publication |
 | When broken | the public text is corrected at its source, and [CLAIMS.md](CLAIMS.md), section 4, lists the statement until it is fixed |
 
-No report file is committed yet, so no number passes this gate yet; the first come from the v2 campaign ([hpc/roihu/plan.md](hpc/roihu/plan.md)).
+No report file is committed yet, so no number passes this gate yet; the first come from Project Schatten ([hpc/roihu/plan.md](hpc/roihu/plan.md)).
 
 ---
 
@@ -61,7 +61,7 @@ No report file is committed yet, so no number passes this gate yet; the first co
 | Who checks | the code refuses the test split without `--final`; the maintainer checks the log against the report files |
 | When broken | a result chosen with the test split is marked in [docs/RESULTS.md](docs/RESULTS.md) as not independent, with a correction line; the choice is made again on validation |
 
-No test evaluation is logged yet; `reports/test_log.md` holds its header only.
+The test split was used in campaigns before Project Schatten; the exact number and dates of those uses were not recorded and are not known, and `reports/test_log.md` records this as a maintainer note. Their results were withdrawn on 15 October 2026, but withdrawing results does not undo the use: selection in Project Schatten is at risk of adaptive overfitting to the test split, so the independent datasets ([docs/INDEPENDENT.md](docs/INDEPENDENT.md)) are the clean check of a selected model.
 
 ---
 
@@ -74,7 +74,7 @@ No test evaluation is logged yet; `reports/test_log.md` holds its header only.
 | Who checks | the maintainer, in review ([GOVERNANCE.md](GOVERNANCE.md), section 2) |
 | When broken | the card's status goes back to `draft`, with a correction line |
 
-No model card is published yet; the first comes from the v2 campaign.
+No model card is published yet; the first comes from Project Schatten.
 
 ---
 
@@ -117,6 +117,7 @@ This gate makes every run reproducible from a committed config: a setting passed
 
 ## Changelog
 
+- 15 October 2026: gate 3 records that the test split was used in withdrawn campaigns, number and dates not known, and that Project Schatten selection is at risk of adaptive overfitting, with the independent datasets as the clean check; gates 2 and 4 name Project Schatten; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: gate 2, a value that counts padded pixels is not quoted outside the repository until it is evaluated again.
 - 7 October 2026: section 1 links AI_ASSISTANCE.md: content produced with an AI-assisted system passes the same gates.

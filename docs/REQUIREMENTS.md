@@ -14,7 +14,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 - "Verified by" lists tests as `tests/<file>.py::<test>` and files by their path. Files under `reports/` are generated on CSC Roihu or a Jetson and are not in the repository until they are copied in.
 - The status words are those of [STYLE.md](STYLE.md), section 4: `met` and `not met` are judged against the minimum unless the row says target; `pending` means measured, with the value not yet in the repository; `not measured` means never measured.
 - A code requirement (`REQ-...`) is met when its tests pass. Every test passed in `make check` on 14 October 2026; that run is the evidence for every `REQ-...` row marked met. Further evidence of a row is given below its table.
-- Every acceptance target that needs a measured value is `pending` until the v2 campaign ([hpc/roihu/plan.md](../hpc/roihu/plan.md)). `python -m tiefer_lab.acceptance` writes `reports/acceptance.md` from the report files; it is committed with the report files of the v2 campaign.
+- Every acceptance target that needs a measured value is `pending` until Project Schatten ([hpc/roihu/plan.md](../hpc/roihu/plan.md)). `python -m tiefer_lab.acceptance` writes `reports/acceptance.md` from the report files; it is committed with the report files of Project Schatten.
 - `acceptance.py` defines the accuracy, frame and compression targets on the final test evaluation of the 1 M band-flexible model (`l2_flex_1m`) with the four bands B02, B03, B04 and B08. The product decision between it and the four-band specialist is taken under [ASSUMPTIONS.md](ASSUMPTIONS.md), section 7. `python -m tiefer_lab.acceptance --config <name>` writes the same targets measured on another config's reports to `reports/acceptance_<name>.md`; a status there describes that config, and the table of this page stays that of `l2_flex_1m`. Targets defined on another model say so in that table: `ACC-02` on the largest models with all 13 bands, `CMP-04` on `l2_flex_1m` against `l2_spec_1m`.
 - A status of this page says whether a target is met; whether a value may be quoted, and in which form, is decided by [POLICY.md](../POLICY.md), gate 2, and [BENCHMARK-AUTHORITY.md](../BENCHMARK-AUTHORITY.md).
 - A minimum or target written "above" is strict; "at least" and "at most" include the bound. Values are rounded to 3 decimals, half up, as in RESULTS.md.
@@ -57,13 +57,13 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-TRN-05` | Pixels without a label add nothing to the loss | met | `tests/test_flexible_model.py::test_ignored_pixels_add_nothing_to_the_loss` |
 | `REQ-TRN-06` | The size ladder hits its parameter targets and every variant changes one setting | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant` |
 | `REQ-TRN-07` | Every run records its config, seed, commit, job ID and GPU hours; reports/experiments.md is built from the run folders | met | `tests/test_checkpoint_resume.py::test_run_metadata_has_provenance_and_no_absolute_paths`, `tests/test_experiments.py::test_one_row_per_run_from_its_folder` |
-| `REQ-TRN-08` | The v3 training options are off by default; gradient clipping and the skip of non-finite steps work as computed by hand, and skipped steps are counted | met | `tests/test_training_options.py::test_defaults_are_off`, `tests/test_training_options.py::test_gradient_clip_by_hand_and_nonfinite_steps_are_skipped`, `tests/test_training_options.py::test_options_train_and_skipped_steps_are_counted` |
+| `REQ-TRN-08` | The training options are off by default; gradient clipping and the skip of non-finite steps work as computed by hand, and skipped steps are counted | met | `tests/test_training_options.py::test_defaults_are_off`, `tests/test_training_options.py::test_gradient_clip_by_hand_and_nonfinite_steps_are_skipped`, `tests/test_training_options.py::test_options_train_and_skipped_steps_are_counted` |
 | `REQ-TRN-09` | A config that starts from or distils from another run names exactly one finished run of this repository | met | `tests/test_training_options.py::test_init_checkpoint_and_teacher_name_one_run` |
 | `REQ-TRN-10` | The frame term, the Lovasz-softmax term and the frame loss match hand computations | met | `tests/test_flexible_model.py::test_frame_fraction_loss_and_lovasz_by_hand`, `tests/test_training_options.py::test_frame_loss_by_hand` |
 | `REQ-TRN-11` | The CloudScout re-implementation gives one class per frame, trains in the paper's two steps and exports with allowed operators only | met | `tests/test_training_options.py::test_cloudscout_gives_one_class_per_frame_and_trains`, `tests/test_model_budget.py::test_cloudscout_operators_are_allowed` |
-| `REQ-TRN-12` | Every v3 variant changes one setting of its reference; combined configs have their row in ASSUMPTIONS.md | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant`, `tests/test_config.py::test_l1_and_cloudscout_variants_change_one_setting`, `tests/test_config.py::test_v3_references_are_drafts_with_the_stated_changes` |
+| `REQ-TRN-12` | Every variant changes one setting of its reference; combined configs have their row in ASSUMPTIONS.md | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant`, `tests/test_config.py::test_l1_and_cloudscout_variants_change_one_setting`, `tests/test_config.py::test_v3_references_are_drafts_with_the_stated_changes` |
 
-Further evidence: `REQ-TRN-07`: the metadata test passes; no run of the v2 campaign exists yet.
+Further evidence: `REQ-TRN-07`: the metadata test passes; no run of Project Schatten exists yet.
 
 ---
 
@@ -87,10 +87,10 @@ Further evidence: `REQ-TRN-07`: the metadata test passes; no run of the v2 campa
 
 Further evidence:
 
-- `REQ-EVL-01`: the guard's tests pass; `reports/test_log.md` has no entries yet. The status stays pending until the first logged test evaluation of the v2 campaign is copied in.
+- `REQ-EVL-01`: the guard's tests pass; `reports/test_log.md` has no entries yet. The status stays pending until the first logged test evaluation of Project Schatten is copied in.
 - `REQ-EVL-03`: the code is tested; no reference algorithm has been scored yet ([RESULTS.md](RESULTS.md), section 10).
-- `REQ-EVL-05`: verified by the perturbation test; no robustness result yet (v2 pending).
-- `REQ-EVL-07`: verified by the tests; no result per band set yet (v2 pending).
+- `REQ-EVL-05`: verified by the perturbation test; no robustness result yet (Project Schatten pending).
+- `REQ-EVL-07`: verified by the tests; no result per band set yet (Project Schatten pending).
 
 ---
 
@@ -103,7 +103,7 @@ Further evidence:
 | `REQ-EXP-03` | A folded cloud bias equals the bias at inference; the INT8 options keep allowed operators and are recorded | met | `tests/test_frame_options.py::test_folded_bias_equals_the_wrapper`, `tests/test_frame_options.py::test_export_options_keep_allowed_operators` |
 | `REQ-EXP-04` | Every export report and ONNX file of a band-flexible run is collected from CSC Roihu | met | `tests/test_roihu_scripts.py::test_collect_packs_relative_paths_only` |
 
-Further evidence: `REQ-EXP-01`: verified by the tests; no export report yet (v2 pending).
+Further evidence: `REQ-EXP-01`: verified by the tests; no export report yet (Project Schatten pending).
 
 ---
 
@@ -144,40 +144,40 @@ Further evidence: `REQ-OBD-05` and `REQ-OBD-06`: the tests pass in dry-run mode;
 | ID | Requirement | Minimum | Target | Measured value | Run | Status | Evidence | Verified by |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Accuracy on the 975 test patches, four-band set, 1 M model unless stated** | | | | | | | | |
-| `ACC-01` | Cloud against non-cloud, median BOA | above 0.84 | at least 0.90 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-02` | Same, largest model, all 13 bands | at least 0.90 | at least 0.92 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-03` | Cloud shadow, median BOA | above 0.74 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-04` | Reference algorithms (except UNetMobV2) whose cloud BOA interval overlaps the model's | at most 0 | at most 0 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-05` | Mean IoU, four classes | at least 0.70 | at least 0.75 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-06` | Thin cloud producer's and user's accuracy | reported | above every reference except UNetMobV2 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-07` | Cloud cover per patch, mean absolute error | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-08` | Expected calibration error | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-01` | Cloud against non-cloud, median BOA | above 0.84 | at least 0.90 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-02` | Same, largest model, all 13 bands | at least 0.90 | at least 0.92 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-03` | Cloud shadow, median BOA | above 0.74 | at least 0.85 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-04` | Reference algorithms (except UNetMobV2) whose cloud BOA interval overlaps the model's | at most 0 | at most 0 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-05` | Mean IoU, four classes | at least 0.70 | at least 0.75 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-06` | Thin cloud producer's and user's accuracy | reported | above every reference except UNetMobV2 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-07` | Cloud cover per patch, mean absolute error | at most 0.08 | at most 0.05 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-08` | Expected calibration error | at most 0.08 | at most 0.05 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `ACC-09` | Spread over three seeds, cloud BOA (standard deviation) | at most 0.02 | at most 0.01 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Independent datasets, four-band set, never used for training or selection** | | | | | | | | |
-| `IND-01` | Independent datasets evaluated | at least 2 | 4, from at least 3 sensors | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-02` | Each independent Sentinel-2 dataset, cloud BOA | above Sen2Cor on the same pixels | within 0.03 of the CloudSEN12+ test result | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-03` | Each other-sensor dataset, cloud BOA | above the dataset's operational mask, where one exists | within 0.05 of the CloudSEN12+ test result | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `IND-04` | Worst biome or surface class on any independent dataset, BOA | at least 0.75 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-01` | Independent datasets evaluated | at least 2 | 4, from at least 3 sensors | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-02` | Each independent Sentinel-2 dataset, cloud BOA | above Sen2Cor on the same pixels | within 0.03 of the CloudSEN12+ test result | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-03` | Each other-sensor dataset, cloud BOA | above the dataset's operational mask, where one exists | within 0.05 of the CloudSEN12+ test result | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `IND-04` | Worst biome or surface class on any independent dataset, BOA | at least 0.75 | at least 0.85 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Frame decision, at the decision threshold of 50 percent** | | | | | | | | |
-| `FRM-01` | Useful frames wrongly discarded (false discard rate) | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `FRM-02` | Cloudy frames detected (1 minus the false send rate) | at least 0.85 | at least 0.90 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `FRM-01` | Useful frames wrongly discarded (false discard rate) | at most 0.02 | at most 0.01 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `FRM-02` | Cloudy frames detected (1 minus the false send rate) | at least 0.85 | at least 0.90 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Compression and flexibility** | | | | | | | | |
-| `CMP-01` | ONNX FP32 against PyTorch, argmax agreement | at least 0.999 | at least 0.999 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-02` | FP16 against FP32, cloud BOA loss | at most 0.005 | at most 0.002 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-03` | INT8 against FP32, cloud BOA loss | at most 0.02 | at most 0.01 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | at most 0.01 | within the specialist's interval | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-05` | Rescaling 0.5x to 2x, cloud BOA loss | at most 0.04 | at most 0.02 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-06` | Other sensors against Sentinel-2, cloud BOA loss | at most 0.08 | at most 0.05 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `CMP-07` | Red, green and blue only, cloud BOA | reported | reported | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-01` | ONNX FP32 against PyTorch, argmax agreement | at least 0.999 | at least 0.999 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-02` | FP16 against FP32, cloud BOA loss | at most 0.005 | at most 0.002 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-03` | INT8 against FP32, cloud BOA loss | at most 0.02 | at most 0.01 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-04` | Flexible model against specialist, four bands, cloud BOA loss | at most 0.01 | within the specialist's interval | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-05` | Rescaling 0.5x to 2x, cloud BOA loss | at most 0.04 | at most 0.02 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-06` | Other sensors against Sentinel-2, cloud BOA loss | at most 0.08 | at most 0.05 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `CMP-07` | Red, green and blue only, cloud BOA | reported | reported | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **On board (Jetson), provisional** | | | | | | | | |
-| `OBD-01` | Throughput, 512 x 512 tiles per second | at least 20 | at least 40 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-02` | Latency per tile, INT8 or FP16 | at most 50 ms | at most 25 ms | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-03` | Model file of the 1 M model | at most 4,000,000 bytes (4 MB) in FP32 | at most 1,500,000 bytes (1.5 MB) in INT8 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-04` | Memory during inference | at most 2 GB | at most 1 GB | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-05` | Board power during inference | at most 25 W | at most 15 W | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
-| `OBD-06` | Same input, same output across runs | bit identical per runtime | n/a | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-01` | Throughput, 512 x 512 tiles per second | at least 20 | at least 40 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-02` | Latency per tile, INT8 or FP16 | at most 50 ms | at most 25 ms | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-03` | Model file of the 1 M model | at most 4,000,000 bytes (4 MB) in FP32 | at most 1,500,000 bytes (1.5 MB) in INT8 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-04` | Memory during inference | at most 2 GB | at most 1 GB | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-05` | Board power during inference | at most 25 W | at most 15 W | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `OBD-06` | Same input, same output across runs | bit identical per runtime | n/a | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | **Standards alignment** | | | | | | | | |
-| `STD-01` | Worst stratum, cloud BOA | at least 0.75 | at least 0.85 | pending | pending | pending | v2 pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
+| `STD-01` | Worst stratum, cloud BOA | at least 0.75 | at least 0.85 | pending | pending | pending | Project Schatten pending | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-02` | Invalid or out-of-domain input that ends in a discarded frame | at most 0 | at most 0 | 0 | n/a | met | `tiefer_lab.onboard.failsafe_check` discards no frame (`tests/test_onboard.py`) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-03` | Requirements without a linked verification | at most 0 | at most 0 | 0 | n/a | met | `tests/test_requirements_doc.py` | `tiefer_lab.acceptance`, `reports/acceptance.md` |
 | `STD-04` | Rows of the standards matrix with status "not read" | reported | at most 0 | 8 | n/a | not met against the target | [STANDARDS.md](STANDARDS.md) | `tiefer_lab.acceptance`, `reports/acceptance.md` |
@@ -194,6 +194,7 @@ Notes:
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: `REQ-DAT-18` reads fail closed: a source without a recorded decision stops; drafted with an AI-assisted system.
 - 15 October 2026: `REQ-DAT-18` names the tests that no reader of a cache split reads a dataset that is not allowed; drafted with an AI-assisted system.
 - 15 October 2026: `REQ-DAT-18`, licence decisions of third-party sources; `REQ-DAT-17` names the renamed test of the declined 2022 release; drafted with an AI-assisted system.

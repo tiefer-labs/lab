@@ -15,8 +15,8 @@ Status words of this table: `in use` (read by a run or a test), `not used` (avai
 | Dataset | Version or revision | Licence | URL | Role | Used by | Status | Checked on |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **CloudSEN12+** | | | | | | | |
-| Level-1C, high quality labels, 509 x 509, four bands (cache `cloudsen12-l1c-high`) | card 1.1.2; revision recorded by the v2 build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | `l1_base`, `l1_full` | in use | 7 October 2026 |
-| Level-1C, high quality labels, 509 x 509, 13 bands (cache `cloudsen12-l1c-all`) | card 1.1.2; revision recorded by the v2 build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | every L2 config | in use | 7 October 2026 |
+| Level-1C, high quality labels, 509 x 509, four bands (cache `cloudsen12-l1c-high`) | card 1.1.2; revision recorded by the cache build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | `l1_base`, `l1_full` | in use | 7 October 2026 |
+| Level-1C, high quality labels, 509 x 509, 13 bands (cache `cloudsen12-l1c-all`) | card 1.1.2; revision recorded by the cache build | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | per split, section 2 | every L2 config | in use | 7 October 2026 |
 | Level-1C, high quality labels, 2000 x 2000 | card 1.1.2 | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | none | none | not used | 7 October 2026 |
 | Level-1C, scribble and nolabel patches of the training split | card 1.1.2 | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | extra training data only, away from validation and test locations | none | not used (note 1) | 7 October 2026 |
 | Extra variant, reference masks | card 1.1.2 | CC0 1.0 | [huggingface.co](https://huggingface.co/datasets/tacofoundation/cloudsen12) | comparison algorithms on the same pixels, never ground truth | none | not used (note 2) | 7 October 2026 |
@@ -137,6 +137,7 @@ The cloud problem is thick plus thin cloud against the rest, as in the paper; th
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: section 1.1 records the Catalogue and KappaSet as used and L8 Biome and L8 SPARCS as candidates without a decision; a source without a record is not read; drafted with an AI-assisted system.
 - 15 October 2026: section 1.1 links the licence decision issue 7; drafted with an AI-assisted system.
 - 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used (section 1.1); drafted with an AI-assisted system.

@@ -153,9 +153,9 @@ Evaluated with the same code and splits as the model:
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--seed N] [--run-id <name>] [--resume <run-dir>] [--device ...]`; `--cache-name`, `--epochs` and `--max-steps-per-epoch` are for the smoke pipeline and timing runs, which are marked as smoke.
 - Configs: `configs/smoke.toml` (tiny, minutes on CPU), `configs/l1_base.toml` (full training on one GH200 GPU) and `configs/l1_full.toml` (`l1_base` to the end of its schedule, with warm-up and a moving average of the weights); the L2 configs are listed in section 14. Batch size, learning rate and the other settings of each family are in [ASSUMPTIONS.md](ASSUMPTIONS.md), section 6.
 
-### v3 training options
+### Training options
 
-Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each v3 variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
+Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
 
 ### Milestone L2: one band-flexible model family
 
@@ -182,7 +182,7 @@ Every option is a field of `TrainConfig` or `DataConfig` that is off by default,
 
 `python -m tiefer_lab.evaluate --run <run-dir> --split val|test [--baselines] [--checkpoint best|last] [--band-set <bands>|all] [--perturb <name>=<value>] [--device ...]`; the test split also needs `--final --reason <text>`.
 
-Protocol options of v3, each off by default, so that without them every report is as before; each waits for the maintainer's agreement in its method-change issue before it is used for a result ([GOVERNANCE.md](../GOVERNANCE.md), section 2):
+Protocol options, each off by default, so that without them every report is as before; each waits for the maintainer's agreement in its method-change issue before it is used for a result ([GOVERNANCE.md](../GOVERNANCE.md), section 2):
 
 - `--full-metrics`: the CloudSEN12 paper's PA and UA shares per problem, its valid against invalid experiment, a sweep of the decision threshold from 0.05 to 0.95 with the lowest false send rate at false discard rates of 0.01 and 0.02, and cloud cover bins as strata;
 - `--data <cache> --reason <text> [--substitute]`: an independent dataset ([INDEPENDENT.md](INDEPENDENT.md)), normalised with the run's own training statistics, logged in `reports/test_log.md` like a test use, never used to train or select;
@@ -295,7 +295,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `diagnose.sbatch` | CPU job: seed and false discard diagnostics, validation only |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
-| `plan.md` | The run plan of the v2 campaign: budget, stop line and steps |
+| `plan.md` | The run plan of Project Schatten: budget, stop line and steps |
 | `requirements.txt` | Generated from `uv.lock` with `uv export`, without the packages of the CSC module |
 | `collect.sh` | Packs the small result files (reports, run metadata, best checkpoint, ONNX files) into one archive in `/scratch` for copying back, with no absolute paths inside |
 
@@ -355,10 +355,10 @@ lab/
     cloudscout_th30.toml          CloudScout re-implementation, step 1 (labels at 30 percent)
     cloudscout.toml               CloudScout re-implementation, step 2 (70 percent, decision layers)
     cloudscout_th50.toml          as cloudscout, labels at 50 percent
-    l1_full_<variant>.toml        v3 one-change variants of l1_full
-    l1_v3.toml                    v3 candidate reference of L1, a draft
-    l2_flex_1m_<variant>.toml     v3 one-change variants of l2_flex_1m
-    l2_flex_1m_v3.toml            v3 candidate reference of L2, a draft
+    l1_full_<variant>.toml        one-change variants of l1_full
+    l1_v3.toml                    candidate reference of L1, a draft
+    l2_flex_1m_<variant>.toml     one-change variants of l2_flex_1m
+    l2_flex_1m_v3.toml            candidate reference of L2, a draft
     l2_flex_1m_v3_frameft.toml    fine-tune stage of l2_flex_1m_v3 on whole patches
     l1_base.toml                  full training on one GH200 GPU
     l1_full.toml                  l1_base to the end of its schedule, with warm-up and moving average
@@ -413,7 +413,7 @@ lab/
       diagnose.sbatch             seed and false discard diagnostics, CPU
       diagnose_gpu.sbatch         INT8 sensitivity per Conv node, GPU node
       sweep.sh                    configs and seeds as separate one-GPU jobs
-      plan.md                     run plan of the v2 campaign: budget, stop line, steps
+      plan.md                     run plan of Project Schatten: budget, stop line, steps
       smoke.sbatch                gputest, 15 minutes
       train.sbatch                gpumedium, resumable
       evaluate.sbatch             validation, or test with FINAL=1
@@ -433,7 +433,7 @@ lab/
     cloud-filter/
       README.md                   what release folders contain (filled in Part B)
       MODEL_CARD_TEMPLATE.md      model card to copy into each release folder
-      v<version>/                 a release folder, written from the v2 campaign
+      v<version>/                 a release folder, written from Project Schatten
         MODEL_CARD.md             model card of the release
         SHA256SUMS                SHA-256 of the model files, which are not in the repository
         config.toml               resolved configuration of the run
@@ -552,7 +552,7 @@ lab/
     test_independent.py           independent datasets: reflectance, labels, tiles, stops
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
-    test_training_options.py      v3 training options and the frame classifier
+    test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
     test_diagnose.py              diagnostics read validation only
     test_paper_models.py          every paper algorithm and model has a route on every dataset
@@ -648,6 +648,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: `paper_models.py`, `evaluate_all.sh`, `add_release_2022.py` and their test in the tree; drafted with an AI-assisted system.
 - 14 October 2026: v3, every addition off by default: section 7 adds probability references tuned on validation, the 2022 release masks, reference models from `references/` and the CloudScout re-implementation; section 8 the v3 training options; section 9 the protocol options `--full-metrics`, `--data`, `--cloud-bias` and `--fraction`, which wait for their method-change issues, and the acceptance per config, comparison and diagnosis tools; section 10 the export options; section 11 memory and determinism on the Jetson; sections 12 and 14 the new files; drafted with an AI-assisted system.
 - 8 October 2026: section 14, `http.py` retries every transient read error, and `test_transient_reads.py` tests it.

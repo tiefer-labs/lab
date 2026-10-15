@@ -137,7 +137,7 @@ class Scores:
     ) -> dict[str, Any]:
         """The metrics of the scored patches.
 
-        `full` adds the full metric set of the v3 protocol option
+        `full` adds the full metric set, a protocol option off by default
         (`--full-metrics`): the paper's summary with the valid against
         invalid experiment, and the sweep of the decision threshold. Without
         it the report is exactly that of earlier versions.
@@ -578,7 +578,7 @@ def evaluate_run(
     if isinstance(model, flexible.FlexibleModel):
         model.set_band_set(band_set or bands)
     evaluated_bands = list(band_set or bands)
-    # Protocol options of v3, both off by default: a cloud logit bias and the soft
+    # Protocol options, both off by default: a cloud logit bias and the soft
     # cloud fraction, each chosen on validation by `python -m tiefer_lab.calibrate`.
     options: dict[str, Any] = {}
     if cloud_bias is not None or fraction != "argmax":
@@ -756,8 +756,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--full-metrics",
         action="store_true",
-        help="v3 protocol option: also the paper's PA and UA shares, the valid problem, "
-        "the decision threshold sweep and cloud cover bins (default: off)",
+        help="protocol option, off by default: also the paper's PA and UA shares, the valid "
+        "problem, the decision threshold sweep and cloud cover bins",
     )
     parser.add_argument("--device", default="auto", choices=devices.DEVICE_CHOICES)
     parser.add_argument("--allow-synthetic", action="store_true", help=argparse.SUPPRESS)

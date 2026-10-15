@@ -39,7 +39,7 @@ What each report file is and which script writes it. [docs/RESULTS.md](../docs/R
 | `comparison.md` | `python -m tiefer_lab.compare` | every model and reference algorithm with the same metrics and a cost block |
 | `coverage.md` | `python -m tiefer_lab.paper_models` | every own model and every algorithm of the CloudSEN12 paper's Table 6 against CloudSEN12+ and the nine Table 1 datasets: measured, or how and why not |
 
-No report file is in this folder yet. Report files are committed when the v2 campaign collects them ([hpc/roihu/plan.md](../hpc/roihu/plan.md)), unchanged, together with the entries of `test_log.md`; trained models (`best.pt`, `.onnx`) are never committed.
+No report file is in this folder yet, and none of a campaign before Project Schatten. Report files are committed when Project Schatten collects them ([hpc/roihu/plan.md](../hpc/roihu/plan.md)), unchanged, together with the entries of `test_log.md`; trained models (`best.pt`, `.onnx`) are never committed.
 
 ---
 
@@ -54,6 +54,7 @@ No report file is in this folder yet. Report files are committed when the v2 cam
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: independent evaluation, calibration, diagnosis, per-config acceptance, comparison and coverage files; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the purpose links CONTRIBUTING.md, POLICY.md and INSTALL.md.

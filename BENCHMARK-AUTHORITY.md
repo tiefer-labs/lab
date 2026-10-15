@@ -10,7 +10,7 @@ For evaluators who need to decide which current Tiefer Lab result applies to the
 
 ## 1. How to read this page
 
-Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) named next to it, with the same rounding (3 decimals, half up) and the same 95 percent bootstrap interval in brackets. The source keys are defined in [docs/RESULTS.md](docs/RESULTS.md), Appendix A. No value is measured yet: every question waits for the v2 campaign ([hpc/roihu/plan.md](hpc/roihu/plan.md)).
+Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) named next to it, with the same rounding (3 decimals, half up) and the same 95 percent bootstrap interval in brackets. The source keys are defined in [docs/RESULTS.md](docs/RESULTS.md), Appendix A. No value is measured yet: every question waits for Project Schatten ([hpc/roihu/plan.md](hpc/roihu/plan.md)).
 
 | Status | Meaning on this page |
 | :--- | :---: |
@@ -19,7 +19,7 @@ Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) name
 | `superseded` | replaced by a later value (section 5) |
 | `pending` | measured, but the value is not yet in the repository, or only in session notes; it may not be cited |
 | `not measured` | never measured |
-| `pending (v2)` | waits for the v2 campaign; nothing is measured yet |
+| `pending (Project Schatten)` | waits for Project Schatten; nothing is measured yet |
 
 ---
 
@@ -27,21 +27,21 @@ Each value is copied from the section of [docs/RESULTS.md](docs/RESULTS.md) name
 
 | Question | Authoritative value | Run | Split | Source | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Best four-band result, mean IoU | pending | pending | pending | pending | pending (v2) |
-| False discard rate of that model at 50 percent | pending | pending | pending | pending | pending (v2) |
-| Selected model and why | pending | pending | pending | pending | pending (v2) |
-| Smallest model size, best result | pending | pending | pending | pending | pending (v2) |
-| Band-flexible model against the specialist, four bands | pending | pending | pending | pending | pending (v2) |
-| Band-flexible model per band set | pending | pending | pending | pending | pending (v2) |
-| INT8 effect | pending | pending | pending | pending | pending (v2) |
-| FP16 effect | pending | pending | pending | pending | pending (v2) |
-| Seed spread | pending | pending | pending | pending | pending (v2) |
-| Regional spread | pending | pending | pending | pending | pending (v2) |
-| Sensor robustness | pending | pending | pending | pending | pending (v2) |
-| Best baseline | pending | pending | pending | pending | pending (v2) |
-| Compute cost | pending | pending | pending | pending | pending (v2) |
-| Latency, power and energy per tile on a Jetson Orin | pending | pending | pending | pending | pending (v2) |
-| Comparison with other systems | pending | pending | pending | pending | pending (v2) |
+| Best four-band result, mean IoU | pending | pending | pending | pending | pending (Project Schatten) |
+| False discard rate of that model at 50 percent | pending | pending | pending | pending | pending (Project Schatten) |
+| Selected model and why | pending | pending | pending | pending | pending (Project Schatten) |
+| Smallest model size, best result | pending | pending | pending | pending | pending (Project Schatten) |
+| Band-flexible model against the specialist, four bands | pending | pending | pending | pending | pending (Project Schatten) |
+| Band-flexible model per band set | pending | pending | pending | pending | pending (Project Schatten) |
+| INT8 effect | pending | pending | pending | pending | pending (Project Schatten) |
+| FP16 effect | pending | pending | pending | pending | pending (Project Schatten) |
+| Seed spread | pending | pending | pending | pending | pending (Project Schatten) |
+| Regional spread | pending | pending | pending | pending | pending (Project Schatten) |
+| Sensor robustness | pending | pending | pending | pending | pending (Project Schatten) |
+| Best baseline | pending | pending | pending | pending | pending (Project Schatten) |
+| Compute cost | pending | pending | pending | pending | pending (Project Schatten) |
+| Latency, power and energy per tile on a Jetson Orin | pending | pending | pending | pending | pending (Project Schatten) |
+| Comparison with other systems | pending | pending | pending | pending | pending (Project Schatten) |
 
 ---
 
@@ -91,5 +91,6 @@ Never cite:
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: first version: which result answers which question, the caveats that apply to every number, how to cite, and what supersedes what.

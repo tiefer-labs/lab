@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# v3 candidate reference of L1, a draft: l1_full with random rescaling 0.5 to 2 (CMP-05),
+# Candidate reference of L1, a draft: l1_full with random rescaling 0.5 to 2 (CMP-05),
 # gradient norm clipping at 1.0 and the skip of non-finite steps (stability). The winners
 # of the one-change variants are added by the selection rule of hpc/roihu/plan.md,
 # section 3, before its three seeds run; docs/ASSUMPTIONS.md, section 6, row l1_v3.

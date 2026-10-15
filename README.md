@@ -28,24 +28,26 @@ The repository is public because results are published with their method: measur
 
 ## Status
 
+Project Schatten is the only campaign: every campaign before it is withdrawn, and none of its results, checkpoints or reports is used ([hpc/roihu/plan.md](hpc/roihu/plan.md), section 1). Its selection is at risk of adaptive overfitting to the test split, so the independent datasets are its clean check ([POLICY.md](POLICY.md), gate 3).
+
 | Milestone or component | Status | Evidence |
 | :--- | :---: | :---: |
 | **Milestone L1: four-band cloud filter** | | |
-| Data cache (CloudSEN12+, Level-1C, four bands) | v2 pending | [docs/DATA.md](docs/DATA.md), section 10 |
-| Training and evaluation on CSC Roihu | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
-| ONNX export and INT8 quantisation | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
-| Model card and checksums | v2 pending | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) |
+| Data cache (CloudSEN12+, Level-1C, four bands) | pending (Project Schatten) | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 6 |
+| ONNX export and INT8 quantisation | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Model card and checksums | pending (Project Schatten) | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) |
 | **Milestone L2: band-flexible model and four-band specialist** | | |
-| 13-band data cache | v2 pending | [docs/DATA.md](docs/DATA.md), section 10 |
-| Training and evaluation on CSC Roihu | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
-| Export of the L2 models | v2 pending | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
-| Seeds of the L2 pair | v2 pending | [hpc/roihu/plan.md](hpc/roihu/plan.md) |
+| 13-band data cache | pending (Project Schatten) | [docs/DATA.md](docs/DATA.md), section 10 |
+| Training and evaluation on CSC Roihu | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), sections 6 and 12 |
+| Export of the L2 models | pending (Project Schatten) | [docs/RESULTS.md](docs/RESULTS.md), section 14 |
+| Seeds of the L2 pair | pending (Project Schatten) | [hpc/roihu/plan.md](hpc/roihu/plan.md) |
 | Product decision between the two L2 models | pending | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md), section 7 |
 | **Jetson milestone** | | |
 | Benchmark scripts, dry-run mode | done | [jetson/README.md](jetson/README.md) |
 | Latency, power and energy on a Jetson Orin | not measured | [docs/RESULTS.md](docs/RESULTS.md), section 15 |
 
-No headline numbers yet: every result waits for the v2 campaign ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md); [hpc/roihu/plan.md](hpc/roihu/plan.md)).
+No headline numbers yet: every result waits for Project Schatten ([BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md); [hpc/roihu/plan.md](hpc/roihu/plan.md)).
 
 ---
 
@@ -103,11 +105,11 @@ Every Markdown file of the repository, with its purpose, audience and status, is
 
 ## Principles
 
-1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The gates a number must pass are in [POLICY.md](POLICY.md). The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19, and every run of the v2 campaign starts from one tagged, clean commit.
+1. Measured, not claimed: every number names the report file it comes from, and anything not measured is written as "not measured". The gates a number must pass are in [POLICY.md](POLICY.md). The commands for each run are in [docs/RESULTS.md](docs/RESULTS.md), section 19, and every run of Project Schatten starts from one tagged, clean commit.
 2. Think like the sensor on board: top-of-atmosphere Level-1C data only; four bands (blue, green, red, near infrared) for L1, and band sets of up to 13 bands for the band-flexible L2 model.
 3. Small and friendly to the hardware: at most 1.0 million parameters for L1, a size ladder for L2, and only operators that TensorRT handles well in INT8.
 4. Reproducible: fixed seeds, versioned configurations, a locked environment, and the dataset revision and the git commit in every result file, with a flag when the working tree had uncommitted changes.
-5. The test split is used only for final evaluation, and every use is logged where it runs. [reports/test_log.md](reports/test_log.md) has no entries yet.
+5. The test split is used only for final evaluation, and every use is logged where it runs ([reports/test_log.md](reports/test_log.md)).
 
 ---
 
@@ -125,6 +127,7 @@ The repository is licensed under the Mozilla Public License 2.0, see [LICENSE](L
 
 ## Changelog
 
+- 15 October 2026: the status table describes Project Schatten; the sentence that the test log has no entries is removed; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: the first screen says what Lab is and what it is not; "What Lab is not", a status table with evidence, "Where to go next", a minimal quick start that defers to GETTING-STARTED.md and INSTALL.md, and a documentation section that points to INDEX.md and START-HERE.md; the community files of this repository replace the links to tiefer-labs/.github.
 - 7 October 2026: the documentation list adds DATASETS.md, REQUIREMENTS.md, STANDARDS.md, NOTICE.md and hpc/roihu/plan.md; principles 1 and 4 say what holds now and what is pending.

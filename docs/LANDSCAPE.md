@@ -106,17 +106,17 @@ The extra-table masks are those of the dataset variant `tacofoundation:cloudsen1
 
 ## 5. Head-to-head status
 
-The column "This repository" holds values measured here, from [RESULTS.md](RESULTS.md); the column "Other system" holds published values unless the cell says otherwise. No row is decided yet: each status names the measurement that would decide it. The deciding measurements are added as steps of the v2 plan ([hpc/roihu/plan.md](../hpc/roihu/plan.md)).
+The column "This repository" holds values measured here, from [RESULTS.md](RESULTS.md); the column "Other system" holds published values unless the cell says otherwise. No row is decided yet: each status names the measurement that would decide it. The deciding measurements are added as steps of the plan of Project Schatten ([hpc/roihu/plan.md](../hpc/roihu/plan.md)).
 
 | Comparison | Metric | This repository | Other system | Status | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Reference algorithms on the same CloudSEN12+ test pixels | cloud and shadow BOA, median over patches | not measured (v2 pending) | not measured here; published values on the 2022 test set in section 4 | open (note 1) | RESULTS.md, section 11; [13] |
-| dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | not measured (v2 pending) | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
-| CloudScout false positives against the false discard rate | useful frames discarded | not measured (v2 pending) | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
-| CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | not measured (v2 pending) | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
+| Reference algorithms on the same CloudSEN12+ test pixels | cloud and shadow BOA, median over patches | not measured (Project Schatten pending) | not measured here; published values on the 2022 test set in section 4 | open (note 1) | RESULTS.md, section 11; [13] |
+| dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | not measured (Project Schatten pending) | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
+| CloudScout false positives against the false discard rate | useful frames discarded | not measured (Project Schatten pending) | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
+| CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | not measured (Project Schatten pending) | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
 | CloudScout re-implementation trained by Tiefer Lab, on the same frames | false discard rate and false send rate at 50 and 70 percent; size, parameters, multiply-accumulates | not measured | not measured here | open (note 7) | `reports/comparison.md` |
-| Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (v2 pending) | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
-| Model size | bytes | not measured (v2 pending) | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
+| Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (Project Schatten pending) | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
+| Model size | bytes | not measured (Project Schatten pending) | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
 
 Notes:
 
@@ -155,6 +155,7 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: section 4 gains the published PA and UA shares of the CloudSEN12 paper's Table 6 for all three experiments, read in the Europe PMC full text; section 2 describes CloudScout's architecture and its re-implementation in this repository; section 5 adds the comparison with that re-implementation; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).
 - 7 October 2026: section 1 links POLICY.md, gate 5, and BENCHMARK-AUTHORITY.md.

@@ -149,7 +149,7 @@ def test_l2_ladder_sizes_and_one_change_per_variant(repo_root: Path) -> None:
         "l2_flex_1m_rescale": ("data", {"rescale_min", "rescale_max"}),
         "l2_flex_1m_gainoffset": ("data", {"gain_jitter", "offset_jitter"}),
         "l2_flex_1m_noiseblur": ("data", {"noise_std", "blur_sigma"}),
-        # v3 variants (hpc/roihu/plan.md, section 3).
+        # Variants of the stability, frame, IoU, rescale and export options.
         "l2_flex_1m_clip": ("train", {"grad_clip_norm"}),
         "l2_flex_1m_guard": ("train", {"skip_nonfinite"}),
         "l2_flex_1m_warmup10": ("train", {"warmup_epochs"}),
