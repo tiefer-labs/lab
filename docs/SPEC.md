@@ -570,8 +570,7 @@ lab/
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
     test_diagnose.py              diagnostics read validation only
     test_paper_models.py          every paper algorithm and model has a route on every dataset
-    test_model_names.py           config names follow section 8; the rename changed no setting
-    data/                         configs_before_rename.json: every config field before the rename of 15 October 2026
+    test_model_names.py           config names follow section 8
   .editorconfig
   .env.example                    TIEFER_* variables with comments, no secrets
   .gitattributes                  line endings, *.sh and *.sbatch as LF
@@ -664,6 +663,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 15 October 2026: section 8, model names: rename verified in PR #9; the snapshot of the configs before the rename and its test are removed; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: the families Sieb, Wandler, Lupe, the CloudScout re-implementation and smoke, and the naming scheme; section 14 lists the renamed configs; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: `paper_models.py`, `evaluate_all.sh`, `add_release_2022.py` and their test in the tree; drafted with an AI-assisted system.

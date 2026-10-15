@@ -61,7 +61,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-TRN-09` | A config that starts from or distils from another run names exactly one finished run of this repository | met | `tests/test_training_options.py::test_init_checkpoint_and_teacher_name_one_run` |
 | `REQ-TRN-10` | The frame term, the Lovasz-softmax term and the frame loss match hand computations | met | `tests/test_flexible_model.py::test_frame_fraction_loss_and_lovasz_by_hand`, `tests/test_training_options.py::test_frame_loss_by_hand` |
 | `REQ-TRN-11` | The CloudScout re-implementation gives one class per frame, trains in the paper's two steps and exports with allowed operators only | met | `tests/test_training_options.py::test_cloudscout_gives_one_class_per_frame_and_trains`, `tests/test_model_budget.py::test_cloudscout_operators_are_allowed` |
-| `REQ-TRN-12` | Every variant changes one setting of its reference; combined configs have their row in ASSUMPTIONS.md | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant`, `tests/test_config.py::test_l1_and_cloudscout_variants_change_one_setting`, `tests/test_config.py::test_candidate_references_are_drafts_with_the_stated_changes`, `tests/test_model_names.py::test_every_config_name_follows_the_scheme`, `tests/test_model_names.py::test_the_rename_changes_no_setting` |
+| `REQ-TRN-12` | Every variant changes one setting of its reference; combined configs have their row in ASSUMPTIONS.md | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant`, `tests/test_config.py::test_l1_and_cloudscout_variants_change_one_setting`, `tests/test_config.py::test_candidate_references_are_drafts_with_the_stated_changes`, `tests/test_model_names.py::test_every_config_name_follows_the_scheme` |
 
 Further evidence: `REQ-TRN-07`: the metadata test passes; no run of Project Schatten exists yet.
 
@@ -194,6 +194,7 @@ Notes:
 
 ## Changelog
 
+- 15 October 2026: `REQ-TRN-12` no longer names the rename test, removed after the rename was verified in PR #9; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: `REQ-DAT-18` reads fail closed: a source without a recorded decision stops; drafted with an AI-assisted system.
