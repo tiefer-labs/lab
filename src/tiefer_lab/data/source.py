@@ -23,7 +23,7 @@ import json
 import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -261,6 +261,75 @@ def map_labels(
     for code, cls in codes.items():
         lookup[code] = cls
     return lookup[raw.astype(np.int64)]
+
+
+# Licence decisions ---------------------------------------------------------------
+
+DecisionStatus = Literal["no decision", "used", "not used", "declined, pending legal review"]
+# Statuses under which a source is never downloaded, cached, evaluated, used as
+# a reference mask or shown in a comparison or coverage report.
+REFUSED: tuple[DecisionStatus, ...] = ("not used", "declined, pending legal review")
+# Issue of the maintainer's licence decisions of 15 October 2026; None until linked.
+LICENCE_ISSUE_15_OCTOBER_2026: str | None = None
+
+
+@dataclass(frozen=True)
+class LicenceDecision:
+    """The maintainer's licence decision on one third-party source, as recorded.
+
+    It is stored next to the facts of the source. Only a new decision of the
+    maintainer, recorded the same way, changes it; there is no option that
+    bypasses it.
+    """
+
+    status: DecisionStatus
+    licence: str | None = None  # the licence as recorded from the source
+    date: str | None = None
+    issue: str | None = None
+    reason: str = ""
+
+    @property
+    def refused(self) -> bool:
+        return self.status in REFUSED
+
+    def describe(self) -> str:
+        issue = self.issue or "issue not linked yet"
+        return f"{self.status}, licence decision of {self.date} ({issue}): {self.reason}"
+
+
+NO_DECISION = LicenceDecision("no decision")
+
+
+def decided_15_october_2026(
+    status: DecisionStatus, licence: str | None, reason: str
+) -> LicenceDecision:
+    """A decision of the maintainer of 15 October 2026."""
+    return LicenceDecision(
+        status, licence, "15 October 2026", LICENCE_ISSUE_15_OCTOBER_2026, reason
+    )
+
+
+class LicenceRefusedError(DataSourceError):
+    """A source whose licence decision refuses its use."""
+
+
+def require_allowed(name: str, decision: LicenceDecision) -> None:
+    """Stop with the recorded decision when it refuses the source."""
+    if decision.refused:
+        raise LicenceRefusedError(
+            f"{name} is {decision.describe()}. Only a new decision of the maintainer, "
+            "recorded in its decision record, changes this"
+        )
+
+
+def require_used(name: str, decision: LicenceDecision) -> None:
+    """Stop unless the maintainer recorded that the source may be used."""
+    require_allowed(name, decision)
+    if decision.status != "used":
+        raise DataSourceError(
+            f"{name}: no licence decision of the maintainer is recorded; it is recorded in "
+            "the source's decision record before any use"
+        )
 
 
 def require_verified[T](name: str, value: T | None) -> T:

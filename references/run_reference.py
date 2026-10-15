@@ -36,6 +36,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from tiefer_lab.data import cache
+from tiefer_lab.data.source import NO_DECISION, LicenceDecision, decided_15_october_2026
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, log_test_evaluation
 from tiefer_lab.utils import metadata
 
@@ -49,17 +50,17 @@ class Reference:
     name: str
     source: str
     licence: str | None  # as read on the primary source, or None: TODO(verify)
-    decision: str | None  # the maintainer's decision for this use, or None
     kind: str  # "four_class", "cloud" or "probability", the output as stored
     runner: Runner | None = None
     note: str = ""
+    # The maintainer's licence decision for this use (data/source.py, LicenceDecision).
+    decision: LicenceDecision = NO_DECISION
 
 
 REFERENCES: dict[str, Reference] = {
     "unetmobv2": Reference(
         "unetmobv2",
         "UNetMobV2 of the CloudSEN12 paper; primary page of the weights TODO(verify)",
-        None,
         None,
         "four_class",
         note="CloudSEN12+ ships its mask (cloudmask_unetmobv2_v1); this runner is for the "
@@ -69,7 +70,6 @@ REFERENCES: dict[str, Reference] = {
         "s2cloudless",
         "s2cloudless, Sentinel Hub; primary page TODO(verify)",
         None,
-        None,
         "probability",
         note="CloudSEN12+ ships its probability; this runner is for the independent datasets",
     ),
@@ -77,14 +77,15 @@ REFERENCES: dict[str, Reference] = {
         "dtacs4bands",
         "https://huggingface.co/isp-uv-es/cloudsen12_models",
         "CC-BY-NC-4.0",
-        None,
         "four_class",
-        note="non-commercial licence: the maintainer decides before any use",
+        note="non-commercial licence",
+        decision=decided_15_october_2026(
+            "declined, pending legal review", "CC BY-NC 4.0", "non-commercial licence"
+        ),
     ),
     "kappamask_l1c": Reference(
         "kappamask_l1c",
         "KappaMask, KappaZeta; primary page TODO(verify)",
-        None,
         None,
         "four_class",
         note="first try the masks of the CloudSEN12 release of 2022 (data/cloudsen12_2022.py)",
@@ -93,14 +94,12 @@ REFERENCES: dict[str, Reference] = {
         "kappamask_l2a",
         "KappaMask, KappaZeta; primary page TODO(verify)",
         None,
-        None,
         "four_class",
         note="needs Level-2A input; first try the 2022 release masks",
     ),
     "cd_fcnn_rgbi": Reference(
         "cd_fcnn_rgbi",
         "CD-FCNN, primary page TODO(verify)",
-        None,
         None,
         "cloud",
         note="first try the 2022 release masks",
@@ -109,14 +108,12 @@ REFERENCES: dict[str, Reference] = {
         "cd_fcnn_rgbiswir",
         "CD-FCNN, primary page TODO(verify)",
         None,
-        None,
         "cloud",
         note="first try the 2022 release masks",
     ),
     "fmask4": Reference(
         "fmask4",
         "Fmask 4, primary page TODO(verify)",
-        None,
         None,
         "four_class",
         note="needs product metadata (sun and view angles) that 509 x 509 patches may not have; "
@@ -125,18 +122,25 @@ REFERENCES: dict[str, Reference] = {
 }
 
 
+def allowed_references() -> list[str]:
+    """The references whose licence decision does not refuse them."""
+    return sorted(n for n, r in REFERENCES.items() if not r.decision.refused)
+
+
 class ReferenceError(RuntimeError):
     """A reference model cannot run yet."""
 
 
 def ready(reference: Reference) -> Runner:
     """The runner of a reference whose licence is cleared, or a clear stop."""
+    if reference.decision.refused:
+        raise ReferenceError(f"{reference.name} is {reference.decision.describe()}")
     if reference.licence is None:
         raise ReferenceError(
             f"{reference.name}: licence not read yet (TODO(verify)); read it at "
             f"{reference.source} and record it in references/run_reference.py and docs/DATASETS.md"
         )
-    if reference.decision is None:
+    if reference.decision.status != "used":
         raise ReferenceError(
             f"{reference.name}: licence {reference.licence}; the maintainer has not recorded "
             f"whether it allows this use ({reference.note or 'see docs/DATASETS.md'})"
@@ -167,7 +171,7 @@ def run(
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python references/run_reference.py")
-    parser.add_argument("--model", required=True, choices=sorted(REFERENCES))
+    parser.add_argument("--model", required=True, choices=allowed_references())
     parser.add_argument("--cache", required=True)
     parser.add_argument("--split", required=True, choices=["val", "test"])
     parser.add_argument("--final", action="store_true")
@@ -188,7 +192,7 @@ def describe() -> list[dict[str, Any]]:
         {
             "name": r.name,
             "licence": r.licence or "not read",
-            "decision": r.decision or "none",
+            "decision": r.decision.status,
             "runner": r.runner is not None,
         }
         for r in REFERENCES.values()

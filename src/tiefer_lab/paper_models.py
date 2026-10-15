@@ -7,7 +7,8 @@
 
 Writes `reports/coverage.md`: one row per model (this repository's own models
 and the nine algorithms of the paper's Table 6) and one column per dataset
-(CloudSEN12+ and the nine datasets of the paper's Table 1). Each cell says
+(CloudSEN12+ and the datasets of the paper's Table 1 that the licence
+decisions allow). Each cell says
 whether an evaluation report holds that model on that dataset (`measured`)
 and, when not, how it is to be measured or why it cannot be:
 
@@ -19,7 +20,10 @@ and, when not, how it is to be measured or why it cannot be:
 - `needs product`: the algorithm needs the full Level-1 product, which the
   dataset does not ship; a download decision of the maintainer;
 - `open`: a fact it depends on is not verified yet (`TODO(verify)`);
-- `n/a`: it cannot be measured on this dataset, with the reason.
+- `n/a`: it cannot be measured on this dataset, with the reason;
+- `not used: licence decision`: the source is refused by the maintainer's
+  licence decision (data/source.py, LicenceDecision). A refused dataset has
+  no column at all; only a new decision in its record brings it back.
 
 Nothing here is a measured value: the page is built from the report files
 and the facts below, and it never reads the data. The algorithms' input
@@ -34,7 +38,7 @@ import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from tiefer_lab.data import independent
+from tiefer_lab.data import cloudsen12_2022, independent
 from tiefer_lab.reports import Reports, load_reports
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
@@ -55,7 +59,14 @@ PAPER_DATASETS: Mapping[str, str] = {
     "WHUS2-CD": "whus2_cd",
     "KappaZeta": "kappaset",
 }
-DATASET_COLUMNS: tuple[str, ...] = (CLOUDSEN12, *PAPER_DATASETS.values())
+ALL_COLUMNS: tuple[str, ...] = (CLOUDSEN12, *PAPER_DATASETS.values())
+
+
+def dataset_columns() -> tuple[str, ...]:
+    """CloudSEN12+ and the Table 1 datasets whose licence decision does not refuse them."""
+    allowed = set(independent.allowed_datasets())
+    return (CLOUDSEN12, *(d for d in PAPER_DATASETS.values() if d in allowed))
+
 
 # The paper's Table 6, in its order. Human level is a published agreement of
 # annotators, not a model; it stays in docs/LANDSCAPE.md.
@@ -134,9 +145,12 @@ IMAGES_REASON = (
 class Route:
     """How one algorithm is measured on one dataset."""
 
-    kind: str  # shipped, release 2022, run, needs product, open, n/a
+    kind: str  # shipped, release 2022, run, needs product, open, n/a, not used
     report_name: str | None  # the key under `baselines` of an evaluation report
     reason: str
+
+
+NOT_USED = Route("not used", None, "licence decision")
 
 
 def _dataset_bands(name: str) -> tuple[str, ...] | None:
@@ -148,9 +162,13 @@ def _dataset_bands(name: str) -> tuple[str, ...] | None:
 def route(model: str, dataset: str) -> Route:
     """The route of a paper algorithm on a dataset, from the facts of both."""
     algo = ALGORITHMS[model]
+    if dataset != CLOUDSEN12 and independent.dataset(dataset).decision.refused:
+        return NOT_USED
     if dataset == CLOUDSEN12:
         if model in CLOUDSEN12_SHIPPED:
             return Route("shipped", CLOUDSEN12_SHIPPED[model], "mask shipped with CloudSEN12+")
+        if cloudsen12_2022.LICENCE_DECISION.refused:
+            return NOT_USED
         return Route(
             "release 2022",
             RELEASE_2022_PREFIX + model,
@@ -209,6 +227,17 @@ def route(model: str, dataset: str) -> Route:
     return Route("run", f"reference_{algo.reference}", f"published model run on the cache{note}")
 
 
+def declined_source(dataset: str) -> bool:
+    """True for an independent dataset whose licence decision refuses it."""
+    info = independent.DATASETS.get(dataset)
+    return info is not None and info.decision.refused
+
+
+def declined_mask(report_name: str) -> bool:
+    """True for a reference mask of a source whose licence decision refuses it."""
+    return report_name.startswith(RELEASE_2022_PREFIX) and cloudsen12_2022.LICENCE_DECISION.refused
+
+
 def _source(report_data: Mapping[str, object]) -> str:
     data = report_data.get("data")
     source = data.get("source") if isinstance(data, dict) else None
@@ -224,18 +253,23 @@ def measured(
         if r.data.get("split") not in splits:
             continue
         dataset = _source(r.data)
+        if declined_source(dataset):
+            continue
         config = r.data.get("config")
         name = config.get("name") if isinstance(config, dict) else None
         if name:
             out.setdefault((str(name), dataset), []).append(r.source)
         baselines = r.data.get("baselines")
         for key in baselines if isinstance(baselines, dict) else {}:
-            out.setdefault((str(key), dataset), []).append(r.source)
+            if not declined_mask(str(key)):
+                out.setdefault((str(key), dataset), []).append(r.source)
     return out
 
 
 def cell(model: str, dataset: str, held: Mapping[tuple[str, str], list[str]]) -> str:
     """The text of one cell: measured, or the route and its reason."""
+    if dataset != CLOUDSEN12 and declined_source(dataset):
+        return f"{NOT_USED.kind}: {NOT_USED.reason}"
     if model not in ALGORITHMS:
         if (model, dataset) in held:
             return "measured"
@@ -250,13 +284,15 @@ def cell(model: str, dataset: str, held: Mapping[tuple[str, str], list[str]]) ->
 
 def render(reports: Reports, date: dt.date, own: Sequence[str] = OWN_MODELS) -> str:
     held = measured(reports)
+    columns = dataset_columns()
     names = {CLOUDSEN12: "CloudSEN12+ (test)"} | {v: k for k, v in PAPER_DATASETS.items()}
     blocks = [
         header_block(
             "Coverage",
             "in development",
             "Every model of this repository and every algorithm of the CloudSEN12 paper's "
-            "Table 6 against CloudSEN12+ and the nine datasets of the paper's Table 1, built by "
+            "Table 6 against CloudSEN12+ and the datasets of the paper's Table 1 that the licence "
+            "decisions allow, built by "
             "`python -m tiefer_lab.paper_models` from the report files and the dataset facts; "
             "do not edit it by hand. It holds no metric value: the values are in "
             "reports/comparison.md.",
@@ -267,13 +303,11 @@ def render(reports: Reports, date: dt.date, own: Sequence[str] = OWN_MODELS) -> 
         (("Models of this repository", list(own)), ("Algorithms of the paper", PAPER_MODELS)),
         start=1,
     ):
-        rows = [[model, *(cell(model, d, held) for d in DATASET_COLUMNS)] for model in models]
-        table = markdown_table(["", *(names[d] for d in DATASET_COLUMNS)], [Group("", rows)])
+        rows = [[model, *(cell(model, d, held) for d in columns)] for model in models]
+        table = markdown_table(["", *(names[d] for d in columns)], [Group("", rows)])
         blocks.append(f"\n## {number}. {title}\n\n{table}\n")
-    total = len(DATASET_COLUMNS) * (len(own) + len(PAPER_MODELS))
-    done = sum(
-        cell(m, d, held) == "measured" for m in (*own, *PAPER_MODELS) for d in DATASET_COLUMNS
-    )
+    total = len(columns) * (len(own) + len(PAPER_MODELS))
+    done = sum(cell(m, d, held) == "measured" for m in (*own, *PAPER_MODELS) for d in columns)
     when = f"{date.day} {date:%B %Y}"
     blocks.append(
         f"\n## 3. Count\n\n{done} of {total} cells are measured.\n"

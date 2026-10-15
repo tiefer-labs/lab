@@ -4,14 +4,16 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Evaluate one run on every independent dataset of the CloudSEN12 paper's
-# Table 1, one evaluate.sbatch job per dataset, with the baselines and the
-# reference masks each dataset holds.
+# Table 1 that the maintainer's licence decisions allow (docs/DATASETS.md),
+# one evaluate.sbatch job per dataset, with the baselines and the reference
+# masks each dataset holds.
 #
 #   REASON="<why>" bash hpc/roihu/evaluate_all.sh [--test-only] <run-id>
 #
 # A dataset whose cache is not built yet (independent.sbatch) is listed and
-# skipped, never guessed. The list is DATASETS of
-# src/tiefer_lab/data/independent.py; reports/coverage.md
+# skipped, never guessed. The list is allowed_datasets() of
+# src/tiefer_lab/data/independent.py, in the order of the paper's Table 1
+# (tests/test_paper_models.py checks it); reports/coverage.md
 # (python -m tiefer_lab.paper_models) shows what is still not measured.
 set -euo pipefail
 
@@ -25,11 +27,7 @@ run_id="${1:?${usage}}"
 : "${REASON:?${usage}}"
 datasets=(
   landsat8_sparcs
-  s2_hollstein
   landsat8_biome
-  landsat8_38cloud
-  s2_cesbio
-  landsat8_95cloud
   s2_cloud_catalogue
   whus2_cd
   kappaset

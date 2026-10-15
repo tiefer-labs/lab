@@ -917,6 +917,7 @@ def build_independent(
     cloudsen12_cache: str | None = None,
     limit: int | None = None,
 ) -> None:
+    independent.require_dataset_allowed(name)
     info = independent.dataset(name)
     stored = independent.stored_bands(name, bands)
     if not stored:
@@ -1081,7 +1082,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--source",
-        choices=sorted(independent.DATASETS),
+        choices=independent.allowed_datasets(),
         default=None,
         help="build an independent dataset cache from its download folder (--root)",
     )

@@ -7,14 +7,15 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset> [extra build_cache arguments]
 #
-# <dataset>: a key of DATASETS in src/tiefer_lab/data/independent.py: s2_cloud_catalogue,
-# kappaset, landsat8_biome, landsat8_sparcs, s2_hollstein, landsat8_38cloud, s2_cesbio,
-# landsat8_95cloud or whus2_cd
-# (src/tiefer_lab/data/independent.py). The Zenodo files are downloaded into
+# <dataset>: s2_cloud_catalogue, kappaset, landsat8_biome, landsat8_sparcs or whus2_cd,
+# the datasets of src/tiefer_lab/data/independent.py that the maintainer's licence
+# decisions allow (docs/DATASETS.md); a refused dataset stops with its decision
+# before anything is downloaded. The Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
-# unpacked once. The Landsat 8 datasets are downloaded by hand from their USGS
-# pages into the same folder, because their file URLs are not verified yet.
+# unpacked once. The Landsat 8 datasets and WHUS2-CD are downloaded by hand from
+# their source pages into the same folder, because their file URLs are not
+# verified yet.
 # The build stops on every fact that is not verified (docs/INDEPENDENT.md,
 # section 6) and resumes at the next scene when submitted again. Sentinel-2
 # datasets drop the products used by CloudSEN12+ first, so the CloudSEN12+
@@ -49,13 +50,14 @@ case "${dataset}" in
     record="7100327"
     files=(kappaset.zip README.pdf)
     ;;
-  landsat8_biome | landsat8_sparcs | landsat8_38cloud | landsat8_95cloud | s2_hollstein | s2_cesbio | whus2_cd)
+  landsat8_biome | landsat8_sparcs | whus2_cd)
     record=""
     files=()
     ;;
   *)
-    echo "error: unknown dataset '${dataset}'" >&2
-    exit 2
+    record=""
+    files=()
+    unknown=1
     ;;
 esac
 
@@ -64,6 +66,13 @@ source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
+# The licence decision of the dataset is read from its record; a refused dataset
+# stops here with the decision, before any download.
+python3 -c 'import sys; from tiefer_lab.data import independent; independent.require_dataset_allowed(sys.argv[1])' "${dataset}"
+if [[ "${unknown:-0}" == "1" ]]; then
+  echo "error: unknown dataset '${dataset}'" >&2
+  exit 2
+fi
 python3 hpc/roihu/check_env.py --data-only
 
 root="${TIEFER_DATA_DIR}/downloads/${dataset}"
@@ -87,7 +96,7 @@ if [[ -z "${record}" && -z "$(ls -A "${root}")" ]]; then
 fi
 
 extra=()
-if [[ "${dataset}" == s2_* || "${dataset}" == kappaset || "${dataset}" == whus2_cd ]]; then
+if [[ "${dataset}" == s2_cloud_catalogue || "${dataset}" == kappaset || "${dataset}" == whus2_cd ]]; then
   extra=(--cloudsen12-cache "${TIEFER_CLOUDSEN12_CACHE:-cloudsen12-l1c-all}")
 fi
 python3 -m tiefer_lab.data.build_cache --split test --source "${dataset}" --root "${root}" \

@@ -12,9 +12,13 @@ tests, never for training, selection, calibration or thresholds:
 - `kappaset`: KappaSet, Sentinel-2 KappaZeta cloud and cloud shadow masks
   (Zenodo, 2022);
 - `whus2_cd`: WHUS2-CD+, Sentinel-2 cloud masks over China (Zenodo, 2021);
-- `landsat8_38cloud`, `landsat8_95cloud`: 38-Cloud and 95-Cloud (Kaggle);
-- `s2_hollstein`, `s2_cesbio`: labelled pixels and 60 m masks without images;
-  their images are the Level-1C products they name.
+- `s2_hollstein`, `landsat8_38cloud`, `landsat8_95cloud`, `s2_cesbio`: not
+  used, licence decision of 15 October 2026 (`Dataset.decision`); their
+  readers are kept and stop with it.
+
+Each dataset carries the maintainer's licence decision next to its facts. A
+refused dataset is never downloaded, cached, evaluated or reported; only a
+new decision, recorded in `decision`, changes that.
 
 Every fact below is read from the primary source named next to it, with the
 date it was read; the data card is docs/INDEPENDENT.md. A fact that is not
@@ -50,9 +54,13 @@ from tiefer_lab.data.source import (
     CLOUD_SHADOW,
     IGNORE_INDEX,
     L1C_BAND_NAMES,
+    NO_DECISION,
     THICK_CLOUD,
     THIN_CLOUD,
     DataSourceError,
+    LicenceDecision,
+    decided_15_october_2026,
+    require_allowed,
     require_verified,
 )
 
@@ -87,6 +95,8 @@ class Dataset:
     # Sentinel-2 band names the dataset provides (Landsat bands under their
     # matched names); None until verified from its source.
     bands: tuple[str, ...] | None = None
+    # The maintainer's licence decision; a refused source is never read.
+    decision: LicenceDecision = NO_DECISION
 
 
 @dataclass(frozen=True)
@@ -283,6 +293,11 @@ DATASETS.update(
             "20170710 file (the paper's Table 1 says 59 scenes); spectra of 13 bands at "
             "20 m with product ID, latitude and longitude per pixel, but no images",
             bands=L1C_BAND_NAMES,
+            decision=decided_15_october_2026(
+                "not used",
+                "CC BY-NC 4.0 (LICENCE file) and CC BY-NC-SA 4.0 (inside the HDF5 file)",
+                "non-commercial licence",
+            ),
         ),
         "landsat8_38cloud": Dataset(
             name="landsat8_38cloud",
@@ -308,6 +323,9 @@ DATASETS.update(
             note="North America mainly; four bands only (Landsat 8 bands 2, 3, 4, 5); "
             "test patches have no ground truth, only the 20 entire-scene masks",
             bands=("B02", "B03", "B04", "B8A"),
+            decision=decided_15_october_2026(
+                "not used", "Unknown on Kaggle", "no licence is stated for the data"
+            ),
         ),
         "s2_cesbio": Dataset(
             name="s2_cesbio",
@@ -338,6 +356,9 @@ DATASETS.update(
             "named after its Level-1C product; the 7 scenes of the Hollstein folder are "
             "left out, as the record says they were not used for validation",
             bands=None,
+            decision=decided_15_october_2026(
+                "not used", "CC BY 4.0", "masks only, and its imagery is not downloaded"
+            ),
         ),
         "landsat8_95cloud": Dataset(
             name="landsat8_95cloud",
@@ -359,6 +380,11 @@ DATASETS.update(
             note="95-Cloud holds every 38-Cloud scene; only its 57 added scenes are used, "
             "so that the two never share a scene (docs/ASSUMPTIONS.md, A-2.9)",
             bands=("B02", "B03", "B04", "B8A"),
+            decision=decided_15_october_2026(
+                "not used",
+                "CC0 on Kaggle",
+                "the download needs a Kaggle account (credentials rule); not used while it does",
+            ),
         ),
         "whus2_cd": Dataset(
             name="whus2_cd",
@@ -430,15 +456,14 @@ OPEN_FACTS: dict[str, dict[str, Any]] = {
 }
 
 # Datasets that ship labels but no images: the images are the Level-1C products
-# named in the dataset, which are downloaded with credentials, a decision of the
-# maintainer. Until then every model's route on them is `needs product`.
+# named in the dataset, downloaded from Copernicus with credentials.
 IMAGES_FROM_PRODUCT: frozenset[str] = frozenset({"s2_hollstein", "s2_cesbio"})
+PRODUCT_IMAGERY = decided_15_october_2026(
+    "not used",
+    None,
+    "the Level-1C products of S2-Hollstein and S2-CESBIO are not downloaded from Copernicus",
+)
 PAPER_ONLY = ("s2_hollstein", "s2_cesbio")
-for _name in PAPER_ONLY:
-    OPEN_FACTS[_name] = {
-        "product_download": None,  # where the Level-1C products are read from
-    }
-OPEN_FACTS["s2_hollstein"]["pixel_location"] = None  # latitude and longitude to pixel
 
 # 38-Cloud and 95-Cloud (repository READMEs and Kaggle files, read 14 October 2026):
 # one file per band and patch, {red,green,blue,nir,gt}_patch_<N>_<row>_by_<col>_<product
@@ -467,6 +492,18 @@ def dataset(name: str) -> Dataset:
     if name not in DATASETS:
         raise DataSourceError(f"unknown independent dataset {name!r}; known: {sorted(DATASETS)}")
     return DATASETS[name]
+
+
+def require_dataset_allowed(name: str) -> None:
+    """Stop with the recorded licence decision of a dataset, or of its imagery."""
+    require_allowed(name, dataset(name).decision)
+    if name in IMAGES_FROM_PRODUCT:
+        require_allowed(f"the imagery of {name}", PRODUCT_IMAGERY)
+
+
+def allowed_datasets() -> list[str]:
+    """The datasets whose licence decision does not refuse them, in registry order."""
+    return [name for name, info in DATASETS.items() if not info.decision.refused]
 
 
 def require_fact(name: str, fact: str) -> Any:
@@ -682,6 +719,7 @@ def read_catalogue(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     used, its processing baseline is read from its ID: the README's division by
     10,000 is right only before baseline 04.00, so a later product stops.
     """
+    require_dataset_allowed("s2_cloud_catalogue")
     info = dataset("s2_cloud_catalogue")
     codes = info.label_codes
     assert codes is not None
@@ -723,6 +761,7 @@ def read_kappaset(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     and in test also SCL, FMC, SS2C, IDPX and MAJAC. Stops until the band scale,
     the product ID of a sub-tile, the SCL codes and the NetCDF driver are verified.
     """
+    require_dataset_allowed("kappaset")
     require_fact("kappaset", "netcdf_driver")
     scale = require_fact("kappaset", "band_scale")
     require_fact("kappaset", "product_id")
@@ -737,6 +776,7 @@ def read_kappaset(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
 
 def read_biome(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     """L8 Biome scenes: band TIFs, BQA TIF, MTL.txt and the ENVI mask (USGS page)."""
+    require_dataset_allowed("landsat8_biome")
     require_verified(
         "DATASETS['landsat8_biome'].label_codes", DATASETS["landsat8_biome"].label_codes
     )
@@ -748,6 +788,7 @@ def read_biome(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
 
 def read_sparcs(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     """L8 SPARCS subsets: band stack, QA band, MTL.txt and the PNG mask (USGS page)."""
+    require_dataset_allowed("landsat8_sparcs")
     require_fact("landsat8_sparcs", "scene_layout")
     require_fact("landsat8_sparcs", "band_stack_order")
     require_fact("landsat8_sparcs", "qa_bit_layout")
@@ -761,6 +802,7 @@ def read_whus2(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
     later stops until its radiometric offset is applied. Stops until the JP2
     read with the locked GDAL is verified.
     """
+    require_dataset_allowed("whus2_cd")
     require_fact("whus2_cd", "jp2_driver")
     raise DataSourceError("whus2_cd reader: write the JP2 read in the pull request that records it")
 
@@ -769,11 +811,12 @@ def _unread(name: str) -> Callable[[Path, Sequence[str]], Iterator[Scene]]:
     """Reader of a dataset whose layout, licence and label codes are not read yet."""
 
     def read(root: Path, bands: Sequence[str]) -> Iterator[Scene]:
+        require_dataset_allowed(name)
         info = dataset(name)
         require_verified(f"DATASETS[{name!r}].licence", info.licence)
         require_verified(f"DATASETS[{name!r}].label_codes", info.label_codes)
         require_verified(f"DATASETS[{name!r}].bands", info.bands)
-        for fact in OPEN_FACTS[name]:
+        for fact in OPEN_FACTS.get(name, {}):
             require_fact(name, fact)
         raise DataSourceError(f"{name} reader: write the scene read with the verified layout")
 

@@ -26,6 +26,8 @@ CloudSEN12+ is a third-party dataset published by the TACO Foundation on Hugging
 
 The extra variant of the dataset ships cloud masks made by third-party algorithms (QA60, Sen2Cor, s2cloudless, CloudScore+, UNetMobV2 and SEnSeI v2). The card publishes them as part of the dataset, under the dataset's CC0 1.0 terms, and names the source of each; this repository does not include them.
 
+Third-party datasets and models that the maintainer's licence decisions refuse ([docs/DATASETS.md](docs/DATASETS.md), section 1.1) are not used, so this file carries no attribution for them. Attributions are added here only for material actually used.
+
 The patches are Copernicus Sentinel-2 data. The legal notice on the use of Copernicus Sentinel data asks that adapted or modified data communicated to the public carries the notice "Contains modified Copernicus Sentinel data [Year]" ([legal notice](https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice), accessed 7 October 2026). For the values derived from CloudSEN12+ in this repository:
 
 Contains modified Copernicus Sentinel data 2018–2020.
@@ -50,6 +52,7 @@ On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvi
 
 ## Changelog
 
+- 15 October 2026: attributions only for material actually used; the sources refused by the licence decisions of 15 October 2026 carry none; drafted with an AI-assisted system.
 - 7 October 2026: the licence of each part, what is not licensed and the trademarks move to LICENSING.md and TRADEMARK.md; this file keeps the attributions and links both.
 - 7 October 2026: this changelog added. The images of `docs/assets/` are excluded from the MPL 2.0 licence, all rights reserved by Tiefer; the header typeface Mozilla Headline is named with its licence, SIL Open Font License 1.1.
 - 7 October 2026: the Copernicus Sentinel data notice and the years of the imagery; the CloudSEN12+ citations; the reference masks of the extra variant are third-party products under the dataset's terms.

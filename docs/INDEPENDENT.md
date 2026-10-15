@@ -4,7 +4,7 @@
 
 Status: in development. Owner: Tiefer. Licence: MPL 2.0.
 
-The nine datasets of the CloudSEN12 paper's Table 1 that test the cloud filter on data it never saw: what each one is, the facts the code depends on with their sources, how they are made comparable with CloudSEN12+, the coverage of every model on every dataset, and the facts still open. They are never used for training, selection, calibration or thresholds. The catalogue row of each is in [DATASETS.md](DATASETS.md), section 1; the code is `src/tiefer_lab/data/independent.py`.
+The nine datasets of the CloudSEN12 paper's Table 1 as candidates to test the cloud filter on data it never saw, and which of them the licence decisions allow: what each one is, the facts the code depends on with their sources, how they are made comparable with CloudSEN12+, the coverage of every model on every dataset, and the facts still open. They are never used for training, selection, calibration or thresholds. The catalogue row of each is in [DATASETS.md](DATASETS.md), section 1; the code is `src/tiefer_lab/data/independent.py`.
 
 ---
 
@@ -13,7 +13,7 @@ The nine datasets of the CloudSEN12 paper's Table 1 that test the cloud filter o
 | Question | Answer | Source |
 | :--- | :---: | :---: |
 | Why are independent datasets used? | a result on the CloudSEN12+ test split shares its labelling protocol, sensor and processing level with the training data; acceptance targets `IND-01` to `IND-04` and `CMP-06` need data labelled by others, on Sentinel-2 and on another sensor | [REQUIREMENTS.md](REQUIREMENTS.md), section 8 |
-| Why these nine? | they are all the datasets the CloudSEN12 paper lists next to CloudSEN12 (Table 1), so every model of this repository and every algorithm of the paper's Table 6 is scored on each of them where it can be (section 8) | [1], Table 1 |
+| Why these nine? | they are all the datasets the CloudSEN12 paper lists next to CloudSEN12 (Table 1); every model of this repository and every algorithm of the paper's Table 6 is scored on each of them that the licence decisions allow, where it can be (sections 2.1 and 8) | [1], Table 1 |
 | Are they independent of the models? | yes for training: no model of this repository reads them before its selection is frozen; Sentinel-2 products that CloudSEN12+ also uses are dropped first (section 5) | `build_cache --source` |
 
 ---
@@ -37,6 +37,22 @@ The nine datasets of the CloudSEN12 paper's Table 1 that test the cloud filter o
 - The paper's Table 1 gives 59 scenes for S2-Hollstein and 38 for S2-CESBIO. The Hollstein file of 10 July 2017 holds 48 products; the CESBIO record holds 31 plus 7 scenes, one of them in both folders, and its paper speaks of 32 reference scenes [17], [19], [20]. This card uses the files.
 - WHUS2-CD labels thin cloud whose surface cannot be seen as cloud and other thin cloud as clear; 38-Cloud and 95-Cloud label thin cloud and haze as cloud [12], [13]. These datasets are scored on the cloud problem only.
 - The paper's Table 1 lists the KappaZeta dataset with 155 scenes in Northern Europe [1]; the KappaSet record of 2022 has 1,038 products distributed over the globe [6]. This card uses the record of 2022.
+
+### 2.1 Status
+
+Which datasets the maintainer's licence decisions allow. The licence, the decision, its date and its reason are recorded once, in [DATASETS.md](DATASETS.md), section 1.1; a refused dataset is never downloaded, cached, evaluated or reported, and its reader stops with the decision.
+
+| Dataset | Status |
+| :--- | :---: |
+| L8 Biome | allowed |
+| L8 SPARCS | allowed |
+| Sentinel-2 Cloud Mask Catalogue | allowed |
+| KappaSet | allowed |
+| WHUS2-CD+ | allowed |
+| 38-Cloud | not used, licence decision of 15 October 2026 |
+| 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
+| S2-Hollstein | not used, licence decision of 15 October 2026 |
+| S2-CESBIO | not used, licence decision of 15 October 2026 (its imagery is not downloaded) |
 
 ---
 
@@ -92,10 +108,7 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | KappaSet band scale, product ID of a sub-tile, NetCDF read with the locked GDAL | one KappaSet file read on CSC Roihu | `read_kappaset` |
 | Sen2Cor SCL codes | the Sen2Cor product documentation, with Table 5 of [1] | `COMPARISON_CODES["reference_sen2cor"]` |
 | Licence of L8 Biome and L8 SPARCS | their pages state none; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
-| Licence decision for S2-Hollstein (CC BY-NC 4.0 in its LICENCE file, CC BY-NC-SA 4.0 inside its HDF5 file) and for 38-Cloud (licence Unknown on Kaggle) | the maintainer | `DATASETS[...].licence` |
-| Whether the 38-Cloud and 95-Cloud bands are Level-1 digital numbers, and the zero padding of their scenes | the downloaded files with their MTL files | `OPEN_FACTS` |
 | JP2 read of the WHUS2-CD products with the locked GDAL | one product read on CSC Roihu | `read_whus2` |
-| Download of the Level-1C products that S2-Hollstein and S2-CESBIO name (no images are shipped), and the placing of Hollstein pixels by latitude and longitude | the maintainer's decision on a Copernicus download with credentials | `IMAGES_FROM_PRODUCT` |
 | Input bands of each algorithm of the paper's Table 6 | its primary source | `ALGORITHMS` in `src/tiefer_lab/paper_models.py` |
 | Download sizes and storage billing units of the Landsat datasets | the maintainer's download on CSC Roihu | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
 
@@ -112,7 +125,7 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | Zenodo record 5511793 | 36 product zips of 0.6 to 0.92 GB, `ReferenceMask.zip` 20,946,052 bytes | [11] |
 | 38-Cloud | Unknown on Kaggle; the repository's Apache 2.0 file covers its code | Kaggle | 17,051,954,786 bytes | [14] |
 | 95-Cloud | CC0 on Kaggle, for the 57 added scenes | Kaggle | 18,563,733,339 bytes | [16] |
-| S2-Hollstein | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file); non-commercial, the maintainer decides | GFZ GitLab | one HDF5 file | [17] |
+| S2-Hollstein | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file) | GFZ GitLab | one HDF5 file | [17] |
 | S2-CESBIO | CC BY 4.0 | Zenodo record 1460961 | 234,569,318 bytes | [19] |
 
 None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and [NOTICE.md](../NOTICE.md) gains the attribution when the first such result is published. `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
@@ -121,20 +134,20 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 
 ## 8. Coverage of every model on every dataset
 
-No dataset of the paper's Table 1 is left out. `python -m tiefer_lab.paper_models` writes `reports/coverage.md`: one row for each model of this repository and each algorithm of the paper's Table 6, one column for CloudSEN12+ and for each of the nine datasets. A cell is `measured` when an evaluation report holds it; otherwise it names the route and its reason:
+`python -m tiefer_lab.paper_models` writes `reports/coverage.md`: one row for each model of this repository and each algorithm of the paper's Table 6, one column for CloudSEN12+ and for each dataset of the paper's Table 1 that the licence decisions allow (section 2.1); a refused dataset has no column. A cell is `measured` when an evaluation report holds it; otherwise it names the route and its reason:
 
 | Route | Meaning |
 | :--- | :---: |
 | `shipped` | the dataset ships the algorithm's mask on the same pixels (CloudSEN12+: Sen2Cor, QA60, s2cloudless, UNetMobV2; KappaSet: Sen2Cor, Fmask, s2cloudless) |
-| `release 2022` | the mask of the CloudSEN12 release of 2022 on the CloudSEN12+ pixels (`references/add_release_2022.py`) |
+| `not used: licence decision` | the source is refused by a licence decision, for example the masks of the CloudSEN12 release of 2022 on the CloudSEN12+ pixels ([DATASETS.md](DATASETS.md), section 1.1) |
 | `run` | the published model is run with `references/run_reference.py` on the dataset's cache |
-| `needs product` | the full Level-1C product is needed (Sen2Cor, QA60, Fmask on most Sentinel-2 datasets; every model on S2-Hollstein and S2-CESBIO, which ship no images) |
+| `needs product` | the full Level-1C product is needed (Sen2Cor, QA60, Fmask on most Sentinel-2 datasets) |
 | `open` | a fact is not verified yet, such as the input bands of a learned algorithm |
 | `n/a` | it cannot be measured there, for example Sen2Cor or QA60 on Landsat 8, or a model that needs a band the dataset lacks |
 
-`hpc/roihu/evaluate_all.sh` evaluates one run on every dataset whose cache is built, with the baselines and the reference masks each cache holds, and lists the datasets not built yet.
+`hpc/roihu/evaluate_all.sh` evaluates one run on every allowed dataset whose cache is built, with the baselines and the reference masks each cache holds, and lists the datasets not built yet.
 
-**Third sensor (candidate, for the `IND-01` target).** The target asks for datasets from at least 3 sensors; the nine datasets of the paper cover two. A candidate outside the paper: the L7 Irish cloud validation masks, 206 pre-collection Landsat 7 ETM+ Level-1G scenes stratified by latitude zone, with manual cloud masks, doi:10.5066/F7XD0ZWC [10]. Its classes, licence and size are not stated on the page; it stays a candidate until the maintainer decides.
+**Third sensor (candidate, for the `IND-01` target).** The target asks for datasets from at least 3 sensors; the allowed datasets of the paper cover two. A candidate outside the paper: the L7 Irish cloud validation masks, 206 pre-collection Landsat 7 ETM+ Level-1G scenes stratified by latitude zone, with manual cloud masks, doi:10.5066/F7XD0ZWC [10]. Its classes, licence and size are not stated on the page; it stays a candidate until the maintainer decides.
 
 ---
 
@@ -165,5 +178,6 @@ No dataset of the paper's Table 1 is left out. `python -m tiefer_lab.paper_model
 
 ## Changelog
 
+- 15 October 2026: section 2.1, the status of each dataset under the maintainer's licence decisions; the refused datasets leave the open facts, the coverage and the evaluation steps; drafted with an AI-assisted system.
 - 14 October 2026: all nine datasets of the paper's Table 1: WHUS2-CD+, 38-Cloud, 95-Cloud, S2-Hollstein and S2-CESBIO added with their facts and sources; section 8 is the coverage of every model on every dataset; drafted with an AI-assisted system.
 - 14 October 2026: first version: four independent test datasets from the CloudSEN12 paper, their facts with sources, preprocessing, independence, comparison masks, open facts, distribution, the datasets left out and a third-sensor candidate; drafted with an AI-assisted system.
