@@ -28,8 +28,8 @@ The extra variant of the dataset ships cloud masks made by third-party algorithm
 
 The independent test datasets recorded as used ([docs/DATASETS.md](docs/DATASETS.md), section 1.1) are third-party datasets under CC BY 4.0. They are not included in this repository; the scripts download them at run time and cache them outside git, cut into tiles, resampled to 10 m and with their labels mapped to the four classes of this repository ([docs/INDEPENDENT.md](docs/INDEPENDENT.md), section 4):
 
-- Sentinel-2 Cloud Mask Catalogue, by A. Francis, J. Mrziglod, P. Sidiropoulos and J.-P. Muller, Zenodo, 2020, [10.5281/zenodo.4172871](https://doi.org/10.5281/zenodo.4172871), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the authors as the CloudSEN12 paper cites the record (reference 32).
-- KappaSet: Sentinel-2 KappaZeta Cloud and Cloud Shadow Masks, by the creators named on the record, Zenodo, 2022, [10.5281/zenodo.7100327](https://doi.org/10.5281/zenodo.7100327), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Sentinel-2 Cloud Mask Catalogue, by Alistair Francis, John Mrziglod, Panagiotis Sidiropoulos and Jan-Peter Muller, Zenodo, version 1 (the only version of the record; its metadata states no version number), 1 November 2020, [10.5281/zenodo.4172871](https://doi.org/10.5281/zenodo.4172871), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source: Zenodo record 4172871, read 15 October 2026.
+- KappaSet: Sentinel-2 KappaZeta Cloud and Cloud Shadow Masks, by Tetiana Shtym, Olga Wold, Marharyta Domnich, Kaupo Voormansik, Mariana Rohtsalu, Joosep Truupõld, Nikita Murin, Abdullah Toqeer, Catherine Akinyi Odera, Fariha Harun, Indrek Sünter, Heido Trofimov, Anton Kostiukhin and Mihkel Järveoja, Zenodo, version 1, 21 September 2022, [10.5281/zenodo.7100327](https://doi.org/10.5281/zenodo.7100327), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source: Zenodo record 7100327, read 15 October 2026.
 
 Both contain Copernicus Sentinel-2 data, so a result on them carries the Copernicus notice below.
 
@@ -59,6 +59,7 @@ On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvi
 
 ## Changelog
 
+- 15 October 2026: the creators, versions and dates of the Sentinel-2 Cloud Mask Catalogue and KappaSet, read from their Zenodo records; drafted with an AI-assisted system.
 - 15 October 2026: attribution of the Sentinel-2 Cloud Mask Catalogue and KappaSet, the independent test datasets recorded as used; drafted with an AI-assisted system.
 - 15 October 2026: attributions only for material actually used; the sources refused by the licence decisions of 15 October 2026 carry none; drafted with an AI-assisted system.
 - 7 October 2026: the licence of each part, what is not licensed and the trademarks move to LICENSING.md and TRADEMARK.md; this file keeps the attributions and links both.
