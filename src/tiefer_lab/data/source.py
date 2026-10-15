@@ -265,12 +265,23 @@ def map_labels(
 
 # Licence decisions ---------------------------------------------------------------
 
-DecisionStatus = Literal["no decision", "used", "not used", "declined, pending legal review"]
+DecisionStatus = Literal[
+    "no decision",
+    "used",
+    "not used",
+    "declined, pending legal review",
+    "candidate, no decision yet",
+]
 # Statuses under which a source is never downloaded, cached, evaluated, used as
-# a reference mask or shown in a comparison or coverage report.
-REFUSED: tuple[DecisionStatus, ...] = ("not used", "declined, pending legal review")
-# Issue of the maintainer's licence decisions of 15 October 2026; None until linked.
-LICENCE_ISSUE_15_OCTOBER_2026: str | None = None
+# a reference mask or shown in a comparison or coverage report. A candidate the
+# maintainer has not decided yet is treated as not used.
+REFUSED: tuple[DecisionStatus, ...] = (
+    "not used",
+    "declined, pending legal review",
+    "candidate, no decision yet",
+)
+# Issue of the maintainer's licence decisions of 15 October 2026.
+LICENCE_ISSUE_15_OCTOBER_2026: str | None = "issue 7, https://github.com/tiefer-labs/lab/issues/7"
 
 
 @dataclass(frozen=True)
@@ -290,10 +301,18 @@ class LicenceDecision:
 
     @property
     def refused(self) -> bool:
+        """An explicit refusal, or a candidate the maintainer has not decided yet."""
         return self.status in REFUSED
+
+    @property
+    def allowed(self) -> bool:
+        """Only a recorded "used" allows a source: no record is no permission."""
+        return self.status == "used"
 
     def describe(self) -> str:
         issue = self.issue or "issue not linked yet"
+        if self.status == "candidate, no decision yet":
+            return f"{self.status}, recorded on {self.date} ({issue}): {self.reason}"
         return f"{self.status}, licence decision of {self.date} ({issue}): {self.reason}"
 
 
@@ -314,22 +333,22 @@ class LicenceRefusedError(DataSourceError):
 
 
 def require_allowed(name: str, decision: LicenceDecision) -> None:
-    """Stop with the recorded decision when it refuses the source."""
+    """Stop unless the maintainer recorded that the source is used (fail closed)."""
     if decision.refused:
         raise LicenceRefusedError(
             f"{name} is {decision.describe()}. Only a new decision of the maintainer, "
             "recorded in its decision record, changes this"
         )
+    if not decision.allowed:
+        raise LicenceRefusedError(
+            f"{name}: no licence decision of the maintainer is recorded; a source is read "
+            'only after a decision "used" is recorded in its decision record'
+        )
 
 
 def require_used(name: str, decision: LicenceDecision) -> None:
-    """Stop unless the maintainer recorded that the source may be used."""
+    """The same check as `require_allowed`, for sources outside the dataset registry."""
     require_allowed(name, decision)
-    if decision.status != "used":
-        raise DataSourceError(
-            f"{name}: no licence decision of the maintainer is recorded; it is recorded in "
-            "the source's decision record before any use"
-        )
 
 
 def require_verified[T](name: str, value: T | None) -> T:

@@ -21,8 +21,8 @@ and, when not, how it is to be measured or why it cannot be:
   dataset does not ship; a download decision of the maintainer;
 - `open`: a fact it depends on is not verified yet (`TODO(verify)`);
 - `n/a`: it cannot be measured on this dataset, with the reason;
-- `not used: licence decision`: the source is refused by the maintainer's
-  licence decision (data/source.py, LicenceDecision). A refused dataset has
+- `not used: licence decision`: the source is not recorded as used by the
+  maintainer's licence decision (data/source.py, LicenceDecision). Such a dataset has
   no column at all; only a new decision in its record brings it back.
 
 Nothing here is a measured value: the page is built from the report files
@@ -128,8 +128,11 @@ ALGORITHMS: Mapping[str, Algorithm] = {
 
 # Report names of the masks CloudSEN12+ ships (data/source.py, REFERENCE_MASK_NAMES)
 # and of the 2022 release masks (data/cloudsen12_2022.py, MASKS).
-CLOUDSEN12_SHIPPED: Mapping[str, str] = {
-    "unetmobv2": "reference_cloudmask_unetmobv2_v1",
+CLOUDSEN12_SHIPPED: Mapping[str, str | None] = {
+    # TODO(verify): which shipped version, cloudmask_unetmobv2_v1 or _v2, is the
+    # UNetMobV2 of the paper's Table 6; resolved by the CloudSEN12+ dataset card
+    # (tacofoundation/cloudsen12 on Hugging Face) read with the CloudSEN12 paper.
+    "unetmobv2": None,
     "s2cloudless": "reference_cloudmask_s2cloudless",
     "sen2cor": "reference_cloudmask_sen2cor",
     "qa60": "reference_cloudmask_qa60",
@@ -162,12 +165,19 @@ def _dataset_bands(name: str) -> tuple[str, ...] | None:
 def route(model: str, dataset: str) -> Route:
     """The route of a paper algorithm on a dataset, from the facts of both."""
     algo = ALGORITHMS[model]
-    if dataset != CLOUDSEN12 and independent.dataset(dataset).decision.refused:
+    if dataset != CLOUDSEN12 and not independent.dataset(dataset).decision.allowed:
         return NOT_USED
     if dataset == CLOUDSEN12:
         if model in CLOUDSEN12_SHIPPED:
-            return Route("shipped", CLOUDSEN12_SHIPPED[model], "mask shipped with CloudSEN12+")
-        if cloudsen12_2022.LICENCE_DECISION.refused:
+            shipped_name = CLOUDSEN12_SHIPPED[model]
+            if shipped_name is None:
+                return Route(
+                    "open",
+                    None,
+                    "which shipped version is the paper's model is not verified (TODO(verify))",
+                )
+            return Route("shipped", shipped_name, "mask shipped with CloudSEN12+")
+        if not cloudsen12_2022.LICENCE_DECISION.allowed:
             return NOT_USED
         return Route(
             "release 2022",
@@ -230,12 +240,14 @@ def route(model: str, dataset: str) -> Route:
 def declined_source(dataset: str) -> bool:
     """True for an independent dataset whose licence decision refuses it."""
     info = independent.DATASETS.get(dataset)
-    return info is not None and info.decision.refused
+    return info is not None and not info.decision.allowed
 
 
 def declined_mask(report_name: str) -> bool:
     """True for a reference mask of a source whose licence decision refuses it."""
-    return report_name.startswith(RELEASE_2022_PREFIX) and cloudsen12_2022.LICENCE_DECISION.refused
+    return (
+        report_name.startswith(RELEASE_2022_PREFIX) and not cloudsen12_2022.LICENCE_DECISION.allowed
+    )
 
 
 def _source(report_data: Mapping[str, object]) -> str:
@@ -299,6 +311,17 @@ def render(reports: Reports, date: dt.date, own: Sequence[str] = OWN_MODELS) -> 
             "../docs/assets/header.png",
         )
     ]
+    left_out = [
+        f"{paper} ({independent.DATASETS[key].decision.status})"
+        for paper, key in PAPER_DATASETS.items()
+        if key not in columns
+    ]
+    if left_out:
+        blocks.append(
+            "\nLeft out by licence decision, so without a column: "
+            f"{'; '.join(left_out)}. The decisions are in "
+            "[docs/DATASETS.md](../docs/DATASETS.md), section 1.1.\n"
+        )
     for number, (title, models) in enumerate(
         (("Models of this repository", list(own)), ("Algorithms of the paper", PAPER_MODELS)),
         start=1,

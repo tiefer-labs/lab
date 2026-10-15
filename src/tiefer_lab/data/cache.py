@@ -190,6 +190,23 @@ class BandSelection:
 SELECT_CHUNK = 64
 
 
+def require_independent_allowed(index: dict[str, Any]) -> None:
+    """Stop on a cache of an independent dataset that its licence decision does not allow.
+
+    Every reader of a cache split goes through `load_split`, so `evaluate` with or
+    without `--data`, `calibrate`, `diagnose` and `references/run_reference.py`
+    cannot read a cache built before a decision changed.
+    """
+    if not index.get("independent"):
+        return
+    from tiefer_lab.data import independent
+
+    source = str(index.get("source"))
+    if source not in independent.DATASETS:
+        raise CacheError(f"independent cache of unknown dataset {source!r}")
+    independent.require_dataset_allowed(source)
+
+
 def load_split(
     directory: Path, split: str, mode: LoadMode = "auto", bands: Sequence[str] | None = None
 ) -> SplitData:
@@ -203,6 +220,7 @@ def load_split(
     memory-maps them otherwise.
     """
     index = read_index(directory)
+    require_independent_allowed(index)
     positions = band_positions(index, bands)
     all_bands = positions == list(range(len(index["bands"])))
     entry = index.get("splits", {}).get(split)
@@ -533,11 +551,6 @@ def load_independent(
         "independent"
     ):
         raise CacheError(f"{paths.portable(directory)} is not an independent dataset cache")
-    from tiefer_lab.data import independent
-
-    if index["source"] in independent.DATASETS:
-        # A cache built before its licence decision is never evaluated.
-        independent.require_dataset_allowed(str(index["source"]))
     data = load_split(directory, INDEPENDENT_SPLIT, "mmap")
     images: Any = ComposedBands(data.images, index["bands"], wanted, substitution)
     return replace(data, images=images)

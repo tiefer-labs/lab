@@ -73,8 +73,10 @@ def test_band_mapping_and_unverified_readers_stop(tmp_path: Path) -> None:
         "B04",
         "B8A",
     ]
-    for name in ("landsat8_biome", "landsat8_sparcs", "kappaset"):
-        with pytest.raises(DataSourceError, match="not verified yet"):
+    with pytest.raises(DataSourceError, match="not verified yet"):
+        list(independent.READERS["kappaset"](tmp_path, ["B02"]))
+    for name in ("landsat8_biome", "landsat8_sparcs"):
+        with pytest.raises(DataSourceError, match="candidate, no decision yet"):
             list(independent.READERS[name](tmp_path, ["B02"]))
     with pytest.raises(DataSourceError, match="product_naming"):
         independent.s2_baseline("S2A_MSIL1C_20180101T000000_N0206_R001_T31UFU_20180101T000000")

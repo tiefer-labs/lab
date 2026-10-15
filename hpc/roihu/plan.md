@@ -56,7 +56,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 
 | Step | What | Configs and seeds | Partition | GPU BU upper bound | GPU BU estimate | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1a | independent dataset caches (CPU) | the datasets of the paper's Table 1 that the licence decisions allow: `s2_cloud_catalogue`, `kappaset`, `landsat8_biome`, `landsat8_sparcs`, `whus2_cd` ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1); each after its facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | 0 (CPU BU) | 0 | not run |
+| 1a | independent dataset caches (CPU) | none for now: no download is planned in this row; which of the datasets that the licence decisions allow are downloaded is decided in a later revision of this plan ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1) | `small` | 0 (CPU BU) | 0 | not planned |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
 | 1c | extra training patches (CPU) | `train_extra` of `cloudsen12-l1c-all`, after `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` | `small` | 0 (CPU BU) | 0 | not run |
 | 2a | diagnosis of the v2 runs: seeds and false discards (CPU) | the v2 L1 and L2 runs | `small` | 0 (CPU BU) | 0 | not run |
@@ -85,13 +85,7 @@ The upper bounds above add up to far more than the budget of section 2. The orde
 Step 1, CPU jobs (no GPU BU):
 
 ```bash
-bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue
-bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset
-bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_biome
-bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch landsat8_sparcs
-# every built dataset that the licence decisions allow, for one run, then the coverage page
-REASON="<why>" bash hpc/roihu/evaluate_all.sh <run-id>
-python3 -m tiefer_lab.paper_models
+# no independent dataset download is planned (step 1a)
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch val --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch test --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train_extra --name cloudsen12-l1c-all --bands all
@@ -174,6 +168,7 @@ FINAL=1 REASON="v3 final export check of <run-id>" EXPORT_CONFIG=configs/<select
 
 ## Changelog
 
+- 15 October 2026: step 1a plans no download, and its download and evaluation commands are removed from section 3.4; WHUS2-CD is a candidate without a licence decision and has no row; drafted with an AI-assisted system.
 - 15 October 2026: step 1a lists only the datasets that the licence decisions of 15 October 2026 allow; no row downloads, caches or evaluates S2-Hollstein, L8-38Cloud, L8-95Cloud, S2-CESBIO, the Copernicus imagery for them, dtacs4bands or the 2022 release; drafted with an AI-assisted system.
 - 14 October 2026: section 3: the state of the v2 campaign, the selection rule frozen before any v3 run, the v3 steps in order of priority with upper bounds of their cost, the commands and the final test requests; drafted with an AI-assisted system.
 - 8 October 2026: results and run details of the campaign of 1 to 3 October 2026 removed; the campaign restarts from zero (v2).

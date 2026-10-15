@@ -39,22 +39,29 @@ def test_routes_by_hand() -> None:
     route = paper_models.route
     assert route("sen2cor", "cloudsen12").report_name == "reference_cloudmask_sen2cor"
     assert route("sen2cor", "kappaset").kind == "shipped"
-    assert route("sen2cor", "landsat8_biome").kind == "n/a"
-    assert "reference_landsat_qa" in route("qa60", "landsat8_sparcs").reason
     assert route("qa60", "s2_cloud_catalogue").kind == "needs product"
-    assert route("fmask", "landsat8_biome").kind == "run"
     assert route("kappamask_l2a", "s2_cloud_catalogue").kind == "n/a"
     # Input bands of the learned models are not verified yet: open, never guessed.
     assert route("unetmobv2", "s2_cloud_catalogue").kind == "open"
-    # Refused by a licence decision: the 2022 release and four datasets.
+    # Which shipped UNetMobV2 version is the paper's is not verified either.
+    assert route("unetmobv2", "cloudsen12").kind == "open"
+    # Not recorded as used: the 2022 release and seven datasets.
     assert route("fmask", "cloudsen12").kind == "not used"
-    for dataset in ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio"):
+    for dataset in (
+        "s2_hollstein",
+        "landsat8_38cloud",
+        "landsat8_95cloud",
+        "s2_cesbio",
+        "whus2_cd",
+        "landsat8_biome",
+        "landsat8_sparcs",
+    ):
         assert route("fmask", dataset).kind == "not used"
         assert paper_models.cell("l1_full", dataset, {}) == "not used: licence decision"
 
 
-def test_unread_datasets_stop(tmp_path: Path) -> None:
-    with pytest.raises(DataSourceError, match="not verified yet"):
+def test_undecided_whus2_stops_like_a_refused_source(tmp_path: Path) -> None:
+    with pytest.raises(DataSourceError, match="candidate, no decision yet"):
         list(independent.READERS["whus2_cd"](tmp_path, ["B02"]))
 
 
@@ -72,14 +79,12 @@ def _report(source: str, config: str, baselines: dict[str, object]) -> Report:
 
 def test_coverage_page_counts_measured_cells() -> None:
     empty = paper_models.render(Reports(), dt.date(2026, 10, 15))
-    # CloudSEN12+ and the five allowed datasets, 2 own models and 9 algorithms.
-    assert "0 of 66 cells are measured" in empty
+    # CloudSEN12+ and the two datasets used, 2 own models and 9 algorithms.
+    assert "0 of 33 cells are measured" in empty
     assert "not used: licence decision" in empty
-    for paper_name in ("S2-Hollstein", "L8-38Cloud", "L8-95Cloud", "S2-CESBIO"):
-        assert paper_name not in empty
     reports = Reports(evaluation=[_report("kappaset", "l1_full", {"reference_sen2cor": {}})])
     page = paper_models.render(reports, dt.date(2026, 10, 15))
-    assert "2 of 66 cells are measured" in page
+    assert "2 of 33 cells are measured" in page
 
 
 def test_evaluate_all_lists_every_allowed_dataset(repo_root: Path) -> None:
