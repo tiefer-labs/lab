@@ -7,14 +7,23 @@ from __future__ import annotations
 
 import dataclasses
 import datetime as dt
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
-from tiefer_lab import compare, paper_models
+from tiefer_lab import calibrate, compare, diagnose, evaluate, paper_models, train
+from tiefer_lab.config import config_from_dict
 from tiefer_lab.data import build_cache, cache, cloudsen12_2022, independent
-from tiefer_lab.data.source import NO_DECISION, DataSourceError, LicenceRefusedError
+from tiefer_lab.data.source import (
+    NO_DECISION,
+    DataSourceError,
+    LicenceDecision,
+    LicenceRefusedError,
+)
 from tiefer_lab.reports import Report, Reports
 
 REFUSED = ("s2_hollstein", "landsat8_38cloud", "landsat8_95cloud", "s2_cesbio", "whus2_cd")
@@ -129,3 +138,83 @@ def test_only_a_changed_record_changes_a_decision(
     with pytest.raises(DataSourceError, match="not verified yet") as err:
         list(independent.READERS["landsat8_95cloud"](tmp_path, ["B02"]))
     assert not isinstance(err.value, LicenceRefusedError)
+
+
+# Every reader of a cache split: a cache of a dataset that is not allowed is never read.
+
+
+def _tiny_run(runs: Path) -> Path:
+    build_cache.main(["--split", "all", "--synthetic", "--limit", "6", "--patch-size", "64"])
+    raw = {
+        "name": "tiny",
+        "data": {
+            "cache_name": "synthetic",
+            "crop_size": 32,
+            "batch_size": 4,
+            "eval_batch_size": 2,
+            "num_workers": 0,
+        },
+        "model": {"widths": [8, 16]},
+        "train": {"epochs": 1, "max_steps_per_epoch": 1, "log_every": 1},
+        "evaluation": {"bootstrap_resamples": 100},
+    }
+    run = runs / "tiny-seed0-x"
+    train.train(config_from_dict(raw), run, device_name="cpu", allow_synthetic=True)
+    return run
+
+
+def _mark_as_independent(name: str, dataset: str) -> None:
+    """Turn a built cache into one of an independent dataset, as an old cache could be."""
+    directory = cache.cache_dir(name)
+    index = cache.read_index(directory)
+    index["source"] = dataset
+    index["independent"] = {"dataset": dataset}
+    cache.write_index(directory, index)
+
+
+@pytest.fixture
+def refused_cache_run(tiefer_env: dict[str, Path]) -> Path:
+    run = _tiny_run(tiefer_env["TIEFER_RUNS_DIR"])
+    _mark_as_independent("synthetic", "s2_cesbio")
+    return run
+
+
+def test_load_split_refuses_a_cache_of_a_dataset_not_allowed(refused_cache_run: Path) -> None:
+    with pytest.raises(LicenceRefusedError, match="not used"):
+        cache.load_split(cache.cache_dir("synthetic"), "val")
+
+
+def test_evaluate_without_data_cannot_read_it(refused_cache_run: Path) -> None:
+    with pytest.raises(LicenceRefusedError):
+        evaluate.evaluate_run(refused_cache_run, "val", allow_synthetic=True)
+
+
+def test_calibrate_cannot_read_it(refused_cache_run: Path) -> None:
+    with pytest.raises(LicenceRefusedError):
+        calibrate.calibrate_run(refused_cache_run, None, "cpu")
+
+
+def test_diagnose_cannot_read_it(refused_cache_run: Path) -> None:
+    with pytest.raises(LicenceRefusedError):
+        diagnose.frame_details([], "synthetic")
+
+
+def test_run_reference_cannot_read_it(
+    refused_cache_run: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "run_reference", repo_root / "references" / "run_reference.py"
+    )
+    assert spec and spec.loader
+    ref = importlib.util.module_from_spec(spec)
+    sys.modules["run_reference"] = ref
+    spec.loader.exec_module(ref)
+    cleared = dataclasses.replace(
+        ref.REFERENCES["fmask4"],
+        licence="test",
+        decision=LicenceDecision("used", "test"),
+        runner=lambda data: np.zeros(data.labels.shape, np.uint8),
+    )
+    monkeypatch.setitem(ref.REFERENCES, "fmask4", cleared)
+    with pytest.raises(LicenceRefusedError):
+        ref.run("fmask4", "synthetic", "val")
