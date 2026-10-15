@@ -37,7 +37,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 15 October 2026 |
 | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 15 October 2026 |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | standards, handbooks and formats, clauses read and status | evaluators | standards matrix | in development | 7 October 2026 |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 7 October 2026 |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 15 October 2026 |
 | [docs/STYLE.md](docs/STYLE.md) | the documentation standard | contributors | writing rules, document types | in use | 8 October 2026 |
 | [EXTENDING.md](EXTENDING.md) | golden paths to extend Lab | contributors | extension paths | in use | 7 October 2026 |
 | **Policies and community** | | | | | |

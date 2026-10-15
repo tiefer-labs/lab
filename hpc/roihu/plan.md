@@ -24,7 +24,7 @@ From the `csc-projects` output of the day the first Project Schatten job is subm
 | CPU billing units | pending maintainer input | pending maintainer input | `csc-projects` |
 | Storage billing units | pending maintainer input | pending maintainer input | `csc-projects` |
 
-Stop line: new training stops when the GPU billing units spent on it in Project Schatten reach 2,800.
+Stop line: new training stops when the GPU billing units spent on it in Project Schatten reach a limit that is pending maintainer input.
 
 ---
 
@@ -39,6 +39,8 @@ No Project Schatten run, report file, compute report or `test_log.md` entry of a
 - the stop line of section 2 holds.
 
 ### 3.2 Selection rule
+
+Status: draft, not frozen; replaced in Package 5.
 
 Written on 14 October 2026, before any run of these steps, and changed only by a commit that says so before the runs it would affect. Every choice uses the validation split; the test split is read once per frozen candidate (step 9).
 
@@ -77,7 +79,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 | 8 | independent dataset evaluations of the frozen candidates | the candidates of rule 4, each verified dataset | `gpumedium` | 400 per candidate and dataset | estimate pending a Project Schatten timing run | not run |
 | 9 | final test, by the maintainer only | the frozen candidates, see section 3.5 | `gpumedium` | 400 per evaluation | estimate pending a Project Schatten timing run | not run |
 
-The upper bounds above add up to far more than a budget of the stop line's size. The order of the table is the order of submission; the estimate of each step from the Project Schatten compute reports decides how far down the table the stop line allows.
+The upper bounds above add up to far more than any budget a stop line is likely to allow. The order of the table is the order of submission; the estimate of each step from the Project Schatten compute reports decides how far down the table the stop line allows.
 
 ### 3.4 Commands
 
@@ -169,6 +171,7 @@ FINAL=1 REASON="final export check of <run-id>" EXPORT_CONFIG=configs/<selected-
 
 ## Changelog
 
+- 15 October 2026: the stop line is pending maintainer input; the selection rule is marked as a draft, not frozen; drafted with an AI-assisted system.
 - 15 October 2026: the plan of Project Schatten: earlier campaigns withdrawn; Roihu restarts from zero, with a setup step and a CloudSEN12+ cache step; the budget is pending maintainer input; the steps that used withdrawn runs are removed, and every estimate is pending a Project Schatten timing run; the stop line is kept; drafted with an AI-assisted system.
 - 15 October 2026: step 1a plans no download, and its download and evaluation commands are removed from section 3.4; WHUS2-CD is a candidate without a licence decision and has no row; drafted with an AI-assisted system.
 - 15 October 2026: step 1a lists only the datasets that the licence decisions of 15 October 2026 allow; no row downloads, caches or evaluates S2-Hollstein, L8-38Cloud, L8-95Cloud, S2-CESBIO, the Copernicus imagery for them, dtacs4bands or the 2022 release; drafted with an AI-assisted system.
