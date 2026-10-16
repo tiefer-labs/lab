@@ -42,7 +42,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [EXTENDING.md](EXTENDING.md) | golden paths to extend Lab | contributors | extension paths | in use | 7 October 2026 |
 | **Policies and community** | | | | | |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the contributor contract | contributors | contribution process | in use | 7 October 2026 |
-| [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | disclosure of AI-assisted systems in issues and pull requests, data rules, labelling, EU legal references | contributors, maintainers | AI assistance policy, regulatory references | in use | 7 October 2026 |
+| [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | disclosure of AI-assisted systems in issues and pull requests, data rules, labelling, EU legal references | contributors, maintainers | AI assistance policy, regulatory references | in use | 16 October 2026 |
 | [CLA.md](CLA.md) | proposed contributor terms, not in force | the founder, contributors | contributor licence agreement | draft | 7 October 2026 |
 | [GOVERNANCE.md](GOVERNANCE.md) | roles, decision classes, versions, continuity | contributors, evaluators | decisions and roles | in use | 15 October 2026 |
 | [LICENSING.md](LICENSING.md) | the licence of every part of the repository | users, contributors | licences | in use | 7 October 2026 |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 16 October 2026: last-changed date of AI_ASSISTANCE.md, changed by the CSC Roihu usage policy; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the CPU jobs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the plan of the first Project Schatten runs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the licence decisions of 16 October 2026; drafted with an AI-assisted system.

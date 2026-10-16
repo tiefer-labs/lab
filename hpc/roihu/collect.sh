@@ -35,11 +35,13 @@ add "${runs_rel}/${run_id}/metadata.json"
 add "${runs_rel}/${run_id}/metrics.jsonl"
 add "${runs_rel}/${run_id}/best.pt"
 # ONNX files of every band set, cloud bias and export setting, in subfolders of export/.
-if [[ -d "${TIEFER_RUNS_DIR}/${run_id}/export" ]]; then
-  while IFS= read -r -d '' f; do
-    files+=("${f#"${base}/"}")
-  done < <(find "${TIEFER_RUNS_DIR}/${run_id}/export" -name '*.onnx' -print0 | sort -z)
-fi
+# Fixed depths (band set, cloud bias, export setting) instead of a recursive find:
+# no recursive search over Lustre (https://docs.csc.fi/computing/usage-policy/).
+export_dir="${TIEFER_RUNS_DIR}/${run_id}/export"
+for f in "${export_dir}"/*.onnx "${export_dir}"/*/*.onnx "${export_dir}"/*/*/*.onnx \
+  "${export_dir}"/*/*/*/*.onnx; do
+  [[ -e "${f}" ]] && files+=("${f#"${base}/"}")
+done
 for f in "${TIEFER_RUNS_DIR}/${run_id}"/calibration_*.json; do
   [[ -e "${f}" ]] && files+=("${f#"${base}/"}")
 done

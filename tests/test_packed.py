@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -91,48 +92,87 @@ def _timing_run(runs: Path, run_id: str, epoch_seconds: float, start: str, end: 
     (folder / "metrics.jsonl").write_text(json.dumps(record) + "\n")
 
 
+def _sample(utc: str, utilisation: float) -> str:
+    """One nvidia-smi line; nvidia-smi writes the node's local time."""
+    stamp = dt.datetime.fromisoformat(utc).timestamp()
+    local = dt.datetime.fromtimestamp(stamp).strftime("%Y/%m/%d %H:%M:%S.000")
+    return f"{local}, {utilisation}, 4000"
+
+
 def test_packing_report_chooses_by_epochs_per_gpu_hour_within_the_slowdown(
     tmp_path: Path,
 ) -> None:
     runs = tmp_path / "runs"
-    # Full epoch of the slowest run by packing: 100 s alone, 120, 150 and 250 s.
+    # Full epoch of the slowest run by packing: 100 s alone, 120, 150 and 250 s, each
+    # packing in its own ten minutes, with its mean GPU utilisation.
     seconds = {1: 100.0, 2: 120.0, 3: 150.0, 4: 250.0}
+    utilisation = {1: 30.0, 2: 60.0, 3: 85.0, 4: 95.0}
+    lines = ["not a sample"]
     for n, value in seconds.items():
+        start, end = f"2026-10-16T10:{n}0:00+00:00", f"2026-10-16T10:{n}5:00+00:00"
         for s in range(n):
-            run_id = packed.timing_run_id("configs/sieb.toml", n, s, "7")
             _timing_run(
-                runs, run_id, value, "2026-10-16T10:00:00+00:00", "2026-10-16T10:05:00+00:00"
+                runs, packed.timing_run_id("configs/sieb.toml", n, s, "7"), value, start, end
             )
+        lines.append(_sample(f"2026-10-16T10:{n}2:00+00:00", utilisation[n]))
     samples = tmp_path / "gpu.csv"
-    samples.write_text("2026/10/16 12:00:00.000, 80, 4000\nnot a sample\n")
+    samples.write_text("\n".join(lines) + "\n")
     report = packed.packing_report("configs/sieb.toml", "7", samples, runs)
     rows = report["packings"]
     assert rows["1"]["epochs_per_gpu_hour"] == 36.0 and rows["3"]["epochs_per_gpu_hour"] == 72.0
-    assert rows["4"]["slowdown"] == 2.5  # beyond MAX_SLOWDOWN, so not eligible
+    assert rows["3"]["gpu_utilisation_mean"] == 85.0
+    # One run alone leaves the GPU underused; four are too slow.
+    assert "below 50.0" in rows["1"]["not_chosen_because"]
+    assert rows["4"]["slowdown"] == 2.5 and "slower" in rows["4"]["not_chosen_because"]
     assert report["chosen_runs_per_gpu"] == 3
     assert rows["2"]["data_wait_share_max"] == 0.1
     # Time limit: 100 epochs x 150 s x 1.5 + 30 s load + 600 s start, rounded up to minutes.
     assert packed.time_limit(report, 3, 100) == "06:26:00"
     with pytest.raises(packed.PackingError):
         packed.time_limit(report, 3, None)
+    # Without GPU samples no packing is chosen.
+    unmeasured = packed.packing_report("configs/sieb.toml", "7", None, runs)
+    assert unmeasured["chosen_runs_per_gpu"] is None
+    assert "not measured" in unmeasured["packings"]["3"]["not_chosen_because"]
     missing = packed.packing_report("configs/wandler_1m.toml", "7", None, runs)
     assert missing["chosen_runs_per_gpu"] is None
     with pytest.raises(packed.PackingError, match="no complete timing"):
         packed.time_limit(missing, 2, 10)
 
+    # A full medium CPU node against the chosen GPU packing, in BU per epoch.
+    cpu_run = "timing-cpu-sieb-8"
+    _timing_run(runs, cpu_run, 900.0, "2026-10-16T11:00:00+00:00", "2026-10-16T11:20:00+00:00")
+    comparison = packed.cpu_comparison("configs/sieb.toml", runs / cpu_run, report)
+    # CPU: 900 s x 288 / 3600 = 72; GPU: 150 s / 3 runs x 200 / 3600 = 2.78.
+    assert comparison["cpu_bu_per_epoch"] == 72.0 and comparison["gpu_bu_per_epoch"] == 2.78
+    assert comparison["cheaper"] == "gpu"
+    assert packed.cpu_comparison("configs/sieb.toml", runs / cpu_run, None)["cheaper"] is None
+    with pytest.raises(packed.PackingError, match="no finished CPU timing run"):
+        packed.cpu_comparison("configs/sieb.toml", runs / "absent", report)
+
 
 def test_report_and_time_limit_commands(
-    tiefer_env: dict[str, Path], capsys: pytest.CaptureFixture[str]
+    tiefer_env: dict[str, Path], capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
     runs = tiefer_env["TIEFER_RUNS_DIR"]
     run_id = packed.timing_run_id("configs/sieb.toml", 1, 0, "9")
     _timing_run(runs, run_id, 60.0, "2026-10-16T10:00:00+00:00", "2026-10-16T10:01:00+00:00")
-    assert packed.main(["report", "--config", "configs/sieb.toml", "--job", "9"]) == 0
+    samples = tmp_path / "gpu.csv"
+    samples.write_text(_sample("2026-10-16T10:00:30+00:00", 70.0) + "\n")
+    args = ["report", "--config", "configs/sieb.toml", "--job", "9", "--samples", str(samples)]
+    assert packed.main(args) == 0
     out = tiefer_env["TIEFER_REPORTS_DIR"] / "timing" / "packing_sieb.json"
     report = json.loads(out.read_text())
     assert report["chosen_runs_per_gpu"] == 1
     assert packed.main(["time-limit", "--report", str(out), "--runs", "1", "--epochs", "10"]) == 0
     assert capsys.readouterr().out.strip().endswith("00:26:00")
+    _timing_run(
+        runs, "timing-cpu-sieb-9", 600.0, "2026-10-16T11:00:00+00:00", "2026-10-16T11:10:00+00:00"
+    )
+    compare = ["cpu-compare", "--config", "configs/sieb.toml", "--cpu-run", "timing-cpu-sieb-9"]
+    assert packed.main([*compare, "--gpu-report", str(out)]) == 0
+    cpu = json.loads((tiefer_env["TIEFER_REPORTS_DIR"] / "timing" / "cpu_sieb.json").read_text())
+    assert cpu["cpu_bu_per_epoch"] == 48.0 and cpu["cheaper"] == "gpu"
 
 
 def test_signals_reach_every_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

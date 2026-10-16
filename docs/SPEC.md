@@ -299,7 +299,8 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `job_prelude.sh` | Sourced first by every job and by `setup.sh`: initialises the CSC environment of the node when `module` is missing, stops with a clear message when it is still missing, sets `SLURM_EXPORT_ENV=ALL` in a job, prints the node and how its environment was made, runs `module purge` |
 | `shell_options.sh` | Turns off `errexit`, `nounset` and `pipefail` around every `module` command, then restores exactly the saved options |
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module and activates the venv of the node's architecture, prints them in a job, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on a GPU node through `setup_gpu.sbatch` (`venv-aarch64`); creates the venv, installs, runs the environment check |
+| `setup.sh` | Run once per architecture, always inside a job: through `setup_cpu.sbatch` (`venv-x86_64`) and `setup_gpu.sbatch` (`venv-aarch64`); creates the venv, installs, runs the environment check, prints the number of packages and the import time |
+| `setup_cpu.sbatch` | `small`, 4 cores, 8 GiB, 1 hour: runs `setup.sh` on an x86 node |
 | `setup_gpu.sbatch` | `gputest`, 1 GPU, 15 minutes: runs `setup.sh` on a GPU node; fails when no GPU is visible |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing, or inside a GPU job when no GPU is visible |
 | `survey.sbatch` | Short CPU job: counts, splits, locations and item encodings of the dataset, in `reports/data/survey.json` |
@@ -316,7 +317,9 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
 | `diagnose.sbatch` | CPU job: seed and false discard diagnostics, and the INT8 sensitivity per Conv node (`int8`), validation and training only |
 | `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
-| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` |
+| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing |
+| `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
+| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
@@ -333,7 +336,7 @@ The guide follows docs/STYLE.md, section 12.14, and its steps are:
 1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
 2. Before you start: the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; where each job runs and which environment it gets; login nodes are for light work only, so the cache is never built there.
 3. Step 1, clone and set the project: `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` and `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>`.
-4. Step 2, set up both architectures from `roihu-cpu.csc.fi`: `bash hpc/roihu/setup.sh` there (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what its log must show.
+4. Step 2, set up both architectures from `roihu-cpu.csc.fi` as batch jobs: `setup_cpu.sbatch` (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what their logs must show.
 5. Step 3, survey the dataset with `survey.sbatch`, then build the data cache with `data.sbatch`.
 6. Step 4, the smoke job on `gputest`, submitted from `roihu-cpu.csc.fi` like every GPU job, and how to check the environment lines of a GPU job log; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
 7. Step 5, train on `gpumedium`, one GPU per job, seeds as separate jobs with `SEED`; `timing.sbatch` and `sweep.sh` for the cost of a config and for several configs.
@@ -417,16 +420,19 @@ lab/
       shell_options.sh            relax and restore set -euo pipefail around module commands
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
+      setup_cpu.sbatch            small, 1 hour: setup.sh on an x86 node
       setup_gpu.sbatch            gputest, 15 minutes: setup.sh on a GPU node
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
       submit.sh                   sbatch wrapper: --account, log location, export by job kind
+      budget.sh                   worst-case cost of a job against the balance left
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
       survey.sbatch               survey of the dataset metadata and item encodings
       timing.sbatch               one cut epoch on gputest: the real cost of a config
       timing_packed.sbatch        timing step: 1 to 4 runs per GPU, utilisation, memory, data wait
+      timing_cpu.sbatch           one cut epoch on a full CPU node, against the GPU in BU
       train_packed.sbatch         several runs on one reserved GPU, time limit from the timing report
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
@@ -584,6 +590,7 @@ lab/
     test_device_check.py          evaluation on the CPU gives the argmax of the training device
     test_data_feeding.py          placement, packing and workers draw the same batches
     test_packed.py                runs launched together, packing report, time limit, signals
+    test_hpc_policy.py            hpc/ follows the CSC usage policy: no service, own jobs only
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -682,6 +689,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: the setup as batch jobs (`setup_cpu.sbatch`), the worst-case cost check (`budget.sh`), the CPU timing (`timing_cpu.sbatch`) and the usage policy test (`test_hpc_policy.py`); drafted with an AI-assisted system.
 - 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
 - 16 October 2026: one batch sampler for every placement of the training split; cores and memory divided by the runs sharing a GPU; `train.precision`; data wait and peak GPU memory per epoch; drafted with an AI-assisted system.
 - 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.

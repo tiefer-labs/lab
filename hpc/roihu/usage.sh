@@ -18,7 +18,8 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TIEFER_ENV_PATHS_ONLY=1 source "${repo}/hpc/roihu/env.sh"
 
 fields="JobID,JobName,Partition,State,ExitCode,Start,End,Elapsed,AllocTRES,TotalCPU,MaxRSS"
-record="$(sacct -j "${job}" --parsable2 --format="${fields}")"
+# Only our own jobs: -u "$USER" (https://docs.csc.fi/computing/usage-policy/).
+record="$(sacct -u "${USER:-$(id -un)}" -j "${job}" --parsable2 --format="${fields}")"
 echo "${record}"
 
 mkdir -p "${TIEFER_REPORTS_DIR}/compute"

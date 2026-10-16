@@ -51,6 +51,10 @@ def roihu_env(tmp_path: Path) -> dict[str, str]:
             "TIEFER_PROJAPPL": str(tmp_path / "projappl"),
             "TIEFER_SCRATCH": str(tmp_path / "scratch"),
             "STUB_LOG": str(tmp_path / "sbatch.log"),
+            # The balance a maintainer copies from csc-projects (test values).
+            "TIEFER_GPU_BU_LEFT": "10000",
+            "TIEFER_CPU_BU_LEFT": "60000",
+            "TIEFER_STORAGE_BU_LEFT": "30000",
             # No CSC initialisation file unless a test writes one.
             "TIEFER_CSC_ENV_INIT": str(tmp_path / "zz-csc-env.sh"),
         }
@@ -235,7 +239,7 @@ def test_job_scripts_request_documented_resources() -> None:
         # A login shell by full path initialises the module system on the node.
         assert text.startswith("#!/bin/bash --login\n"), script.name
         assert "--export" not in text, "submit.sh sets the export"
-        if script.name == "setup_gpu.sbatch":
+        if script.name in ("setup_gpu.sbatch", "setup_cpu.sbatch"):
             assert text.index("uname -m") < text.index("bash hpc/roihu/setup.sh")
             continue
         prelude = text.index("source hpc/roihu/job_prelude.sh")
@@ -498,7 +502,8 @@ def test_sweep_submits_one_job_per_config_and_seed(
     roihu_env: dict[str, str], tmp_path: Path
 ) -> None:
     log = _appending_sbatch(roihu_env, tmp_path)
-    env = {**roihu_env, "STUB_ARCH": "aarch64"}
+    # 6 jobs of 12 hours: 14,400 GPU BU worst case, so this test has a larger balance.
+    env = {**roihu_env, "STUB_ARCH": "aarch64", "TIEFER_GPU_BU_LEFT": "20000"}
     configs = ["configs/wandler_1m.toml", "configs/lupe_1m.toml"]
     result = _run("sweep.sh", ["--seeds", "0,1,2", *configs], env)
     assert result.returncode == 0, result.stderr
@@ -659,3 +664,66 @@ def test_independent_downloads_are_deleted_once_the_cache_is_complete() -> None:
     assert build < delete
     assert '["splits"]["test"].get("complete")' in text[build:delete]
     assert "TIEFER_KEEP_DOWNLOADS:-0" in text
+
+
+def _budget(script: str, *options: str) -> str:
+    command = f"source {ROIHU / 'budget.sh'}; tiefer_job_cost {ROIHU / script} " + " ".join(options)
+    result = subprocess.run(["bash", "-c", command], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
+def test_worst_case_cost_of_each_kind_of_job() -> None:
+    # GPU: time limit x GPUs x 200 BU.
+    assert _budget("timing_packed.sbatch") == "gpu 200.0"
+    assert _budget("train_packed.sbatch", "--time=06:26:00") == "gpu 1286.7"
+    assert _budget("train_packed.sbatch", "--time", "1-00:00:00") == "gpu 4800.0"
+    # small: max(0.75 x cores, 0.375 x GiB) per hour.
+    assert _budget("evaluate_cpu.sbatch") == "cpu 96.0"
+    assert _budget("data.sbatch") == "cpu 288.0"
+    assert _budget("check_sources.sbatch") == "cpu 0.8"
+    # medium: 288 BU per node-hour.
+    assert _budget("timing_cpu.sbatch") == "cpu 288.0"
+
+
+def test_submission_is_refused_when_the_worst_case_does_not_fit(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    script = ["hpc/roihu/train_packed.sbatch", "configs/sieb.toml@0"]
+    ok = _run("submit.sh", ["--time=06:26:00", *script], roihu_env)
+    assert ok.returncode == 0, ok.stderr
+    assert "worst case 1286.7 GPU BU" in ok.stdout
+    # 1,286.7 does not fit in 1,700 left minus the reserve of 500.
+    low_env = {**roihu_env, "TIEFER_GPU_BU_LEFT": "1700"}
+    low = _run("submit.sh", ["--time=06:26:00", *script], low_env)
+    assert low.returncode == 2
+    assert "exceeds the 1700.0 left minus the reserve of 500.0" in low.stderr
+    missing = {k: v for k, v in roihu_env.items() if k != "TIEFER_CPU_BU_LEFT"}
+    cpu = _run("submit.sh", ["hpc/roihu/evaluate_cpu.sbatch", "run-1"], missing)
+    assert cpu.returncode == 2 and "TIEFER_CPU_BU_LEFT" in cpu.stderr
+    empty = _run("submit.sh", script, {**roihu_env, "TIEFER_STORAGE_BU_LEFT": "0"})
+    assert empty.returncode == 2 and "no storage BU left" in empty.stderr
+    # Checking a request with --test-only spends nothing and is not refused.
+    zero = {**roihu_env, "TIEFER_GPU_BU_LEFT": "0"}
+    test_only = _run("submit.sh", ["--test-only", *script], zero)
+    assert test_only.returncode == 0, test_only.stderr
+
+
+def test_a_sweep_is_checked_as_a_whole_before_the_first_job(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    log = _appending_sbatch(roihu_env, tmp_path)
+    # Three seeds of two configs: 6 x 12 hours x 200 = 14,400 GPU BU, more than is left.
+    result = _run(
+        "sweep.sh", ["--seeds", "0,1,2", "configs/sieb.toml", "configs/wandler_1m.toml"], roihu_env
+    )
+    assert result.returncode == 2 and "6 job(s)" in result.stderr
+    assert not log.exists() or not log.read_text().strip(), "nothing was submitted"
+
+
+def test_setup_runs_only_inside_a_job(roihu_env: dict[str, str]) -> None:
+    result = _run("setup.sh", [], roihu_env)
+    assert result.returncode == 2 and "not on a login node" in result.stderr
+    cpu = (ROIHU / "setup_cpu.sbatch").read_text()
+    assert "#SBATCH --partition=small" in cpu and "gres" not in cpu
+    assert "bash hpc/roihu/setup.sh" in cpu

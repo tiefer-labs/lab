@@ -6,6 +6,7 @@
     python -m tiefer_lab.packed run <entry> [<entry> ...] [--device auto] [--timing N]
     python -m tiefer_lab.packed report --config <config> --job <job-id> [--samples <csv>]
     python -m tiefer_lab.packed time-limit --report <packing report> --runs N [--epochs E]
+    python -m tiefer_lab.packed cpu-compare --config <config> --cpu-run <run-id> [--gpu-report <r>]
 
 An entry is `<config>@<seed>` for a new run, or `resume:<run-id>` to continue one.
 
@@ -29,7 +30,13 @@ runs per GPU while nvidia-smi samples the GPU.
 the slowest run, the data wait share, the peak GPU memory, the mean GPU
 utilisation, the slowdown against one run alone and the epochs per GPU-hour.
 The chosen packing has the most epochs per GPU-hour among those whose runs all
-finished and whose slowest run takes at most MAX_SLOWDOWN times its time alone.
+finished, whose slowest run takes at most MAX_SLOWDOWN times its time alone, and
+whose mean GPU utilisation is at least MIN_GPU_UTILISATION percent; each packing
+not chosen says why.
+
+`cpu-compare` reads a timing run of one full medium CPU node
+(hpc/roihu/timing_cpu.sbatch) and writes `reports/timing/cpu_<config>.json`: CPU
+BU per epoch against GPU BU per epoch at the chosen packing, and which is cheaper.
 
 `time-limit` turns a report into the time limit of a packed training job:
 epochs x the slowest full epoch time x (1 + TIME_MARGIN), plus the measured data
@@ -58,6 +65,15 @@ from tiefer_lab.utils import paths
 TIMING_STEPS = 50
 # The slowest of the packed runs may take at most this many times its time alone.
 MAX_SLOWDOWN = 2.0
+# CSC can terminate jobs whose GPUs are severely underused
+# (https://docs.csc.fi/computing/usage-policy/, page of 15 October 2026, read
+# 16 October 2026): no packing whose mean GPU utilisation is below this is chosen.
+MIN_GPU_UTILISATION = 50.0
+# A full medium node: 288 CPU BU per node-hour; one GPU: 200 GPU BU per hour; one CPU
+# BU and one GPU BU cost the same (https://docs.csc.fi/computing/hpc-billing/ and
+# the usage policy, pages of 15 October 2026, read 16 October 2026).
+CPU_NODE_BU_PER_HOUR = 288.0
+GPU_BU_PER_HOUR = 200.0
 # Margin on the time limit of a packed training job, over the timing report. GPU time is
 # billed on the runtime, so the margin costs nothing, while a run stopped at its limit
 # loses the epoch it was in and needs another job (maintainer decision of 16 October 2026).
@@ -259,21 +275,66 @@ def packing_report(
     eligible = []
     for n in PACKINGS:
         row = rows[str(n)]
-        if row["complete"] and alone:
-            row["slowdown"] = round(row["full_epoch_seconds_slowest"] / alone, 3)
-            if row["slowdown"] <= MAX_SLOWDOWN:
-                eligible.append(n)
+        if not (row["complete"] and alone):
+            row["not_chosen_because"] = "the runs did not all finish"
+            continue
+        row["slowdown"] = round(row["full_epoch_seconds_slowest"] / alone, 3)
+        utilisation = row.get("gpu_utilisation_mean")
+        if row["slowdown"] > MAX_SLOWDOWN:
+            row["not_chosen_because"] = f"slower than {MAX_SLOWDOWN} times a run alone"
+        elif utilisation is None:
+            row["not_chosen_because"] = "GPU utilisation was not measured"
+        elif utilisation < MIN_GPU_UTILISATION:
+            row["not_chosen_because"] = (
+                f"GPU utilisation {utilisation} percent, below {MIN_GPU_UTILISATION}"
+            )
+        else:
+            eligible.append(n)
     chosen = max(eligible, key=lambda n: (rows[str(n)]["epochs_per_gpu_hour"], -n), default=None)
     return {
         "config": Path(config).stem,
         "job": job,
         "timing_steps": TIMING_STEPS,
         "max_slowdown": MAX_SLOWDOWN,
+        "min_gpu_utilisation": MIN_GPU_UTILISATION,
         "packings": rows,
         "chosen_runs_per_gpu": chosen,
         "rule": (
-            "the most epochs per GPU-hour among the packings whose runs all finished and "
-            f"whose slowest run takes at most {MAX_SLOWDOWN} times its time alone"
+            "the most epochs per GPU-hour among the packings whose runs all finished, "
+            f"whose slowest run takes at most {MAX_SLOWDOWN} times its time alone, and "
+            f"whose mean GPU utilisation is at least {MIN_GPU_UTILISATION} percent"
+        ),
+        "smoke": False,
+        "timing_run": True,
+    }
+
+
+def cpu_comparison(config: str, cpu_run: Path, gpu_report: dict[str, Any] | None) -> dict[str, Any]:
+    """BU per epoch of a run on one full medium CPU node against the chosen GPU packing."""
+    summary = _run_summary(cpu_run)
+    if summary is None or not summary["full_epoch_seconds"]:
+        raise PackingError(f"no finished CPU timing run in {cpu_run.name}")
+    cpu_seconds = float(summary["full_epoch_seconds"])
+    cpu_bu = round(cpu_seconds / 3600 * CPU_NODE_BU_PER_HOUR, 2)
+    gpu_bu = None
+    chosen = gpu_report.get("chosen_runs_per_gpu") if gpu_report else None
+    if gpu_report and chosen:
+        row = gpu_report["packings"][str(chosen)]
+        gpu_bu = round(
+            float(row["full_epoch_seconds_slowest"]) / chosen / 3600 * GPU_BU_PER_HOUR, 2
+        )
+    cheaper = None if gpu_bu is None else ("cpu" if cpu_bu < gpu_bu else "gpu")
+    return {
+        "config": Path(config).stem,
+        "cpu_run": summary["run_id"],
+        "cpu_full_epoch_seconds": cpu_seconds,
+        "cpu_bu_per_epoch": cpu_bu,
+        "gpu_runs_per_gpu": chosen,
+        "gpu_bu_per_epoch": gpu_bu,
+        "cheaper": cheaper,
+        "rule": (
+            "one full medium node at 288 CPU BU per node-hour against one GPU at 200 GPU BU per "
+            "hour shared by the chosen packing; one CPU BU and one GPU BU cost the same"
         ),
         "smoke": False,
         "timing_run": True,
@@ -310,6 +371,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     rep.add_argument("--config", required=True)
     rep.add_argument("--job", required=True)
     rep.add_argument("--samples", type=Path)
+    cpu = sub.add_parser("cpu-compare")
+    cpu.add_argument("--config", required=True)
+    cpu.add_argument("--cpu-run", required=True)
+    cpu.add_argument("--gpu-report", type=Path)
     lim = sub.add_parser("time-limit")
     lim.add_argument("--report", type=Path, required=True)
     lim.add_argument("--runs", type=int, required=True)
@@ -339,6 +404,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             print(f"{report['config']}: chosen {report['chosen_runs_per_gpu']} runs per GPU")
+            print(f"report: {paths.portable(out)}")
+            return 0
+        if args.command == "cpu-compare":
+            gpu_report = (
+                json.loads(args.gpu_report.read_text(encoding="utf-8"))
+                if args.gpu_report and args.gpu_report.is_file()
+                else None
+            )
+            result = cpu_comparison(args.config, paths.runs_dir() / args.cpu_run, gpu_report)
+            out = paths.reports_dir() / REPORT_DIR / f"cpu_{result['config']}.json"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            print(
+                f"{result['config']}: {result['cpu_bu_per_epoch']} CPU BU per epoch on a medium "
+                f"node, {result['gpu_bu_per_epoch']} GPU BU per epoch on the GPU; "
+                f"cheaper: {result['cheaper']}"
+            )
             print(f"report: {paths.portable(out)}")
             return 0
         report = json.loads(args.report.read_text(encoding="utf-8"))

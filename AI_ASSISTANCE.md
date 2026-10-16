@@ -55,6 +55,13 @@ Further rules:
 - For code that is not yet public, prefer a system that runs on your own hardware or with a provider in the EU or EEA, and say where it ran in the disclosure.
 - Personal data sent to a system that runs outside the EU or EEA is a transfer under Chapter V of the GDPR (Articles 44 to 49). Rule 2 above avoids such transfers.
 
+On CSC Roihu, the CSC usage policy applies to AI-assisted systems as well [5]:
+
+- An AI-assisted system that runs on a third-party service never receives, and never asks for, a CSC password, an SSH key or a FirecREST token. Under CSC's General Terms of Use these are not shared with a service you do not control.
+- Nothing in this repository starts an MCP server, a reverse tunnel, a listening port or a similar service on Roihu that would let such a system run commands there; `tests/test_hpc_policy.py` checks every script and runbook command in `hpc/`.
+- The maintainer runs every Roihu command. An AI-assisted system writes the commands and reads only what the maintainer sends back: job IDs, exit codes, and the project's own logs and reports.
+- Commands list only your own jobs and processes (`squeue --me`, `sacct -u "$USER"`, `ps -u "$USER"`); other users' names, jobs and processes are never passed on. There are no tight polling loops of Slurm and no recursive `find` or `grep` over Lustre.
+
 ---
 
 ## 5. Licence and provenance
@@ -161,10 +168,12 @@ Open decisions of the founder:
 2. Regulation (EU) 2016/679 (General Data Protection Regulation), consolidated text 02016R0679 of 4 May 2016, EUR-Lex, https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:02016R0679-20160504, accessed 7 October 2026.
 3. Regulation (EU) 2024/1689 (Artificial Intelligence Act), consolidated text 02024R1689 of 27 July 2026, EUR-Lex, https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:02024R1689-20260727, accessed 7 October 2026.
 4. Directive (EU) 2019/790 on copyright and related rights in the Digital Single Market, EUR-Lex, https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32019L0790, accessed 7 October 2026.
+5. Usage policy, CSC, https://docs.csc.fi/computing/usage-policy/, page of 15 October 2026, accessed 16 October 2026.
 
 ---
 
 ## Changelog
 
+- 16 October 2026: section 4, the CSC Roihu usage policy for AI-assisted systems: no CSC credentials, no service on Roihu that lets such a system run commands there, the maintainer runs every Roihu command, and only your own jobs and processes are listed; drafted with an AI-assisted system.
 - 7 October 2026: section 4, rule 2 covers all personal data, the contributor's own included, as the acknowledgement in the issue forms and pull request templates states it.
 - 7 October 2026: first version: scope, disclosure rule, responsibility, data rules, licence and provenance, labelling, the regulatory references read on EUR-Lex, breaches and review.

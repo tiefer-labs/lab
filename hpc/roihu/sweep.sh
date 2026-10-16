@@ -45,6 +45,18 @@ for config in "$@"; do
 done
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Every job of the sweep against the balance at once, before the first is submitted.
+if [[ "${#options[@]}" == "0" ]]; then
+  # shellcheck source=hpc/roihu/budget.sh
+  source "${here}/budget.sh"
+  IFS=',' read -r -a list <<<"${seeds}"
+  if [[ "${timing}" == "1" ]]; then
+    tiefer_budget_check "$#" "${here}/timing.sbatch" || exit 2
+  else
+    tiefer_budget_check "$(( $# * ${#list[@]} ))" "${here}/train.sbatch" || exit 2
+  fi
+  export TIEFER_BUDGET_CHECKED=1
+fi
 for config in "$@"; do
   if [[ "${timing}" == "1" ]]; then
     bash "${here}/submit.sh" "${options[@]}" hpc/roihu/timing.sbatch "${config}"
