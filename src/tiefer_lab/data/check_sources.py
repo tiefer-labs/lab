@@ -236,7 +236,7 @@ def metadata_checksums(
         if not record:
             continue
         published: str | None = None
-        if "zenodo.org" in remote.source:
+        if urllib.parse.urlsplit(remote.source).hostname == "zenodo.org":
             published = next(
                 (f.get("checksum") for f in record.get("files", []) if f.get("key") == remote.name),
                 None,
