@@ -270,6 +270,7 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `timing.sbatch` | `gputest`, 1 GPU: one epoch of a config cut to 50 steps; its time per epoch replaces the estimate in `plan.md` |
 | `calibrate.sbatch` | `gputest`, 1 GPU: the cloud logit bias and the temperature of a run, on validation only |
 | `independent.sbatch` | CPU job: downloads an independent dataset (Zenodo, capped rate, resumable) and caches it; the Landsat 8, Kaggle and GitLab datasets are downloaded by hand into `$TIEFER_DATA_DIR/downloads/<dataset>/` |
+| `check_sources.sbatch` | CPU job, `small`, 1 hour: whether every source still allowed or undecided can be obtained; HEAD requests or the first byte only, no download, no credential (it unsets `HF_TOKEN`); writes `reports/data/sources.json`, packed by `collect.sh` |
 | `evaluate_all.sh` | submits one `evaluate.sbatch` job per independent dataset recorded as used whose cache is built, for one run, with `DATA`, `FULL_METRICS=1` and `REASON`; lists each one without a cache as `not evaluated: no cache` and then exits non-zero |
 | `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, validation only |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 GPU, 1 hour: INT8 sensitivity per Conv node, validation and training only |
@@ -359,6 +360,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 16 October 2026: `check_sources.sbatch` in the files table; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the facts observed on Roihu predate Project Schatten and are to be confirmed by step 0 (setup) of the plan; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.

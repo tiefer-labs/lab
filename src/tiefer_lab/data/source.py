@@ -263,6 +263,87 @@ def map_labels(
     return lookup[raw.astype(np.int64)]
 
 
+# Remote files --------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class RemoteFile:
+    """One file of a third-party source, as its primary page states it.
+
+    `checksum` is "<algorithm>:<hex>" (for example "md5:..." from Zenodo or
+    "sha256:..." from a Hugging Face LFS pointer), or None when not published.
+    `python -m tiefer_lab.data.check_sources` compares the server's answer with
+    these facts without downloading the file.
+    """
+
+    name: str
+    url: str
+    size: int | None
+    checksum: str | None
+    read_on: str  # the date the facts were read, as 15 October 2026
+    source: str  # the page or API the facts were read from
+
+
+def _hf_part(name: str, size: int, sha256: str) -> RemoteFile:
+    return RemoteFile(
+        name,
+        f"https://huggingface.co/datasets/{DATASET_REPO}/resolve/main/{name}",
+        size,
+        f"sha256:{sha256}",
+        "15 October 2026",
+        f"{DATASET_API_URL}/tree/main",
+    )
+
+
+# The TACO parts the caches read (the Level-1C images and labels, and the extra
+# variant's reference masks); the build reads ranges of them, never whole files.
+# From the Hugging Face API, revision f9490f7de11b4f387f72ef800e73ccbb754711de
+# (last modified 5 January 2025), read 15 October 2026. The dataset is not gated.
+TACO_FILES: tuple[RemoteFile, ...] = (
+    _hf_part(
+        "cloudsen12-l1c.0000.part.taco",
+        19999240917,
+        "0c5563f7f03314cdce0eda0635a7e7cbd8be151f18a5f2ea07807832cd752913",
+    ),
+    _hf_part(
+        "cloudsen12-l1c.0001.part.taco",
+        20000238279,
+        "1f06b67b42fe219b4552a76665786e4a0a381f0dc599895bbe350d1246a3a3d1",
+    ),
+    _hf_part(
+        "cloudsen12-l1c.0002.part.taco",
+        20000418509,
+        "b9b84cd1343fa91c7dfb536f199f217504247e431e13bdc5edcff099765af546",
+    ),
+    _hf_part(
+        "cloudsen12-l1c.0003.part.taco",
+        19982513492,
+        "880528f6f710ed306fc3d671d88de16d65c841f9da61577bf861a0f1f957b3fd",
+    ),
+    _hf_part(
+        "cloudsen12-l1c.0004.part.taco",
+        14894892547,
+        "82cc787609bc751158f604de962b1467f277adc361f74ddb2114436fdeb0597c",
+    ),
+    _hf_part(
+        "cloudsen12-extra.0000.part.taco",
+        20001124582,
+        "6a8ab80bf7e20c25e576fb885a6b879be2550233c97afa0e42f47b3f43ff998e",
+    ),
+    _hf_part(
+        "cloudsen12-extra.0001.part.taco",
+        19990002571,
+        "bc62420c351ee5c8b5b9ff0c16caa38c135ec576c99c76a4f793b2d76f71e4b4",
+    ),
+    _hf_part(
+        "cloudsen12-extra.0002.part.taco",
+        1997273740,
+        "6daa45c198b9b4bc47c1904e929ea2fe483da5fcc94246d472e6377a40b52f23",
+    ),
+)
+DATASET_REVISION_READ = "f9490f7de11b4f387f72ef800e73ccbb754711de"
+
+
 # Licence decisions ---------------------------------------------------------------
 
 DecisionStatus = Literal[

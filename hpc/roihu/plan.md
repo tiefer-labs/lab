@@ -59,6 +59,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 | Step | What | Configs and seeds | Partition | GPU BU upper bound | GPU BU estimate | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 0 | setup on both architectures and the smoke job, from zero ([README.md](README.md), steps 1, 2 and 4) | `setup.sh`, `setup_gpu.sbatch`, `smoke.sbatch` | `small`, `gputest` | 100 | estimate pending a Project Schatten timing run | not run |
+| 0a | source check (CPU): can every source still allowed or undecided be obtained; HEAD requests only ([section 3.6](#36-source-check-and-downloads)) | `check_sources.sbatch` | `small` | 0 (CPU BU) | 0 | not run |
 | 1 | survey and CloudSEN12+ caches (CPU), from zero ([README.md](README.md), step 3) | `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, every split | `small` | 0 (CPU BU) | 0 | not run |
 | 1a | independent dataset caches (CPU) | none for now: no download is planned in this row; which of the datasets that the licence decisions allow are downloaded is decided in a later revision of this plan ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1) | `small` | 0 (CPU BU) | 0 | not planned |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
@@ -167,10 +168,30 @@ FINAL=1 REASON="final export check of <run-id>" EXPORT_CONFIG=configs/<selected-
 
 `CMP-05` reads final test evaluations with `rescale=0.5` and `rescale=2`, so each candidate needs those two logged test uses too. Why selection is at risk of adaptive overfitting, and why the independent datasets of step 8 are the clean check, is in [POLICY.md](../../POLICY.md), gate 3.
 
+### 3.6 Source check and downloads
+
+Step 0a needs no data and no credential: it sends HEAD requests, or asks for the first byte, of every recorded file and writes `reports/data/sources.json` ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.2). From `roihu-cpu.csc.fi`, after step 0:
+
+```bash
+bash hpc/roihu/submit.sh hpc/roihu/check_sources.sbatch
+cat /scratch/<project>/tiefer-lab/reports/data/sources.json
+```
+
+One row per download. Sizes are the recorded sizes of `files` in `src/tiefer_lab/data/source.py` and `src/tiefer_lab/data/independent.py`. The duration is the size divided by the rate cap of `independent.sbatch` (`TIEFER_DOWNLOAD_RATE`, default 20 MiB per second), a lower bound; unpacking and caching come on top. No row adds a download to step 1a: which ones are made is the maintainer's decision, recorded in a later revision of this plan.
+
+| Download | Decision | Size | Storage BU | Duration at the cap | Command | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| CloudSEN12+ parts (Hugging Face) | used | 136,865,704,637 bytes in 8 parts; never downloaded whole, the cache build of step 1 reads byte ranges | pending maintainer input | not derived from the facts; the build log of step 1 gives it | step 1 | not run |
+| Sentinel-2 Cloud Mask Catalogue (Zenodo 4172871) | used | 15,206,407,392 bytes in 4 files | pending maintainer input | at least 12 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue` | not planned |
+| KappaSet (Zenodo 7100327) | used | 56,186,540,640 bytes in 2 files | pending maintainer input | at least 45 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset` | not planned |
+| Landsat 8 Biome (USGS) | candidate, no decision yet | 94,130,145,717 bytes in 96 archives | pending maintainer input | at least 75 minutes | none: not downloaded until the maintainer decides it | not planned |
+| Landsat 8 SPARCS (USGS) | candidate, no decision yet | 1,555,733,976 bytes in 1 archive | pending maintainer input | at least 2 minutes | none: not downloaded until the maintainer decides it | not planned |
+
 ---
 
 ## Changelog
 
+- 16 October 2026: step 0a, the source check, and section 3.6, one row per download with its size and the duration at the rate cap; storage billing units pending maintainer input; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the stop line is pending maintainer input; the selection rule is marked as a draft, not frozen; drafted with an AI-assisted system.
 - 15 October 2026: the plan of Project Schatten: earlier campaigns withdrawn; Roihu restarts from zero, with a setup step and a CloudSEN12+ cache step; the budget is pending maintainer input; the steps that used withdrawn runs are removed, and every estimate is pending a Project Schatten timing run; the stop line is kept; drafted with an AI-assisted system.

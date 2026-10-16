@@ -304,6 +304,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing, or inside a GPU job when no GPU is visible |
 | `survey.sbatch` | Short CPU job: counts, splits, locations and item encodings of the dataset, in `reports/data/survey.json` |
 | `data.sbatch` | Builds the full cache in `/scratch` (CPU job on either architecture, parallel downloads, resumable; never on a login node) |
+| `check_sources.sbatch` | Short CPU job: whether every source still allowed or undecided can be obtained, by HEAD requests or the first byte, never a full download or a credential; writes `reports/data/sources.json` |
 | `smoke.sbatch` | `gputest`, 1 GPU, 15 minutes: environment check plus `configs/smoke.toml`; builds a tiny cache in its own folder when the train and val splits of the full cache are not complete, and only reads the full cache |
 | `train.sbatch` | `gpumedium`, 1 GPU, default 12 hours (maximum 36), `--signal=B:USR1@300`, resumable, takes a config path and an optional `SEED` |
 | `evaluate.sbatch` | Validation evaluation with baselines; test only when `FINAL=1` is set |
@@ -424,6 +425,7 @@ lab/
       timing.sbatch               one cut epoch on gputest: the real cost of a config
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
+      check_sources.sbatch        can every source be obtained: HEAD requests only, CPU
       diagnose.sbatch             seed and false discard diagnostics, CPU
       diagnose_gpu.sbatch         INT8 sensitivity per Conv node, GPU node
       sweep.sh                    configs and seeds as separate one-GPU jobs
@@ -475,6 +477,7 @@ lab/
       calibrate.py                python -m tiefer_lab.calibrate: cloud bias and temperature on val
       compare.py                  python -m tiefer_lab.compare: reports/comparison.md
       paper_models.py             python -m tiefer_lab.paper_models: reports/coverage.md
+      reference_models.py         record of every reference model: licences, decision, files
       diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
       sbom.py                     CycloneDX software bill of materials from uv.lock, run in CI
@@ -484,6 +487,7 @@ lab/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
         independent.py            independent test datasets: facts, readers, reflectance, tiles
+        check_sources.py          python -m tiefer_lab.data.check_sources: reports/data/sources.json
         cloudsen12_2022.py        masks of the 2022 release, linked to CloudSEN12+, licence first
         build_cache.py            python -m tiefer_lab.data.build_cache
         http.py                   backoff on HTTP 429 and other transient read errors; the token
@@ -566,6 +570,7 @@ lab/
     test_independent.py           independent datasets: reflectance, labels, tiles, stops
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
+    test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
     test_diagnose.py              diagnostics read validation only
@@ -663,6 +668,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: `reference_models.py`, `data/check_sources.py`, `check_sources.sbatch` and `test_check_sources.py` in the tree; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: rename verified in PR #9; the snapshot of the configs before the rename and its test are removed; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: the families Sieb, Wandler, Lupe, the CloudScout re-implementation and smoke, and the naming scheme; section 14 lists the renamed configs; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
