@@ -62,6 +62,7 @@ from tiefer_lab.data.source import (
     THIN_CLOUD,
     DataSourceError,
     LicenceDecision,
+    RemoteFile,
     decided_15_october_2026,
     require_allowed,
     require_verified,
@@ -100,6 +101,8 @@ class Dataset:
     bands: tuple[str, ...] | None = None
     # The maintainer's licence decision; only "used" lets the source be read.
     decision: LicenceDecision = NO_DECISION
+    # The files to download, as the source states them (check_sources).
+    files: tuple[RemoteFile, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -129,6 +132,128 @@ LANDSAT8_TO_S2: Mapping[int, str] = {
 # substitution, recorded as such in every report and reported apart.
 SUBSTITUTIONS: Mapping[str, Mapping[str, str]] = {LANDSAT8: {"B08": "B8A"}}
 
+# L8 Biome: one archive per scene on the access page of the data release
+# (https://landsat.usgs.gov/landsat-8-cloud-cover-assessment-validation-data, read
+# 16 October 2026): band TIFs, the BQA TIF, MTL.txt and the ENVI mask. The page
+# publishes no sizes or checksums; the sizes are the Content-Length of a HEAD
+# request of each archive on that day.
+BIOME_URL = "https://landsat.usgs.gov/cloud-validation/cca_l8"
+BIOME_ARCHIVES: tuple[tuple[str, int], ...] = (
+    ("LC80010112014080LGN00", 826185260),
+    ("LC80010732013109LGN00", 949395592),
+    ("LC80060102014147LGN00", 918522578),
+    ("LC80070662014234LGN00", 915674086),
+    ("LC80120552013202LGN00", 953983900),
+    ("LC80150312014226LGN00", 1083871777),
+    ("LC80160502014041LGN00", 1048844561),
+    ("LC80170312013157LGN00", 898466872),
+    ("LC80180082014215LGN00", 814385014),
+    ("LC80200462014005LGN00", 893003707),
+    ("LC80210072014236LGN00", 929661183),
+    ("LC80211222013361LGN00", 939956990),
+    ("LC80250022014232LGN00", 1010691530),
+    ("LC80290292014132LGN00", 1068557067),
+    ("LC80290372013257LGN00", 1008254387),
+    ("LC80310202013223LGN00", 1062566217),
+    ("LC80320382013278LGN00", 980367082),
+    ("LC80340192014167LGN00", 943874959),
+    ("LC80350192014190LGN00", 1040543535),
+    ("LC80410372013357LGN00", 640547786),
+    ("LC80420082013220LGN00", 914473396),
+    ("LC80430122014214LGN00", 1020212328),
+    ("LC80441162013330LGN00", 848217845),
+    ("LC80460282014171LGN00", 1061680204),
+    ("LC80500092014231LGN00", 1014416376),
+    ("LC80500172014247LGN00", 1044657929),
+    ("LC80530022014156LGN00", 1013139584),
+    ("LC80630152013207LGN00", 1034509033),
+    ("LC80640452014041LGN00", 766636863),
+    ("LC80650182013237LGN00", 992204204),
+    ("LC80670172014206LGN00", 1082582621),
+    ("LC80750172013163LGN00", 881913063),
+    ("LC80760182013170LGN00", 997461653),
+    ("LC80841202014309LGN00", 761992573),
+    ("LC80980712014024LGN00", 1040882567),
+    ("LC80980762014216LGN00", 951434476),
+    ("LC81001082014022LGN00", 880688755),
+    ("LC81010142014189LGN00", 1084470578),
+    ("LC81020152014036LGN00", 823980331),
+    ("LC81020802014100LGN00", 1046045986),
+    ("LC81030162014107LGN00", 1054702068),
+    ("LC81040622014066LGN00", 1081471529),
+    ("LC81070152013260LGN00", 966197466),
+    ("LC81080162013171LGN00", 1013350343),
+    ("LC81080182014238LGN00", 995499500),
+    ("LC81130632014241LGN00", 885543613),
+    ("LC81170272014189LGN00", 1003823359),
+    ("LC81180382014244LGN00", 1063494698),
+    ("LC81220312014208LGN00", 951916496),
+    ("LC81220422014096LGN00", 953008996),
+    ("LC81240462014238LGN00", 1064466188),
+    ("LC81310182013108LGN01", 942901175),
+    ("LC81320352013243LGN00", 1052975062),
+    ("LC81321192014054LGN00", 834095852),
+    ("LC81330182013186LGN00", 1049818775),
+    ("LC81330312013202LGN00", 1021309225),
+    ("LC81360302014162LGN00", 1008409790),
+    ("LC81390292014135LGN00", 1060836706),
+    ("LC81440462014250LGN00", 977498621),
+    ("LC81460162014168LGN00", 932439747),
+    ("LC81490122013218LGN00", 1857001537),
+    ("LC81490432014141LGN00", 986324569),
+    ("LC81500152013225LGN00", 1046534158),
+    ("LC81510262014139LGN00", 963672933),
+    ("LC81550082014263LGN00", 972646491),
+    ("LC81570452014213LGN00", 1059723399),
+    ("LC81580172013201LGN00", 915683530),
+    ("LC81590362014051LGN00", 1049625450),
+    ("LC81600462013215LGN00", 1069713810),
+    ("LC81620432014072LGN00", 996448405),
+    ("LC81620582014104LGN00", 873724360),
+    ("LC81640502013179LGN01", 979905097),
+    ("LC81660032014196LGN00", 1020980993),
+    ("LC81660432014020LGN00", 951320671),
+    ("LC81720192013331LGN00", 905877933),
+    ("LC81750432013144LGN00", 921884419),
+    ("LC81750512013208LGN00", 1058537972),
+    ("LC81750622013304LGN00", 905640115),
+    ("LC81750732014035LGN00", 1065909747),
+    ("LC81770262013254LGN00", 934645336),
+    ("LC81800662014230LGN00", 1085058443),
+    ("LC81820302014180LGN00", 951814117),
+    ("LC81910182013240LGN00", 739400918),
+    ("LC81920192013103LGN01", 917810026),
+    ("LC81930452013126LGN01", 1019560906),
+    ("LC81940222013245LGN00", 1034001994),
+    ("LC81970242013218LGN00", 1091530728),
+    ("LC81990402014267LGN00", 1053818205),
+    ("LC82001192013335LGN00", 896647344),
+    ("LC82020522013141LGN01", 908990678),
+    ("LC82150712013152LGN00", 916350796),
+    ("LC82171112014297LGN00", 957322752),
+    ("LC82271192014287LGN00", 778250747),
+    ("LC82290572014141LGN00", 1040517737),
+    ("LC82310592014139LGN00", 1079020544),
+    ("LC82320072014226LGN00", 1021535200),
+)
+
+
+def _usgs_files(
+    archives: Sequence[tuple[str, int]], base: str, page: str
+) -> tuple[RemoteFile, ...]:
+    return tuple(
+        RemoteFile(
+            f"{name}.tar.gz",
+            f"{base}/{name}.tar.gz",
+            size,
+            None,
+            "16 October 2026",
+            f"{page}; size from the server's Content-Length",
+        )
+        for name, size in archives
+    )
+
+
 DATASETS: dict[str, Dataset] = {
     "landsat8_biome": Dataset(
         name="landsat8_biome",
@@ -140,9 +265,15 @@ DATASETS: dict[str, Dataset] = {
         "copyrights-and-credits, read 14 October 2026: USGS-authored or produced data are "
         "in the U.S. Public Domain; credit requested",
         gsd_m=30.0,
-        # TODO(verify): mask values from the data release files or Foga et al. 2017,
-        # https://doi.org/10.1016/j.rse.2017.03.026.
-        label_codes=None,
+        # The access page of the data release, read 16 October 2026: "0 Fill, 64 Cloud
+        # Shadow, 128 Clear, 192 Thin Cloud, 255 Cloud".
+        label_codes={
+            0: IGNORE_INDEX,
+            64: CLOUD_SHADOW,
+            128: CLEAR,
+            192: THIN_CLOUD,
+            255: THICK_CLOUD,
+        },
         has_thin=True,
         has_shadow=True,
         operational_mask="reference_landsat_qa",
@@ -154,6 +285,11 @@ DATASETS: dict[str, Dataset] = {
             None,
             "the licence is not stated on the page; treated as not used until a decision "
             "is recorded here",
+        ),
+        files=_usgs_files(
+            BIOME_ARCHIVES,
+            BIOME_URL,
+            "https://landsat.usgs.gov/landsat-8-cloud-cover-assessment-validation-data",
         ),
     ),
     "landsat8_sparcs": Dataset(
@@ -191,6 +327,19 @@ DATASETS: dict[str, Dataset] = {
             "the licence is not stated on the page; treated as not used until a decision "
             "is recorded here",
         ),
+        # The SPARCS page links one archive, "Download SPARCS Validation Data (1.4 GB)";
+        # the size is the Content-Length of a HEAD request, 16 October 2026.
+        files=(
+            RemoteFile(
+                "l8cloudmasks.zip",
+                "https://landsat.usgs.gov/cloud-validation/sparcs/l8cloudmasks.zip",
+                1555733976,
+                None,
+                "16 October 2026",
+                "https://www.usgs.gov/landsat-missions/"
+                "spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data",
+            ),
+        ),
     ),
     "s2_cloud_catalogue": Dataset(
         name="s2_cloud_catalogue",
@@ -226,6 +375,40 @@ DATASETS: dict[str, Dataset] = {
             "CC BY 4.0",
             "primary page read 14 October 2026; attribution in NOTICE.md",
         ),
+        files=(
+            RemoteFile(
+                "classification_tags.csv",
+                "https://zenodo.org/records/4172871/files/classification_tags.csv?download=1",
+                77940,
+                "md5:6911e5a8915daf9a98638eb21ba4afd3",
+                "15 October 2026",
+                "https://zenodo.org/api/records/4172871",
+            ),
+            RemoteFile(
+                "masks.zip",
+                "https://zenodo.org/records/4172871/files/masks.zip?download=1",
+                7241097,
+                "md5:c955efe74c52d07f8e8bb02d5143e182",
+                "15 October 2026",
+                "https://zenodo.org/api/records/4172871",
+            ),
+            RemoteFile(
+                "subscenes.zip",
+                "https://zenodo.org/records/4172871/files/subscenes.zip?download=1",
+                15197196473,
+                "md5:0ad1de0ebeaff529782f456cad2e966f",
+                "15 October 2026",
+                "https://zenodo.org/api/records/4172871",
+            ),
+            RemoteFile(
+                "README.pdf",
+                "https://zenodo.org/records/4172871/files/README.pdf?download=1",
+                1891882,
+                "md5:48fb6afa0195a3736d4ce122d007be36",
+                "15 October 2026",
+                "https://zenodo.org/api/records/4172871",
+            ),
+        ),
     ),
     "kappaset": Dataset(
         name="kappaset",
@@ -256,6 +439,24 @@ DATASETS: dict[str, Dataset] = {
             "used",
             "CC BY 4.0",
             "primary page read 14 October 2026; attribution in NOTICE.md",
+        ),
+        files=(
+            RemoteFile(
+                "kappaset.zip",
+                "https://zenodo.org/records/7100327/files/kappaset.zip?download=1",
+                56186308652,
+                "md5:3f435c61efbb511c13a353a322787e42",
+                "15 October 2026",
+                "https://zenodo.org/api/records/7100327",
+            ),
+            RemoteFile(
+                "README.pdf",
+                "https://zenodo.org/records/7100327/files/README.pdf?download=1",
+                231988,
+                "md5:98bf16a2d90cba386b197133a24f402f",
+                "15 October 2026",
+                "https://zenodo.org/api/records/7100327",
+            ),
         ),
     ),
 }

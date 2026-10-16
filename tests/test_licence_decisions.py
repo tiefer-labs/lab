@@ -238,6 +238,7 @@ def test_run_reference_cannot_read_it(
     cleared = dataclasses.replace(
         ref.REFERENCES["fmask4"],
         licence="test",
+        weights_licence="test",
         decision=LicenceDecision("used", "test"),
         runner=lambda data: np.zeros(data.labels.shape, np.uint8),
     )

@@ -10,7 +10,7 @@ How published third-party cloud masking models are run on the same patches as Ti
 
 ## Requirements
 
-- The licence of the model, read on its primary source, and the maintainer's decision that it allows this use: a `LicenceDecision` in `references/run_reference.py` (`decision`), and the table of [docs/DATASETS.md](../docs/DATASETS.md), section 1.1. A model without a recorded decision stops; a refused one stops with its decision and is not offered by `--model`.
+- The licences of the model's code and of its weights, each read on its primary source, and the maintainer's decision that they allow this use. The record of every model (licences, decision, how it is obtained, its files) is `REFERENCES` of `src/tiefer_lab/reference_models.py`, which imports no torch so the CPU source check can read it; the decisions are also in the table of [docs/DATASETS.md](../docs/DATASETS.md), section 1.1. A model without a recorded decision stops; a model whose weights have no stated licence stops; a refused one stops with its decision and is not offered by `--model`.
 - A runner for the model in `references/run_reference.py`, added in its own pull request after the licence is cleared, with the class mapping of its output recorded in [docs/ASSUMPTIONS.md](../docs/ASSUMPTIONS.md).
 - A complete split of a cache (`python -m tiefer_lab.data.build_cache`).
 
@@ -46,7 +46,19 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 | :--- | :---: |
 | dtacs4bands | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
 | masks of the CloudSEN12 release of 2022 (`add_release_2022.py`) | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
-| UNetMobV2, s2cloudless, KappaMask L1C and L2A, CD-FCNN-RGBI and RGBISWIR, Fmask 4 | no decision recorded; each stops until its licence is read and a decision is recorded |
+| UNetMobV2, s2cloudless, KappaMask L1C and L2A, CD-FCNN-RGBI and RGBISWIR, Fmask 4 | no decision recorded; each stops until its licences are read and a decision is recorded |
+
+## Licences and whether each model can be obtained
+
+Read on 16 October 2026 from each model's primary source (`source` in `src/tiefer_lab/reference_models.py`); "obtainable" is the word of the source check (`python -m tiefer_lab.data.check_sources`, [docs/DATASETS.md](../docs/DATASETS.md), section 1.2): yes, credentials needed, licence not stated, or not checked. A licence of the weights that is not stated stops that model. Declined models are not checked.
+
+| Reference | Code licence | Weights licence | How it is obtained | Obtainable | What limits it |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| UNetMobV2 | not read | not read | not checked | not checked | its masks are already in the CloudSEN12+ extra table (`cloudmask_unetmobv2_v1` and `cloudmask_unetmobv2_v2`) |
+| s2cloudless 1.7.3 | CC BY-SA 4.0 | CC BY-SA 4.0; the model file ships in the package | `pip install s2cloudless==1.7.3` from PyPI; wheel of 4,768,896 bytes with its SHA-256 on PyPI | yes | runs from its installed package under `references/` and is never copied into this repository; reads 10 bands, so only 13-band caches feed it |
+| KappaMask L1C and L2A | Apache 2.0 | not stated | the weights are not in the repository; the public Docker image `kappazeta/kappamask:v2.4` carries them | licence not stated | needs whole Level-1C or Level-2A products, not 509 x 509 patches |
+| CD-FCNN-RGBI and RGBISWIR | MIT | MIT, the LICENSE file of the repository that holds the weights; no separate statement for the weights | raw files of the repository, 1,418,400 and 1,418,160 bytes; no checksum published | yes | trained on L8 Biome, so a result on L8 Biome is not independent |
+| Fmask 5 | MIT | not stated | the repository holds the code only; the complete package (about 3 GB) is on a university SharePoint that redirected to a login | licence not stated | the package also needs credentials; needs whole products with their metadata; the MATLAB Fmask 4 of the CloudSEN12 paper is not checked |
 
 ---
 
@@ -54,7 +66,7 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 
 | File | Purpose |
 | :--- | :---: |
-| `run_reference.py` | the reference models (UNetMobV2, s2cloudless, KappaMask, CD-FCNN, Fmask, dtacs4bands), their licence state and runners; adds their masks to a cache split |
+| `run_reference.py` | runs a reference model whose record in `src/tiefer_lab/reference_models.py` is complete; adds its masks to a cache split |
 | `add_release_2022.py` | would add the masks of the CloudSEN12 release of 2022 to a CloudSEN12+ cache split as `2022_<mask>`; kept, and stops with the release's licence decision |
 
 ---
@@ -64,6 +76,7 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 | Symptom | Cause | Fix |
 | :--- | :---: | :---: |
 | `licence not read yet` | the licence of the model is not recorded | read it on the primary source and record it |
+| `no licence is stated for its weights` | the weights have no stated licence | nothing to fix here until one is read and recorded in `src/tiefer_lab/reference_models.py` |
 | `has not recorded whether it allows this use` | the maintainer's decision is missing | ask the maintainer; record the decision in `decision` and docs/DATASETS.md, section 1.1 |
 | `declined, pending legal review` or `not used` | the maintainer's licence decision refuses the source | nothing to fix here; only a new decision, recorded the same way, changes it |
 | `no runner yet` | the runner is added only after the licence is cleared | open a pull request with the runner |
@@ -73,5 +86,6 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 
 ## Changelog
 
+- 16 October 2026: the record of every model moves to src/tiefer_lab/reference_models.py; licences of code and weights and whether each model can be obtained; a model whose weights have no stated licence stops; drafted with an AI-assisted system.
 - 15 October 2026: licence decisions: dtacs4bands and the 2022 release masks are declined, pending legal review; a decision is a typed record next to each reference; drafted with an AI-assisted system.
 - 14 October 2026: first version: reference models stop until their licence is cleared; masks are added next to those of the dataset; UNetMobV2, s2cloudless and the 2022 release masks; drafted with an AI-assisted system.

@@ -22,7 +22,7 @@ The nine datasets of the CloudSEN12 paper's Table 1 as candidates to test the cl
 
 | Dataset | Sensor and processing level | Size | Classes | Strata | Source |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| L8 Biome (`landsat8_biome`) | Landsat 8 OLI and TIRS, pre-collection Level-1T | 96 scenes | not stated on the page; `TODO(verify)` | biome of each scene | [2] |
+| L8 Biome (`landsat8_biome`) | Landsat 8 OLI and TIRS, pre-collection Level-1T | 96 scenes | 0 fill, 64 cloud shadow, 128 clear, 192 thin cloud, 255 cloud | biome of each scene (8 biomes of 12 scenes) | [2], [21] |
 | L8 SPARCS (`landsat8_sparcs`) | Landsat 8, pre-collection Level-1 | 80 subsets of 1000 x 1000 pixels | 0 shadow, 1 shadow over water, 2 water, 3 snow, 4 land, 5 cloud, 6 flooded | none | [3] |
 | Sentinel-2 Cloud Mask Catalogue (`s2_cloud_catalogue`) | Sentinel-2 Level-1C, 2018 archive | 513 subscenes of 1022 x 1022 pixels at 20 m | CLEAR, CLOUD, CLOUD_SHADOW (one-hot) | 11 surface type tags, difficulty, shadows marked or not | [4], [5] |
 | KappaSet (`kappaset`) | Sentinel-2 Level-1C | 9,251 sub-tiles of 512 x 512 pixels at 10 m from 1,038 products | 0 undefined, 1 clear, 2 cloud shadow, 3 semi-transparent cloud, 4 cloud, 5 missing | season | [6], [7] |
@@ -93,13 +93,23 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 - **`IND-02` (Sen2Cor on the same pixels).** The `test` folder of KappaSet holds the Sen2Cor scene classification (SCL), Fmask, s2cloudless, IdePix and MAJA maps of the same sub-tiles [7], so Sen2Cor needs no download with credentials. Its codes come from the Sen2Cor documentation; the semantic mapping of the CloudSEN12 paper's Table 5 is used, and codes Table 5 does not list (for example no data, saturated and unclassified) are decisions recorded before use. For the Catalogue no Sen2Cor source is verified, so `IND-02` stays `not measured` there.
 - **`IND-03` (the operational mask).** The quality band of each Landsat 8 product, decoded to the cloud problem by the bit layout of the USGS product guide of its collection (pre-collection; section 6).
 
+### 5.1 What limits measurement
+
+Checked on 16 October 2026 from the primary pages (section 9); what can be downloaded is in [DATASETS.md](DATASETS.md), section 1.2.
+
+- **KappaSet is not georeferenced** [7]. The independence check against CloudSEN12+ uses the product ID and the sensing date only; footprints cannot be compared.
+- **L8 Biome is pre-collection** [21]. Its quality band (BQA) is decoded by the bit layout of the pre-collection Landsat 8 product guide, not by that of Collection 1 or 2 (section 6). The access page marks for each scene whether shadows are in its mask [21]; how scenes without marked shadow count on the shadow problem is decided before use.
+- **KappaMask and Fmask need whole products.** Both run on a whole Level-1C (KappaMask also Level-2A) product, not on 509 x 509 patches ([references/README.md](../references/README.md)); on the datasets above, which ship sub-tiles or subscenes, they are not measured.
+- **s2cloudless is CC BY-SA 4.0.** It runs from its installed package under `references/` and is never copied into this repository.
+- **CD-FCNN was trained on L8 Biome.** Its weights are named after L8 Biome ([references/README.md](../references/README.md)); a result of CD-FCNN on L8 Biome is not independent of its training data.
+- **`IND-02` on the Catalogue stays `not measured`.** Sen2Cor masks for its subscenes would need the Level-2A products, and their download needs credentials.
+
 ---
 
 ## 6. Open facts
 
 | Fact | What resolves it | Where it is used |
 | :--- | :---: | :---: |
-| L8 Biome label codes | the data release files, or the paper that describes them (doi:10.1016/j.rse.2017.03.026, not yet opened) | `DATASETS["landsat8_biome"].label_codes` |
 | L8 Biome scene layout and the biome of each scene | the downloaded files | `read_biome` |
 | L8 SPARCS file names and the band order of its band-interleaved file | the downloaded files | `read_sparcs` |
 | Pre-collection quality band (BQA) bit layout | the USGS product guide of pre-collection Landsat 8 Level-1 | `COMPARISON_CODES["reference_landsat_qa"]` |
@@ -107,9 +117,10 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 | CloudSEN12+ field with the Sentinel-2 product ID | the survey report (`reports/data/survey.json`) | `CLOUDSEN12_PRODUCT_FIELD` |
 | KappaSet band scale, product ID of a sub-tile, NetCDF read with the locked GDAL | one KappaSet file read on CSC Roihu | `read_kappaset` |
 | Sen2Cor SCL codes | the Sen2Cor product documentation, with Table 5 of [1] | `COMPARISON_CODES["reference_sen2cor"]` |
-| Licence of L8 Biome and L8 SPARCS | their pages state none; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
+| Licence of L8 Biome and L8 SPARCS | their pages state none; the metadata file of each release gives access and use constraints "none" and points to the Landsat Data Distribution Policy [22], [23]; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
 | Input bands of each algorithm of the paper's Table 6 | its primary source | `ALGORITHMS` in `src/tiefer_lab/paper_models.py` |
-| Download sizes and storage billing units of the Landsat datasets | the maintainer's download on CSC Roihu | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
+| Storage billing units of every download | pending maintainer input | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
+| DOI of the Landsat releases: the pages cite 10.5066/F7251GDH (Biome) and 10.5066/F7FB5146 (SPARCS), their metadata files 10.5066/F79Z930Q and 10.5066/F7FQ9TQN | the DOI resolver, read by the maintainer | [DATASETS.md](DATASETS.md), section 1 |
 
 ---
 
@@ -117,17 +128,17 @@ The patch definition is a protocol decision proposed in a method-change issue; i
 
 | Dataset | Licence | Download | Size as the source states it | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| L8 Biome | U.S. Public Domain under the USGS policy, to be confirmed (section 6) | the USGS page | not stated on the page | [2], [9] |
-| L8 SPARCS | as L8 Biome | the USGS page | 1.4 GB | [3], [9] |
-| Catalogue | CC BY 4.0 | Zenodo record 4172871 | `subscenes.zip` 15,197,196,473 bytes, `masks.zip` 7,241,097 bytes | [4] |
-| KappaSet | CC BY 4.0 | Zenodo record 7100327 | `kappaset.zip` 56,186,308,652 bytes | [6] |
+| L8 Biome | U.S. Public Domain under the USGS policy, to be confirmed (section 6) | one `.tar.gz` per scene on the access page, no login | not stated on the page; the 96 archives answer 94,130,145,717 bytes in all (HEAD, 16 October 2026); no checksums published | [21], [9] |
+| L8 SPARCS | as L8 Biome | `l8cloudmasks.zip` on the USGS page, no login | 1.4 GB on the page; 1,555,733,976 bytes (HEAD, 16 October 2026); no checksum published | [3], [9] |
+| Catalogue | CC BY 4.0 | Zenodo record 4172871, no login | `subscenes.zip` 15,197,196,473 bytes, `masks.zip` 7,241,097 bytes, with `classification_tags.csv` and `README.pdf`; MD5 of each on the record | [4] |
+| KappaSet | CC BY 4.0 | Zenodo record 7100327, no login | `kappaset.zip` 56,186,308,652 bytes and `README.pdf`; MD5 of each on the record | [6] |
 | WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | Zenodo record 5511793 | 36 product zips of 0.6 to 0.92 GB, `ReferenceMask.zip` 20,946,052 bytes | [11] |
 | 38-Cloud | Unknown on Kaggle; the repository's Apache 2.0 file covers its code | Kaggle | 17,051,954,786 bytes | [14] |
 | 95-Cloud | CC0 on Kaggle, for the 57 added scenes | Kaggle | 18,563,733,339 bytes | [16] |
 | S2-Hollstein | CC BY-NC 4.0 (LICENCE file) or CC BY-NC-SA 4.0 (inside the file) | GFZ GitLab | one HDF5 file | [17] |
 | S2-CESBIO | CC BY 4.0 | Zenodo record 1460961 | 234,569,318 bytes | [19] |
 
-None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and the attribution of both is in [NOTICE.md](../NOTICE.md). `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
+The file names, sizes and checksums the code compares are `files` of each dataset in `src/tiefer_lab/data/independent.py`. None of the data is in this repository. CC BY 4.0 asks for attribution: a result on the Catalogue or KappaSet cites its record, and the attribution of both is in [NOTICE.md](../NOTICE.md). `hpc/roihu/independent.sbatch` downloads the Zenodo files at a capped rate and resumes a stopped download.
 
 ---
 
@@ -172,11 +183,15 @@ None of the data is in this repository. CC BY 4.0 asks for attribution: a result
 18. Hollstein, A. et al., Ready-to-use methods for the detection of clouds, cirrus, snow, shadow, water and clear sky pixels in Sentinel-2 MSI images, Remote Sensing 8, 666, 2016, https://doi.org/10.3390/rs8080666, accessed 14 October 2026.
 19. Sentinel-2 reference cloud masks generated by an active learning method, Zenodo record 1460961, https://zenodo.org/records/1460961, accessed 14 October 2026.
 20. Baetens, L., Desjardins, C. and Hagolle, O., Validation of Copernicus Sentinel-2 cloud masks obtained from MAJA, Sen2Cor and FMask processors using reference cloud masks generated with a supervised active learning procedure, Remote Sensing 11, 433, 2019, https://doi.org/10.3390/rs11040433, accessed 14 October 2026.
+21. Landsat 8 Cloud Cover Assessment Validation Data, access page of the pre-collection release, USGS, https://landsat.usgs.gov/landsat-8-cloud-cover-assessment-validation-data, accessed 16 October 2026.
+22. L8 Biome Cloud Validation Masks, metadata file, USGS, https://landsat.usgs.gov/cloud-validation/cca_l8/L8_Biome_Cloud_Validation_Masks.xml, accessed 16 October 2026.
+23. L8 SPARCS Cloud Validation Masks, metadata file, USGS, https://landsat.usgs.gov/cloud-validation/sparcs/L8_SPARCS_Cloud_Validation_Masks.xml, accessed 16 October 2026.
 
 ---
 
 ## Changelog
 
+- 16 October 2026: L8 Biome classes read from its access page; section 5.1, what limits measurement; distribution facts and sizes of the four datasets checked by `check_sources`; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the Catalogue and KappaSet are used, L8 Biome and L8 SPARCS are candidates without a decision; section 7 points to the attribution in NOTICE.md; drafted with an AI-assisted system.
 - 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used; the coverage page names the datasets it leaves out; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the status of each dataset under the maintainer's licence decisions; the refused datasets leave the open facts, the coverage and the evaluation steps; drafted with an AI-assisted system.

@@ -52,6 +52,7 @@ for f in "${TIEFER_REPORTS_DIR}"/evaluation/"${run_id}"_*.json \
 done
 add "${reports_rel}/test_log.md"
 add "${reports_rel}/data/survey.json"
+add "${reports_rel}/data/sources.json"
 
 mkdir -p "${base}/collect"
 archive="${base}/collect/tiefer-${run_id}.tar.gz"

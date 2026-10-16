@@ -26,6 +26,8 @@ CPU_MODULES = (
     "tiefer_lab.data.transforms",
     "tiefer_lab.data.richness",
     "tiefer_lab.data.padding",
+    "tiefer_lab.data.check_sources",
+    "tiefer_lab.reference_models",
     "tiefer_lab.utils.metadata",
     "tiefer_lab.utils.paths",
 )

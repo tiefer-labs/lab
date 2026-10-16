@@ -43,6 +43,23 @@ def test_every_reference_stops_before_its_licence_is_cleared(repo_root: Path) ->
         ref.main(["--model", "dtacs4bands", "--cache", "x", "--split", "val"])
 
 
+def test_a_model_whose_weights_have_no_stated_licence_stops(repo_root: Path) -> None:
+    ref = _module(repo_root)
+    import dataclasses
+
+    from tiefer_lab.data.source import LicenceDecision
+
+    kappamask = dataclasses.replace(
+        ref.REFERENCES["kappamask_l1c"],
+        decision=LicenceDecision("used", "test"),
+        runner=lambda data: np.zeros(data.labels.shape, np.uint8),
+    )
+    assert kappamask.licence == "Apache-2.0" and kappamask.weights_licence is None
+    with pytest.raises(ref.ReferenceError, match="no licence is stated for its weights"):
+        ref.ready(kappamask)
+    assert ref.ready(dataclasses.replace(kappamask, weights_licence="test")) is kappamask.runner
+
+
 def test_release_2022_script_stops_with_its_decision(repo_root: Path, tmp_path: Path) -> None:
     spec = importlib.util.spec_from_file_location(
         "add_release_2022", repo_root / "references" / "add_release_2022.py"

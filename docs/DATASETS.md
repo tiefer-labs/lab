@@ -69,13 +69,30 @@ The maintainer's licence decisions on third-party sources. "Not used" means no d
 | CloudSEN12 release of 2022 | CC BY-NC 4.0 | [scidb.cn](https://www.scidb.cn/detail?dataSetId=f72d622ff4ea4fa18070456a98222b1a) | declined, pending legal review | 15 October 2026 | non-commercial licence | `LICENCE_DECISION` of `src/tiefer_lab/data/cloudsen12_2022.py` |
 | WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | [zenodo.org](https://zenodo.org/records/5511793) | candidate, no decision yet; treated as not used | 15 October 2026 | the maintainer has not decided it | `DATASETS["whus2_cd"].decision` |
 
+### 1.2 Can each source be obtained
+
+Whether each dataset still allowed or undecided after the licence decisions (section 1.1) can be downloaded without credentials, checked on 16 October 2026 by `python -m tiefer_lab.data.check_sources` from this repository's development environment: a HEAD request, or the first byte, of every recorded file, its size and checksum compared with the record, never a full download and never a credential. On CSC Roihu the same check is the job `hpc/roihu/check_sources.sbatch`, which writes `reports/data/sources.json`; that report, not this table, is cited for any value. The file names, sizes and checksums are `files` of each source in `src/tiefer_lab/data/source.py` (CloudSEN12+) and `src/tiefer_lab/data/independent.py`. Declined and not used sources are not checked. The reference models are in [references/README.md](../references/README.md).
+
+"Obtainable" is one of: yes (every recorded file answers with the recorded size and, where one is published, checksum, with no login), credentials needed, licence not stated, or not checked.
+
+| Source | Decision | Download | Login, token, licence acceptance or API key | Files | Checksums | Obtainable |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| CloudSEN12+ (`tacofoundation/cloudsen12`, revision of 15 October 2026 in `DATASET_REVISION_READ`) | used | Hugging Face, the dataset is not gated; the cache build reads byte ranges of the parts | none | 5 `cloudsen12-l1c` and 3 `cloudsen12-extra` parts, 136,865,704,637 bytes in all | SHA-256 of each part, from the repository tree | yes |
+| Sentinel-2 Cloud Mask Catalogue | used | Zenodo record 4172871 | none | 4 files, 15,206,407,392 bytes in all | MD5 of each file, on the record | yes |
+| KappaSet | used | Zenodo record 7100327 | none | 2 files, 56,186,540,640 bytes in all | MD5 of each file, on the record | yes |
+| Landsat 8 Biome | candidate, no decision yet | one archive per scene on the USGS access page | none | 96 archives, 94,130,145,717 bytes in all | none published | yes |
+| Landsat 8 SPARCS | candidate, no decision yet | one archive on the USGS page | none | `l8cloudmasks.zip`, 1,555,733,976 bytes | none published | yes |
+| WHUS2-CD+ | candidate, no decision yet | Zenodo record 5511793 | not checked | no file recorded | not checked | not checked |
+
+What limits measurement on these sources is in [INDEPENDENT.md](INDEPENDENT.md), section 5.1.
+
 What the candidates' primary pages say, read on 7 October 2026:
 
 | Candidate | Sensor and processing level | Bands and resolution | Size | Classes |
 | :--- | :---: | :---: | :---: | :---: |
 | Sentinel-2 Cloud Mask Catalogue | Sentinel-2 Level-1C, 2018 archive | Level-1C bands at 20 m | 513 subscenes of 1022 x 1022 pixels | clear, cloud, cloud shadow |
 | KappaSet | Sentinel-2 Level-1C | bands not stated; oversampled to 10 m | 9,251 sub-tiles of 512 x 512 pixels from 1,038 products | undefined, clear, cloud shadow, semi-transparent cloud, cloud, missing |
-| Landsat 8 Biome | Landsat 8 OLI and TIRS, Level-1T, pre-collection | the Landsat 8 band files, the quality band, the MTL file | 96 scenes | not stated on the page |
+| Landsat 8 Biome | Landsat 8 OLI and TIRS, Level-1T, pre-collection | the Landsat 8 band files, the quality band, the MTL file | 96 scenes | fill, cloud shadow, clear, thin cloud, cloud ([INDEPENDENT.md](INDEPENDENT.md), section 2) |
 | Landsat 8 SPARCS | Landsat 8, pre-collection Level-1 | every band of the Level-1 product, band-interleaved, the quality band, the MTL file | 80 subsets of 1000 x 1000 pixels | shadow, shadow over water, water, snow, land, cloud, flooded |
 | 38-Cloud | Landsat 8 | red, green, blue, near infrared (bands 4, 3, 2, 5) | 8,400 training and 9,201 test patches of 384 x 384 pixels, from 38 scenes | cloud ground truth |
 | 95-Cloud | Landsat 8 Collection 1 Level-1 | red, green, blue, near infrared (bands 4, 3, 2, 5) | 34,701 training patches of 384 x 384 pixels from 75 scenes; the test set of 38-Cloud | cloud ground truth |
@@ -137,6 +154,7 @@ The cloud problem is thick plus thin cloud against the rest, as in the paper; th
 
 ## Changelog
 
+- 16 October 2026: section 1.2, whether each source still allowed or undecided can be obtained, from the source check; the L8 Biome classes point to INDEPENDENT.md; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 15 October 2026: section 1.1 records the Catalogue and KappaSet as used and L8 Biome and L8 SPARCS as candidates without a decision; a source without a record is not read; drafted with an AI-assisted system.

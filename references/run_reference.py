@@ -12,12 +12,14 @@ They are run here, outside `src/`, exactly as published: never trained
 further and never used to choose anything of Tiefer's own models. Tiefer's
 models stay trained from random initialisation (NOTICE.md).
 
-Before a model runs, its licence is read from its primary source and the
-maintainer records whether it allows this use (`decision` below, and
-docs/DATASETS.md for the record). Until then the script stops and says what
-is missing. A model whose runner is not written yet stops too; its runner is
-added in a pull request after its licence is cleared, with the class mapping
-of its output recorded in docs/ASSUMPTIONS.md.
+Before a model runs, the licences of its code and of its weights are read
+from their primary sources, and the maintainer records whether they allow this
+use. The record of every model is `REFERENCES` of
+src/tiefer_lab/reference_models.py (licences, decision, files); until it is
+complete the script stops and says what is missing. A model whose runner is
+not written yet stops too; its runner is added in a pull request after its
+licence is cleared, with the class mapping of its output recorded in
+docs/ASSUMPTIONS.md.
 
 Reading the test split, even only to compute a reference mask, is logged like
 every other use: `--final` and `--reason` append an entry to
@@ -28,98 +30,13 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Sequence
 from typing import Any
 
-import numpy as np
-from numpy.typing import NDArray
-
 from tiefer_lab.data import cache
-from tiefer_lab.data.source import NO_DECISION, LicenceDecision, decided_15_october_2026
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, log_test_evaluation
+from tiefer_lab.reference_models import REFERENCES, Reference, Runner
 from tiefer_lab.utils import metadata
-
-Runner = Callable[[cache.SplitData], NDArray[np.uint8]]
-
-
-@dataclass(frozen=True)
-class Reference:
-    """A published reference model and what is known about using it."""
-
-    name: str
-    source: str
-    licence: str | None  # as read on the primary source, or None: TODO(verify)
-    kind: str  # "four_class", "cloud" or "probability", the output as stored
-    runner: Runner | None = None
-    note: str = ""
-    # The maintainer's licence decision for this use (data/source.py, LicenceDecision).
-    decision: LicenceDecision = NO_DECISION
-
-
-REFERENCES: dict[str, Reference] = {
-    "unetmobv2": Reference(
-        "unetmobv2",
-        "UNetMobV2 of the CloudSEN12 paper; primary page of the weights TODO(verify)",
-        None,
-        "four_class",
-        note="CloudSEN12+ ships its mask (cloudmask_unetmobv2_v1); this runner is for the "
-        "independent datasets",
-    ),
-    "s2cloudless": Reference(
-        "s2cloudless",
-        "s2cloudless, Sentinel Hub; primary page TODO(verify)",
-        None,
-        "probability",
-        note="CloudSEN12+ ships its probability; this runner is for the independent datasets",
-    ),
-    "dtacs4bands": Reference(
-        "dtacs4bands",
-        "https://huggingface.co/isp-uv-es/cloudsen12_models",
-        "CC-BY-NC-4.0",
-        "four_class",
-        note="non-commercial licence",
-        decision=decided_15_october_2026(
-            "declined, pending legal review", "CC BY-NC 4.0", "non-commercial licence"
-        ),
-    ),
-    "kappamask_l1c": Reference(
-        "kappamask_l1c",
-        "KappaMask, KappaZeta; primary page TODO(verify)",
-        None,
-        "four_class",
-        note="first try the masks of the CloudSEN12 release of 2022 (data/cloudsen12_2022.py)",
-    ),
-    "kappamask_l2a": Reference(
-        "kappamask_l2a",
-        "KappaMask, KappaZeta; primary page TODO(verify)",
-        None,
-        "four_class",
-        note="needs Level-2A input; first try the 2022 release masks",
-    ),
-    "cd_fcnn_rgbi": Reference(
-        "cd_fcnn_rgbi",
-        "CD-FCNN, primary page TODO(verify)",
-        None,
-        "cloud",
-        note="first try the 2022 release masks",
-    ),
-    "cd_fcnn_rgbiswir": Reference(
-        "cd_fcnn_rgbiswir",
-        "CD-FCNN, primary page TODO(verify)",
-        None,
-        "cloud",
-        note="first try the 2022 release masks",
-    ),
-    "fmask4": Reference(
-        "fmask4",
-        "Fmask 4, primary page TODO(verify)",
-        None,
-        "four_class",
-        note="needs product metadata (sun and view angles) that 509 x 509 patches may not have; "
-        "may stay not measured",
-    ),
-}
 
 
 def allowed_references() -> list[str]:
@@ -138,7 +55,13 @@ def ready(reference: Reference) -> Runner:
     if reference.licence is None:
         raise ReferenceError(
             f"{reference.name}: licence not read yet (TODO(verify)); read it at "
-            f"{reference.source} and record it in references/run_reference.py and docs/DATASETS.md"
+            f"{reference.source} and record it in src/tiefer_lab/reference_models.py and "
+            "references/README.md"
+        )
+    if reference.weights_licence is None:
+        raise ReferenceError(
+            f"{reference.name}: no licence is stated for its weights; the model stops until "
+            "one is read and recorded in src/tiefer_lab/reference_models.py"
         )
     if reference.decision.status != "used":
         raise ReferenceError(
