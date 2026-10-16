@@ -48,6 +48,129 @@ Step by step: how to set up Tiefer Lab on the CSC Roihu supercomputer, build the
 
 ## 3. Steps
 
+### Step 0 runbook: from a fresh account to a finished smoke job, device check and source check
+
+Step 0 of [plan.md](plan.md), command by command, in the order to type them on Roihu. `<project>` is the CSC project name and `<user>` the CSC user name: type your own values in their place, and remove both from anything you send back. `<job-id>` is the number `sbatch` prints (`Submitted batch job <job-id>`). The longer explanations are in steps 1, 2 and 4 below.
+
+**Where files go.** Home is billed at 10 storage BU per TiB-hour, like `/projappl` ([billing](https://docs.csc.fi/computing/hpc-billing/), read 16 October 2026), so nothing but one line of `~/.bashrc` goes there. The source, the Python environments and the persistent files (the candidates' run folders) live in `/projappl/<project>/tiefer-lab/`; the caches, downloads, run folders, reports, logs, the pip cache and every other cache (`XDG_CACHE_HOME`) in `/scratch/<project>/tiefer-lab/`. `env.sh` sets all of these; never move any of them to `$HOME`.
+
+1. Log in to the x86 login node and check its architecture:
+
+   ```bash
+   ssh <user>@roihu-cpu.csc.fi
+   uname -m
+   ```
+
+   Prints `x86_64`.
+
+2. Check the allocation:
+
+   ```bash
+   csc-projects
+   ```
+
+   Prints the GPU, CPU, storage and cloud billing units of the project. Expected: 10,000 GPU BU, 60,000 CPU BU and 30,000 storage BU (section 2 of [plan.md](plan.md)).
+
+3. Set the project once, in `~/.bashrc` (the only file this guide writes to home):
+
+   ```bash
+   echo 'export TIEFER_CSC_PROJECT=<project>' >> ~/.bashrc
+   source ~/.bashrc
+   echo "${TIEFER_CSC_PROJECT}"
+   ```
+
+   Prints your project name, never the text `<project>` (see the warning in step 1).
+
+4. Clone into `/projappl` and note the commit:
+
+   ```bash
+   mkdir -p /projappl/<project>/tiefer-lab
+   git clone https://github.com/tiefer-labs/lab.git /projappl/<project>/tiefer-lab/src
+   cd /projappl/<project>/tiefer-lab/src
+   git log --oneline -1
+   du -sh ~
+   ```
+
+   `git log` prints one line with the commit; `du` prints the size of home, which stays this small through the whole campaign.
+
+5. Set up the CPU side on the login node: the package, `hpc/roihu/requirements.txt` and the CPU build of torch (the `TODO(verify)` of `setup.sh` is resolved here):
+
+   ```bash
+   bash hpc/roihu/setup.sh
+   ```
+
+   Prints `architecture: x86_64`, the pip installs, then from `check_env.py`: `torch 2.10.0+cpu`, `onnxruntime ...`, `CUDA available: False`, `no GPU visible: fine on a login node, an error inside a GPU job`, `environment ready`, and last `setup complete: /projappl/<project>/tiefer-lab/venv-x86_64`. If the PyTorch CPU index cannot be reached, it stops with a pip error: send that error.
+
+6. Set up the GPU side with a `gputest` job (at most 15 minutes, at most 50 GPU BU):
+
+   ```bash
+   bash hpc/roihu/submit.sh hpc/roihu/setup_gpu.sbatch
+   squeue --me
+   ```
+
+   When `squeue --me` no longer lists it:
+
+   ```bash
+   cat /scratch/<project>/tiefer-lab/runs/slurm/tiefer-setup-gpu-<job-id>.out
+   sacct -j <job-id> --format=JobID,State,Elapsed
+   ```
+
+   The log shows the lines listed in step 2 below, ending with `environment ready` and `setup complete: .../venv-aarch64`; the state is `COMPLETED`.
+
+7. Run the smoke job (at most 15 minutes, at most 50 GPU BU). It trains `configs/smoke.toml` for a few steps on a tiny cache, evaluates it, and runs the device check: evaluation on the CPU against evaluation on the GH200, on a fixed input (`tiefer_lab.device_check`):
+
+   ```bash
+   bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch
+   squeue --me
+   ```
+
+   When it has ended:
+
+   ```bash
+   grep -E "^(job environment|environment):" /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>.out
+   tail -n 40 /scratch/<project>/tiefer-lab/runs/slurm/tiefer-smoke-<job-id>.out
+   sacct -j <job-id> --format=JobID,State,Elapsed
+   ```
+
+   The first command prints `(aarch64)`, `module environment built on this node`, `module python-pytorch/2.10` and a `venv-aarch64` path. The tail ends with `== smoke run finished (outputs are labelled smoke and are never results)` and a JSON summary whose `device_check` shows `"device": "cuda"`, `"precision": "bf16"` and `"passed": true`, with its `agreement` and `max_abs_logit_difference`. The state is `COMPLETED`. A failed device check ends the job with `CPU and cuda argmax disagree`: send the whole tail.
+
+8. Run the source check, a CPU job of HEAD requests, without downloading anything or sending a credential:
+
+   ```bash
+   bash hpc/roihu/submit.sh hpc/roihu/check_sources.sbatch
+   squeue --me
+   ```
+
+   When it has ended:
+
+   ```bash
+   cat /scratch/<project>/tiefer-lab/runs/slurm/tiefer-sources-<job-id>.out
+   ```
+
+   Prints one line per source, in the form `<source>: <obtainable> (<files> files, <bytes> bytes); <why>`, and `report: $TIEFER_REPORTS_DIR/data/sources.json`. Expected: `yes` for CloudSEN12+, the Catalogue, KappaSet, L8 Biome, L8 SPARCS, s2cloudless and both CD-FCNN models; `licence not stated` for both KappaMask models and Fmask; `not checked` for UNetMobV2.
+
+9. Record the usage of the three jobs, pack the reports and measure `/projappl`:
+
+   ```bash
+   bash hpc/roihu/usage.sh <setup-gpu-job-id>
+   bash hpc/roihu/usage.sh <smoke-job-id>
+   bash hpc/roihu/usage.sh <sources-job-id>
+   du -sh /projappl/<project>/tiefer-lab/venv-x86_64 /projappl/<project>/tiefer-lab/venv-aarch64 /projappl/<project>/tiefer-lab/src
+   du -sh ~
+   csc-projects
+   ```
+
+**Send back**, with `<project>` and `<user>` removed from every line:
+
+- the commit of step 4;
+- the last 15 lines of the output of step 5;
+- the lines of step 6 from `job environment` to `setup complete`, and its `sacct` line;
+- the `device_check` block and the `steps` of the smoke summary of step 7, and its `sacct` line;
+- the source lines of step 8, and `$TIEFER_REPORTS_DIR/data/sources.json`;
+- the three `usage.sh` outputs, the `du` lines and the billing unit lines of `csc-projects` from step 9.
+
+With these, the `TODO(verify)` facts of step 0 are resolved (the CPU build of torch, the device check on GH200, the `/projappl` sizes for the storage table), and the plan's revision for the timing step (step 2) can start.
+
 ### Step 1: clone and set the project
 
 Log in to the x86 login node, clone into `/projappl`, and set the project once in `~/.bashrc`:
@@ -365,6 +488,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 16 October 2026: the step 0 runbook, command by command, from a fresh account to a finished smoke job, device check and source check, with what each command prints and what to send back; every cache stays out of home; drafted with an AI-assisted system.
 - 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
 - 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: step 3, the Hugging Face token is optional, read-only, raises the rate limit only and is never written to any file, log or report; drafted with an AI-assisted system.

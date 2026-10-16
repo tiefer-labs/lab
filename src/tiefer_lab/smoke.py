@@ -199,7 +199,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     print("\n== smoke run finished (outputs are labelled smoke and are never results)")
     print(
-        json.dumps({k: summary[k] for k in ("data_source", "run_id", "seconds", "steps")}, indent=2)
+        json.dumps(
+            {k: summary[k] for k in ("data_source", "run_id", "seconds", "steps", "device_check")},
+            indent=2,
+        )
     )
     return 0
 

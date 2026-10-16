@@ -38,7 +38,11 @@ export TIEFER_DATA_DIR="${TIEFER_DATA_DIR:-${TIEFER_SCRATCH}/data}"
 export TIEFER_RUNS_DIR="${TIEFER_RUNS_DIR:-${TIEFER_SCRATCH}/runs}"
 export TIEFER_REPORTS_DIR="${TIEFER_REPORTS_DIR:-${TIEFER_SCRATCH}/reports}"
 export PIP_CACHE_DIR="${TIEFER_SCRATCH}/pip-cache"
-mkdir -p "${TIEFER_DATA_DIR}" "${TIEFER_RUNS_DIR}/slurm" "${TIEFER_REPORTS_DIR}" "${PIP_CACHE_DIR}"
+# Every other cache that defaults to ~/.cache (Hugging Face, torch, fsspec) goes to
+# /scratch too: home is billed at 10 storage BU per TiB-hour and holds only ~/.bashrc.
+export XDG_CACHE_HOME="${TIEFER_SCRATCH}/cache"
+mkdir -p "${TIEFER_DATA_DIR}" "${TIEFER_RUNS_DIR}/slurm" "${TIEFER_REPORTS_DIR}" "${PIP_CACHE_DIR}" \
+  "${XDG_CACHE_HOME}"
 
 if [[ "${TIEFER_ENV_PATHS_ONLY:-0}" == "1" ]]; then
   return 0 2>/dev/null || exit 0
