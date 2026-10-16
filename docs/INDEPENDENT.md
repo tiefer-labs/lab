@@ -164,7 +164,7 @@ The file names, sizes and checksums the code compares are `files` of each datase
 
 1. CloudSEN12, a global dataset for semantic understanding of cloud and cloud shadow in Sentinel-2, Scientific Data 9, 782, 2022, https://doi.org/10.1038/s41597-022-01878-2, Table 1 and Table 5, full text at Europe PMC (PMC9789947), accessed 14 October 2026.
 2. Landsat 8 Cloud Cover Assessment Validation Data, USGS, https://www.usgs.gov/landsat-missions/landsat-8-cloud-cover-assessment-validation-data, accessed 14 October 2026.
-3. Spatial Procedures for Automated Removal of Cloud and Shadow (SPARCS) Validation Data, USGS, https://www.usgs.gov/landsat-missions/spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data, accessed 14 October 2026.
+3. Spatial Procedures for Automated Removal of Cloud and Shadow (SPARCS) Validation Data, USGS, https://www.usgs.gov/landsat-missions/spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data, accessed 14 October 2026. Cited as: U.S. Geological Survey, 2016, L8 SPARCS Cloud Validation Masks, doi:10.5066/F7FB5146 (as given on the USGS page; on 16 October 2026 this DOI resolves to the Biome release page), https://www.usgs.gov/landsat-missions/spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data; Hughes, M.J. and Hayes, D.J., 2014, Remote Sensing 6(6), 4907–4926, doi:10.3390/rs6064907.
 4. Sentinel-2 Cloud Mask Catalogue, Zenodo record 4172871, https://zenodo.org/records/4172871, accessed 14 October 2026.
 5. Sentinel-2 Cloud Mask Catalogue, README.pdf of record 4172871, accessed 14 October 2026.
 6. KappaSet: Sentinel-2 KappaZeta Cloud and Cloud Shadow Masks, Zenodo record 7100327, version 1, https://zenodo.org/records/7100327, accessed 14 October 2026.
@@ -191,6 +191,7 @@ The file names, sizes and checksums the code compares are `files` of each datase
 
 ## Changelog
 
+- 16 October 2026: L8 SPARCS cited as the publisher gives it, with the state of its DOI; drafted with an AI-assisted system.
 - 16 October 2026: L8 Biome and L8 SPARCS used and WHUS2-CD+ not used, decisions of 16 October 2026; the DOIs of both Landsat releases checked through the DOI resolver and DataCite: Biome's resolves, SPARCS stays an open fact; drafted with an AI-assisted system.
 - 16 October 2026: L8 Biome classes read from its access page; section 5.1, what limits measurement; distribution facts and sizes of the four datasets checked by `check_sources`; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the Catalogue and KappaSet are used, L8 Biome and L8 SPARCS are candidates without a decision; section 7 points to the attribution in NOTICE.md; drafted with an AI-assisted system.

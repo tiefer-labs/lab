@@ -36,7 +36,7 @@ Both contain Copernicus Sentinel-2 data, so a result on them carries the Coperni
 Two U.S. Government datasets are recorded as used since 16 October 2026; they are not included in this repository, and USGS asks for credit:
 
 - U.S. Geological Survey, 2016, L8 Biome Cloud Validation Masks, U.S. Geological Survey data release, [10.5066/F7251GDH](https://doi.org/10.5066/F7251GDH). Source: the data citation of the release page, read 16 October 2026.
-- U.S. Geological Survey, 2016, L8 SPARCS Cloud Validation Masks, U.S. Geological Survey data release; its DOI is not verified yet ([docs/INDEPENDENT.md](docs/INDEPENDENT.md), section 6). Source: the data citation of the release page, read 16 October 2026.
+- U.S. Geological Survey, 2016, L8 SPARCS Cloud Validation Masks, doi:10.5066/F7FB5146 (as given on the USGS page; on 16 October 2026 this DOI resolves to the Biome release page), https://www.usgs.gov/landsat-missions/spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data; Hughes, M.J. and Hayes, D.J., 2014, Remote Sensing 6(6), 4907–4926, doi:10.3390/rs6064907. The DOI note stays an open fact until the DOI resolves to SPARCS ([docs/INDEPENDENT.md](docs/INDEPENDENT.md), section 6). Source: the data citation of the release page, read 16 October 2026; the paper's details checked against its publisher's Crossref record (MDPI), 16 October 2026.
 
 Two third-party reference models are recorded as used since 16 October 2026. They run from their own packages outside this repository's code and are never copied into it:
 
@@ -69,6 +69,7 @@ On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvi
 
 ## Changelog
 
+- 16 October 2026: L8 SPARCS cited as the publisher gives it, with the state of its DOI; drafted with an AI-assisted system.
 - 16 October 2026: attributions of L8 Biome, L8 SPARCS, s2cloudless and CD-FCNN, recorded as used by the licence decisions of 16 October 2026; drafted with an AI-assisted system.
 - 15 October 2026: the creators, versions and dates of the Sentinel-2 Cloud Mask Catalogue and KappaSet, read from their Zenodo records; drafted with an AI-assisted system.
 - 15 October 2026: attribution of the Sentinel-2 Cloud Mask Catalogue and KappaSet, the independent test datasets recorded as used; drafted with an AI-assisted system.

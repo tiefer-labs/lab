@@ -304,8 +304,10 @@ DATASETS: dict[str, Dataset] = {
         # titles "L8 SPARCS Cloud Validation Masks" but which resolves to the Biome page;
         # the release metadata cites 10.5066/F7FQ9TQN, which resolves to a retired host
         # (HTTP 503), both checked 16 October 2026. Resolves when one leads to SPARCS.
-        version="USGS data release 2016, DOI not verified; 80 subsets of 1000 x 1000 "
-        "pixels of pre-collection scenes",
+        # Until then it is cited as the publisher gives it, with its state.
+        version="USGS data release 2016, doi:10.5066/F7FB5146 (as given on the USGS page; on "
+        "16 October 2026 this DOI resolves to the Biome release page); 80 subsets of "
+        "1000 x 1000 pixels of pre-collection scenes",
         url="https://www.usgs.gov/landsat-missions/"
         "spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data",
         licence="U.S. Public Domain",
