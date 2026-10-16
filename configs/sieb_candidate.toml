@@ -3,10 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Candidate reference of L1, a draft: sieb with random rescaling 0.5 to 2 (CMP-05),
-# gradient norm clipping at 1.0 and the skip of non-finite steps (stability). Not in the
-# plan of 16 October 2026: its frozen selection rule picks the family candidate among sieb
-# and its one-change variants (hpc/roihu/plan.md, section 3.2, rule 5); docs/ASSUMPTIONS.md,
-# section 6, row sieb_candidate.
+# gradient norm clipping at 1.0 and the skip of non-finite steps (stability). These draft
+# settings are replaced before step 7b of hpc/roihu/plan.md: the config is filled from the
+# step 7 winners of Sieb, nothing else (section 3.2, rule 5), and committed before it runs;
+# docs/ASSUMPTIONS.md, section 6, row sieb_candidate.
 name = "sieb_candidate"
 
 [data]

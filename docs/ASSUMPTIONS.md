@@ -115,7 +115,7 @@ Every setting in which the L1 and L2 configs differ, as the configs and the defa
 
 Settings not listed are the same in every config (crop 256, weight decay 0.0001, Dice weight 1.0, minimum improvement 0.001, 150 epochs, brightness and contrast augmentation 0.1). A difference between an L1 and an L2 result can come from any row of this table, not from the model alone.
 
-The candidate references and stages, which change more than one setting of their reference; each is its own reference config. The candidate references are drafts and are not in the plan of 16 October 2026: its frozen selection rule picks each family candidate among the reference and its one-change variants ([hpc/roihu/plan.md](../hpc/roihu/plan.md), section 3.2, rule 5).
+The candidate references and stages, which change more than one setting of their reference; each is its own reference config. The candidate references are drafts: before step 7b of [hpc/roihu/plan.md](../hpc/roihu/plan.md) each is filled from the step 7 winners of its family, nothing else, and it is selected only under section 3.2, rule 5.
 
 | Config | Reference | Settings changed | Why |
 | :--- | :---: | :---: | :---: |
@@ -150,6 +150,7 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 
 ## Changelog
 
+- 16 October 2026: the candidate references are filled from the step 7 winners before step 7b of the plan; drafted with an AI-assisted system.
 - 16 October 2026: the candidate references are not in the plan of 16 October 2026, whose frozen selection rule picks each family candidate; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: `A-5.2` is open again: its module observation predates Project Schatten and is confirmed by step 0 (setup) of the plan; drafted with an AI-assisted system.
