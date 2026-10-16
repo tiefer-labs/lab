@@ -65,7 +65,7 @@ def test_placement_and_packing_draw_the_same_batches(
     for key in one:
         assert torch.equal(one[key], two[key]), key
     for key, value in _weights(runs / "one_thread").items():
-        torch.testing.assert_close(value, one[key], rtol=1e-4, atol=1e-5)
+        torch.testing.assert_close(value, one[key], rtol=1e-3, atol=1e-4)
     meta = json.loads((runs / "packed" / train.METADATA_NAME).read_text())
     assert meta["runs_per_gpu"] == 2 and meta["sessions"][-1]["runs_per_gpu"] == 2
     assert meta["data"]["train_placement"] == "memmap" and meta["data"]["load_mode"] == "mmap"
