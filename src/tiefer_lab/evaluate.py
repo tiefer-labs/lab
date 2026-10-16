@@ -643,6 +643,10 @@ def evaluate_run(
         "final": final,
         "checkpoint": which,
         "provenance": metadata.provenance(device),
+        # Every reported evaluation runs on the CPU (hpc/roihu/plan.md); acceptance and
+        # compare refuse a table that mixes devices (reports.require_one_device).
+        "evaluation_device": device.type,
+        "evaluation_precision": precision,
         "run": {
             "provenance": run_meta.get("provenance"),
             "seed": run_meta.get("seed"),

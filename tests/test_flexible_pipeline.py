@@ -127,6 +127,7 @@ def test_specialist_reads_four_bands_from_the_13_band_cache(
     )
     assert report["band_set"] == list(USED_BANDS)
     assert np.isfinite(report["model"]["pixel"]["overall_accuracy"])
+    assert report["evaluation_device"] == "cpu" and report["evaluation_precision"] == "fp32"
     # "all" means the specialist's own bands.
     assert evaluate.main([*common, "--band-set", "all"]) == 0
     # A fixed sensor perturbation is recorded in the report and its name.

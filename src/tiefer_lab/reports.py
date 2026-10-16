@@ -64,3 +64,34 @@ def load_reports(directory: Path) -> Reports:
     for items in (reports.evaluation, reports.export, reports.jetson):
         items.sort(key=lambda r: r.time)
     return reports
+
+
+NOT_RECORDED = "not recorded"
+
+
+def evaluation_device(report: Report) -> str:
+    """The device an evaluation report was computed on: cpu, cuda, mps or not recorded."""
+    return str(report.data.get("evaluation_device") or NOT_RECORDED)
+
+
+def require_one_device(reports: Reports) -> str | None:
+    """The one device of every evaluation report, or a ReportError naming the mix.
+
+    A table compares values computed on one device only: the CPU evaluates in fp32,
+    a GPU with bf16 or fp16 autocast, so two rows from different devices could
+    differ by the device and not by the model. Every reported evaluation runs on
+    the CPU (hpc/roihu/plan.md); a report from another device is evaluated again
+    with hpc/roihu/evaluate_cpu.sbatch.
+    """
+    by_device: dict[str, list[str]] = {}
+    for report in reports.evaluation:
+        by_device.setdefault(evaluation_device(report), []).append(report.path.name)
+    if len(by_device) > 1:
+        listed = "; ".join(f"{d}: {', '.join(sorted(n))}" for d, n in sorted(by_device.items()))
+        raise ReportError(
+            "evaluation reports from different devices cannot share one table, because the "
+            "CPU evaluates in fp32 and a GPU with mixed precision, so rows could differ by the "
+            f"device and not by the model ({listed}); evaluate every run again on the CPU "
+            "with hpc/roihu/evaluate_cpu.sbatch"
+        )
+    return next(iter(by_device), None)

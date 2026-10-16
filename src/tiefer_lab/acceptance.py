@@ -36,7 +36,7 @@ from typing import Any
 
 from tiefer_lab import onboard
 from tiefer_lab.data.source import L1C_BAND_NAMES, THIN_CLOUD, USED_BANDS
-from tiefer_lab.reports import Report, Reports, load_reports
+from tiefer_lab.reports import Report, ReportError, Reports, load_reports, require_one_device
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 
@@ -1082,6 +1082,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     reports = load_reports(paths.reports_dir())
+    try:
+        require_one_device(reports)
+    except ReportError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
     jobs: list[tuple[str | None, Sequence[Target], Path]] = [
         (None, TARGETS, paths.reports_dir() / REPORT)
     ]

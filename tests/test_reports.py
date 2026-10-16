@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from tiefer_lab.reports import ReportError, load_reports
+from tiefer_lab import acceptance, compare
+from tiefer_lab.reports import ReportError, load_reports, require_one_device
 
 
 def _write(reports: Path, kind: str, name: str, payload: dict) -> None:
@@ -54,3 +55,33 @@ def test_a_report_without_git_provenance_is_refused(tmp_path: Path) -> None:
 def test_an_empty_folder_has_no_reports(tmp_path: Path) -> None:
     reports = load_reports(tmp_path)
     assert not (reports.evaluation or reports.export or reports.jetson or reports.compute)
+
+
+def test_one_table_never_mixes_evaluation_devices(
+    tiefer_env: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    reports_dir = tiefer_env["TIEFER_REPORTS_DIR"]
+    cpu = {**_evaluation(False, "2026-10-01T00:00:00+00:00"), "evaluation_device": "cpu"}
+    _write(reports_dir, "evaluation", "a_val.json", cpu)
+    _write(reports_dir, "evaluation", "b_val.json", {**cpu, "run_id": "wandler_1m-test"})
+    assert require_one_device(load_reports(reports_dir)) == "cpu"
+    assert require_one_device(load_reports(tiefer_env["TIEFER_RUNS_DIR"])) is None
+    gpu = {**cpu, "run_id": "sieb-test", "evaluation_device": "cuda"}
+    _write(reports_dir, "evaluation", "c_val.json", gpu)
+    with pytest.raises(ReportError, match="different devices") as err:
+        require_one_device(load_reports(reports_dir))
+    assert "cpu: a_val.json, b_val.json" in str(err.value)
+    assert "cuda: c_val.json" in str(err.value) and "evaluate_cpu.sbatch" in str(err.value)
+    # Both table writers refuse, say why, and write nothing.
+    assert acceptance.main([]) == 2 and compare.main([]) == 2
+    assert "fp32" in capsys.readouterr().err
+    assert not (reports_dir / acceptance.REPORT).exists()
+    # A report that does not record its device is a device of its own.
+    _write(
+        reports_dir,
+        "evaluation",
+        "c_val.json",
+        {k: v for k, v in gpu.items() if k != "evaluation_device"},
+    )
+    with pytest.raises(ReportError, match="not recorded"):
+        require_one_device(load_reports(reports_dir))
