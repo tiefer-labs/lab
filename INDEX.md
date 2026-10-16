@@ -23,12 +23,12 @@ For anyone looking for a document by name or by state. This document owns the li
 | [INSTALL.md](INSTALL.md) | every way to install, and the provenance checks | users | installation, provenance checks | in use | 15 October 2026 |
 | [LEARNING-PATH.md](LEARNING-PATH.md) | the concepts needed to understand and change Lab, in order | new contributors, researchers | curriculum | in use | 8 October 2026 |
 | **Results and evidence** | | | | | |
-| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 15 October 2026 |
+| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 16 October 2026 |
 | [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) | which result answers which question, supersession, citation | evaluators | current results, citation form | in use | 15 October 2026 |
 | [CLAIMS.md](CLAIMS.md) | status and evidence of every public capability statement | evaluators, partners, the founder | public claims | in use | 15 October 2026 |
 | [POLICY.md](POLICY.md) | the gates for numbers, test-split access, model cards, comparisons, data and compute | maintainers, contributors | measurement and release gates | in use | 15 October 2026 |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 16 October 2026 |
-| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 15 October 2026 |
+| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 16 October 2026 |
 | **Data** | | | | | |
 | [docs/DATA.md](docs/DATA.md) | data card for CloudSEN12+ | researchers | dataset facts, caches | in development | 15 October 2026 |
 | [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 16 October 2026 |
@@ -37,12 +37,12 @@ For anyone looking for a document by name or by state. This document owns the li
 | [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 16 October 2026 |
 | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 16 October 2026 |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | standards, handbooks and formats, clauses read and status | evaluators | standards matrix | in development | 7 October 2026 |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 15 October 2026 |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 16 October 2026 |
 | [docs/STYLE.md](docs/STYLE.md) | the documentation standard | contributors | writing rules, document types | in use | 8 October 2026 |
 | [EXTENDING.md](EXTENDING.md) | golden paths to extend Lab | contributors | extension paths | in use | 7 October 2026 |
 | **Policies and community** | | | | | |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the contributor contract | contributors | contribution process | in use | 7 October 2026 |
-| [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | disclosure of AI-assisted systems in issues and pull requests, data rules, labelling, EU legal references | contributors, maintainers | AI assistance policy, regulatory references | in use | 7 October 2026 |
+| [AI_ASSISTANCE.md](AI_ASSISTANCE.md) | disclosure of AI-assisted systems in issues and pull requests, data rules, labelling, EU legal references | contributors, maintainers | AI assistance policy, regulatory references | in use | 16 October 2026 |
 | [CLA.md](CLA.md) | proposed contributor terms, not in force | the founder, contributors | contributor licence agreement | draft | 7 October 2026 |
 | [GOVERNANCE.md](GOVERNANCE.md) | roles, decision classes, versions, continuity | contributors, evaluators | decisions and roles | in use | 15 October 2026 |
 | [LICENSING.md](LICENSING.md) | the licence of every part of the repository | users, contributors | licences | in use | 7 October 2026 |
@@ -85,6 +85,9 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 16 October 2026: last-changed dates of docs/LANDSCAPE.md and docs/RESULTS.md, changed by the label of the CloudScout re-implementation; drafted with an AI-assisted system.
+- 16 October 2026: last-changed date of AI_ASSISTANCE.md, changed by the CSC Roihu usage policy; drafted with an AI-assisted system.
+- 16 October 2026: last-changed dates of the documents changed by the CPU jobs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the plan of the first Project Schatten runs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the licence decisions of 16 October 2026; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the source check; drafted with an AI-assisted system.

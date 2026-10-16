@@ -21,6 +21,29 @@ class ReportError(RuntimeError):
     pass
 
 
+# Every report and document of the CloudScout re-implementation carries this
+# label (hpc/roihu/plan.md, section 3.3, step 3b).
+CLOUDSCOUT_LABEL = "re-implementation trained by Tiefer Lab, not the flown model"
+CLOUDSCOUT_CONFIG_PREFIX = "cloudscout_reimpl"
+
+
+def model_label(name: str, architecture: str | None = None) -> str | None:
+    """The label of a config, run ID or report name, or None when it needs none."""
+    if architecture == "cloudscout" or CLOUDSCOUT_CONFIG_PREFIX in name:
+        return CLOUDSCOUT_LABEL
+    return None
+
+
+def add_model_label(
+    report: dict[str, Any], name: str, architecture: str | None = None
+) -> dict[str, Any]:
+    """Sets `model_label` of a report when its model needs one; returns the report."""
+    label = model_label(name, architecture)
+    if label:
+        report["model_label"] = label
+    return report
+
+
 @dataclass
 class Report:
     path: Path
@@ -64,3 +87,34 @@ def load_reports(directory: Path) -> Reports:
     for items in (reports.evaluation, reports.export, reports.jetson):
         items.sort(key=lambda r: r.time)
     return reports
+
+
+NOT_RECORDED = "not recorded"
+
+
+def evaluation_device(report: Report) -> str:
+    """The device an evaluation report was computed on: cpu, cuda, mps or not recorded."""
+    return str(report.data.get("evaluation_device") or NOT_RECORDED)
+
+
+def require_one_device(reports: Reports) -> str | None:
+    """The one device of every evaluation report, or a ReportError naming the mix.
+
+    A table compares values computed on one device only: the CPU evaluates in fp32,
+    a GPU with bf16 or fp16 autocast, so two rows from different devices could
+    differ by the device and not by the model. Every reported evaluation runs on
+    the CPU (hpc/roihu/plan.md); a report from another device is evaluated again
+    with hpc/roihu/evaluate_cpu.sbatch.
+    """
+    by_device: dict[str, list[str]] = {}
+    for report in reports.evaluation:
+        by_device.setdefault(evaluation_device(report), []).append(report.path.name)
+    if len(by_device) > 1:
+        listed = "; ".join(f"{d}: {', '.join(sorted(n))}" for d, n in sorted(by_device.items()))
+        raise ReportError(
+            "evaluation reports from different devices cannot share one table, because the "
+            "CPU evaluates in fp32 and a GPU with mixed precision, so rows could differ by the "
+            f"device and not by the model ({listed}); evaluate every run again on the CPU "
+            "with hpc/roihu/evaluate_cpu.sbatch"
+        )
+    return next(iter(by_device), None)

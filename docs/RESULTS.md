@@ -177,7 +177,7 @@ The reference algorithms are not measured by this repository. Published values o
 | dtacs4bands | not measured | not measured | not measured | n/a |
 | CloudScout re-implementation trained by Tiefer Lab (not the flown model) | n/a | not measured | n/a | n/a |
 
-How each reference is measured on the same pixels: the extra-table masks with `build_cache --references` (a cloud probability at a threshold tuned on validation only), Fmask, KappaMask and CD-FCNN from the CloudSEN12 release of 2022 or from `references/`, each after its licence is cleared, and CloudScout as `configs/cloudscout*.toml`. The CloudScout re-implementation decides per frame, so its pixel metrics are `n/a`.
+How each reference is measured on the same pixels: the extra-table masks with `build_cache --references` (a cloud probability at a threshold tuned on validation only), Fmask, KappaMask and CD-FCNN from the CloudSEN12 release of 2022 or from `references/`, each after its licence is cleared, and CloudScout as `configs/cloudscout*.toml`. The CloudScout re-implementation trained by Tiefer Lab, not the flown model decides per frame, so its pixel metrics are `n/a`.
 
 ---
 
@@ -338,6 +338,7 @@ Every value on this page waits for Project Schatten ([hpc/roihu/plan.md](../hpc/
 
 ## Changelog
 
+- 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; drafted with an AI-assisted system.
 - 15 October 2026: the pending rows name Project Schatten instead of a withdrawn campaign; drafted with an AI-assisted system.
 - 14 October 2026: section 2 defines the PA and UA shares and the false send rate at a false discard rate of `--full-metrics`; section 10 lists the CloudScout re-implementation and how each reference is measured on the same pixels. No value is added; drafted with an AI-assisted system.
 - 8 October 2026: section 19, the Roihu jobs are submitted from `roihu-cpu.csc.fi`.

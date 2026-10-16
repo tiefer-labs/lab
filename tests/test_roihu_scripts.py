@@ -8,8 +8,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import tarfile
+import time
 from pathlib import Path
 
 import pytest
@@ -51,6 +53,10 @@ def roihu_env(tmp_path: Path) -> dict[str, str]:
             "TIEFER_PROJAPPL": str(tmp_path / "projappl"),
             "TIEFER_SCRATCH": str(tmp_path / "scratch"),
             "STUB_LOG": str(tmp_path / "sbatch.log"),
+            # The balance a maintainer copies from csc-projects (test values).
+            "TIEFER_GPU_BU_LEFT": "10000",
+            "TIEFER_CPU_BU_LEFT": "60000",
+            "TIEFER_STORAGE_BU_LEFT": "30000",
             # No CSC initialisation file unless a test writes one.
             "TIEFER_CSC_ENV_INIT": str(tmp_path / "zz-csc-env.sh"),
         }
@@ -235,7 +241,7 @@ def test_job_scripts_request_documented_resources() -> None:
         # A login shell by full path initialises the module system on the node.
         assert text.startswith("#!/bin/bash --login\n"), script.name
         assert "--export" not in text, "submit.sh sets the export"
-        if script.name == "setup_gpu.sbatch":
+        if script.name in ("setup_gpu.sbatch", "setup_cpu.sbatch"):
             assert text.index("uname -m") < text.index("bash hpc/roihu/setup.sh")
             continue
         prelude = text.index("source hpc/roihu/job_prelude.sh")
@@ -250,7 +256,9 @@ def test_setup_gpu_job_requests_one_gpu_on_gputest() -> None:
     assert "#SBATCH --time=00:15:00" in text
 
 
-@pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke", "setup_gpu"])
+@pytest.mark.parametrize(
+    "name", ["train", "train_packed", "timing_packed", "evaluate", "export", "smoke", "setup_gpu"]
+)
 def test_gpu_jobs_stop_on_a_non_arm_node(roihu_env: dict[str, str], name: str) -> None:
     result = _run(f"{name}.sbatch", ["configs/sieb_base.toml"], roihu_env)
     assert result.returncode == 1
@@ -496,7 +504,8 @@ def test_sweep_submits_one_job_per_config_and_seed(
     roihu_env: dict[str, str], tmp_path: Path
 ) -> None:
     log = _appending_sbatch(roihu_env, tmp_path)
-    env = {**roihu_env, "STUB_ARCH": "aarch64"}
+    # 6 jobs of 12 hours: 14,400 GPU BU worst case, so this test has a larger balance.
+    env = {**roihu_env, "STUB_ARCH": "aarch64", "TIEFER_GPU_BU_LEFT": "20000"}
     configs = ["configs/wandler_1m.toml", "configs/lupe_1m.toml"]
     result = _run("sweep.sh", ["--seeds", "0,1,2", *configs], env)
     assert result.returncode == 0, result.stderr
@@ -531,8 +540,10 @@ def test_sweep_rejects_bad_input(
 
 
 def test_evaluate_and_export_cover_every_band_set() -> None:
-    evaluate = (ROIHU / "evaluate.sbatch").read_text()
-    export = (ROIHU / "export.sbatch").read_text()
+    bodies = (ROIHU / "model_jobs.sh").read_text()
+    start, end = bodies.index("tiefer_evaluate_job()"), bodies.index("tiefer_calibrate_job()")
+    evaluate = bodies[start:end]
+    export = bodies[bodies.index("tiefer_export_job()") : bodies.index("tiefer_int8_job()")]
     assert evaluate.count("--band-set all") == 2
     assert export.count("--band-set all") == 2
     default = re.search(r"PERTURBATIONS:-([^}]*)\}", evaluate)
@@ -596,3 +607,174 @@ def test_evaluate_all_lists_missing_caches_and_fails(
     assert "not evaluated: no cache: kappaset" in result.stderr
     assert "s2_cloud_catalogue" not in result.stderr
     assert (tmp_path / "sbatch.log").is_file()
+
+
+CPU_JOBS = {
+    "evaluate_cpu": "tiefer_evaluate_job",
+    "calibrate_cpu": "tiefer_calibrate_job",
+    "export_cpu": "tiefer_export_job",
+}
+
+
+@pytest.mark.parametrize("name", sorted(CPU_JOBS))
+def test_cpu_jobs_share_the_gpu_job_body_and_use_no_gpu(name: str) -> None:
+    text = (ROIHU / f"{name}.sbatch").read_text()
+    gpu = (ROIHU / f"{name.removesuffix('_cpu')}.sbatch").read_text()
+    assert "#SBATCH --partition=small" in text and "gres" not in text
+    assert "export TIEFER_DEVICE=cpu" in text and "tiefer_require_torch" in text
+    assert CPU_JOBS[name] in text and CPU_JOBS[name] in gpu
+    assert "export TIEFER_DEVICE=auto" in gpu
+    # Cores and memory are balanced, so neither term of the CPU billing dominates.
+    cores = int(re.search(r"--cpus-per-task=(\d+)", text).group(1))  # type: ignore[union-attr]
+    mem = int(re.search(r"--mem=(\d+)G", text).group(1))  # type: ignore[union-attr]
+    assert 0.75 * cores == 0.375 * mem
+
+
+@pytest.mark.parametrize("name", sorted(CPU_JOBS))
+def test_cpu_jobs_stop_on_a_gpu_node(roihu_env: dict[str, str], name: str) -> None:
+    result = _run(f"{name}.sbatch", ["run-1"], {**roihu_env, "STUB_ARCH": "aarch64"})
+    assert result.returncode == 1
+    assert "needs an x86_64 node, but runs on aarch64" in result.stderr
+
+
+def test_bodies_pass_the_device_to_the_commands_that_take_it() -> None:
+    bodies = (ROIHU / "model_jobs.sh").read_text()
+    assert '--device "${TIEFER_DEVICE:-auto}"' in bodies
+    assert bodies.count('--device "${TIEFER_DEVICE:-auto}"') == 2  # evaluate and calibrate
+    diagnose = (ROIHU / "diagnose.sbatch").read_text()
+    assert "tiefer_int8_job" in diagnose and "needs torch; submit" not in diagnose
+
+
+def test_packed_jobs_take_their_time_limit_from_the_timing_report() -> None:
+    train_packed = (ROIHU / "train_packed.sbatch").read_text()
+    assert "#SBATCH --gres=gpu:gh200:1" in train_packed
+    assert "#SBATCH --signal=B:USR1@300" in train_packed
+    # A short default: the real limit is passed with --time from the packing report.
+    assert "#SBATCH --time=00:30:00" in train_packed
+    assert "python -m tiefer_lab.packed time-limit" in train_packed
+    assert 'python3 -m tiefer_lab.packed run "$@"' in train_packed
+    timing = (ROIHU / "timing_packed.sbatch").read_text()
+    assert "for runs in 1 2 3 4; do" in timing
+    assert "nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used" in timing
+    assert "tiefer_lab.packed report" in timing
+
+
+def test_independent_downloads_are_deleted_once_the_cache_is_complete() -> None:
+    text = (ROIHU / "independent.sbatch").read_text()
+    build = text.index("python3 -m tiefer_lab.data.build_cache")
+    delete = text.index('rm -rf "${root}"')
+    assert build < delete
+    assert '["splits"]["test"].get("complete")' in text[build:delete]
+    assert "TIEFER_KEEP_DOWNLOADS:-0" in text
+
+
+def _budget(script: str, *options: str) -> str:
+    command = f"source {ROIHU / 'budget.sh'}; tiefer_job_cost {ROIHU / script} " + " ".join(options)
+    result = subprocess.run(["bash", "-c", command], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
+def test_worst_case_cost_of_each_kind_of_job() -> None:
+    # GPU: time limit x GPUs x 200 BU.
+    assert _budget("timing_packed.sbatch") == "gpu 200.0"
+    assert _budget("timing_packed.sbatch", "--time=00:15:00") == "gpu 50.0"
+    assert _budget("train_packed.sbatch", "--time=06:26:00") == "gpu 1286.7"
+    assert _budget("train_packed.sbatch", "--time", "1-00:00:00") == "gpu 4800.0"
+    # small: max(0.75 x cores, 0.375 x GiB) per hour.
+    assert _budget("evaluate_cpu.sbatch") == "cpu 96.0"
+    assert _budget("data.sbatch") == "cpu 288.0"
+    assert _budget("check_sources.sbatch") == "cpu 0.8"
+    # medium: 288 BU per node-hour.
+    assert _budget("timing_cpu.sbatch") == "cpu 288.0"
+
+
+def test_submission_is_refused_when_the_worst_case_does_not_fit(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    script = ["hpc/roihu/train_packed.sbatch", "configs/sieb.toml@0"]
+    ok = _run("submit.sh", ["--time=06:26:00", *script], roihu_env)
+    assert ok.returncode == 0, ok.stderr
+    assert "worst case 1286.7 GPU BU" in ok.stdout
+    # 1,286.7 does not fit in 1,700 left minus the reserve of 500.
+    low_env = {**roihu_env, "TIEFER_GPU_BU_LEFT": "1700"}
+    low = _run("submit.sh", ["--time=06:26:00", *script], low_env)
+    assert low.returncode == 2
+    assert "exceeds the 1700.0 left minus the reserve of 500.0" in low.stderr
+    missing = {k: v for k, v in roihu_env.items() if k != "TIEFER_CPU_BU_LEFT"}
+    cpu = _run("submit.sh", ["hpc/roihu/evaluate_cpu.sbatch", "run-1"], missing)
+    assert cpu.returncode == 2 and "TIEFER_CPU_BU_LEFT" in cpu.stderr
+    empty = _run("submit.sh", script, {**roihu_env, "TIEFER_STORAGE_BU_LEFT": "0"})
+    assert empty.returncode == 2 and "no storage BU left" in empty.stderr
+    # Checking a request with --test-only spends nothing and is not refused.
+    zero = {**roihu_env, "TIEFER_GPU_BU_LEFT": "0"}
+    test_only = _run("submit.sh", ["--test-only", *script], zero)
+    assert test_only.returncode == 0, test_only.stderr
+
+
+def test_a_sweep_is_checked_as_a_whole_before_the_first_job(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    log = _appending_sbatch(roihu_env, tmp_path)
+    # Three seeds of two configs: 6 x 12 hours x 200 = 14,400 GPU BU, more than is left.
+    result = _run(
+        "sweep.sh", ["--seeds", "0,1,2", "configs/sieb.toml", "configs/wandler_1m.toml"], roihu_env
+    )
+    assert result.returncode == 2 and "6 job(s)" in result.stderr
+    assert not log.exists() or not log.read_text().strip(), "nothing was submitted"
+
+
+def test_setup_runs_only_inside_a_job(roihu_env: dict[str, str]) -> None:
+    result = _run("setup.sh", [], roihu_env)
+    assert result.returncode == 2 and "not on a login node" in result.stderr
+    cpu = (ROIHU / "setup_cpu.sbatch").read_text()
+    assert "#SBATCH --partition=small" in cpu and "gres" not in cpu
+    assert "bash hpc/roihu/setup.sh" in cpu
+
+
+def test_timing_stopped_by_its_time_limit_still_writes_its_report(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    """USR1 before the time limit stops the packing that runs; the report says so."""
+    work = tmp_path / "work"
+    (work / "hpc" / "roihu").mkdir(parents=True)
+    # Stand-ins for the environment of a GPU node, sourced from the working folder.
+    (work / "hpc" / "roihu" / "job_prelude.sh").write_text(":\n")
+    (work / "hpc" / "roihu" / "env.sh").write_text(
+        f'TIEFER_RUNS_DIR="{tmp_path / "runs"}"\n'
+        "tiefer_require_venv() { :; }\ntiefer_stage_cache() { :; }\n"
+    )
+    log = tmp_path / "calls.log"
+    bin_dir = Path(roihu_env["PATH"].split(os.pathsep)[0])
+    (bin_dir / "nvidia-smi").write_text("#!/bin/sh\nexec sleep 30\n")
+    (bin_dir / "python3").write_text(
+        "#!/bin/bash\n"
+        'case "$*" in\n'
+        "  *load_config*) echo cache ;;\n"
+        f'  *"packed run"*) echo "$*" >> "{log}"; sleep 30 >/dev/null 2>&1 & '
+        'trap "kill $!; exit 1" USR1; wait ;;\n'
+        f'  *) echo "$*" >> "{log}" ;;\n'
+        "esac\n"
+    )
+    for name in ("nvidia-smi", "python3"):
+        (bin_dir / name).chmod(0o755)
+    env = {**roihu_env, "STUB_ARCH": "aarch64", "SLURM_JOB_ID": "5"}
+    job = subprocess.Popen(
+        ["bash", str(ROIHU / "timing_packed.sbatch"), "configs/cloudscout_reimpl_step1_th30.toml"],
+        cwd=work,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    for _ in range(100):
+        if log.exists() and "--timing 1" in log.read_text():
+            break
+        time.sleep(0.1)
+    job.send_signal(signal.SIGUSR1)
+    out, err = job.communicate(timeout=30)
+    assert job.returncode == 0, err
+    calls = log.read_text().splitlines()
+    assert sum("packed run" in c for c in calls) == 1, "no packing starts after the signal"
+    assert calls[-1].endswith("--time-limit-reached") and "packed report" in calls[-1]
+    assert "the time limit stopped the timing at 1 runs per GPU" in out

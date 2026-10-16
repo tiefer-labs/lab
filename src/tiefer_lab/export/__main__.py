@@ -37,6 +37,7 @@ from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, lo
 from tiefer_lab.export import onnx_export, quantise, verify
 from tiefer_lab.models import flexible
 from tiefer_lab.models.cloud_filter import count_macs, count_parameters, fold_cloud_bias
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.train import (
     CONFIG_NAME,
     METADATA_NAME,
@@ -53,6 +54,10 @@ FILES = {
     "fp16": "cloud_filter_fp16.onnx",
     "int8": "cloud_filter_int8.onnx",
 }
+QUANTISATION_RUNTIME = (
+    "onnxruntime CPUExecutionProvider; a proxy for CMP-02 and CMP-03, the TensorRT values "
+    "come from the Jetson benchmark"
+)
 
 
 def export_run(
@@ -226,6 +231,9 @@ def export_run(
                 "fp16_change": quantise.compare_reports(fp32, fp16),
             }
         report["quantisation"] = quant
+        # Scored with ONNX Runtime on the CPU (CPUExecutionProvider): a proxy for
+        # CMP-02 and CMP-03; the TensorRT values come from the Jetson benchmark.
+        report["quantisation_runtime"] = QUANTISATION_RUNTIME
 
     if options:
         report["options"] = options
@@ -242,6 +250,7 @@ def export_run(
     for p in files.values():
         if p.exists():
             onnx.checker.check_model(str(p))
+    add_model_label(report, run_id, config.model.architecture)
     out = paths.reports_dir() / "export" / report_name
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

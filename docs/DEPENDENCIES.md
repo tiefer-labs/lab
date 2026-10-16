@@ -40,6 +40,7 @@ The range is the one in `pyproject.toml`; the locked version is the one in `uv.l
 | :--- | :---: | :---: | :---: | :---: |
 | `hatchling` | build backend for `pip install -e .`; outside `uv.lock` and the software bill of materials | 1.32.4 | MIT | `pyproject.toml` (`[build-system]`) |
 | `uv` | environment and lock | `>=0.8` (`required-version`) | MIT OR Apache-2.0 | `pyproject.toml` (`[tool.uv]`); licence from the PyPI metadata of 0.11.32 |
+| `torch` CPU build, `torch==2.10.0` from https://download.pytorch.org/whl/cpu | PyTorch on the x86 CPU nodes of CSC Roihu, for the jobs that do not train (installed by `hpc/roihu/setup.sh` into `venv-x86_64`; the same version as the GPU module) | 2.10.0 | not read | `hpc/roihu/setup.sh`; to be confirmed by step 0 of the plan (`TODO(verify)`) |
 | CSC module `python-pytorch/2.10` | PyTorch, CUDA and cuDNN on CSC Roihu GPU nodes | torch 2.10.0+cu130, Python 3.12.12 | not read | [hpc/roihu/README.md](../hpc/roihu/README.md), section 6 (observed on Roihu, 1 October 2026, before Project Schatten; to be confirmed by step 0 of the plan) |
 | GDAL and PROJ | bundled in the `rasterio` wheel; `rasterio` reads every patch through GDAL | GDAL 3.12.2, PROJ 9.8.1 in `rasterio` 1.5.2 | MIT style licences [1], [2] | `rasterio.__gdal_version__` and `rasterio.__proj_version__` of the locked wheel |
 | `tomllib` | configuration files | standard library of Python 3.12 | Python Software Foundation License | Python 3.12 |
@@ -228,6 +229,7 @@ expires = 2026-12-31
 
 ## Changelog
 
+- 16 October 2026: the CPU build of `torch` on the x86 CPU nodes of CSC Roihu, outside the lock; drafted with an AI-assisted system.
 - 15 October 2026: the Roihu module observation predates Project Schatten and is to be confirmed by step 0 of the plan; drafted with an AI-assisted system.
 - 7 October 2026: section 1 gives the range in `pyproject.toml` and the locked version of every direct dependency, and lists `pandas`, which five tests import and which comes through `tacoreader`.
 - 7 October 2026: section 2 lists what is outside the lock: `hatchling`, `uv`, the CSC module `python-pytorch/2.10`, GDAL and PROJ in the `rasterio` wheel, the CI-only tools with their indirect packages and licences, gitleaks, CodeQL and the GitHub Actions by tag and commit; the former section 2A is section 2.2.

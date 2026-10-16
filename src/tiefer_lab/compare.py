@@ -28,7 +28,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from tiefer_lab import paper_models
-from tiefer_lab.reports import Report, Reports, load_reports
+from tiefer_lab.reports import (
+    Report,
+    ReportError,
+    Reports,
+    load_reports,
+    model_label,
+    require_one_device,
+)
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 
@@ -108,6 +115,9 @@ def _model_name(r: Report) -> str:
     bands = r.data.get("band_set") or []
     seed = _get(r.data, "run", "seed")
     name = str(_get(r.data, "config", "name") or r.data.get("run_id"))
+    label = model_label(name, _get(r.data, "config", "model", "architecture"))
+    if label:
+        name = f"{name}, {label}"
     seed_text = f" s{seed}" if seed is not None else ""
     return f"{name}{seed_text} ({','.join(bands)})" if bands else f"{name}{seed_text}"
 
@@ -370,6 +380,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--split", choices=["val", "test", "all"], default=None)
     args = parser.parse_args(argv)
     reports = load_reports(paths.reports_dir())
+    try:
+        require_one_device(reports)
+    except ReportError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
     out = paths.reports_dir() / REPORT
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render(reports, dt.date.today(), args.split), encoding="utf-8")

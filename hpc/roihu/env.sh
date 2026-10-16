@@ -16,8 +16,8 @@
 # activates the matching virtual environment.
 #
 # GPU nodes and roihu-gpu.csc.fi are ARM (aarch64) and use the PyTorch module.
-# CPU nodes and roihu-cpu.csc.fi are x86_64 (AMD); they only run the data cache
-# build, which does not need PyTorch.
+# CPU nodes and roihu-cpu.csc.fi are x86_64 (AMD); they run the data cache build
+# and every job that does not train, with the CPU build of torch (setup.sh).
 # Source: https://docs.csc.fi/computing/systems-roihu/
 #
 # With TIEFER_ENV_PATHS_ONLY=1 only the paths are set (used by submit.sh).
@@ -38,7 +38,11 @@ export TIEFER_DATA_DIR="${TIEFER_DATA_DIR:-${TIEFER_SCRATCH}/data}"
 export TIEFER_RUNS_DIR="${TIEFER_RUNS_DIR:-${TIEFER_SCRATCH}/runs}"
 export TIEFER_REPORTS_DIR="${TIEFER_REPORTS_DIR:-${TIEFER_SCRATCH}/reports}"
 export PIP_CACHE_DIR="${TIEFER_SCRATCH}/pip-cache"
-mkdir -p "${TIEFER_DATA_DIR}" "${TIEFER_RUNS_DIR}/slurm" "${TIEFER_REPORTS_DIR}" "${PIP_CACHE_DIR}"
+# Every other cache that defaults to ~/.cache (Hugging Face, torch, fsspec) goes to
+# /scratch too: home is billed at 10 storage BU per TiB-hour and holds only ~/.bashrc.
+export XDG_CACHE_HOME="${TIEFER_SCRATCH}/cache"
+mkdir -p "${TIEFER_DATA_DIR}" "${TIEFER_RUNS_DIR}/slurm" "${TIEFER_REPORTS_DIR}" "${PIP_CACHE_DIR}" \
+  "${XDG_CACHE_HOME}"
 
 if [[ "${TIEFER_ENV_PATHS_ONLY:-0}" == "1" ]]; then
   return 0 2>/dev/null || exit 0
@@ -113,9 +117,12 @@ tiefer_require_venv() {
 # and point TIEFER_DATA_DIR at the copy. Usage: tiefer_stage_cache <cache-name>
 # $TMPDIR is set for every job without a request: https://docs.csc.fi/support/faq/roihu/
 # Its size per partition: https://docs.csc.fi/computing/running/batch-job-partitions/
+# TIEFER_CACHE_STAGED (1 or 0) tells the run's metadata whether it read the copy.
+# $TMPDIR costs no billing units; local NVMe reserved with --gres would.
 tiefer_stage_cache() {
   local name="$1"
   local src="${TIEFER_DATA_DIR}/${name}"
+  export TIEFER_CACHE_STAGED=0
   if [[ -z "${TMPDIR:-}" || ! -d "${src}" ]]; then
     echo "cache staging skipped: no \$TMPDIR or no cache ${name}"
     return 0
@@ -130,5 +137,6 @@ tiefer_stage_cache() {
   mkdir -p "${TMPDIR}/data"
   cp -r "${src}" "${TMPDIR}/data/"
   export TIEFER_DATA_DIR="${TMPDIR}/data"
+  export TIEFER_CACHE_STAGED=1
   echo "cache ${name} staged to local disk"
 }

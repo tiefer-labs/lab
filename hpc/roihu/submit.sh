@@ -56,6 +56,18 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=hpc/roihu/env.sh
 TIEFER_ENV_PATHS_ONLY=1 source "${repo}/hpc/roihu/env.sh"
 
+# The worst-case cost of this job against the balance you copied from csc-projects;
+# --test-only submits nothing and spends nothing, so it is not checked.
+# shellcheck source=hpc/roihu/budget.sh
+source "${repo}/hpc/roihu/budget.sh"
+test_only=0
+for option in "${options[@]}"; do
+  [[ "${option}" == --test-only ]] && test_only=1
+done
+if [[ "${test_only}" == "0" && "${TIEFER_BUDGET_CHECKED:-0}" != "1" ]]; then
+  tiefer_budget_check 1 "${script}" "${options[@]}" || exit 2
+fi
+
 host_arch="$(uname -m)"
 gpu_job=0
 if grep -q '^#SBATCH --gres=gpu' "${script}"; then

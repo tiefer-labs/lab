@@ -12,7 +12,7 @@ import torch
 from numpy.typing import NDArray
 from torch.utils.data import Dataset
 
-from tiefer_lab.data import sensor, source, transforms
+from tiefer_lab.data import cache, sensor, source, transforms
 from tiefer_lab.data.cache import SplitData
 
 
@@ -131,14 +131,19 @@ def normalised_patch(
 
 
 class DeviceTrainBatches:
-    """The whole training split, held once per job, with augmentation on the device.
+    """The training split with augmentation on the device, held once per run.
 
-    The cached digital numbers are kept as they are (16 bit) on the GPU when they
-    fit in `gpu_share` of its free memory, otherwise in pinned CPU memory (or in
-    CPU memory on a machine without CUDA). Each batch is cropped, flipped,
-    rotated, changed in brightness and contrast and normalised on the training
-    device, with the same distributions as `TrainPatches`. Random draws come
-    from a CPU generator seeded per epoch, so runs and resumed runs repeat.
+    A split loaded into memory keeps its cached digital numbers as they are
+    (16 bit) on the GPU when they fit in `gpu_share` of its free memory (divided
+    by the runs that share the GPU, cache.runs_per_gpu), otherwise in pinned CPU
+    memory (or in CPU memory on a machine without CUDA). A memory-mapped split
+    stays on disk (the job's local disk when the cache was staged there) and each
+    crop is read from it. Each batch is cropped, flipped, rotated, changed in
+    brightness and contrast and normalised on the training device, with the
+    same distributions as `TrainPatches`. Random draws come from a CPU
+    generator seeded per epoch, never from the placement or a worker count, so
+    the same config and seed draw the same batches wherever the data is held,
+    and runs and resumed runs repeat.
     """
 
     def __init__(
@@ -155,6 +160,18 @@ class DeviceTrainBatches:
         robustness: sensor.Robustness | None = None,
     ) -> None:
         self.robustness = robustness or sensor.Robustness()
+        self.mapped_images: NDArray[np.uint16] | None = None
+        self.mapped_labels: NDArray[np.uint8] | None = None
+        if not data.in_memory:
+            # Read each crop from the memory-mapped files; nothing is copied up front.
+            self.mapped_images, self.mapped_labels = data.images, data.labels
+            empty = torch.empty(0)
+            self.images, self.labels = empty, empty
+            self.nbytes = int(data.images.nbytes + data.labels.nbytes)
+            self.placement = "memmap"
+            self._shape = tuple(int(n) for n in data.images.shape)
+            self._finish(mean, std, crop_size, photometric, device, batch_size, seed)
+            return
         images = np.ascontiguousarray(np.asarray(data.images))
         labels = np.ascontiguousarray(np.asarray(data.labels))
         # uint16 is stored bit for bit as int16 and read back with & 0xFFFF.
@@ -164,7 +181,7 @@ class DeviceTrainBatches:
         self.placement = "cpu"
         if device.type == "cuda":
             free, _ = torch.cuda.mem_get_info(device)
-            if nbytes <= gpu_share * free:
+            if nbytes <= gpu_share * free / cache.runs_per_gpu():
                 stored_images, stored_labels = stored_images.to(device), stored_labels.to(device)
                 self.placement = "gpu"
             else:
@@ -175,6 +192,19 @@ class DeviceTrainBatches:
                 self.placement = "pinned"
         self.images, self.labels = stored_images, stored_labels
         self.nbytes = nbytes
+        self._shape = tuple(int(n) for n in stored_images.shape)
+        self._finish(mean, std, crop_size, photometric, device, batch_size, seed)
+
+    def _finish(
+        self,
+        mean: NDArray[np.float32],
+        std: NDArray[np.float32],
+        crop_size: int,
+        photometric: transforms.Photometric,
+        device: torch.device,
+        batch_size: int,
+        seed: int,
+    ) -> None:
         self.device = device
         self.crop_size = crop_size
         self.photometric = photometric
@@ -185,7 +215,19 @@ class DeviceTrainBatches:
 
     @property
     def patches(self) -> int:
-        return int(self.images.shape[0])
+        return self._shape[0]
+
+    def _crop_image(self, i: int, top: int, left: int, h: int, w: int) -> torch.Tensor:
+        if self.mapped_images is None:
+            return self.images[i, :, top : top + h, left : left + w]
+        crop = np.ascontiguousarray(self.mapped_images[i, :, top : top + h, left : left + w])
+        return torch.from_numpy(crop.view(np.int16))
+
+    def _crop_label(self, i: int, top: int, left: int, h: int, w: int) -> torch.Tensor:
+        if self.mapped_labels is None:
+            return self.labels[i, top : top + h, left : left + w]
+        crop = np.ascontiguousarray(self.mapped_labels[i, top : top + h, left : left + w])
+        return torch.from_numpy(crop)
 
     def __len__(self) -> int:
         """Batches per epoch; the last incomplete batch is dropped, as in the loader."""
@@ -201,7 +243,7 @@ class DeviceTrainBatches:
         self, indexes: torch.Tensor, generator: torch.Generator
     ) -> tuple[torch.Tensor, torch.Tensor]:
         n = int(indexes.numel())
-        height, width = int(self.images.shape[2]), int(self.images.shape[3])
+        height, width = self._shape[2], self._shape[3]
         out_h, out_w = min(self.crop_size, height), min(self.crop_size, width)
         # With rescaling, a crop of crop_size / s pixels is resized to crop_size.
         scale = sensor.draw_scale(self.robustness, generator)
@@ -219,13 +261,13 @@ class DeviceTrainBatches:
         rows = indexes.tolist()
         image = torch.stack(
             [
-                self.images[i, :, t : t + crop_h, left : left + crop_w]
+                self._crop_image(i, t, left, crop_h, crop_w)
                 for i, t, left in zip(rows, tops, lefts, strict=True)
             ]
         ).to(self.device, non_blocking=True)
         label = torch.stack(
             [
-                self.labels[i, t : t + crop_h, left : left + crop_w]
+                self._crop_label(i, t, left, crop_h, crop_w)
                 for i, t, left in zip(rows, tops, lefts, strict=True)
             ]
         ).to(self.device, non_blocking=True)

@@ -23,13 +23,12 @@ if [[ "$(uname -m)" != "aarch64" ]]; then
   exit 1
 fi
 
-run_id="${1:?usage: calibrate.sbatch <run-id>}"
-
 # shellcheck source=hpc/roihu/job_prelude.sh
 source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
-cache_name="$(python3 -c 'import sys; from tiefer_lab.config import load_config; from tiefer_lab.train import resolve_run_dir; print(load_config(resolve_run_dir(sys.argv[1]) / "config.toml").data.cache_name)' "${run_id}")"
-tiefer_stage_cache "${cache_name}"
-python3 -m tiefer_lab.calibrate --run "${run_id}" --band-set all
+# shellcheck source=hpc/roihu/model_jobs.sh
+source hpc/roihu/model_jobs.sh
+export TIEFER_DEVICE=auto
+tiefer_calibrate_job "${1:?usage: calibrate.sbatch <run-id>}" "${@:2}"

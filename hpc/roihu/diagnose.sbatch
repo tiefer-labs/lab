@@ -7,10 +7,11 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch seeds <run-dir> [<run-dir> ...]
 #   bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch frames <validation report> --cache <name>
+#   bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch int8 <run-id> [--band-set <bands>] [--patches N]
 #
 # python -m tiefer_lab.diagnose never reads the test split and writes only
-# reports/diagnosis/. The x86 environment has no torch, so the INT8 diagnosis,
-# which exports the model, runs on a GPU node: hpc/roihu/diagnose_gpu.sbatch.
+# reports/diagnosis/. The INT8 diagnosis needs torch, which venv-x86_64 has as
+# its CPU build (setup.sh); hpc/roihu/diagnose_gpu.sbatch is the same on a GPU node.
 #
 # CPU partition 'small': up to 72 hours on one node.
 # Source: https://docs.csc.fi/computing/running/batch-job-partitions/
@@ -18,7 +19,7 @@
 #SBATCH --partition=small
 #SBATCH --time=06:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 set -euo pipefail
 
@@ -35,8 +36,14 @@ source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
+# shellcheck source=hpc/roihu/model_jobs.sh
+source hpc/roihu/model_jobs.sh
 if [[ "${1:-}" == "int8" ]]; then
-  echo "error: the INT8 diagnosis needs torch; submit hpc/roihu/diagnose_gpu.sbatch" >&2
-  exit 2
+  # The INT8 diagnosis exports the model with torch and quantises with ONNX
+  # Runtime on the CPU; venv-x86_64 has the CPU build of torch (setup.sh).
+  tiefer_require_torch
+  tiefer_cpu_threads
+  tiefer_int8_job "${@:2}"
+  exit 0
 fi
 python3 -m tiefer_lab.diagnose "$@"

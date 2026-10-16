@@ -36,7 +36,14 @@ from typing import Any
 
 from tiefer_lab import onboard
 from tiefer_lab.data.source import L1C_BAND_NAMES, THIN_CLOUD, USED_BANDS
-from tiefer_lab.reports import Report, Reports, load_reports
+from tiefer_lab.reports import (
+    Report,
+    ReportError,
+    Reports,
+    load_reports,
+    model_label,
+    require_one_device,
+)
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 
@@ -325,6 +332,9 @@ def _export_matches(run_id: str, configs: Sequence[str], strict: bool) -> bool:
     return run_id.startswith(tuple(configs))
 
 
+PROXY_NOTE = "ONNX Runtime on the CPU, a proxy; the TensorRT value comes from the Jetson"
+
+
 def export_value(
     key: str, configs: Sequence[str] = ONE_M, strict: bool = False
 ) -> Callable[[Reports], Measurement | None]:
@@ -344,6 +354,9 @@ def export_value(
                     change = q.get("fp16_change" if key == "fp16" else "change", {})
                     v = change.get("cloud_boa_change")
                     v = None if v is None else -float(v)
+                    if v is not None:
+                        # ONNX Runtime on the CPU: a proxy; TensorRT values come from the Jetson.
+                        return Measurement(v, source=r.source, note=PROXY_NOTE)
                 else:
                     file = r.data.get("files", {}).get(key, {})
                     v = None if not file else file.get("bytes", 0) / 1e6
@@ -1040,7 +1053,10 @@ def render(rows: Sequence[dict[str, Any]], date: dt.date, config: str | None = N
     when = f"{date.day} {date:%B %Y}"
     return (
         header_block(
-            "Acceptance" if config is None else f"Acceptance of {config}",
+            "Acceptance"
+            if config is None
+            else f"Acceptance of {config}"
+            + (f" ({label})" if (label := model_label(config)) else ""),
             "in development",
             (
                 "Acceptance targets of milestone L2 against the measured values"
@@ -1076,6 +1092,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     reports = load_reports(paths.reports_dir())
+    try:
+        require_one_device(reports)
+    except ReportError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
     jobs: list[tuple[str | None, Sequence[Target], Path]] = [
         (None, TARGETS, paths.reports_dir() / REPORT)
     ]

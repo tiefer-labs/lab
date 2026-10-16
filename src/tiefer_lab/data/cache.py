@@ -48,8 +48,21 @@ SYNTHETIC_SOURCE = "synthetic"
 LoadMode = Literal["auto", "memory", "mmap"]
 
 # Load a split into memory only when it uses at most this share of the
-# memory that is currently available.
+# memory that is currently available, divided by the runs that share the node.
 MEMORY_SHARE = 0.5
+# Set by the packed training job (hpc/roihu/train_packed.sbatch): how many runs
+# share one reserved GPU, its cores and its memory.
+RUNS_PER_GPU_ENV = "TIEFER_RUNS_PER_GPU"
+
+
+def runs_per_gpu() -> int:
+    """Runs sharing this job's GPU, cores and memory: TIEFER_RUNS_PER_GPU, else 1."""
+    value = os.environ.get(RUNS_PER_GPU_ENV, "").strip()
+    if not value:
+        return 1
+    if not value.isdigit() or int(value) < 1:
+        raise CacheError(f"{RUNS_PER_GPU_ENV} must be a whole number of at least 1, got {value!r}")
+    return int(value)
 
 
 class CacheError(RuntimeError):
@@ -236,7 +249,7 @@ def load_split(
         image_bytes = files[0].stat().st_size * len(positions) / len(index["bands"])
         size = image_bytes + sum(f.stat().st_size for f in files[1:])
         available = available_memory_bytes()
-        in_memory = available is not None and size <= MEMORY_SHARE * available
+        in_memory = available is not None and size <= MEMORY_SHARE * available / runs_per_gpu()
     else:
         in_memory = mode == "memory"
     mmap: Literal["r"] | None = None if in_memory else "r"

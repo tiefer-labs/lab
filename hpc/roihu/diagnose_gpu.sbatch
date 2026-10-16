@@ -23,14 +23,12 @@ if [[ "$(uname -m)" != "aarch64" ]]; then
   exit 1
 fi
 
-run_id="${1:?usage: diagnose_gpu.sbatch <run-id> [diagnose arguments]}"
-shift
-
 # shellcheck source=hpc/roihu/job_prelude.sh
 source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
-cache_name="$(python3 -c 'import sys; from tiefer_lab.config import load_config; from tiefer_lab.train import resolve_run_dir; print(load_config(resolve_run_dir(sys.argv[1]) / "config.toml").data.cache_name)' "${run_id}")"
-tiefer_stage_cache "${cache_name}"
-python3 -m tiefer_lab.diagnose int8 --run "${run_id}" "$@"
+# shellcheck source=hpc/roihu/model_jobs.sh
+source hpc/roihu/model_jobs.sh
+export TIEFER_DEVICE=auto
+tiefer_int8_job "${1:?usage: diagnose_gpu.sbatch <run-id> [diagnose arguments]}" "${@:2}"

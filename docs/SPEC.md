@@ -143,11 +143,11 @@ Evaluated with the same code and splits as the model:
 - `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. The Sieb configs of milestone L1 (`configs/sieb*.toml`) stay at most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types). The L2 family below has its own sizes.
 - Report parameter count and multiply-accumulate operations for a 1 x 4 x 512 x 512 input.
 - Loss: cross-entropy plus Dice. Class weights: the L1 configs use median-frequency weights from the training split (`class_weighting = "median_frequency"`, the default of `src/tiefer_lab/config.py`); the L2 configs set `none`, except `wandler_1m_class_weights` ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6).
-- Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS.
+- Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS; `train.precision = "fp32"` turns autocast off (default `auto`, as before). The precision and its setting are recorded in the run metadata.
 - `channels_last` memory format on CUDA.
 - Early stopping on validation mean IoU, with the patience of the config (15 for `sieb_base`, 150 for `sieb` and every L2 config, which is the full schedule).
 - **Resumable:** checkpoint at the end of every epoch and on SIGTERM or SIGUSR1; `--resume <run-dir>` continues from the last checkpoint. Load checkpoints with `torch.load(..., weights_only=True)`.
-- **In-memory data:** load the cached training split into memory once per job when it fits (check size against available memory first), otherwise memory-map it.
+- **In-memory data:** load the cached training split into memory once per run when it fits in half of the available memory divided by the runs that share the GPU (`TIEFER_RUNS_PER_GPU`, set by the packed training job), otherwise memory-map it from the cache, which the job copies to its local disk (`$TMPDIR`) when there is room. One seeded batch sampler serves every placement (GPU, pinned or CPU memory, memory-mapped), so neither the placement, the number of runs sharing the GPU nor the data loader workers change the batches a config and seed draw; with the same CPU thread count the weights are bit for bit the same (`tests/test_data_feeding.py`). The cores of a run are the job's cores divided by the runs sharing them; the placement, load mode, local copy, runs per GPU, workers and CPU threads are recorded in the run metadata, and each epoch records its data wait and peak GPU memory.
 - Every run writes to `$TIEFER_RUNS_DIR/<run-id>/`: resolved config, git commit, seed, device and GPU name, CPU architecture, Python and library versions, Slurm job ID, node and partition when present, start and end time, metrics per epoch (JSON lines), best checkpoint.
 - From the mask, derive per frame: cloud fraction (thick plus thin), shadow fraction, and a **send or keep decision** at an operator-configurable threshold.
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--seed N] [--run-id <name>] [--resume <run-dir>] [--device ...]`; `--cache-name`, `--epochs` and `--max-steps-per-epoch` are for the smoke pipeline and timing runs, which are marked as smoke.
@@ -176,7 +176,7 @@ Rules of the scheme:
 
 ### Training options
 
-Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
+Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation trained by Tiefer Lab, not the flown model (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
 
 ### Milestone L2: one band-flexible model family
 
@@ -299,7 +299,8 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `job_prelude.sh` | Sourced first by every job and by `setup.sh`: initialises the CSC environment of the node when `module` is missing, stops with a clear message when it is still missing, sets `SLURM_EXPORT_ENV=ALL` in a job, prints the node and how its environment was made, runs `module purge` |
 | `shell_options.sh` | Turns off `errexit`, `nounset` and `pipefail` around every `module` command, then restores exactly the saved options |
 | `env.sh` | Sourced by every job after `job_prelude.sh`: loads the module and activates the venv of the node's architecture, prints them in a job, sets `PIP_CACHE_DIR` and the `TIEFER_*` paths under `/projappl/$TIEFER_CSC_PROJECT` and `/scratch/$TIEFER_CSC_PROJECT`; fails clearly if `TIEFER_CSC_PROJECT` is unset |
-| `setup.sh` | Run once per architecture: on `roihu-cpu.csc.fi` (`venv-x86_64`) and on a GPU node through `setup_gpu.sbatch` (`venv-aarch64`); creates the venv, installs, runs the environment check |
+| `setup.sh` | Run once per architecture, always inside a job: through `setup_cpu.sbatch` (`venv-x86_64`) and `setup_gpu.sbatch` (`venv-aarch64`); creates the venv, installs, runs the environment check, prints the number of packages and the import time |
+| `setup_cpu.sbatch` | `small`, 4 cores, 8 GiB, 1 hour: runs `setup.sh` on an x86 node |
 | `setup_gpu.sbatch` | `gputest`, 1 GPU, 15 minutes: runs `setup.sh` on a GPU node; fails when no GPU is visible |
 | `check_env.py` | Imports every dependency, prints versions, CPU architecture, GPU name, CUDA and bf16 availability; fails with a clear message if anything is missing, or inside a GPU job when no GPU is visible |
 | `survey.sbatch` | Short CPU job: counts, splits, locations and item encodings of the dataset, in `reports/data/survey.json` |
@@ -314,7 +315,12 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `timing.sbatch` | One cut epoch on `gputest`: the real cost of a config |
 | `calibrate.sbatch` | `gputest`: cloud logit bias and temperature of a run, on validation only |
 | `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
-| `diagnose.sbatch` | CPU job: seed and false discard diagnostics, validation only |
+| `diagnose.sbatch` | CPU job: seed and false discard diagnostics, and the INT8 sensitivity per Conv node (`int8`), validation and training only |
+| `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
+| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing; a shorter `--time` is allowed, and two minutes before the limit (`--signal=B:USR1@120`) it stops the running packing and still writes the report, marked `time_limit_reached` |
+| `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
+| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve |
+| `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
 | `plan.md` | The run plan of Project Schatten: budget, stop line and steps |
@@ -330,7 +336,7 @@ The guide follows docs/STYLE.md, section 12.14, and its steps are:
 1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
 2. Before you start: the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; where each job runs and which environment it gets; login nodes are for light work only, so the cache is never built there.
 3. Step 1, clone and set the project: `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` and `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>`.
-4. Step 2, set up both architectures from `roihu-cpu.csc.fi`: `bash hpc/roihu/setup.sh` there (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what its log must show.
+4. Step 2, set up both architectures from `roihu-cpu.csc.fi` as batch jobs: `setup_cpu.sbatch` (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what their logs must show.
 5. Step 3, survey the dataset with `survey.sbatch`, then build the data cache with `data.sbatch`.
 6. Step 4, the smoke job on `gputest`, submitted from `roihu-cpu.csc.fi` like every GPU job, and how to check the environment lines of a GPU job log; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
 7. Step 5, train on `gpumedium`, one GPU per job, seeds as separate jobs with `SEED`; `timing.sbatch` and `sweep.sh` for the cost of a config and for several configs.
@@ -414,19 +420,28 @@ lab/
       shell_options.sh            relax and restore set -euo pipefail around module commands
       env.sh                      module, venv and TIEFER_* paths for every job
       setup.sh                    one-time setup per architecture (x86 and ARM)
+      setup_cpu.sbatch            small, 1 hour: setup.sh on an x86 node
       setup_gpu.sbatch            gputest, 15 minutes: setup.sh on a GPU node
       check_env.py                environment and GPU check
       requirements.txt            generated from uv.lock, without torch
       submit.sh                   sbatch wrapper: --account, log location, export by job kind
+      budget.sh                   worst-case cost of a job against the balance left
       usage.sh                    sacct usage of a job
       collect.sh                  packs results for copying back, no absolute paths
       data.sbatch                 builds the data cache in /scratch
       survey.sbatch               survey of the dataset metadata and item encodings
       timing.sbatch               one cut epoch on gputest: the real cost of a config
+      timing_packed.sbatch        timing step: 1 to 4 runs per GPU, utilisation, memory, data wait
+      timing_cpu.sbatch           one cut epoch on a full CPU node, against the GPU in BU
+      train_packed.sbatch         several runs on one reserved GPU, time limit from the timing report
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
       check_sources.sbatch        can every source be obtained: HEAD requests only, CPU
-      diagnose.sbatch             seed and false discard diagnostics, CPU
+      diagnose.sbatch             seed, false discard and INT8 diagnostics, CPU
+      evaluate_cpu.sbatch         evaluation on a CPU node, the plan's default
+      calibrate_cpu.sbatch        calibration on a CPU node, the plan's default
+      export_cpu.sbatch           export and INT8 check on a CPU node, the plan's default
+      model_jobs.sh               bodies shared by the CPU and GPU evaluation, calibration and export jobs
       diagnose_gpu.sbatch         INT8 sensitivity per Conv node, GPU node
       sweep.sh                    configs and seeds as separate one-GPU jobs
       plan.md                     run plan of Project Schatten: budget, stop line, steps
@@ -477,6 +492,8 @@ lab/
       calibrate.py                python -m tiefer_lab.calibrate: cloud bias and temperature on val
       compare.py                  python -m tiefer_lab.compare: reports/comparison.md
       paper_models.py             python -m tiefer_lab.paper_models: reports/coverage.md
+      device_check.py             python -m tiefer_lab.device_check: CPU against the training device
+      packed.py                   python -m tiefer_lab.packed: runs sharing a GPU, packing report, time limit
       reference_models.py         record of every reference model: licences, decision, files
       diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
@@ -502,7 +519,7 @@ lab/
         __init__.py
         cloud_filter.py           the compact network
         convnext_unet.py          U-Net with ConvNeXt-style encoder blocks, for the largest size
-        cloudscout.py             CloudScout re-implementation, a frame classifier
+        cloudscout.py             CloudScout re-implementation, not the flown model
         flexible.py               band-flexible input: 13 bands, availability flags, two designs
         losses.py                 cross-entropy plus Dice
       export/
@@ -570,6 +587,11 @@ lab/
     test_independent.py           independent datasets: reflectance, labels, tiles, stops
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
+    test_device_check.py          evaluation on the CPU gives the argmax of the training device
+    test_data_feeding.py          placement, packing and workers draw the same batches
+    test_packed.py                runs launched together, packing report, time limit, signals
+    test_hpc_policy.py            hpc/ follows the CSC usage policy: no service, own jobs only
+    test_model_label.py           the CloudScout re-implementation is labelled everywhere
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -668,6 +690,12 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: `timing_packed.sbatch` stops at its time limit and still writes the report; drafted with an AI-assisted system.
+- 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; reports of it carry `model_label`; drafted with an AI-assisted system.
+- 16 October 2026: the setup as batch jobs (`setup_cpu.sbatch`), the worst-case cost check (`budget.sh`), the CPU timing (`timing_cpu.sbatch`) and the usage policy test (`test_hpc_policy.py`); drafted with an AI-assisted system.
+- 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
+- 16 October 2026: one batch sampler for every placement of the training split; cores and memory divided by the runs sharing a GPU; `train.precision`; data wait and peak GPU memory per epoch; drafted with an AI-assisted system.
+- 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: `reference_models.py`, `data/check_sources.py`, `check_sources.sbatch` and `test_check_sources.py` in the tree; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: rename verified in PR #9; the snapshot of the configs before the rename and its test are removed; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: the families Sieb, Wandler, Lupe, the CloudScout re-implementation and smoke, and the naming scheme; section 14 lists the renamed configs; drafted with an AI-assisted system.

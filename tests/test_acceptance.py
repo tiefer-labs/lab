@@ -257,3 +257,18 @@ def test_per_model_page_follows_the_markdown_standard() -> None:
     text = acceptance.render(rows, dt.date(2026, 10, 14), "sieb")
     assert not check_header(Path("reports/acceptance_l1_full.md"), text.split("\n"))
     assert "Acceptance of sieb" in text
+
+
+def test_int8_is_marked_as_a_proxy() -> None:
+    export = Report(
+        Path("export/wandler_1m-seed0-x.json"),
+        {
+            "run_id": "wandler_1m-seed0-x",
+            "band_set": list(USED_BANDS),
+            "quantisation": {"val": {"change": {"cloud_boa_change": -0.004}}},
+        },
+    )
+    rows = _rows(Reports(export=[export]))
+    measurement = rows["CMP-03"]["measurement"]
+    assert measurement.value == 0.004
+    assert "proxy" in measurement.note and "Jetson" in measurement.note
