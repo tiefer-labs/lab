@@ -315,6 +315,8 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `calibrate.sbatch` | `gputest`: cloud logit bias and temperature of a run, on validation only |
 | `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
 | `diagnose.sbatch` | CPU job: seed and false discard diagnostics, and the INT8 sensitivity per Conv node (`int8`), validation and training only |
+| `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
+| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
@@ -424,6 +426,8 @@ lab/
       data.sbatch                 builds the data cache in /scratch
       survey.sbatch               survey of the dataset metadata and item encodings
       timing.sbatch               one cut epoch on gputest: the real cost of a config
+      timing_packed.sbatch        timing step: 1 to 4 runs per GPU, utilisation, memory, data wait
+      train_packed.sbatch         several runs on one reserved GPU, time limit from the timing report
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
       check_sources.sbatch        can every source be obtained: HEAD requests only, CPU
@@ -483,6 +487,7 @@ lab/
       compare.py                  python -m tiefer_lab.compare: reports/comparison.md
       paper_models.py             python -m tiefer_lab.paper_models: reports/coverage.md
       device_check.py             python -m tiefer_lab.device_check: CPU against the training device
+      packed.py                   python -m tiefer_lab.packed: runs sharing a GPU, packing report, time limit
       reference_models.py         record of every reference model: licences, decision, files
       diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
@@ -578,6 +583,7 @@ lab/
     test_reference_scripts.py     reference models stop until their licence is cleared
     test_device_check.py          evaluation on the CPU gives the argmax of the training device
     test_data_feeding.py          placement, packing and workers draw the same batches
+    test_packed.py                runs launched together, packing report, time limit, signals
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -676,6 +682,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
 - 16 October 2026: one batch sampler for every placement of the training split; cores and memory divided by the runs sharing a GPU; `train.precision`; data wait and peak GPU memory per epoch; drafted with an AI-assisted system.
 - 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: `reference_models.py`, `data/check_sources.py`, `check_sources.sbatch` and `test_check_sources.py` in the tree; drafted with an AI-assisted system.

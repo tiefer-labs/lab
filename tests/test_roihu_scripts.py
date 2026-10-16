@@ -250,7 +250,9 @@ def test_setup_gpu_job_requests_one_gpu_on_gputest() -> None:
     assert "#SBATCH --time=00:15:00" in text
 
 
-@pytest.mark.parametrize("name", ["train", "evaluate", "export", "smoke", "setup_gpu"])
+@pytest.mark.parametrize(
+    "name", ["train", "train_packed", "timing_packed", "evaluate", "export", "smoke", "setup_gpu"]
+)
 def test_gpu_jobs_stop_on_a_non_arm_node(roihu_env: dict[str, str], name: str) -> None:
     result = _run(f"{name}.sbatch", ["configs/sieb_base.toml"], roihu_env)
     assert result.returncode == 1
@@ -634,3 +636,17 @@ def test_bodies_pass_the_device_to_the_commands_that_take_it() -> None:
     assert bodies.count('--device "${TIEFER_DEVICE:-auto}"') == 2  # evaluate and calibrate
     diagnose = (ROIHU / "diagnose.sbatch").read_text()
     assert "tiefer_int8_job" in diagnose and "needs torch; submit" not in diagnose
+
+
+def test_packed_jobs_take_their_time_limit_from_the_timing_report() -> None:
+    train_packed = (ROIHU / "train_packed.sbatch").read_text()
+    assert "#SBATCH --gres=gpu:gh200:1" in train_packed
+    assert "#SBATCH --signal=B:USR1@300" in train_packed
+    # A short default: the real limit is passed with --time from the packing report.
+    assert "#SBATCH --time=00:30:00" in train_packed
+    assert "python -m tiefer_lab.packed time-limit" in train_packed
+    assert 'python3 -m tiefer_lab.packed run "$@"' in train_packed
+    timing = (ROIHU / "timing_packed.sbatch").read_text()
+    assert "for runs in 1 2 3 4; do" in timing
+    assert "nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used" in timing
+    assert "tiefer_lab.packed report" in timing
