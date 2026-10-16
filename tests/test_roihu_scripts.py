@@ -650,3 +650,12 @@ def test_packed_jobs_take_their_time_limit_from_the_timing_report() -> None:
     assert "for runs in 1 2 3 4; do" in timing
     assert "nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used" in timing
     assert "tiefer_lab.packed report" in timing
+
+
+def test_independent_downloads_are_deleted_once_the_cache_is_complete() -> None:
+    text = (ROIHU / "independent.sbatch").read_text()
+    build = text.index("python3 -m tiefer_lab.data.build_cache")
+    delete = text.index('rm -rf "${root}"')
+    assert build < delete
+    assert '["splits"]["test"].get("complete")' in text[build:delete]
+    assert "TIEFER_KEEP_DOWNLOADS:-0" in text

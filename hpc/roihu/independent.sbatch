@@ -13,7 +13,7 @@
 # before anything is downloaded. The Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
-# unpacked once.
+# unpacked once, and deleted once the cache is complete (TIEFER_KEEP_DOWNLOADS=1 keeps them).
 # The build stops on every fact that is not verified (docs/INDEPENDENT.md,
 # section 6) and resumes at the next scene when submitted again. Sentinel-2
 # datasets drop the products used by CloudSEN12+ first, so the CloudSEN12+
@@ -95,3 +95,15 @@ if [[ "${dataset}" == s2_cloud_catalogue || "${dataset}" == kappaset ]]; then
 fi
 python3 -m tiefer_lab.data.build_cache --split test --source "${dataset}" --root "${root}" \
   "${extra[@]}" "$@"
+
+# Archives are deleted once the cache is built and checked: its test split is
+# complete in its index (the builder verifies the counts before it marks it). The
+# cache stays on /scratch; TIEFER_KEEP_DOWNLOADS=1 keeps the downloads.
+if python3 -c 'import sys; from tiefer_lab.data import cache; sys.exit(0 if cache.read_index(cache.cache_dir(sys.argv[1]))["splits"]["test"].get("complete") else 1)' "${dataset}"; then
+  if [[ "${TIEFER_KEEP_DOWNLOADS:-0}" != "1" ]]; then
+    rm -rf "${root}"
+    echo "cache ${dataset} complete; downloads deleted"
+  fi
+else
+  echo "cache ${dataset} not complete; downloads kept for the next run"
+fi
