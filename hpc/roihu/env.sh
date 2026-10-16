@@ -113,9 +113,12 @@ tiefer_require_venv() {
 # and point TIEFER_DATA_DIR at the copy. Usage: tiefer_stage_cache <cache-name>
 # $TMPDIR is set for every job without a request: https://docs.csc.fi/support/faq/roihu/
 # Its size per partition: https://docs.csc.fi/computing/running/batch-job-partitions/
+# TIEFER_CACHE_STAGED (1 or 0) tells the run's metadata whether it read the copy.
+# $TMPDIR costs no billing units; local NVMe reserved with --gres would.
 tiefer_stage_cache() {
   local name="$1"
   local src="${TIEFER_DATA_DIR}/${name}"
+  export TIEFER_CACHE_STAGED=0
   if [[ -z "${TMPDIR:-}" || ! -d "${src}" ]]; then
     echo "cache staging skipped: no \$TMPDIR or no cache ${name}"
     return 0
@@ -130,5 +133,6 @@ tiefer_stage_cache() {
   mkdir -p "${TMPDIR}/data"
   cp -r "${src}" "${TMPDIR}/data/"
   export TIEFER_DATA_DIR="${TMPDIR}/data"
+  export TIEFER_CACHE_STAGED=1
   echo "cache ${name} staged to local disk"
 }

@@ -143,11 +143,11 @@ Evaluated with the same code and splits as the model:
 - `src/tiefer_lab/models/cloud_filter.py`: a compact U-Net style encoder and decoder with depthwise separable convolutions. Input 4 bands, output 4 classes. The Sieb configs of milestone L1 (`configs/sieb*.toml`) stay at most 1.0 million parameters; a test asserts the budget and the allowed operator set (by exporting to ONNX and listing node types). The L2 family below has its own sizes.
 - Report parameter count and multiply-accumulate operations for a 1 x 4 x 512 x 512 input.
 - Loss: cross-entropy plus Dice. Class weights: the L1 configs use median-frequency weights from the training split (`class_weighting = "median_frequency"`, the default of `src/tiefer_lab/config.py`); the L2 configs set `none`, except `wandler_1m_class_weights` ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6).
-- Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS.
+- Mixed precision: bf16 autocast when supported (Hopper GPUs on Roihu), otherwise fp16 on CUDA, fp32 on CPU and MPS; `train.precision = "fp32"` turns autocast off (default `auto`, as before). The precision and its setting are recorded in the run metadata.
 - `channels_last` memory format on CUDA.
 - Early stopping on validation mean IoU, with the patience of the config (15 for `sieb_base`, 150 for `sieb` and every L2 config, which is the full schedule).
 - **Resumable:** checkpoint at the end of every epoch and on SIGTERM or SIGUSR1; `--resume <run-dir>` continues from the last checkpoint. Load checkpoints with `torch.load(..., weights_only=True)`.
-- **In-memory data:** load the cached training split into memory once per job when it fits (check size against available memory first), otherwise memory-map it.
+- **In-memory data:** load the cached training split into memory once per run when it fits in half of the available memory divided by the runs that share the GPU (`TIEFER_RUNS_PER_GPU`, set by the packed training job), otherwise memory-map it from the cache, which the job copies to its local disk (`$TMPDIR`) when there is room. One seeded batch sampler serves every placement (GPU, pinned or CPU memory, memory-mapped), so neither the placement, the number of runs sharing the GPU nor the data loader workers change the batches a config and seed draw; with the same CPU thread count the weights are bit for bit the same (`tests/test_data_feeding.py`). The cores of a run are the job's cores divided by the runs sharing them; the placement, load mode, local copy, runs per GPU, workers and CPU threads are recorded in the run metadata, and each epoch records its data wait and peak GPU memory.
 - Every run writes to `$TIEFER_RUNS_DIR/<run-id>/`: resolved config, git commit, seed, device and GPU name, CPU architecture, Python and library versions, Slurm job ID, node and partition when present, start and end time, metrics per epoch (JSON lines), best checkpoint.
 - From the mask, derive per frame: cloud fraction (thick plus thin), shadow fraction, and a **send or keep decision** at an operator-configurable threshold.
 - Commands: `python -m tiefer_lab.train --config configs/<name>.toml [--seed N] [--run-id <name>] [--resume <run-dir>] [--device ...]`; `--cache-name`, `--epochs` and `--max-steps-per-epoch` are for the smoke pipeline and timing runs, which are marked as smoke.
@@ -577,6 +577,7 @@ lab/
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
     test_device_check.py          evaluation on the CPU gives the argmax of the training device
+    test_data_feeding.py          placement, packing and workers draw the same batches
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -675,6 +676,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: one batch sampler for every placement of the training split; cores and memory divided by the runs sharing a GPU; `train.precision`; data wait and peak GPU memory per epoch; drafted with an AI-assisted system.
 - 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: `reference_models.py`, `data/check_sources.py`, `check_sources.sbatch` and `test_check_sources.py` in the tree; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: rename verified in PR #9; the snapshot of the configs before the rename and its test are removed; drafted with an AI-assisted system.

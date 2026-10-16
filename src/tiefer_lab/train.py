@@ -23,11 +23,12 @@ import dataclasses
 import datetime as dt
 import json
 import math
+import os
 import sys
 import time
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import torch
@@ -36,7 +37,7 @@ from torch.utils.data import DataLoader
 from tiefer_lab import decisions, metrics
 from tiefer_lab.config import Config, dump_toml, load_config
 from tiefer_lab.data import cache, padding, sensor
-from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches, TrainPatches
+from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches
 from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
 from tiefer_lab.models import flexible
@@ -59,6 +60,7 @@ from tiefer_lab.utils.ema import WeightEMA
 from tiefer_lab.utils.seeding import seed_everything
 from tiefer_lab.utils.signals import StopRequest
 
+T = TypeVar("T")
 CONFIG_NAME = "config.toml"
 METADATA_NAME = "metadata.json"
 METRICS_NAME = "metrics.jsonl"
@@ -330,6 +332,24 @@ def learning_rate_factor(step: int, total_steps: int, warmup_steps: int) -> floa
     return 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
 
 
+class WaitClock:
+    """Seconds the training loop spends waiting for the next batch of an epoch."""
+
+    def __init__(self) -> None:
+        self.seconds = 0.0
+
+    def timed(self, batches: Iterator[T]) -> Iterator[T]:
+        iterator = iter(batches)
+        while True:
+            started = time.monotonic()
+            try:
+                item = next(iterator)
+            except StopIteration:
+                return
+            self.seconds += time.monotonic() - started
+            yield item
+
+
 def epoch_timing(
     train_seconds: float, val_seconds: float, steps: int, full_steps: int, batch_size: int
 ) -> dict[str, Any]:
@@ -384,7 +404,9 @@ def train(
 ) -> str:
     """Train into `run_dir`. Returns the final status: completed, early_stopped or interrupted."""
     device = devices.select_device(device_name)
-    precision = devices.precision_for(device)
+    precision = devices.precision_for(device, config.train.precision)
+    cpu_threads = devices.set_cpu_threads()
+    runs_per_gpu = cache.runs_per_gpu()
     seed_everything(config.train.seed)
     directory, index = open_cache(config, allow_synthetic)
     bands = config.data.bands
@@ -416,6 +438,9 @@ def train(
             "config": CONFIG_NAME,
             "provenance": metadata.provenance(device),
             "precision": precision,
+            "precision_setting": config.train.precision,
+            # Runs that shared this job's GPU, cores and memory (train_packed.sbatch).
+            "runs_per_gpu": runs_per_gpu,
             "data": {
                 "cache": paths.portable(directory),
                 "source": index.get("source"),
@@ -429,7 +454,11 @@ def train(
                 },
                 "val_patches": len(val_data),
                 "train_in_memory": train_data.in_memory,
+                "load_mode": config.data.load_mode,
+                # Set by tiefer_stage_cache when the cache was copied to the job's local disk.
+                "cache_staged_local": os.environ.get("TIEFER_CACHE_STAGED") == "1",
                 "data_workers": workers,
+                "cpu_threads": cpu_threads,
             },
             "model": {
                 "widths": list(config.model.widths),
@@ -452,6 +481,7 @@ def train(
             "end": None,
             "job_id": slurm.get("slurm", {}).get("job_id"),
             "gpus": 1 if device.type == "cuda" else 0,
+            "runs_per_gpu": runs_per_gpu,
         }
     )
     _write_json(meta_path, meta)
@@ -521,41 +551,23 @@ def train(
         config.data.noise_std,
         config.data.blur_sigma,
     )
-    generator = torch.Generator()
     pin = device.type == "cuda"
-    device_batches: DeviceTrainBatches | None = None
-    train_set: TrainPatches | None = None
-    train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]] | None = None
-    if train_data.in_memory:
-        # The split fits in memory: hold it once per job (on the GPU when it fits)
-        # and augment on the device.
-        device_batches = DeviceTrainBatches(
-            train_data,
-            mean,
-            std,
-            config.data.crop_size,
-            photometric,
-            device,
-            config.data.batch_size,
-            config.train.seed,
-            robustness=robustness,
-        )
-        placement = device_batches.placement
-    else:
-        train_set = TrainPatches(
-            train_data, mean, std, config.data.crop_size, photometric, robustness
-        )
-        train_loader = DataLoader(
-            train_set,
-            batch_size=config.data.batch_size,
-            shuffle=True,
-            num_workers=workers,
-            generator=generator,
-            drop_last=len(train_set) >= config.data.batch_size,
-            pin_memory=pin,
-        )
-        placement = "data loader (memory-mapped)"
-    full_steps = len(device_batches) if device_batches is not None else len(train_loader or [])
+    # One sampler for every placement: in memory (GPU, pinned or CPU) or memory-mapped
+    # from the cache files, so the placement and the worker count never change the
+    # batches a config and seed draw (tests/test_data_feeding.py).
+    device_batches = DeviceTrainBatches(
+        train_data,
+        mean,
+        std,
+        config.data.crop_size,
+        photometric,
+        device,
+        config.data.batch_size,
+        config.train.seed,
+        robustness=robustness,
+    )
+    placement = device_batches.placement
+    full_steps = len(device_batches)
     steps_per_epoch = min(full_steps, config.train.max_steps_per_epoch or full_steps)
     total_steps = steps_per_epoch * config.train.epochs
     warmup_steps = steps_per_epoch * config.train.warmup_epochs
@@ -593,13 +605,13 @@ def train(
     skipped_total = 0
     with StopRequest() as stop:
         for epoch in range(start_epoch, config.train.epochs):
-            # One seed per epoch, so a resumed run sees the same batches.
-            generator.manual_seed(config.train.seed * 100_003 + epoch)
-            if train_set is not None:
-                train_set.set_epoch(epoch)
-            batches = device_batches.epoch(epoch) if device_batches is not None else train_loader
-            assert batches is not None
+            # One seed per epoch (DeviceTrainBatches.epoch), so a resumed run sees the
+            # same batches.
+            wait = WaitClock()
+            batches = wait.timed(device_batches.epoch(epoch))
             model.train()
+            if device.type == "cuda":
+                torch.cuda.reset_peak_memory_stats(device)
             started = time.monotonic()
             losses: list[float] = []
             skipped = 0
@@ -753,6 +765,11 @@ def train(
                 "skipped_steps": skipped,
                 "best_epoch": best_epoch,
                 "seconds": round(time.monotonic() - started, 2),
+                # Time the training loop waited for its batches, and the peak GPU memory.
+                "data_wait_seconds": round(wait.seconds, 3),
+                "gpu_memory_peak_bytes": (
+                    int(torch.cuda.max_memory_allocated(device)) if device.type == "cuda" else None
+                ),
                 "time": metadata.now(),
                 **epoch_timing(
                     train_seconds, val_seconds, len(losses), full_steps, config.data.batch_size

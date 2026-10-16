@@ -17,6 +17,8 @@ from typing import Literal
 
 import torch
 
+from tiefer_lab.data import cache
+
 Precision = Literal["bf16", "fp16", "fp32"]
 DEVICE_CHOICES = ("auto", "cuda", "mps", "cpu")
 
@@ -38,7 +40,10 @@ def select_device(requested: str = "auto") -> torch.device:
     return torch.device(requested)
 
 
-def precision_for(device: torch.device) -> Precision:
+def precision_for(device: torch.device, setting: str = "auto") -> Precision:
+    """bf16 or fp16 autocast on CUDA, fp32 elsewhere; `setting` "fp32" turns it off."""
+    if setting == "fp32":
+        return "fp32"
     if device.type == "cuda":
         return "bf16" if torch.cuda.is_bf16_supported() else "fp16"
     return "fp32"
@@ -63,10 +68,27 @@ def device_name(device: torch.device) -> str:
     return "CPU"
 
 
-def data_workers(configured: int) -> int:
-    """Data loader workers: inside a Slurm job, SLURM_CPUS_PER_TASK minus one core
-    for the main process; elsewhere the configured value."""
+def cores_per_run() -> int | None:
+    """Inside a Slurm job, its cores (72 per GH200 GPU) divided by the runs that
+    share them (cache.runs_per_gpu); None outside Slurm."""
     value = os.environ.get("SLURM_CPUS_PER_TASK", "").strip()
-    if value.isdigit() and int(value) > 1:
-        return int(value) - 1
+    if not value.isdigit() or int(value) < 1:
+        return None
+    return max(1, int(value) // cache.runs_per_gpu())
+
+
+def data_workers(configured: int) -> int:
+    """Data loader workers: inside a Slurm job, the cores of this run minus one for
+    the main process; elsewhere the configured value."""
+    cores = cores_per_run()
+    if cores is not None and cores > 1:
+        return cores - 1
     return configured
+
+
+def set_cpu_threads() -> int:
+    """Torch CPU threads: the cores of this run inside a Slurm job; returns the count."""
+    cores = cores_per_run()
+    if cores is not None:
+        torch.set_num_threads(cores)
+    return int(torch.get_num_threads())

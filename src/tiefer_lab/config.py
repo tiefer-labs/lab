@@ -151,9 +151,13 @@ class TrainConfig:
     # soft target, with this weight; the teacher reads all bands of its own config.
     teacher_run: str | None = None
     teacher_weight: float = 0.0
+    # Mixed precision: "auto" is bf16 autocast where the GPU supports it, else fp16
+    # on CUDA, fp32 on CPU and MPS (as before); "fp32" turns autocast off.
+    precision: Literal["auto", "fp32"] = "auto"
 
     def __post_init__(self) -> None:
         _check(self.epochs >= 1, "epochs must be >= 1")
+        _check(self.precision in ("auto", "fp32"), "precision: auto or fp32")
         _check(0 <= self.warmup_epochs < self.epochs, "warmup_epochs in [0, epochs)")
         _check(self.ema_decay == 0.0 or 0.9 <= self.ema_decay < 1.0, "ema_decay: 0 or in [0.9, 1)")
         _check(self.distill_weight >= 0, "distill_weight must be >= 0")

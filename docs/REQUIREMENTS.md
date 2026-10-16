@@ -63,6 +63,7 @@ Every requirement and every acceptance target of milestone L2 has an ID and the 
 | `REQ-TRN-10` | The frame term, the Lovasz-softmax term and the frame loss match hand computations | met | `tests/test_flexible_model.py::test_frame_fraction_loss_and_lovasz_by_hand`, `tests/test_training_options.py::test_frame_loss_by_hand` |
 | `REQ-TRN-11` | The CloudScout re-implementation gives one class per frame, trains in the paper's two steps and exports with allowed operators only | met | `tests/test_training_options.py::test_cloudscout_gives_one_class_per_frame_and_trains`, `tests/test_model_budget.py::test_cloudscout_operators_are_allowed` |
 | `REQ-TRN-12` | Every variant changes one setting of its reference; combined configs have their row in ASSUMPTIONS.md | met | `tests/test_config.py::test_l2_ladder_sizes_and_one_change_per_variant`, `tests/test_config.py::test_l1_and_cloudscout_variants_change_one_setting`, `tests/test_config.py::test_candidate_references_are_drafts_with_the_stated_changes`, `tests/test_model_names.py::test_every_config_name_follows_the_scheme` |
+| `REQ-TRN-13` | The placement of the training split (memory or memory-mapped), the runs sharing a GPU and the data loader workers never change the batches of a config and seed (bit for bit on the CPU with the same thread count); cores and memory are divided by the runs sharing the GPU; each option, the data wait and the peak GPU memory are recorded | met | `tests/test_data_feeding.py::test_placement_and_packing_draw_the_same_batches`, `tests/test_data_feeding.py::test_runs_per_gpu_divides_cores_and_memory`, `tests/test_data_feeding.py::test_precision_setting` |
 
 Further evidence: `REQ-TRN-07`: the metadata test passes; no run of Project Schatten exists yet.
 
@@ -196,6 +197,7 @@ Notes:
 
 ## Changelog
 
+- 16 October 2026: `REQ-TRN-13`, data feeding that never changes a run beyond floating point; drafted with an AI-assisted system.
 - 16 October 2026: `REQ-EVL-14`, the CPU jobs, the check of CPU against the training device and the INT8 proxy note; drafted with an AI-assisted system.
 - 16 October 2026: `REQ-DAT-09`, the token is optional and never written anywhere, with its test; `REQ-DAT-19` names the test of the decisions of 16 October 2026; drafted with an AI-assisted system.
 - 16 October 2026: `REQ-DAT-19`, the source check and the stop of a reference model whose weights have no stated licence; drafted with an AI-assisted system.
