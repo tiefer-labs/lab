@@ -60,6 +60,7 @@ from types import FrameType
 from typing import Any
 
 from tiefer_lab.data import cache
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.utils import paths
 
 TIMING_STEPS = 50
@@ -399,7 +400,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             codes = launch(entries, log_dir, extra, run_ids)
             return 0 if all(c == 0 for c in codes) else 1
         if args.command == "report":
-            report = packing_report(args.config, args.job, args.samples)
+            report = add_model_label(
+                packing_report(args.config, args.job, args.samples), args.config
+            )
             out = paths.reports_dir() / REPORT_DIR / f"packing_{report['config']}.json"
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -412,7 +415,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if args.gpu_report and args.gpu_report.is_file()
                 else None
             )
-            result = cpu_comparison(args.config, paths.runs_dir() / args.cpu_run, gpu_report)
+            result = add_model_label(
+                cpu_comparison(args.config, paths.runs_dir() / args.cpu_run, gpu_report),
+                args.config,
+            )
             out = paths.reports_dir() / REPORT_DIR / f"cpu_{result['config']}.json"
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")

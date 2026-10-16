@@ -38,12 +38,14 @@ from typing import Any
 
 import numpy as np
 
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.utils import paths
 
 FRACTION_BINS = tuple(round(0.05 * i, 2) for i in range(21))
 
 
 def _write(name: str, payload: dict[str, Any]) -> Path:
+    add_model_label(payload, name)
     out = paths.reports_dir() / "diagnosis" / f"{name}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -44,6 +44,7 @@ from tiefer_lab.models.cloud_filter import (
     predict_masks_with_confidence,
     predict_probabilities,
 )
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.tables import header_block
 from tiefer_lab.train import (
     CONFIG_NAME,
@@ -709,6 +710,7 @@ def evaluate_run(
     if independent_index is not None:
         suffix = f"_{source_name}{suffix}" + ("_substituted" if substitution else "")
         split = "independent"
+    add_model_label(report, run_id, config.model.architecture)
     out = paths.reports_dir() / "evaluation" / f"{run_id}_{split}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

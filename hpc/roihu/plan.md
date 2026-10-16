@@ -20,7 +20,7 @@ The allocation is fixed: maintainer input of 16 October 2026; no further allocat
 
 | Resource | Allocation | Used by Project Schatten |
 | :--- | :---: | :---: |
-| GPU billing units | 10,000 | training only (steps 0, 2, 3, 6, 7 and 7b) |
+| GPU billing units | 10,000 | training only (steps 0, 2, 3, 3a, 3b, 6, 7 and 7b) |
 | CPU billing units | 60,000 | every job that does not train |
 | Storage billing units | 30,000 | `/scratch` and `/projappl` |
 | Cloud billing units | 30,000 | not used |
@@ -36,14 +36,21 @@ Billing, from [docs.csc.fi/computing/hpc-billing](https://docs.csc.fi/computing/
 
 **Running out of BUs** ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)): a running job finishes even past a zero balance, and a project whose balance of any type stays negative is closed after 60 days. When the storage BUs run out, no job can be submitted to any partition, and access to `/scratch` and `/projappl` ends after 30 days. So `submit.sh` and `sweep.sh` compute the worst case of every job before they submit it (time limit x GPUs x 200 for a GPU job; the CPU formula above for a CPU job) and refuse it when it does not fit in the balance left minus the reserve: 500 GPU BU, the reserve under the stop line, and 0 CPU BU (`hpc/roihu/budget.sh`). The balance is the one the maintainer reads in their own `csc-projects` output and types in (`TIEFER_GPU_BU_LEFT`, `TIEFER_CPU_BU_LEFT`, `TIEFER_STORAGE_BU_LEFT`); it is never fetched with credentials.
 
-**Gate:** after the timing step (step 2), this plan is revised with the real costs of the packing reports, in its own pull request, before step 3 is submitted. If the real total of every planned step exceeds 9,500 GPU BU even with packing, that revision cuts in this order, says so, and the maintainer decides:
+**Gate:** after the timing step (step 2), this plan is revised with the real costs of the packing reports, in its own pull request, before step 3 is submitted. If the real total of every planned step exceeds 9,500 GPU BU even with packing, that revision cuts, says so, and the maintainer decides. The order of priority (maintainer decision of 16 October 2026, replacing the earlier one) is:
 
-1. the Wandler variants (step 7);
-2. the Wandler stability step (step 6);
-3. the `wandler_1m_candidate` combination (step 7b);
-4. the Sieb variants beyond the first two targets that rule 4 calls for.
+- **a.** the timing runs (step 2, and the 15-minute timing jobs of steps 3a and 7);
+- **b.** the three Sieb seeds (step 3);
+- **c.** the three `wandler_1m` seeds (step 3);
+- **d.** the calibration (step 5, CPU);
+- **e.** the Sieb variants (step 7);
+- **f.** the Sieb combination (step 7b);
+- **g.** `lupe_1m`, three seeds (step 3a);
+- **h.** the CloudScout re-implementation trained by Tiefer Lab, not the flown model (step 3b);
+- **i.** the Wandler stability step (step 6);
+- **j.** the Wandler variants (step 7);
+- **k.** the `wandler_1m_candidate` combination (step 7b).
 
-Never cut: the timing runs, the three Sieb seeds, the three `wandler_1m` seeds, the calibration (CPU) and the Sieb combination.
+A cut starts at the end of the list, with k, and moves up one item at a time until the total fits.
 
 ---
 
@@ -53,12 +60,14 @@ Never cut: the timing runs, the three Sieb seeds, the three `wandler_1m` seeds, 
 
 On 16 October 2026 no Project Schatten run, report file, compute report or `test_log.md` entry of a Project Schatten run is in the repository, and Roihu restarts from zero. Until that changes:
 
-- steps 0, 0a, 1, 1a and 2 are approved first; step 3 waits for the revision of the gate (section 2), and steps 4 to 10 are revised with the costs of the timing reports before any of them is submitted;
+- steps 0, 0a, 1, 1a and 2 are approved first; steps 3, 3a and 3b wait for the revision of the gate (section 2), and steps 4 to 10 are revised with the costs of the timing reports before any of them is submitted;
 - every GPU job trains; every job that does not train runs on a CPU partition (evaluation of validation, perturbations, independent datasets and the final test, calibration, diagnosis, ONNX export with FP16 and INT8 conversion and the ONNX Runtime INT8 measurement, acceptance, comparison, the source check and the caches). INT8 values from ONNX Runtime on the CPU are a proxy for `CMP-03`; the TensorRT values come from the Jetson. Every reported evaluation (validation, perturbations, independent datasets, final test) runs on the CPU; each evaluation report records its device (`evaluation_device`), and `acceptance` and `compare` refuse a table that mixes devices, because the CPU evaluates in fp32 and a GPU with mixed precision (`reports.require_one_device`);
 - training runs are packed: several runs share one reserved GPU (`train_packed.sbatch`), the seeds of one config or one-change variants of one reference, at the packing that the timing step chooses: the most epochs per GPU-hour whose slowest run takes at most twice its time alone (`tiefer_lab.packed`, `MAX_SLOWDOWN`) and whose mean GPU utilisation is at least 50 percent (`MIN_GPU_UTILISATION`). CSC can terminate jobs whose GPUs are severely underused ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)), so the timing report states the utilisation of each packing, and no packing below that share is chosen;
 - CPU training is a measured option. CSC asks to use whichever of CPU or GPU costs fewer BU, and one CPU BU equals one GPU BU (same page). The timing step also trains `sieb` and `cloudscout_reimpl_step1_th30` for one cut epoch on one full `medium` node (`timing_cpu.sbatch`, 288 CPU BU per node-hour) and reports the CPU BU per epoch against the GPU BU per epoch of the chosen packing (`reports/timing/cpu_<config>.json`). The gate revision may move whole comparison groups (a reference and its variants together, never mixed) to CPU training; a CPU-trained run and a GPU-trained run are never compared as one-change variants of each other;
 - the time limit of every training job is the packing report's slowest full epoch time times the epochs, plus 50 percent and the measured start-up (`python -m tiefer_lab.packed time-limit`), never a fixed large value. GPU time is billed on the runtime, so the margin costs nothing, while a run stopped at its limit loses the epoch it was in and needs another job (maintainer decision of 16 October 2026). A stopped run resumes from its `last.pt` with `resume:<run-id>`: warned 300 s before the limit (SIGUSR1) it saves and stops; killed without warning it keeps `last.pt` of its last finished epoch, and either way the resumed run ends with the weights of a run that was never stopped (`tests/test_checkpoint_resume.py`);
 - a variant whose one change leaves the work per step as it is (loss, gradient clipping, the skip of non-finite steps, warm-up) uses its reference's packing report; a variant that changes the crop or the rescaling (`wandler_1m_crop384`, `*_rescale_*`) gets one 15-minute timing job (`timing.sbatch`, `gputest`) before its runs. This departs from the rule that every first run of a config is a timing run (maintainer decision of 16 October 2026): the full timing step costs up to 200 GPU BU per config, so the up to 11 variant and combination configs would take about 2,200 of the 10,000 GPU BU, while a one-change variant that keeps the work per step runs at its reference's measured speed, and a crop or rescaling change is measured by one 15-minute job for 50 GPU BU;
+- `lupe_1m`, the four-band specialist, is packed like `sieb`, at its chosen packing. Its work per step differs from `sieb`'s (widths 32 to 512 against 16 to 256, batch 64 against 128, the cache `cloudsen12-l1c-all`), so it does not reuse `sieb`'s packing report and gets one 15-minute timing job first (`timing.sbatch`), as the crop and rescaling variants do; it trains on the GPU and is evaluated on the CPU;
+- the CloudScout re-implementation runs as the paper's two steps, one seed each: `cloudscout_reimpl_step1_th30`, then `cloudscout_reimpl_th70` and `cloudscout_reimpl_th50`, which both start from `cloudscout_reimpl_step1_th30-seed0`. All three train on the CPU if `reports/timing/cpu_cloudscout_reimpl_step1_th30.json` shows fewer BU per epoch on the CPU (the epochs are those of the configs, so the BU per run follow), else on one GPU: step 1 alone, then the two second-step runs packed together. Its GPU packing report comes from the timing step. If the CPU wins, the gate revision adds the CPU training job and its commands. Every report of it carries `model_label`, "re-implementation trained by Tiefer Lab, not the flown model", and every document that describes it says so;
 - the GPU BU, GPU-hours and hours per run of the training steps read "pending the timing report" until `reports/timing/packing_<config>.json` of the timing step is copied into the repository.
 
 ### 3.2 Selection rule
@@ -86,7 +95,7 @@ Rules:
 
 ### 3.3 Steps in order of priority
 
-If the budget runs out, the order of the table is the priority: `FRM-01` and stability first. Every command runs from the repository folder on `roihu-cpu.csc.fi`; the commands are in section 3.4 and the costs in section 3.8.
+If the budget runs out, the order of priority of section 2 (the gate) decides which training is cut; otherwise the order of the table: `FRM-01` and stability first. Every command runs from the repository folder on `roihu-cpu.csc.fi`; the commands are in section 3.4 and the costs in section 3.8.
 
 | Step | What | Configs and seeds | Partition | Cost (section 3.8) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -94,8 +103,10 @@ If the budget runs out, the order of the table is the priority: `FRM-01` and sta
 | 0a | source check: HEAD requests only ([section 3.6](#36-source-check-and-downloads)) | `check_sources.sbatch` | `small` | CPU | not run |
 | 1 | data: the survey; the CloudSEN12+ caches `cloudsen12-l1c-high` and `cloudsen12-l1c-all` with the reference masks of the extra table | `survey.sbatch`, `data.sbatch` | `small` | CPU | not run |
 | 1a | independent caches: the Sentinel-2 Cloud Mask Catalogue and KappaSet ([section 3.6](#36-source-check-and-downloads)), whose builds drop every product that CloudSEN12+ uses, by product ID and by tile with date; their downloads are deleted once the cache is complete. L8 SPARCS and then L8 Biome wait until both have an evaluation report | `independent.sbatch s2_cloud_catalogue`, `independent.sbatch kappaset` | `small` | CPU | not run |
-| 2 | timing step: each config with 1, 2, 3 and 4 runs per GPU; time per epoch, GPU utilisation, GPU memory and data wait; the chosen packing. Then one cut epoch on a full CPU node, against the GPU in BU per epoch. Then the gate (section 2) | GPU: `sieb`, `wandler_1m`; CPU: `sieb`, `cloudscout_reimpl_step1_th30` | `gpumedium`, `medium` | at most 400 GPU BU | not run |
+| 2 | timing step: each config with 1, 2, 3 and 4 runs per GPU; time per epoch, GPU utilisation, GPU memory and data wait; the chosen packing. Then one cut epoch on a full CPU node, against the GPU in BU per epoch. Then the gate (section 2) | GPU: `sieb`, `wandler_1m`, `cloudscout_reimpl_step1_th30`; CPU: `sieb`, `cloudscout_reimpl_step1_th30` | `gpumedium`, `medium` | at most 600 GPU BU | not run |
 | 3 | reference runs, packed | `sieb` seeds 0, 1, 2; `wandler_1m` seeds 0, 1, 2 | `gpumedium` | pending the timing report | not run |
+| 3a | the four-band specialist for `CMP-04`: one 15-minute timing job, then three seeds, packed; then their validation evaluations on the CPU, compared with `wandler_1m` on band set B02 B03 B04 B08 | `lupe_1m` seeds 0, 1, 2 | `gputest`, `gpumedium`, `small` | pending the timing report | not run |
+| 3b | the CloudScout re-implementation trained by Tiefer Lab, not the flown model: the paper's two steps, one seed each, on the CPU or the GPU as the timing step shows (section 3.1); then their validation evaluations and exports on the CPU | `cloudscout_reimpl_step1_th30`, then `cloudscout_reimpl_th70` and `cloudscout_reimpl_th50`, seed 0 | `medium` or `gpumedium`, `small` | pending the timing report | not run |
 | 4 | validation evaluations with references, full metrics and robustness, then the diagnosis, validation and training only: seed stability, false discards (true cloud fraction in bins of 0.05), per-class IoU, INT8 sensitivity per Conv node, cloud BOA loss at `rescale=0.5` and `rescale=2` | the six runs of step 3 | `small` | CPU | not run |
 | 5 | only if both method-change issues, [issue 21](https://github.com/tiefer-labs/lab/issues/21) (cloud logit bias) and [issue 22](https://github.com/tiefer-labs/lab/issues/22) (soft cloud fraction), are approved: calibration on the CPU, then evaluation with the cloud logit bias and the soft fraction; `FRM-01`, `FRM-02`, cloud BOA and mean IoU reported together | the six runs of step 3 | `small` | CPU | conditional |
 | 6 | stability variants, only if rule 3 calls for them (`wandler_1m` misses `ACC-09` or records a non-finite step): three seeds each, packed, then their validation evaluations | `wandler_1m_grad_clip`, `wandler_1m_skip_nonfinite`, `wandler_1m_warmup10`, seeds 0, 1, 2 | `gpumedium`, `small` | pending the timing report; 0 if it does not run | conditional |
@@ -105,7 +116,7 @@ If the budget runs out, the order of the table is the priority: `FRM-01` and sta
 | 9 | independent evaluations of the candidates of rule 6 | 2 candidates on the Catalogue and on KappaSet | `small` | CPU | not run |
 | 10 | final test requests, run by the maintainer only (section 3.5), on the CPU | the 2 frozen candidates | `small` | CPU | not run |
 
-Not in this plan: `wandler_1m_frame_loss`, `wandler_1m_crop512`, `sieb_frame_loss`, `wandler_1m_best_by_four_bands`, `sieb_grad_clip`, `wandler_1m_landsat_bandsets`, `lupe_1m`, the CloudScout re-implementation, `wandler_1m_extra_data` and the extra training patches, `wandler_22m` and `wandler_1m_distill_22m`. They need a later revision of this plan before they are submitted.
+Not in this plan: `wandler_1m_frame_loss`, `wandler_1m_crop512`, `sieb_frame_loss`, `wandler_1m_best_by_four_bands`, `sieb_grad_clip`, `wandler_1m_landsat_bandsets`, `wandler_1m_extra_data` and the extra training patches, `wandler_22m` and `wandler_1m_distill_22m`. They need a later revision of this plan before they are submitted.
 
 ### 3.4 Commands
 
@@ -129,11 +140,12 @@ bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue
 bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset
 ```
 
-Step 2, the timing step, then the packing reports are copied into `reports/timing/` and the plan is revised (the gate):
+Step 2, the timing step, then the packing reports are copied into `reports/timing/` and the plan is revised (the gate). The two CPU timing jobs are submitted once the GPU timing jobs of the same configs have finished, since each compares with that packing report:
 
 ```bash
 bash hpc/roihu/submit.sh hpc/roihu/timing_packed.sbatch configs/sieb.toml
 bash hpc/roihu/submit.sh hpc/roihu/timing_packed.sbatch configs/wandler_1m.toml
+bash hpc/roihu/submit.sh hpc/roihu/timing_packed.sbatch configs/cloudscout_reimpl_step1_th30.toml
 bash hpc/roihu/submit.sh hpc/roihu/timing_cpu.sbatch configs/sieb.toml
 bash hpc/roihu/submit.sh hpc/roihu/timing_cpu.sbatch configs/cloudscout_reimpl_step1_th30.toml
 ```
@@ -148,6 +160,25 @@ bash hpc/roihu/submit.sh --time=<limit> hpc/roihu/train_packed.sbatch configs/wa
 ```
 
 A job that stops at its time limit is continued with `resume:<run-id>` entries in the same way.
+
+Step 3a, after the gate: the 15-minute timing job, then the three seeds at `sieb`'s chosen packing `<n>` with the time limit from the timing job's epoch time, then one validation evaluation per run on the CPU:
+
+```bash
+bash hpc/roihu/submit.sh hpc/roihu/timing.sbatch configs/lupe_1m.toml
+bash hpc/roihu/submit.sh --time=<limit> hpc/roihu/train_packed.sbatch configs/lupe_1m.toml@0 configs/lupe_1m.toml@1 configs/lupe_1m.toml@2
+bash hpc/roihu/submit.sh hpc/roihu/evaluate_cpu.sbatch <run-id>
+```
+
+Step 3b, after the gate, if the timing step chose the GPU (if it chose the CPU, the gate revision gives the CPU commands): step 1 alone, then the two second-step runs together once `cloudscout_reimpl_step1_th30-seed0` has finished; then one validation evaluation and one export per run on the CPU:
+
+```bash
+python3 -m tiefer_lab.packed time-limit --report reports/timing/packing_cloudscout_reimpl_step1_th30.json --runs 1 --epochs 40
+bash hpc/roihu/submit.sh --time=<limit> hpc/roihu/train_packed.sbatch configs/cloudscout_reimpl_step1_th30.toml@0
+python3 -m tiefer_lab.packed time-limit --report reports/timing/packing_cloudscout_reimpl_step1_th30.json --runs 2 --epochs 20
+bash hpc/roihu/submit.sh --time=<limit> hpc/roihu/train_packed.sbatch configs/cloudscout_reimpl_th70.toml@0 configs/cloudscout_reimpl_th50.toml@0
+FULL_METRICS=1 bash hpc/roihu/submit.sh hpc/roihu/evaluate_cpu.sbatch <run-id>
+bash hpc/roihu/submit.sh hpc/roihu/export_cpu.sbatch <run-id>
+```
 
 Step 4, per run of step 3, on the CPU (`<run-id>` is the run ID its log prints, `<config>-seed<N>-...`; `<cache>` is `cloudsen12-l1c-high` for Sieb and `cloudsen12-l1c-all` for Wandler):
 
@@ -271,7 +302,7 @@ Per model, which step measures each target of `src/tiefer_lab/acceptance.py`, or
 | `CMP-01` | steps 8 and 10, export | steps 8 and 10, every band set |
 | `CMP-02` | steps 8 and 10 | steps 8 and 10 |
 | `CMP-03` | steps 8 and 10; export variants in step 7; ONNX Runtime on the CPU, a proxy: the TensorRT value comes from the Jetson | as `sieb` |
-| `CMP-04` | not applicable: not band-flexible | not measured: the four-band specialist `lupe_1m` is not in this plan |
+| `CMP-04` | not applicable: not band-flexible | measured: step 3a, `lupe_1m` against `wandler_1m` on band set B02 B03 B04 B08, three seeds each, validation (step 4); a test value only if the maintainer adds `lupe_1m` to the final test requests of step 10 |
 | `CMP-05` | steps 4 and 10, robustness at `rescale=0.5` and `rescale=2` | as `sieb` |
 | `CMP-06` | not measured: no other-sensor dataset is planned yet | as `sieb` |
 | `CMP-07` | not applicable: four bands only | steps 4 and 10, band set B02 B03 B04 |
@@ -280,6 +311,8 @@ Per model, which step measures each target of `src/tiefer_lab/acceptance.py`, or
 | `STD-01` | steps 4 and 10, worst stratum | steps 4 and 10 |
 | `STD-02`, `STD-03`, `STD-04` | measured by the tests and documents, not by runs ([docs/REQUIREMENTS.md](../../docs/REQUIREMENTS.md)) | as `sieb` |
 
+`lupe_1m` measures `CMP-04` only. The CloudScout re-implementation trained by Tiefer Lab, not the flown model measures no target of `src/tiefer_lab/acceptance.py`; its runs give the comparison of [docs/LANDSCAPE.md](../../docs/LANDSCAPE.md), note 7, on validation.
+
 ### 3.8 Budget tables
 
 **GPU.** For every training step: runs x hours per run / runs per GPU = GPU-hours, times 200 GPU BU. Hours per run and runs per GPU come from the packing reports of step 2; until then they read "pending the timing report". Upper bounds are from the time limits; the bill follows the runtime.
@@ -287,19 +320,22 @@ Per model, which step measures each target of `src/tiefer_lab/acceptance.py`, or
 | Step | Jobs or runs | Runs | Hours per run | Runs per GPU | GPU-hours | GPU BU |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 0 | `setup_gpu.sbatch`, `smoke.sbatch` (`gputest`) | 2 jobs | at most 0.25 | 1 | at most 0.5 | at most 100 |
-| 2 | `timing_packed.sbatch`: `sieb`, `wandler_1m` | 2 jobs | at most 1 | 1 to 4, measured | at most 2 | at most 400 |
+| 2 | `timing_packed.sbatch`: `sieb`, `wandler_1m`, `cloudscout_reimpl_step1_th30` | 3 jobs | at most 1 | 1 to 4, measured | at most 3 | at most 600 |
 | 3 | `sieb` seeds 0, 1, 2 | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 3 | `wandler_1m` seeds 0, 1, 2 | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
+| 3a | 15-minute timing job of `lupe_1m` (`gputest`) | 1 job | at most 0.25 | 1 | at most 0.25 | at most 50 |
+| 3a | `lupe_1m` seeds 0, 1, 2 | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
+| 3b | the CloudScout re-implementation trained by Tiefer Lab, not the flown model, three configs, seed 0; 0 GPU BU if the timing step chooses the CPU | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 6 | three stability variants, three seeds each (conditional) | 9 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 7 | 15-minute timing jobs of the crop and rescaling variants (`gputest`) | up to 4 jobs | at most 0.25 | 1 | at most 1 | at most 200 |
 | 7 | Sieb variants of rule 4 (`sieb_lovasz`, `sieb_rescale_2x`), one or three seeds | 2 to 6 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 7 | Wandler variants of rule 4 (`wandler_1m_lovasz`, `wandler_1m_crop384`, `wandler_1m_rescale_2x`, `wandler_1m_rescale_3x`), three seeds | up to 12 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 7b | `sieb_candidate`, three seeds (conditional) | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
 | 7b | `wandler_1m_candidate`, three seeds (conditional) | 3 | pending the timing report | pending the timing report | pending the timing report | pending the timing report |
-| total | every step above | up to 39 training runs | n/a | n/a | at most 3.5 fixed; the rest pending the timing report | at most 700 fixed; the rest pending the timing report |
+| total | every step above | up to 45 training runs | n/a | n/a | at most 4.75 fixed; the rest pending the timing report | at most 950 fixed; the rest pending the timing report |
 | stop line | no new GPU job beyond it | n/a | n/a | n/a | 47.5 | 9,500 |
 
-With every conditional step running, the 39 training runs share 8,800 GPU BU, 44 GPU-hours, after the fixed 700: on average at most 1.13 GPU-hours per run after packing (for example a run of 3.4 hours alone, three per GPU, if packing slows it by nothing). The gate of section 2 checks this with the real values before step 3.
+With every conditional step running, the 45 training runs share 8,550 GPU BU, 42.75 GPU-hours, after the fixed 950: on average at most 0.95 GPU-hours per run after packing (for example a run of 2.85 hours alone, three per GPU, if packing slows it by nothing); 1.02 GPU-hours for 42 runs if the CloudScout runs train on the CPU. The gate of section 2 checks this with the real values before step 3.
 
 **CPU.** Every job that does not train, at its cores and memory (2 GiB per core where the job allows, so both billing terms are equal), with the time limit as the upper bound of its hours. Acceptance and comparison read the copied report files and use no Roihu billing units.
 
@@ -310,12 +346,13 @@ With every conditional step running, the 39 training runs share 8,800 GPU BU, 44
 | `survey.sbatch` | 2, 8 GiB | 3 | 1 | 1 | 3 |
 | `data.sbatch` (both caches, the 13-band shards and merge, the reference masks) | 16, 16 GiB | 12 | 10 | 24 | 2,880 |
 | `independent.sbatch` | 8, 32 GiB | 12 | 2 | 24 | 576 |
-| `evaluate_cpu.sbatch` (steps 4, 5, 6, 7, 7b, 9 and 10) | 32, 64 GiB | 24 | 53 | 4 | 5,088 |
+| `evaluate_cpu.sbatch` (steps 3a, 3b, 4, 5, 6, 7, 7b, 9 and 10) | 32, 64 GiB | 24 | 59 | 4 | 5,664 |
 | `calibrate_cpu.sbatch` (step 5) | 32, 64 GiB | 24 | 6 | 1 | 144 |
 | `diagnose.sbatch` (`frames`, `seeds`, `int8`) | 32, 64 GiB | 24 | 14 | 6 | 2,016 |
-| `export_cpu.sbatch` (steps 7, 8 and 10) | 32, 64 GiB | 24 | 20 | 2 | 960 |
+| `export_cpu.sbatch` (steps 3b, 7, 8 and 10) | 32, 64 GiB | 24 | 23 | 2 | 1,104 |
 | `timing_cpu.sbatch` (step 2, `medium`) | one node, 384 cores | 288 | 2 | 1 | 576 |
-| total | n/a | n/a | 110 jobs | n/a | 12,247 of 60,000 |
+| CloudScout training on `medium` (step 3b), only if the timing step chooses the CPU | one node, 384 cores | 288 | 3 runs | pending the timing report | pending the timing report |
+| total | n/a | n/a | 119 jobs, plus the CloudScout training if it runs on the CPU | n/a | 12,967 of 60,000, plus the CloudScout training if it runs on the CPU |
 
 **Storage.** From the recorded sizes. `/scratch` holds the caches and the runs during the campaign; the downloads of the independent datasets are deleted once their caches are built and checked (`independent.sbatch`); the persistent files of the candidates go to `/projappl` (section 3.4).
 
@@ -327,7 +364,7 @@ With every conditional step running, the 39 training runs share 8,800 GPU BU, 44
 | runs, ONNX files and reports | `/scratch` | small: a 1 M model is about 4 MB per checkpoint | `OBD-03` |
 | virtual environments, source and the candidates' run folders | `/projappl` | pending the setup step | step 0 |
 
-At the upper bound, `/scratch` holds 391 GB, 0.36 TiB: 6 x 0.36 x 24 = 51 storage BU per day, 1,536 per 30 days. The 30,000 storage BU last about 585 days at that size, so storage does not limit the plan; `/projappl` is added once step 0 has measured the environments.
+At the upper bound, `/scratch` holds 391 GB, 0.36 TiB: 6 x 0.36 x 24 = 51 storage BU per day, 1,536 per 30 days. So storage does not limit the plan (the projection below).
 
 **Storage projection.** At that upper bound from 16 October 2026, with `/projappl` not yet measured, the 30,000 storage BU would run out after about 585 days, on 23 May 2028; the real date moves later, because the caches are built step by step and the downloads are deleted once their caches are complete, and earlier by the `/projappl` use, which the revision after step 0 adds. If the storage BUs ran out, no job could be submitted and access to `/scratch` and `/projappl` would end 30 days later ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)). Scratch files not accessed for 180 days are deleted (projects with less than 5 TiB of scratch quota; `csc-workspaces` shows the cycle), so the candidates' run folders are copied to `/projappl` (section 3.4), and a cache older than that is rebuilt by its data job.
 
@@ -335,6 +372,7 @@ At the upper bound, `/scratch` holds 391 GB, 0.36 TiB: 6 x 0.36 x 24 = 51 storag
 
 ## Changelog
 
+- 16 October 2026: two model groups: `lupe_1m`, three seeds, for `CMP-04` (step 3a), and the CloudScout re-implementation trained by Tiefer Lab, not the flown model, the paper's two steps on the CPU or the GPU as the timing shows (step 3b); the new order of priority of the gate; the budget tables with 45 training runs and 950 fixed GPU BU; drafted with an AI-assisted system.
 - 16 October 2026: the CSC usage policy: running out of BUs, the worst-case cost check of `submit.sh` and `sweep.sh` against the balance typed in, the storage projection with its date, scratch cleaning after 180 days, no packing that leaves the GPU underused, CPU training as a measured option (`timing_cpu.sbatch`), and the setup as batch jobs; drafted with an AI-assisted system.
 - 16 October 2026: on the maintainer's review: the time-limit margin is 50 percent, and a stopped run resumes from `last.pt`; the 15-minute timing of crop and rescaling variants is recorded as a departure, with its reason; every reported evaluation runs on the CPU and one table never mixes devices; drafted with an AI-assisted system.
 - 16 October 2026: the fixed allocation (10,000 GPU, 60,000 CPU, 30,000 storage BU) with the billing rules of CSC; the stop line at 9,500 GPU BU; the gate after the timing step with its cut order; every job that does not train on the CPU; packed training with time limits from the packing reports; the timing step with 1 to 4 runs per GPU; GPU, CPU and storage tables in section 3.8; downloads deleted once their caches are complete; drafted with an AI-assisted system.

@@ -37,6 +37,7 @@ from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, lo
 from tiefer_lab.export import onnx_export, quantise, verify
 from tiefer_lab.models import flexible
 from tiefer_lab.models.cloud_filter import count_macs, count_parameters, fold_cloud_bias
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.train import (
     CONFIG_NAME,
     METADATA_NAME,
@@ -249,6 +250,7 @@ def export_run(
     for p in files.values():
         if p.exists():
             onnx.checker.check_model(str(p))
+    add_model_label(report, run_id, config.model.architecture)
     out = paths.reports_dir() / "export" / report_name
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

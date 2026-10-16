@@ -45,6 +45,7 @@ from tiefer_lab.data.source import IGNORE_INDEX
 from tiefer_lab.evaluate import load_model
 from tiefer_lab.models import flexible
 from tiefer_lab.models.cloud_filter import predict_logits
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.train import (
     CONFIG_NAME,
     METADATA_NAME,
@@ -185,6 +186,7 @@ def calibrate_run(run_dir: Path, band_set: Sequence[str] | None, device_name: st
         ),
         "patches": len(histograms),
     }
+    add_model_label(out, run_meta["run_id"], config.model.architecture)
     name = band_set_name(band_set or bands)
     text = json.dumps(out, indent=2, sort_keys=True) + "\n"
     (run_dir / f"calibration_{name}.json").write_text(text, encoding="utf-8")

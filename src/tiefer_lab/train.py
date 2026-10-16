@@ -55,6 +55,7 @@ from tiefer_lab.models.losses import (
     frame_fraction_loss,
     lovasz_softmax,
 )
+from tiefer_lab.reports import add_model_label
 from tiefer_lab.utils import checkpoint, devices, metadata, paths
 from tiefer_lab.utils.ema import WeightEMA
 from tiefer_lab.utils.seeding import seed_everything
@@ -484,6 +485,7 @@ def train(
             "runs_per_gpu": runs_per_gpu,
         }
     )
+    add_model_label(meta, run_dir.name, config.model.architecture)
     _write_json(meta_path, meta)
 
     model = flexible.build(config.model, bands).to(device)

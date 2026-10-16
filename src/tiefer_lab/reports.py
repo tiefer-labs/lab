@@ -21,6 +21,29 @@ class ReportError(RuntimeError):
     pass
 
 
+# Every report and document of the CloudScout re-implementation carries this
+# label (hpc/roihu/plan.md, section 3.3, step 3b).
+CLOUDSCOUT_LABEL = "re-implementation trained by Tiefer Lab, not the flown model"
+CLOUDSCOUT_CONFIG_PREFIX = "cloudscout_reimpl"
+
+
+def model_label(name: str, architecture: str | None = None) -> str | None:
+    """The label of a config, run ID or report name, or None when it needs none."""
+    if architecture == "cloudscout" or CLOUDSCOUT_CONFIG_PREFIX in name:
+        return CLOUDSCOUT_LABEL
+    return None
+
+
+def add_model_label(
+    report: dict[str, Any], name: str, architecture: str | None = None
+) -> dict[str, Any]:
+    """Sets `model_label` of a report when its model needs one; returns the report."""
+    label = model_label(name, architecture)
+    if label:
+        report["model_label"] = label
+    return report
+
+
 @dataclass
 class Report:
     path: Path

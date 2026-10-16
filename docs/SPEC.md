@@ -176,7 +176,7 @@ Rules of the scheme:
 
 ### Training options
 
-Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
+Every option is a field of `TrainConfig` or `DataConfig` that is off by default, so earlier configs train as before; each variant changes one of them against its reference ([ASSUMPTIONS.md](ASSUMPTIONS.md), section 6): `grad_clip_norm`, `skip_nonfinite` (skipped steps are counted in `metadata.json`), `select_band_set` (the band set whose validation mean IoU chooses `best.pt`), `frame_loss_weight` (Huber loss on the soft cloud fraction of each crop), `lovasz_weight`, `init_checkpoint` and `teacher_run` with `teacher_weight` (another run of this repository, named by a prefix that matches exactly one finished run), `include_extra`, and the frame task of the CloudScout re-implementation trained by Tiefer Lab, not the flown model (`task`, `frame_label_threshold`, `false_positive_weight`, `train_only`). No pretrained weights are loaded.
 
 ### Milestone L2: one band-flexible model family
 
@@ -519,7 +519,7 @@ lab/
         __init__.py
         cloud_filter.py           the compact network
         convnext_unet.py          U-Net with ConvNeXt-style encoder blocks, for the largest size
-        cloudscout.py             CloudScout re-implementation, a frame classifier
+        cloudscout.py             CloudScout re-implementation, not the flown model
         flexible.py               band-flexible input: 13 bands, availability flags, two designs
         losses.py                 cross-entropy plus Dice
       export/
@@ -591,6 +591,7 @@ lab/
     test_data_feeding.py          placement, packing and workers draw the same batches
     test_packed.py                runs launched together, packing report, time limit, signals
     test_hpc_policy.py            hpc/ follows the CSC usage policy: no service, own jobs only
+    test_model_label.py           the CloudScout re-implementation is labelled everywhere
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -689,6 +690,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; reports of it carry `model_label`; drafted with an AI-assisted system.
 - 16 October 2026: the setup as batch jobs (`setup_cpu.sbatch`), the worst-case cost check (`budget.sh`), the CPU timing (`timing_cpu.sbatch`) and the usage policy test (`test_hpc_policy.py`); drafted with an AI-assisted system.
 - 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
 - 16 October 2026: one batch sampler for every placement of the training split; cores and memory divided by the runs sharing a GPU; `train.precision`; data wait and peak GPU memory per epoch; drafted with an AI-assisted system.

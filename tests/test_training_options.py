@@ -18,6 +18,7 @@ from tiefer_lab import train
 from tiefer_lab.config import ConfigError, TrainConfig, config_from_dict
 from tiefer_lab.data import build_cache
 from tiefer_lab.models.cloudscout import CloudScoutNet, frame_loss
+from tiefer_lab.reports import CLOUDSCOUT_LABEL
 
 TINY: dict[str, Any] = {
     "name": "tiny",
@@ -132,6 +133,8 @@ def test_cloudscout_gives_one_class_per_frame_and_trains(
     train.train(config_from_dict(raw), run, device_name="cpu", allow_synthetic=True)
     record = json.loads((run / "metrics.jsonl").read_text().splitlines()[-1])
     assert record["val_mean_iou"] is None and record["val_frame_accuracy"] is not None
+    meta = json.loads((run / train.METADATA_NAME).read_text())
+    assert meta["model_label"] == CLOUDSCOUT_LABEL
     # Second step of the paper: only the decision layers learn.
     raw["train"].update({"train_only": "decision", "init_checkpoint": "frames"})
     run2 = tiefer_env["TIEFER_RUNS_DIR"] / "frames-decision"

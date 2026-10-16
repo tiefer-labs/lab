@@ -95,7 +95,7 @@ Each row has an ID (`A-1.1`: section 1, row 1), the evidence (a source, or "none
 | `A-6.10` | L1 weights the loss by median class frequency; L2 does not | the L2 configs keep one change per variant, and `wandler_1m_class_weights` measures the weighting | none, design choice; `wandler_1m_class_weights` has not run | `wandler_1m_class_weights` is evaluated on validation | open | 7 October 2026 |
 | `A-6.11` | The one-change variants run one seed each; the candidate references run three | the GPU budget allows one seed per variant; ACC-09 needs three seeds of the reference | none, design choice | a variant's gain is smaller than the seed spread of its reference | open | 14 October 2026 |
 | `A-6.12` | Export-only variants (`*_int8_percentile`, `*_int8_entropy`, `*_int8_calib1024`, `*_int8_calib_stratified`, `*_int8_float_ends`, `*_int8_input_clip`) reuse the trained run of their reference with `export --settings-from` | their change is in `[export]` only, so training them again would cost GPU time for the same weights | none, design choice | n/a | open | 14 October 2026 |
-| `A-6.13` | The CloudScout re-implementation uses widths 16, 32, 64, 128, 128 (about 0.63 M parameters), whole 512 x 512 patches at 10 m, Level-1C reflectance and this repository's schedule | the CloudScout paper gives no filter numbers, used 512 x 512 tiles at 60 m of radiance, and an exponential learning rate decay | the paper, Remote Sensing 12(14), 2205, 2020, sections 3.3 and 3.4, read on 14 October 2026 [5] | the authors publish the filter numbers | open | 14 October 2026 |
+| `A-6.13` | The CloudScout re-implementation (re-implementation trained by Tiefer Lab, not the flown model) uses widths 16, 32, 64, 128, 128 (about 0.63 M parameters), whole 512 x 512 patches at 10 m, Level-1C reflectance and this repository's schedule | the CloudScout paper gives no filter numbers, used 512 x 512 tiles at 60 m of radiance, and an exponential learning rate decay | the paper, Remote Sensing 12(14), 2205, 2020, sections 3.3 and 3.4, read on 14 October 2026 [5] | the authors publish the filter numbers | open | 14 October 2026 |
 
 Every setting in which the L1 and L2 configs differ, as the configs and the defaults of `src/tiefer_lab/config.py` resolve them:
 
@@ -150,6 +150,7 @@ Status: no decision is recorded. The rule is applied on validation only; the tes
 
 ## Changelog
 
+- 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; drafted with an AI-assisted system.
 - 16 October 2026: `A-3.5` and `A-3.6` link their method-change issues 21 and 22; the bias is chosen on the CPU, and the soft fraction onboard needs an export with cloud probabilities; drafted with an AI-assisted system.
 - 16 October 2026: the candidate references are filled from the step 7 winners before step 7b of the plan; drafted with an AI-assisted system.
 - 16 October 2026: the candidate references are not in the plan of 16 October 2026, whose frozen selection rule picks each family candidate; drafted with an AI-assisted system.

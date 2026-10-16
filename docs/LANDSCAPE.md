@@ -114,7 +114,7 @@ The column "This repository" holds values measured here, from [RESULTS.md](RESUL
 | dtacs4bands on the same pixels and the same four bands | cloud and shadow BOA; mean IoU | not measured (Project Schatten pending) | not measured here; none published | open (note 2) | RESULTS.md, sections 6 and 11; [14] |
 | CloudScout false positives against the false discard rate | useful frames discarded | not measured (Project Schatten pending) | published: 1 percent false positives on the authors' dataset, at 70 percent | open (note 3) | RESULTS.md, section 7; [1] |
 | CloudScout accuracy against decision accuracy | frames decided correctly at 70 percent | not measured (Project Schatten pending) | published: 92 percent on the authors' test set | open (note 4) | RESULTS.md, section 7; [1] |
-| CloudScout re-implementation trained by Tiefer Lab, on the same frames | false discard rate and false send rate at 50 and 70 percent; size, parameters, multiply-accumulates | not measured | not measured here | open (note 7) | `reports/comparison.md` |
+| CloudScout re-implementation trained by Tiefer Lab, not the flown model, on the same frames | false discard rate and false send rate at 50 and 70 percent; size, parameters, multiply-accumulates | not measured | not measured here | open (note 7) | `reports/comparison.md` |
 | Latency, power and energy per 512 x 512 tile | ms, W and J per tile | not measured (Project Schatten pending) | published: 325 ms per inference and 1.8 W average power during inference on Myriad 2, for 512 x 512 x 3; 0.585 J per inference, derived here from those two values, not published | open (note 5) | RESULTS.md, section 15; [1] |
 | Model size | bytes | not measured (Project Schatten pending) | published: 2.1 MB memory footprint | open (note 6) | RESULTS.md, section 14; [1] |
 
@@ -155,6 +155,7 @@ All accessed 7 October 2026.
 
 ## Changelog
 
+- 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: section 4 gains the published PA and UA shares of the CloudSEN12 paper's Table 6 for all three experiments, read in the Europe PMC full text; section 2 describes CloudScout's architecture and its re-implementation in this repository; section 5 adds the comparison with that re-implementation; drafted with an AI-assisted system.

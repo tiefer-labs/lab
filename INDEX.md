@@ -23,12 +23,12 @@ For anyone looking for a document by name or by state. This document owns the li
 | [INSTALL.md](INSTALL.md) | every way to install, and the provenance checks | users | installation, provenance checks | in use | 15 October 2026 |
 | [LEARNING-PATH.md](LEARNING-PATH.md) | the concepts needed to understand and change Lab, in order | new contributors, researchers | curriculum | in use | 8 October 2026 |
 | **Results and evidence** | | | | | |
-| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 15 October 2026 |
+| [docs/RESULTS.md](docs/RESULTS.md) | every measured result with its source report file | researchers, evaluators | measured values | in development | 16 October 2026 |
 | [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) | which result answers which question, supersession, citation | evaluators | current results, citation form | in use | 15 October 2026 |
 | [CLAIMS.md](CLAIMS.md) | status and evidence of every public capability statement | evaluators, partners, the founder | public claims | in use | 15 October 2026 |
 | [POLICY.md](POLICY.md) | the gates for numbers, test-split access, model cards, comparisons, data and compute | maintainers, contributors | measurement and release gates | in use | 15 October 2026 |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 16 October 2026 |
-| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 15 October 2026 |
+| [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 16 October 2026 |
 | **Data** | | | | | |
 | [docs/DATA.md](docs/DATA.md) | data card for CloudSEN12+ | researchers | dataset facts, caches | in development | 15 October 2026 |
 | [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 16 October 2026 |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 16 October 2026: last-changed dates of docs/LANDSCAPE.md and docs/RESULTS.md, changed by the label of the CloudScout re-implementation; drafted with an AI-assisted system.
 - 16 October 2026: last-changed date of AI_ASSISTANCE.md, changed by the CSC Roihu usage policy; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the CPU jobs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the plan of the first Project Schatten runs; drafted with an AI-assisted system.

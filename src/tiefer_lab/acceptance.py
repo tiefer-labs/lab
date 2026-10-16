@@ -36,7 +36,14 @@ from typing import Any
 
 from tiefer_lab import onboard
 from tiefer_lab.data.source import L1C_BAND_NAMES, THIN_CLOUD, USED_BANDS
-from tiefer_lab.reports import Report, ReportError, Reports, load_reports, require_one_device
+from tiefer_lab.reports import (
+    Report,
+    ReportError,
+    Reports,
+    load_reports,
+    model_label,
+    require_one_device,
+)
 from tiefer_lab.tables import Group, header_block, markdown_table
 from tiefer_lab.utils import paths
 
@@ -1046,7 +1053,10 @@ def render(rows: Sequence[dict[str, Any]], date: dt.date, config: str | None = N
     when = f"{date.day} {date:%B %Y}"
     return (
         header_block(
-            "Acceptance" if config is None else f"Acceptance of {config}",
+            "Acceptance"
+            if config is None
+            else f"Acceptance of {config}"
+            + (f" ({label})" if (label := model_label(config)) else ""),
             "in development",
             (
                 "Acceptance targets of milestone L2 against the measured values"
