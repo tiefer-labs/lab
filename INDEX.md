@@ -46,7 +46,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [CLA.md](CLA.md) | proposed contributor terms, not in force | the founder, contributors | contributor licence agreement | draft | 7 October 2026 |
 | [GOVERNANCE.md](GOVERNANCE.md) | roles, decision classes, versions, continuity | contributors, evaluators | decisions and roles | in use | 15 October 2026 |
 | [LICENSING.md](LICENSING.md) | the licence of every part of the repository | users, contributors | licences | in use | 7 October 2026 |
-| [NOTICE.md](NOTICE.md) | attributions of third-party data, typeface and software | users | attributions | in use | 7 October 2026 |
+| [NOTICE.md](NOTICE.md) | attributions of third-party data, typeface and software | users | attributions | in use | 16 October 2026 |
 | [TRADEMARK.md](TRADEMARK.md) | use of the Tiefer name and logo | everyone | marks | in use | 7 October 2026 |
 | [SECURITY.md](SECURITY.md) | security policy and private reporting | security researchers, maintainers | security | in use | 7 October 2026 |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | expected behaviour and how reports are handled | everyone | conduct | in use | 7 October 2026 |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 16 October 2026: last-changed dates of the documents changed by the licence decisions of 16 October 2026; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the source check; drafted with an AI-assisted system.
 - 15 October 2026: campaign names of withdrawn campaigns replaced by Project Schatten or by what the thing is; drafted with an AI-assisted system.
 - 14 October 2026: docs/INDEPENDENT.md and references/README.md added; last-changed dates of the documents changed by v3; drafted with an AI-assisted system.

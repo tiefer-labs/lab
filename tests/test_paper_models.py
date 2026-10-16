@@ -45,7 +45,7 @@ def test_routes_by_hand() -> None:
     assert route("unetmobv2", "s2_cloud_catalogue").kind == "open"
     # Which shipped UNetMobV2 version is the paper's is not verified either.
     assert route("unetmobv2", "cloudsen12").kind == "open"
-    # Not recorded as used: the 2022 release and seven datasets.
+    # Not recorded as used: the 2022 release and five datasets.
     assert route("fmask", "cloudsen12").kind == "not used"
     for dataset in (
         "s2_hollstein",
@@ -53,15 +53,13 @@ def test_routes_by_hand() -> None:
         "landsat8_95cloud",
         "s2_cesbio",
         "whus2_cd",
-        "landsat8_biome",
-        "landsat8_sparcs",
     ):
         assert route("fmask", dataset).kind == "not used"
         assert paper_models.cell("sieb", dataset, {}) == "not used: licence decision"
 
 
-def test_undecided_whus2_stops_like_a_refused_source(tmp_path: Path) -> None:
-    with pytest.raises(DataSourceError, match="candidate, no decision yet"):
+def test_whus2_stops_like_a_refused_source(tmp_path: Path) -> None:
+    with pytest.raises(DataSourceError, match="scope, not licence"):
         list(independent.READERS["whus2_cd"](tmp_path, ["B02"]))
 
 
@@ -79,12 +77,12 @@ def _report(source: str, config: str, baselines: dict[str, object]) -> Report:
 
 def test_coverage_page_counts_measured_cells() -> None:
     empty = paper_models.render(Reports(), dt.date(2026, 10, 15))
-    # CloudSEN12+ and the two datasets used, 2 own models and 9 algorithms.
-    assert "0 of 33 cells are measured" in empty
+    # CloudSEN12+ and the four datasets used, 2 own models and 9 algorithms.
+    assert "0 of 55 cells are measured" in empty
     assert "not used: licence decision" in empty
     reports = Reports(evaluation=[_report("kappaset", "sieb", {"reference_sen2cor": {}})])
     page = paper_models.render(reports, dt.date(2026, 10, 15))
-    assert "2 of 33 cells are measured" in page
+    assert "2 of 55 cells are measured" in page
 
 
 def test_evaluate_all_lists_every_allowed_dataset(repo_root: Path) -> None:

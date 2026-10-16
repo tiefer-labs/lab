@@ -100,26 +100,27 @@ The log must show, in this order: `job environment: node ... (aarch64), submitte
 
 ### Step 3: survey the dataset, then build the data cache
 
-Before a new build, run the survey: a short CPU job that reads the metadata and a few patches of every label type and writes `$TIEFER_REPORTS_DIR/data/survey.json` (counts by label type, patch size and split; locations shared with the validation and test splits; how labels and reference masks are encoded). Facts the code depends on are taken from this report, not assumed. From `roihu-cpu.csc.fi`, with the token set as below:
+Before a new build, run the survey: a short CPU job that reads the metadata and a few patches of every label type and writes `$TIEFER_REPORTS_DIR/data/survey.json` (counts by label type, patch size and split; locations shared with the validation and test splits; how labels and reference masks are encoded). Facts the code depends on are taken from this report, not assumed. From `roihu-cpu.csc.fi`; no token is needed (the optional token is described below):
 
 ```bash
 bash hpc/roihu/submit.sh hpc/roihu/survey.sbatch
 cat /scratch/<project>/tiefer-lab/reports/data/survey.json
 ```
 
-From `roihu-cpu.csc.fi`. Without a Hugging Face token the server answers HTTP 429 (too many requests) after a few hundred patches, so set a read token in the shell first. `read -rs` keeps it out of the screen, the shell history and every file; the job inherits it through sbatch's default export, and the builder passes it to GDAL without printing it:
+From `roihu-cpu.csc.fi`. The build needs no token, login or licence acceptance:
 
 ```bash
 ssh <user>@roihu-cpu.csc.fi
 cd /projappl/<project>/tiefer-lab/src
-read -rsp "Hugging Face token: " HF_TOKEN && export HF_TOKEN && echo
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch all
 squeue --me
 ```
 
+A Hugging Face token is optional, not required. Without one the server may answer HTTP 429 (too many requests) more often, and the builder pauses and continues (below). If you choose to use one, it must be a read-only token; it only raises the rate limit. Set it in the submitting shell with `read -rsp "Hugging Face token: " HF_TOKEN && export HF_TOKEN && echo`, which keeps it off the screen and out of the shell history; the job inherits it through sbatch's default export. It is never written to any file, log or report: the builder passes it to GDAL without printing it and redacts it from every error message (`tests/test_cache.py::test_no_report_or_log_of_a_build_contains_the_token`). `check_sources.sbatch` unsets it.
+
 The job runs on the CPU partition `small` with 16 cores, one parallel download worker per core (`SLURM_CPUS_PER_TASK`). It keeps only high quality 509 x 509 patches and prints the kept and dropped counts per split. The build is resumable: if the job stops, submit the same command again and it continues where it stopped.
 
-The log says `Hugging Face token: set` or `not set`, never the token itself. When the server still answers HTTP 429, every reader pauses together and then continues: for the server's `Retry-After` when it is known, otherwise 10 s, 20 s, 40 s and so on up to 300 s, with random jitter. A read that fails part way, which happens when the server answers with an error page instead of data, is treated the same: the log says `read failed (RasterioIOError: ...); all readers pause` and the patch is read again. After 12 attempts the job stops, names the patch and says that the build is resumable. Never write the token into `~/.bashrc` or a file in the repository.
+The log says `Hugging Face token: set` or `not set`, never the token itself. When the server still answers HTTP 429, every reader pauses together and then continues: for the server's `Retry-After` when it is known, otherwise 10 s, 20 s, 40 s and so on up to 300 s, with random jitter. A read that fails part way, which happens when the server answers with an error page instead of data, is treated the same: the log says `read failed (RasterioIOError: ...); all readers pause` and the patch is read again. After 12 attempts the job stops, names the patch and says that the build is resumable. Never write the token into `~/.bashrc`, a file in the repository or any other file.
 
 Its log starts with the metadata columns of the dataset. If it stops because the split field is missing, see the troubleshooting table.
 
@@ -305,7 +306,7 @@ Every job script starts with `#!/bin/bash --login`, a login shell given by full 
 | `cannot load python-data/3.12-31.03` | the module was removed or renamed | find it with `module avail python-data`, add `export TIEFER_CPU_PYTHON_MODULE=<name>` to `~/.bashrc`, run `setup.sh` again on the CPU side |
 | `the split field 'tortilla:data_split' is not in the metadata` | the dataset uses another name for the split field | find it in the `metadata columns` line of the log, set `SPLIT_FIELD` and `SPLIT_VALUES` in `src/tiefer_lab/data/source.py`, commit, and submit the data job again |
 | The data job fails with a network error | compute nodes cannot reach `huggingface.co` | stop and ask the CSC Service Desk; do not build the cache on a login node |
-| `rate limited (HTTP 429); all readers pause` in the data log | Hugging Face limits reads without a token | nothing to do, the job continues; set `HF_TOKEN` as in step 3 before the next data job |
+| `rate limited (HTTP 429); all readers pause` in the data log | Hugging Face limits reads without a token | nothing to do, the job continues; an optional read-only `HF_TOKEN` (step 3) raises the limit |
 | `RasterioIOError: Read failed` after `rate limited (HTTP 429)`, with GDAL's `not recognized as being in a supported file format` before it | the server answered a read with an error page instead of data while it limited requests; an older version stopped there | run `git pull`: the job now pauses (`read failed (RasterioIOError: ...); all readers pause`) and reads the patch again. If it still stops with `could not be read after 12 attempts`, submit the same data job again, since the build resumes, and run the 4-band and the 13-band builds one after the other, with the 13-band shards at a shared `--max-rate 120` or lower (step 3) |
 | `OUT_OF_MEMORY` in the finishing step of the data job, then `FileNotFoundError` on `train_images.partial.npy` | an older version counted class pixels on the whole split at once | run `git pull` and submit the same data job again; it goes straight to the finishing step |
 | `stopped after ... of ...` in the data log | the job hit its time limit or a read failed | submit the same data job again; it continues |
@@ -354,12 +355,13 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 | A Roihu-CPU shell is available in the web interface | this guide | [www.roihu.csc.fi](https://www.roihu.csc.fi) |
 | **Storage and network** | | |
 | Files in `/scratch` unused for 180 days are deleted | `env.sh` | [Roihu system](https://docs.csc.fi/computing/systems-roihu/) |
-| Compute nodes reach `huggingface.co`; without a token the server answers HTTP 429 after a few hundred reads, so the data job runs with a bearer token | `data.sbatch`, `src/tiefer_lab/data/http.py` | observed on Roihu before Project Schatten; to be confirmed by step 0 |
+| Compute nodes reach `huggingface.co`; without a token the server answered HTTP 429 after a few hundred reads, which the builder pauses through; a token is optional | `data.sbatch`, `src/tiefer_lab/data/http.py` | observed on Roihu before Project Schatten; to be confirmed by step 0 |
 
 ---
 
 ## Changelog
 
+- 16 October 2026: step 3, the Hugging Face token is optional, read-only, raises the rate limit only and is never written to any file, log or report; drafted with an AI-assisted system.
 - 16 October 2026: `check_sources.sbatch` in the files table; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the facts observed on Roihu predate Project Schatten and are to be confirmed by step 0 (setup) of the plan; drafted with an AI-assisted system.

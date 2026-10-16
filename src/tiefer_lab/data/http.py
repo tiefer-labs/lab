@@ -17,9 +17,11 @@ without the status code; GDAL errors do not carry response headers either.
 Errors that a retry cannot fix, such as a missing band or a wrong shape
 (`DataSourceError`), are raised at once.
 
-A Hugging Face token raises the limit. It is read from `HF_TOKEN` and passed
+A Hugging Face token is optional: every read works without it, and a
+read-only token only raises the limit. It is read from `HF_TOKEN` and passed
 to GDAL as a bearer token (`GDAL_HTTP_AUTH=BEARER`, `GDAL_HTTP_BEARER`). The
-token is never printed, logged or written to a file.
+token is never printed, logged or written to a file; an error message that
+would carry it is redacted.
 """
 
 from __future__ import annotations
@@ -180,6 +182,12 @@ class Backoff:
         raise AssertionError("unreachable")
 
 
+def redact(text: str) -> str:
+    """The text with the value of HF_TOKEN replaced, for every message that is printed."""
+    token = os.environ.get(TOKEN_ENV, "").strip()
+    return text.replace(token, f"<{TOKEN_ENV}>") if token else text
+
+
 def _first_line(error: BaseException) -> str:
-    text = str(error).strip()
+    text = redact(str(error)).strip()
     return text.splitlines()[0][:200] if text else "no message"

@@ -19,7 +19,7 @@
 # and the variables the jobs read (TIEFER_CSC_PROJECT, the TIEFER_* paths and,
 # when set, SEED, FINAL, REASON, ROBUSTNESS, PERTURBATIONS,
 # TIEFER_PYTORCH_MODULE, TIEFER_CPU_PYTHON_MODULE, PYTORCH_CUDA_ALLOC_CONF and
-# HF_TOKEN, which the smoke job needs when it builds its tiny cache),
+# the optional HF_TOKEN, which the smoke job uses when it builds its tiny cache),
 # and the job's login shell builds the module environment of its own node
 # (job_prelude.sh). This is CSC's way of submitting across architectures, and
 # it works the same from either login node:

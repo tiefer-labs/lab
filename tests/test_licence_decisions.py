@@ -32,25 +32,30 @@ REFUSED = (
     "landsat8_95cloud",
     "s2_cesbio",
     "whus2_cd",
-    "landsat8_biome",
-    "landsat8_sparcs",
 )
 USED = ("s2_cloud_catalogue", "kappaset")
+# Used since the decisions of 16 October 2026; their downloads are not planned yet.
+USED_16_OCTOBER = ("landsat8_biome", "landsat8_sparcs")
 
 
 def test_the_decisions_are_recorded_next_to_the_facts() -> None:
     for name in REFUSED:
         decision = independent.DATASETS[name].decision
-        assert decision.refused and decision.date == "15 October 2026"
+        assert decision.refused and decision.date in ("15 October 2026", "16 October 2026")
         assert decision.reason
-    for name in ("whus2_cd", "landsat8_biome", "landsat8_sparcs"):
-        assert independent.DATASETS[name].decision.status == "candidate, no decision yet"
+    whus2 = independent.DATASETS["whus2_cd"]
+    assert whus2.decision.status == "not used" and "scope, not licence" in whus2.decision.reason
+    assert not whus2.files
+    for name in USED_16_OCTOBER:
+        decision = independent.DATASETS[name].decision
+        assert decision.status == "used" and decision.date == "16 October 2026"
+        assert "issuecomment" in (decision.issue or "")
     assert independent.PRODUCT_IMAGERY.status == "not used"
     assert cloudsen12_2022.LICENCE_DECISION.status == "declined, pending legal review"
     for name in USED:
         decision = independent.DATASETS[name].decision
         assert decision.status == "used" and decision.licence == "CC BY 4.0"
-    assert independent.allowed_datasets() == list(USED)
+    assert sorted(independent.allowed_datasets()) == sorted(USED + USED_16_OCTOBER)
     # Every dataset has a record: none is left at "no decision".
     assert all(i.decision.status != "no decision" for i in independent.DATASETS.values())
 
@@ -67,7 +72,8 @@ def test_a_dataset_without_a_record_stops(tmp_path: Path, monkeypatch: pytest.Mo
 
 def test_every_refused_source_raises(tmp_path: Path) -> None:
     for name in REFUSED:
-        with pytest.raises(LicenceRefusedError, match="15 October 2026"):
+        date = independent.DATASETS[name].decision.date or ""
+        with pytest.raises(LicenceRefusedError, match=date):
             list(independent.READERS[name](tmp_path, ["B02"]))
         with pytest.raises(LicenceRefusedError, match=independent.DATASETS[name].decision.status):
             build_cache.build_independent(tmp_path / name, name, tmp_path, ["B02"])

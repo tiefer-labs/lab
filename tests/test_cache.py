@@ -469,3 +469,44 @@ def test_shard_bounds_cover_every_row_once(n: int, shards: int) -> None:
         start, stop = build_cache.shard_bounds(n, shard, shards)
         covered.extend(range(start, stop))
     assert covered == list(range(n))
+
+
+def test_no_report_or_log_of_a_build_contains_the_token(
+    tiefer_env: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import functools
+
+    from tiefer_lab.data import http
+
+    secret = "hf_" + "NEVERWRITTEN" + "0123456789"
+    monkeypatch.setenv(http.TOKEN_ENV, secret)
+    monkeypatch.setattr(http, "Backoff", functools.partial(http.Backoff, sleep=lambda _: None))
+    # A transient read error whose message carries the token, as a server could echo it.
+    rasterio_error = type("RasterioIOError", (Exception,), {"__module__": "rasterio.errors"})
+    table = _FakeTable(8)
+    failed: list[int] = []
+    good = _fake_reads(table, [], {"position": -1})
+
+    def read(handle: Any, position: int) -> source.Patch:
+        if position == 3 and not failed:
+            failed.append(position)
+            raise rasterio_error(f"HTTP error with header Authorization: Bearer {secret}")
+        return good(handle, position)
+
+    monkeypatch.setattr(source, "open_table", lambda _: table)
+    monkeypatch.setattr(source, "read_patch", read)
+    assert build_cache.main(["--split", "train", "--revision", "r", "--taco", "x.taco"]) == 0
+    out = capsys.readouterr()
+    assert failed and "<HF_TOKEN>" in out.out
+    assert secret not in out.out + out.err
+    for directory in tiefer_env.values():
+        for path in directory.rglob("*"):
+            if path.is_file():
+                assert secret.encode() not in path.read_bytes(), path
+    error = build_cache._gave_up("patch", 12, rasterio_error(secret))
+    assert secret not in str(error)
+    # Without a token every message stays as it is.
+    monkeypatch.delenv(http.TOKEN_ENV)
+    assert http.redact("unchanged") == "unchanged"

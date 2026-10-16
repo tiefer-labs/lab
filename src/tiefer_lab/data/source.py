@@ -409,6 +409,20 @@ def decided_15_october_2026(
     )
 
 
+LICENCE_ISSUE_16_OCTOBER_2026 = (
+    "issue 7, https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401"
+)
+
+
+def decided_16_october_2026(
+    status: DecisionStatus, licence: str | None, reason: str
+) -> LicenceDecision:
+    """A decision of the maintainer of 16 October 2026, after the source check."""
+    return LicenceDecision(
+        status, licence, "16 October 2026", LICENCE_ISSUE_16_OCTOBER_2026, reason
+    )
+
+
 class LicenceRefusedError(DataSourceError):
     """A source whose licence decision refuses its use."""
 

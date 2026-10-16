@@ -60,6 +60,23 @@ def test_a_model_whose_weights_have_no_stated_licence_stops(repo_root: Path) -> 
     assert ref.ready(dataclasses.replace(kappamask, weights_licence="test")) is kappamask.runner
 
 
+def test_the_decisions_of_16_october_2026_are_recorded(repo_root: Path) -> None:
+    ref = _module(repo_root)
+    for name in ("s2cloudless", "cd_fcnn_rgbi", "cd_fcnn_rgbiswir"):
+        reference = ref.REFERENCES[name]
+        assert reference.decision.status == "used"
+        assert reference.decision.date == "16 October 2026"
+        assert "issuecomment" in (reference.decision.issue or "")
+        # Cleared, so only the missing runner stops it now.
+        with pytest.raises(ref.ReferenceError, match="no runner yet"):
+            ref.run(name, "any", "val")
+    assert "repository-wide MIT LICENSE" in ref.REFERENCES["cd_fcnn_rgbi"].weights_licence
+    assert "never copied" in ref.REFERENCES["s2cloudless"].decision.reason
+    for name in ("kappamask_l1c", "kappamask_l2a", "fmask4"):
+        with pytest.raises(ref.ReferenceError, match="no licence is stated for its weights"):
+            ref.run(name, "any", "val")
+
+
 def test_release_2022_script_stops_with_its_decision(repo_root: Path, tmp_path: Path) -> None:
     spec = importlib.util.spec_from_file_location(
         "add_release_2022", repo_root / "references" / "add_release_2022.py"
