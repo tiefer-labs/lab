@@ -151,6 +151,55 @@ def test_packing_report_chooses_by_epochs_per_gpu_hour_within_the_slowdown(
         packed.cpu_comparison("configs/sieb.toml", runs / "absent", report)
 
 
+def test_below_the_utilisation_rule_the_highest_measured_packing_goes_to_the_gate(
+    tmp_path: Path,
+) -> None:
+    runs = tmp_path / "runs"
+    seconds = {1: 100.0, 2: 120.0, 3: 150.0, 4: 250.0}
+    # No packing reaches 50 percent; four would be the highest but is too slow.
+    utilisation = {1: 20.0, 2: 40.0, 3: 45.0, 4: 48.0}
+    lines = []
+    for n, value in seconds.items():
+        start, end = f"2026-10-16T10:{n}0:00+00:00", f"2026-10-16T10:{n}5:00+00:00"
+        for s in range(n):
+            _timing_run(
+                runs, packed.timing_run_id("configs/sieb.toml", n, s, "7"), value, start, end
+            )
+        lines.append(_sample(f"2026-10-16T10:{n}2:00+00:00", utilisation[n]))
+    samples = tmp_path / "gpu.csv"
+    samples.write_text("\n".join(lines) + "\n")
+    report = packed.packing_report("configs/sieb.toml", "7", samples, runs)
+    rows = report["packings"]
+    assert report["chosen_runs_per_gpu"] == 3
+    assert report["chosen_below_utilisation_rule"] is True
+    assert rows["3"]["flag"] == packed.BELOW_RULE == "below the 50 percent rule"
+    assert "not_chosen_because" not in rows["3"]
+    assert "below 50.0" in rows["2"]["not_chosen_because"] and "flag" not in rows["2"]
+    assert "packing 3" in report["for_the_gate"] and "gate" in report["for_the_gate"]
+    # A packing with no measurement is still never chosen.
+    unmeasured = packed.packing_report("configs/sieb.toml", "7", None, runs)
+    assert unmeasured["chosen_runs_per_gpu"] is None
+    assert unmeasured["chosen_below_utilisation_rule"] is False
+
+
+def test_a_timing_stopped_by_its_time_limit_says_so(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    # Only one run alone finished before the limit; nothing was measured on the GPU.
+    _timing_run(
+        runs,
+        packed.timing_run_id("configs/cloudscout_reimpl_step1_th30.toml", 1, 0, "5"),
+        600.0,
+        "2026-10-16T10:00:00+00:00",
+        "2026-10-16T10:12:00+00:00",
+    )
+    report = packed.packing_report(
+        "configs/cloudscout_reimpl_step1_th30.toml", "5", None, runs, time_limit_reached=True
+    )
+    assert report["time_limit_reached"] is True
+    assert report["chosen_runs_per_gpu"] is None
+    assert "time limit stopped it" in report["packings"]["2"]["not_chosen_because"]
+
+
 def test_report_and_time_limit_commands(
     tiefer_env: dict[str, Path], capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:

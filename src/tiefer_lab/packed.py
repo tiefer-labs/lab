@@ -32,7 +32,11 @@ utilisation, the slowdown against one run alone and the epochs per GPU-hour.
 The chosen packing has the most epochs per GPU-hour among those whose runs all
 finished, whose slowest run takes at most MAX_SLOWDOWN times its time alone, and
 whose mean GPU utilisation is at least MIN_GPU_UTILISATION percent; each packing
-not chosen says why.
+not chosen says why. If no packing reaches that utilisation, the one with the
+highest measured utilisation among the others is chosen, flagged "below the 50
+percent rule" for the maintainer's decision at the gate; a packing with no
+measurement is never chosen. `--time-limit-reached` (set by timing_packed.sbatch
+when the job's time limit stopped it) marks the packings it cut short.
 
 `cpu-compare` reads a timing run of one full medium CPU node
 (hpc/roihu/timing_cpu.sbatch) and writes `reports/timing/cpu_<config>.json`: CPU
@@ -68,8 +72,11 @@ TIMING_STEPS = 50
 MAX_SLOWDOWN = 2.0
 # CSC can terminate jobs whose GPUs are severely underused
 # (https://docs.csc.fi/computing/usage-policy/, page of 15 October 2026, read
-# 16 October 2026): no packing whose mean GPU utilisation is below this is chosen.
+# 16 October 2026): no packing whose mean GPU utilisation is below this is chosen,
+# unless none reaches it; then the highest measured one is chosen and flagged
+# (BELOW_RULE) for the maintainer's decision at the gate (decision of 16 October 2026).
 MIN_GPU_UTILISATION = 50.0
+BELOW_RULE = "below the 50 percent rule"
 # A full medium node: 288 CPU BU per node-hour; one GPU: 200 GPU BU per hour; one CPU
 # BU and one GPU BU cost the same (https://docs.csc.fi/computing/hpc-billing/ and
 # the usage policy, pages of 15 October 2026, read 16 October 2026).
@@ -230,7 +237,11 @@ def _stamp(text: str | None) -> float | None:
 
 
 def packing_report(
-    config: str, job: str, samples: Path | None = None, runs_dir: Path | None = None
+    config: str,
+    job: str,
+    samples: Path | None = None,
+    runs_dir: Path | None = None,
+    time_limit_reached: bool = False,
 ) -> dict[str, Any]:
     runs_dir = runs_dir or paths.runs_dir()
     gpu = _samples(samples)
@@ -274,10 +285,15 @@ def packing_report(
         rows[str(n)] = row
     alone = rows["1"].get("full_epoch_seconds_slowest")
     eligible = []
+    underused = []
     for n in PACKINGS:
         row = rows[str(n)]
         if not (row["complete"] and alone):
-            row["not_chosen_because"] = "the runs did not all finish"
+            row["not_chosen_because"] = (
+                "the job's time limit stopped it before its runs finished"
+                if time_limit_reached
+                else "the runs did not all finish"
+            )
             continue
         row["slowdown"] = round(row["full_epoch_seconds_slowest"] / alone, 3)
         utilisation = row.get("gpu_utilisation_mean")
@@ -289,9 +305,23 @@ def packing_report(
             row["not_chosen_because"] = (
                 f"GPU utilisation {utilisation} percent, below {MIN_GPU_UTILISATION}"
             )
+            underused.append(n)
         else:
             eligible.append(n)
     chosen = max(eligible, key=lambda n: (rows[str(n)]["epochs_per_gpu_hour"], -n), default=None)
+    below_rule = chosen is None and bool(underused)
+    if below_rule:
+        chosen = max(
+            underused,
+            key=lambda n: (
+                rows[str(n)]["gpu_utilisation_mean"],
+                rows[str(n)]["epochs_per_gpu_hour"],
+                -n,
+            ),
+        )
+        row = rows[str(chosen)]
+        row.pop("not_chosen_because")
+        row["flag"] = BELOW_RULE
     return {
         "config": Path(config).stem,
         "job": job,
@@ -300,10 +330,18 @@ def packing_report(
         "min_gpu_utilisation": MIN_GPU_UTILISATION,
         "packings": rows,
         "chosen_runs_per_gpu": chosen,
+        "chosen_below_utilisation_rule": below_rule,
+        "for_the_gate": (
+            f"packing {chosen} is {BELOW_RULE}: the maintainer decides at the gate"
+            if below_rule
+            else None
+        ),
+        "time_limit_reached": time_limit_reached,
         "rule": (
             "the most epochs per GPU-hour among the packings whose runs all finished, "
             f"whose slowest run takes at most {MAX_SLOWDOWN} times its time alone, and "
-            f"whose mean GPU utilisation is at least {MIN_GPU_UTILISATION} percent"
+            f"whose mean GPU utilisation is at least {MIN_GPU_UTILISATION} percent; if none "
+            "reaches it, the highest measured utilisation, flagged for the gate"
         ),
         "smoke": False,
         "timing_run": True,
@@ -372,6 +410,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     rep.add_argument("--config", required=True)
     rep.add_argument("--job", required=True)
     rep.add_argument("--samples", type=Path)
+    rep.add_argument("--time-limit-reached", action="store_true")
     cpu = sub.add_parser("cpu-compare")
     cpu.add_argument("--config", required=True)
     cpu.add_argument("--cpu-run", required=True)
@@ -400,13 +439,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             codes = launch(entries, log_dir, extra, run_ids)
             return 0 if all(c == 0 for c in codes) else 1
         if args.command == "report":
-            report = add_model_label(
-                packing_report(args.config, args.job, args.samples), args.config
+            report = packing_report(
+                args.config, args.job, args.samples, time_limit_reached=args.time_limit_reached
             )
+            add_model_label(report, args.config)
             out = paths.reports_dir() / REPORT_DIR / f"packing_{report['config']}.json"
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             print(f"{report['config']}: chosen {report['chosen_runs_per_gpu']} runs per GPU")
+            if report["for_the_gate"]:
+                print(f"note: {report['for_the_gate']}")
+            if report["time_limit_reached"]:
+                print("note: the job's time limit stopped the timing before every packing ended")
             print(f"report: {paths.portable(out)}")
             return 0
         if args.command == "cpu-compare":

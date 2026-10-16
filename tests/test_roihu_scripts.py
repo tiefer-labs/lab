@@ -8,8 +8,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import tarfile
+import time
 from pathlib import Path
 
 import pytest
@@ -676,6 +678,7 @@ def _budget(script: str, *options: str) -> str:
 def test_worst_case_cost_of_each_kind_of_job() -> None:
     # GPU: time limit x GPUs x 200 BU.
     assert _budget("timing_packed.sbatch") == "gpu 200.0"
+    assert _budget("timing_packed.sbatch", "--time=00:15:00") == "gpu 50.0"
     assert _budget("train_packed.sbatch", "--time=06:26:00") == "gpu 1286.7"
     assert _budget("train_packed.sbatch", "--time", "1-00:00:00") == "gpu 4800.0"
     # small: max(0.75 x cores, 0.375 x GiB) per hour.
@@ -727,3 +730,51 @@ def test_setup_runs_only_inside_a_job(roihu_env: dict[str, str]) -> None:
     cpu = (ROIHU / "setup_cpu.sbatch").read_text()
     assert "#SBATCH --partition=small" in cpu and "gres" not in cpu
     assert "bash hpc/roihu/setup.sh" in cpu
+
+
+def test_timing_stopped_by_its_time_limit_still_writes_its_report(
+    roihu_env: dict[str, str], tmp_path: Path
+) -> None:
+    """USR1 before the time limit stops the packing that runs; the report says so."""
+    work = tmp_path / "work"
+    (work / "hpc" / "roihu").mkdir(parents=True)
+    # Stand-ins for the environment of a GPU node, sourced from the working folder.
+    (work / "hpc" / "roihu" / "job_prelude.sh").write_text(":\n")
+    (work / "hpc" / "roihu" / "env.sh").write_text(
+        f'TIEFER_RUNS_DIR="{tmp_path / "runs"}"\n'
+        "tiefer_require_venv() { :; }\ntiefer_stage_cache() { :; }\n"
+    )
+    log = tmp_path / "calls.log"
+    bin_dir = Path(roihu_env["PATH"].split(os.pathsep)[0])
+    (bin_dir / "nvidia-smi").write_text("#!/bin/sh\nexec sleep 30\n")
+    (bin_dir / "python3").write_text(
+        "#!/bin/bash\n"
+        'case "$*" in\n'
+        "  *load_config*) echo cache ;;\n"
+        f'  *"packed run"*) echo "$*" >> "{log}"; sleep 30 >/dev/null 2>&1 & '
+        'trap "kill $!; exit 1" USR1; wait ;;\n'
+        f'  *) echo "$*" >> "{log}" ;;\n'
+        "esac\n"
+    )
+    for name in ("nvidia-smi", "python3"):
+        (bin_dir / name).chmod(0o755)
+    env = {**roihu_env, "STUB_ARCH": "aarch64", "SLURM_JOB_ID": "5"}
+    job = subprocess.Popen(
+        ["bash", str(ROIHU / "timing_packed.sbatch"), "configs/cloudscout_reimpl_step1_th30.toml"],
+        cwd=work,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    for _ in range(100):
+        if log.exists() and "--timing 1" in log.read_text():
+            break
+        time.sleep(0.1)
+    job.send_signal(signal.SIGUSR1)
+    out, err = job.communicate(timeout=30)
+    assert job.returncode == 0, err
+    calls = log.read_text().splitlines()
+    assert sum("packed run" in c for c in calls) == 1, "no packing starts after the signal"
+    assert calls[-1].endswith("--time-limit-reached") and "packed report" in calls[-1]
+    assert "the time limit stopped the timing at 1 runs per GPU" in out

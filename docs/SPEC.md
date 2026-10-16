@@ -317,7 +317,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
 | `diagnose.sbatch` | CPU job: seed and false discard diagnostics, and the INT8 sensitivity per Conv node (`int8`), validation and training only |
 | `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
-| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing |
+| `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing; a shorter `--time` is allowed, and two minutes before the limit (`--signal=B:USR1@120`) it stops the running packing and still writes the report, marked `time_limit_reached` |
 | `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
 | `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
@@ -690,6 +690,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: `timing_packed.sbatch` stops at its time limit and still writes the report; drafted with an AI-assisted system.
 - 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; reports of it carry `model_label`; drafted with an AI-assisted system.
 - 16 October 2026: the setup as batch jobs (`setup_cpu.sbatch`), the worst-case cost check (`budget.sh`), the CPU timing (`timing_cpu.sbatch`) and the usage policy test (`test_hpc_policy.py`); drafted with an AI-assisted system.
 - 16 October 2026: packed GPU training (`packed.py`, `train_packed.sbatch`) and the timing step with 1 to 4 runs per GPU (`timing_packed.sbatch`); drafted with an AI-assisted system.
