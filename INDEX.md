@@ -37,7 +37,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 16 October 2026 |
 | [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 16 October 2026 |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | standards, handbooks and formats, clauses read and status | evaluators | standards matrix | in development | 7 October 2026 |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 15 October 2026 |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 16 October 2026 |
 | [docs/STYLE.md](docs/STYLE.md) | the documentation standard | contributors | writing rules, document types | in use | 8 October 2026 |
 | [EXTENDING.md](EXTENDING.md) | golden paths to extend Lab | contributors | extension paths | in use | 7 October 2026 |
 | **Policies and community** | | | | | |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 16 October 2026: last-changed dates of the documents changed by the CPU jobs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the plan of the first Project Schatten runs; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the licence decisions of 16 October 2026; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the source check; drafted with an AI-assisted system.

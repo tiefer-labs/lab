@@ -85,6 +85,7 @@ Further evidence: `REQ-TRN-07`: the metadata test passes; no run of Project Scha
 | `REQ-EVL-11` | A cloud probability reference is scored at a threshold tuned on validation only | met | `tests/test_baselines.py::test_probability_threshold_is_tuned_by_hand`, `tests/test_baselines.py::test_probability_masks_are_stored_as_percentages` |
 | `REQ-EVL-12` | The cloud logit bias and the temperature are chosen on validation; without the options nothing changes | met | `tests/test_frame_options.py::test_bias_rule_by_hand`, `tests/test_frame_options.py::test_temperature_by_hand`, `tests/test_frame_options.py::test_options_change_nothing_unless_asked` |
 | `REQ-EVL-13` | Diagnostics read validation reports and the validation and training splits only | met | `tests/test_diagnose.py::test_false_discards_by_hand`, `tests/test_diagnose.py::test_seeds_frames_and_int8_on_synthetic` |
+| `REQ-EVL-14` | Every job that does not train has a CPU job, the default of the plan; evaluation on the CPU gives the argmax of the training device on a fixed input within the tolerance of `tiefer_lab.device_check` (checked on the GPU by the smoke job); INT8 values from ONNX Runtime on the CPU are marked as a proxy for `CMP-03` | met | `tests/test_device_check.py::test_cpu_against_cpu_is_identical`, `tests/test_device_check.py::test_cpu_against_the_training_gpu_within_the_tolerance`, `tests/test_roihu_scripts.py::test_cpu_jobs_share_the_gpu_job_body_and_use_no_gpu`, `tests/test_roihu_scripts.py::test_cpu_jobs_stop_on_a_gpu_node`, `tests/test_acceptance.py::test_int8_is_marked_as_a_proxy` |
 
 Further evidence:
 
@@ -195,6 +196,7 @@ Notes:
 
 ## Changelog
 
+- 16 October 2026: `REQ-EVL-14`, the CPU jobs, the check of CPU against the training device and the INT8 proxy note; drafted with an AI-assisted system.
 - 16 October 2026: `REQ-DAT-09`, the token is optional and never written anywhere, with its test; `REQ-DAT-19` names the test of the decisions of 16 October 2026; drafted with an AI-assisted system.
 - 16 October 2026: `REQ-DAT-19`, the source check and the stop of a reference model whose weights have no stated licence; drafted with an AI-assisted system.
 - 15 October 2026: `REQ-TRN-12` no longer names the rename test, removed after the rename was verified in PR #9; drafted with an AI-assisted system.

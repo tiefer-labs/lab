@@ -16,8 +16,8 @@
 # activates the matching virtual environment.
 #
 # GPU nodes and roihu-gpu.csc.fi are ARM (aarch64) and use the PyTorch module.
-# CPU nodes and roihu-cpu.csc.fi are x86_64 (AMD); they only run the data cache
-# build, which does not need PyTorch.
+# CPU nodes and roihu-cpu.csc.fi are x86_64 (AMD); they run the data cache build
+# and every job that does not train, with the CPU build of torch (setup.sh).
 # Source: https://docs.csc.fi/computing/systems-roihu/
 #
 # With TIEFER_ENV_PATHS_ONLY=1 only the paths are set (used by submit.sh).

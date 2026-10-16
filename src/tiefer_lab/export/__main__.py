@@ -53,6 +53,10 @@ FILES = {
     "fp16": "cloud_filter_fp16.onnx",
     "int8": "cloud_filter_int8.onnx",
 }
+QUANTISATION_RUNTIME = (
+    "onnxruntime CPUExecutionProvider; a proxy for CMP-02 and CMP-03, the TensorRT values "
+    "come from the Jetson benchmark"
+)
 
 
 def export_run(
@@ -226,6 +230,9 @@ def export_run(
                 "fp16_change": quantise.compare_reports(fp32, fp16),
             }
         report["quantisation"] = quant
+        # Scored with ONNX Runtime on the CPU (CPUExecutionProvider): a proxy for
+        # CMP-02 and CMP-03; the TensorRT values come from the Jetson benchmark.
+        report["quantisation_runtime"] = QUANTISATION_RUNTIME
 
     if options:
         report["options"] = options

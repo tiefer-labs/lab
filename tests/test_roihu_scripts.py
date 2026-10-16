@@ -531,8 +531,10 @@ def test_sweep_rejects_bad_input(
 
 
 def test_evaluate_and_export_cover_every_band_set() -> None:
-    evaluate = (ROIHU / "evaluate.sbatch").read_text()
-    export = (ROIHU / "export.sbatch").read_text()
+    bodies = (ROIHU / "model_jobs.sh").read_text()
+    start, end = bodies.index("tiefer_evaluate_job()"), bodies.index("tiefer_calibrate_job()")
+    evaluate = bodies[start:end]
+    export = bodies[bodies.index("tiefer_export_job()") : bodies.index("tiefer_int8_job()")]
     assert evaluate.count("--band-set all") == 2
     assert export.count("--band-set all") == 2
     default = re.search(r"PERTURBATIONS:-([^}]*)\}", evaluate)
@@ -596,3 +598,39 @@ def test_evaluate_all_lists_missing_caches_and_fails(
     assert "not evaluated: no cache: kappaset" in result.stderr
     assert "s2_cloud_catalogue" not in result.stderr
     assert (tmp_path / "sbatch.log").is_file()
+
+
+CPU_JOBS = {
+    "evaluate_cpu": "tiefer_evaluate_job",
+    "calibrate_cpu": "tiefer_calibrate_job",
+    "export_cpu": "tiefer_export_job",
+}
+
+
+@pytest.mark.parametrize("name", sorted(CPU_JOBS))
+def test_cpu_jobs_share_the_gpu_job_body_and_use_no_gpu(name: str) -> None:
+    text = (ROIHU / f"{name}.sbatch").read_text()
+    gpu = (ROIHU / f"{name.removesuffix('_cpu')}.sbatch").read_text()
+    assert "#SBATCH --partition=small" in text and "gres" not in text
+    assert "export TIEFER_DEVICE=cpu" in text and "tiefer_require_torch" in text
+    assert CPU_JOBS[name] in text and CPU_JOBS[name] in gpu
+    assert "export TIEFER_DEVICE=auto" in gpu
+    # Cores and memory are balanced, so neither term of the CPU billing dominates.
+    cores = int(re.search(r"--cpus-per-task=(\d+)", text).group(1))  # type: ignore[union-attr]
+    mem = int(re.search(r"--mem=(\d+)G", text).group(1))  # type: ignore[union-attr]
+    assert 0.75 * cores == 0.375 * mem
+
+
+@pytest.mark.parametrize("name", sorted(CPU_JOBS))
+def test_cpu_jobs_stop_on_a_gpu_node(roihu_env: dict[str, str], name: str) -> None:
+    result = _run(f"{name}.sbatch", ["run-1"], {**roihu_env, "STUB_ARCH": "aarch64"})
+    assert result.returncode == 1
+    assert "needs an x86_64 node, but runs on aarch64" in result.stderr
+
+
+def test_bodies_pass_the_device_to_the_commands_that_take_it() -> None:
+    bodies = (ROIHU / "model_jobs.sh").read_text()
+    assert '--device "${TIEFER_DEVICE:-auto}"' in bodies
+    assert bodies.count('--device "${TIEFER_DEVICE:-auto}"') == 2  # evaluate and calibrate
+    diagnose = (ROIHU / "diagnose.sbatch").read_text()
+    assert "tiefer_int8_job" in diagnose and "needs torch; submit" not in diagnose

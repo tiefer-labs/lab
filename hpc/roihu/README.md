@@ -273,7 +273,9 @@ tar -xzf tiefer-<run-id>.tar.gz -C <path-to-lab>
 | `independent.sbatch` | CPU job: downloads an independent dataset (Zenodo, capped rate, resumable) and caches it; the Landsat 8, Kaggle and GitLab datasets are downloaded by hand into `$TIEFER_DATA_DIR/downloads/<dataset>/` |
 | `check_sources.sbatch` | CPU job, `small`, 1 hour: whether every source still allowed or undecided can be obtained; HEAD requests or the first byte only, no download, no credential (it unsets `HF_TOKEN`); writes `reports/data/sources.json`, packed by `collect.sh` |
 | `evaluate_all.sh` | submits one `evaluate.sbatch` job per independent dataset recorded as used whose cache is built, for one run, with `DATA`, `FULL_METRICS=1` and `REASON`; lists each one without a cache as `not evaluated: no cache` and then exits non-zero |
-| `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, validation only |
+| `diagnose.sbatch` | CPU job: `seeds` and `frames` diagnostics, and `int8 <run-id>`, the INT8 sensitivity per Conv node, validation and training only |
+| `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB, submitted from `roihu-cpu.csc.fi`: evaluation, calibration and export of a run with the CPU build of torch; the plan's default, no GPU billing units. INT8 values from ONNX Runtime on the CPU are a proxy for `CMP-03`; the TensorRT values come from the Jetson |
+| `model_jobs.sh` | the bodies of evaluation, calibration, export and the INT8 diagnosis, shared by the CPU and the GPU jobs |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 GPU, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | submits configs and seeds as separate one-GPU jobs (`--seeds 0,1,2`, `--timing`, `--test-only`) |
 | `plan.md` | the run plan of Project Schatten: budget, stop line and steps |
@@ -361,6 +363,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: step 3, the Hugging Face token is optional, read-only, raises the rate limit only and is never written to any file, log or report; drafted with an AI-assisted system.
 - 16 October 2026: `check_sources.sbatch` in the files table; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.

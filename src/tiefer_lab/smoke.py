@@ -6,9 +6,11 @@
     python -m tiefer_lab.smoke [--source auto|cloudsen12|synthetic] [--device ...]
 
 Steps: data cache, training with configs/smoke.toml (minutes on CPU),
-evaluation on validation with the baselines, ONNX export with the check
-against PyTorch, INT8 quantisation, the Jetson scripts in dry-run mode, and a
-check that the report loader leaves smoke reports out.
+evaluation on validation with the baselines, the check that evaluation on
+the CPU gives the argmax of the training device (`tiefer_lab.device_check`),
+ONNX export with the check against PyTorch, INT8 quantisation, the Jetson
+scripts in dry-run mode, and a check that the report loader leaves smoke
+reports out.
 
 Everything is written to `$TIEFER_RUNS_DIR/smoke/` (its own data, runs and
 reports folders), never to `data/` or `reports/`. Every report is marked
@@ -30,7 +32,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from tiefer_lab import evaluate, reports, train
+from tiefer_lab import device_check, evaluate, reports, train
 from tiefer_lab.data import build_cache, cache, source
 from tiefer_lab.export import __main__ as export_cli
 from tiefer_lab.utils import paths
@@ -145,6 +147,12 @@ def run(source_name: str, device: str) -> dict[str, Any]:
         raise SmokeError("evaluation failed")
     report = json.loads((dirs[paths.REPORTS_ENV] / "evaluation" / f"{run_id}_val.json").read_text())
     summary["steps"]["evaluate"] = round(time.monotonic() - t, 1)
+
+    t = _step("evaluation on the CPU agrees with the training device")
+    summary["device_check"] = device_check.compare(device)
+    if not summary["device_check"]["passed"]:
+        raise SmokeError(f"CPU and {device} argmax disagree: {summary['device_check']}")
+    summary["steps"]["device_check"] = round(time.monotonic() - t, 1)
 
     t = _step("ONNX export, check against PyTorch, INT8 quantisation")
     export_args = ["--run", run_id] + (["--allow-synthetic"] if used == "synthetic" else [])

@@ -36,9 +36,15 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r "${repo}/hpc/roihu/requirements.txt"
 python3 -m pip install --no-deps -e "${repo}"
 
-if [[ "${TIEFER_ARCH}" == "aarch64" ]]; then
-  python3 "${repo}/hpc/roihu/check_env.py"
-else
-  python3 "${repo}/hpc/roihu/check_env.py" --data-only
+if [[ "${TIEFER_ARCH}" != "aarch64" ]]; then
+  # The jobs that do not train (evaluation, calibration, export, diagnosis) run
+  # on x86 CPU nodes and need torch there. requirements.txt leaves torch out, so
+  # the CPU build of the version of the GPU module is installed from the PyTorch
+  # CPU index, without the CUDA libraries. TODO(verify): that this index is
+  # reachable from roihu-cpu.csc.fi and that the wheel installs on Python 3.12
+  # of the CPU module; resolved by step 0 of hpc/roihu/plan.md.
+  python3 -m pip install "${TIEFER_CPU_TORCH:-torch==2.10.0}" \
+    --index-url "${TIEFER_CPU_TORCH_INDEX:-https://download.pytorch.org/whl/cpu}"
 fi
+python3 "${repo}/hpc/roihu/check_env.py"
 echo "setup complete: ${TIEFER_VENV}"

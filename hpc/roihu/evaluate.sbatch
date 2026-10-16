@@ -31,39 +31,12 @@ if [[ "$(uname -m)" != "aarch64" ]]; then
   exit 1
 fi
 
-run_id="${1:?usage: evaluate.sbatch <run-id>}"
-
 # shellcheck source=hpc/roihu/job_prelude.sh
 source hpc/roihu/job_prelude.sh
 # shellcheck source=hpc/roihu/env.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
-cache_name="$(python3 -c 'import sys; from tiefer_lab.config import load_config; from tiefer_lab.train import resolve_run_dir; print(load_config(resolve_run_dir(sys.argv[1]) / "config.toml").data.cache_name)' "${run_id}")"
-tiefer_stage_cache "${cache_name}"
-
-# Evaluation protocol options, each off unless set (docs/SPEC.md, section 9).
-EVAL_OPTIONS=()
-[[ -n "${CLOUD_BIAS:-}" ]] && EVAL_OPTIONS+=(--cloud-bias "${CLOUD_BIAS}")
-[[ -n "${FRACTION:-}" ]] && EVAL_OPTIONS+=(--fraction "${FRACTION}")
-
-# DATA=<cache>: an independent dataset cache (build_cache --source), a clean check
-# that needs REASON and is logged; SUBSTITUTE=1 reads B08 from B8A on Landsat 8.
-# FULL_METRICS=1 adds the full metric set, a protocol option off by default.
-if [[ -n "${DATA:-}" ]]; then
-  [[ "${FINAL:-0}" == "1" ]] && { echo "error: DATA and FINAL=1 are separate evaluations" >&2; exit 2; }
-  split_args=(--data "${DATA}" --reason "${REASON:?DATA needs REASON}")
-  [[ "${SUBSTITUTE:-0}" == "1" ]] && split_args+=(--substitute)
-elif [[ "${FINAL:-0}" == "1" ]]; then
-  split_args=(--split test --final --reason "${REASON:?FINAL=1 needs REASON}")
-else
-  split_args=(--split val)
-fi
-[[ "${FULL_METRICS:-0}" == "1" ]] && split_args+=(--full-metrics)
-split_args+=("${EVAL_OPTIONS[@]}")
-python3 -m tiefer_lab.evaluate --run "${run_id}" "${split_args[@]}" --band-set all --baselines
-
-if [[ "${ROBUSTNESS:-0}" == "1" ]]; then
-  for perturbation in ${PERTURBATIONS:-rescale=0.5 rescale=2 gain=0.9 gain=1.1 offset=0.01 noise=0.01 blur=1}; do
-    python3 -m tiefer_lab.evaluate --run "${run_id}" "${split_args[@]}" --band-set all --perturb "${perturbation}"
-  done
-fi
+# shellcheck source=hpc/roihu/model_jobs.sh
+source hpc/roihu/model_jobs.sh
+export TIEFER_DEVICE=auto
+tiefer_evaluate_job "${1:?usage: evaluate.sbatch <run-id>}" "${@:2}"

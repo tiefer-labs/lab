@@ -314,7 +314,8 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `timing.sbatch` | One cut epoch on `gputest`: the real cost of a config |
 | `calibrate.sbatch` | `gputest`: cloud logit bias and temperature of a run, on validation only |
 | `independent.sbatch` | CPU job: downloads and caches an independent dataset, resumable, with a capped rate |
-| `diagnose.sbatch` | CPU job: seed and false discard diagnostics, validation only |
+| `diagnose.sbatch` | CPU job: seed and false discard diagnostics, and the INT8 sensitivity per Conv node (`int8`), validation and training only |
+| `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
 | `plan.md` | The run plan of Project Schatten: budget, stop line and steps |
@@ -426,7 +427,11 @@ lab/
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
       check_sources.sbatch        can every source be obtained: HEAD requests only, CPU
-      diagnose.sbatch             seed and false discard diagnostics, CPU
+      diagnose.sbatch             seed, false discard and INT8 diagnostics, CPU
+      evaluate_cpu.sbatch         evaluation on a CPU node, the plan's default
+      calibrate_cpu.sbatch        calibration on a CPU node, the plan's default
+      export_cpu.sbatch           export and INT8 check on a CPU node, the plan's default
+      model_jobs.sh               bodies shared by the CPU and GPU evaluation, calibration and export jobs
       diagnose_gpu.sbatch         INT8 sensitivity per Conv node, GPU node
       sweep.sh                    configs and seeds as separate one-GPU jobs
       plan.md                     run plan of Project Schatten: budget, stop line, steps
@@ -477,6 +482,7 @@ lab/
       calibrate.py                python -m tiefer_lab.calibrate: cloud bias and temperature on val
       compare.py                  python -m tiefer_lab.compare: reports/comparison.md
       paper_models.py             python -m tiefer_lab.paper_models: reports/coverage.md
+      device_check.py             python -m tiefer_lab.device_check: CPU against the training device
       reference_models.py         record of every reference model: licences, decision, files
       diagnose.py                 python -m tiefer_lab.diagnose: seeds, false discards, INT8, val only
       requirements.py             traceability check of docs/REQUIREMENTS.md
@@ -570,6 +576,7 @@ lab/
     test_independent.py           independent datasets: reflectance, labels, tiles, stops
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
+    test_device_check.py          evaluation on the CPU gives the argmax of the training device
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -668,6 +675,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 16 October 2026: every job that does not train has a CPU job, the default of the plan (`evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch`, `diagnose.sbatch int8`), with its body shared with the GPU job in `model_jobs.sh`; `device_check.py`; drafted with an AI-assisted system.
 - 16 October 2026: `reference_models.py`, `data/check_sources.py`, `check_sources.sbatch` and `test_check_sources.py` in the tree; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: rename verified in PR #9; the snapshot of the configs before the rename and its test are removed; drafted with an AI-assisted system.
 - 15 October 2026: section 8, model names: the families Sieb, Wandler, Lupe, the CloudScout re-implementation and smoke, and the naming scheme; section 14 lists the renamed configs; drafted with an AI-assisted system.

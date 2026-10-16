@@ -91,6 +91,7 @@ def test_export_command_writes_files_and_report(tiefer_env: dict[str, Path]) -> 
     assert report["files"]["int8"]["path"].startswith("$TIEFER_RUNS_DIR/")
     assert "change" in report["quantisation"]["val"]
     assert "test" not in report["quantisation"]
+    assert "proxy" in report["quantisation_runtime"] and "Jetson" in report["quantisation_runtime"]
     assert str(tiefer_env["TIEFER_RUNS_DIR"]) not in text
     assert not cache.is_synthetic({"source": "cloudsen12"})
 

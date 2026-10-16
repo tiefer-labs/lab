@@ -3,8 +3,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Check the Python environment on CSC Roihu.
 
-    python3 hpc/roihu/check_env.py              # GPU nodes and roihu-gpu.csc.fi
-    python3 hpc/roihu/check_env.py --data-only  # x86 CPU nodes: data cache build only
+    python3 hpc/roihu/check_env.py              # every node, after setup.sh
+    python3 hpc/roihu/check_env.py --data-only  # the data cache build only, no torch
 
 Imports every dependency, prints versions, CPU architecture, GPU name and
 CUDA and bf16 availability, and exits with a clear message if anything is

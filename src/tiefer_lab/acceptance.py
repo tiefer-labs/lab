@@ -325,6 +325,9 @@ def _export_matches(run_id: str, configs: Sequence[str], strict: bool) -> bool:
     return run_id.startswith(tuple(configs))
 
 
+PROXY_NOTE = "ONNX Runtime on the CPU, a proxy; the TensorRT value comes from the Jetson"
+
+
 def export_value(
     key: str, configs: Sequence[str] = ONE_M, strict: bool = False
 ) -> Callable[[Reports], Measurement | None]:
@@ -344,6 +347,9 @@ def export_value(
                     change = q.get("fp16_change" if key == "fp16" else "change", {})
                     v = change.get("cloud_boa_change")
                     v = None if v is None else -float(v)
+                    if v is not None:
+                        # ONNX Runtime on the CPU: a proxy; TensorRT values come from the Jetson.
+                        return Measurement(v, source=r.source, note=PROXY_NOTE)
                 else:
                     file = r.data.get("files", {}).get(key, {})
                     v = None if not file else file.get("bytes", 0) / 1e6
