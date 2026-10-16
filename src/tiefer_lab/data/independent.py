@@ -64,6 +64,7 @@ from tiefer_lab.data.source import (
     LicenceDecision,
     RemoteFile,
     decided_15_october_2026,
+    decided_16_october_2026,
     require_allowed,
     require_verified,
 )
@@ -258,6 +259,8 @@ DATASETS: dict[str, Dataset] = {
     "landsat8_biome": Dataset(
         name="landsat8_biome",
         sensor=LANDSAT8,
+        # doi:10.5066/F7251GDH resolves to the release page (doi.org and DataCite, 16 October
+        # 2026); the older 10.5066/F79Z930Q of the release metadata resolves to a retired page.
         version="USGS data release 2016, doi:10.5066/F7251GDH; 96 pre-collection Level-1T scenes",
         url="https://www.usgs.gov/landsat-missions/landsat-8-cloud-cover-assessment-validation-data",
         licence="U.S. Public Domain",
@@ -280,11 +283,13 @@ DATASETS: dict[str, Dataset] = {
         strata_fields=("biome",),
         note="shadow is labelled in part of the scenes only",
         bands=tuple(LANDSAT8_TO_S2.values()),
-        decision=decided_15_october_2026(
-            "candidate, no decision yet",
-            None,
-            "the licence is not stated on the page; treated as not used until a decision "
-            "is recorded here",
+        decision=decided_16_october_2026(
+            "used",
+            "U.S. Government data; not stated on the page",
+            'U.S. Government data; the release metadata states use constraints "none" and '
+            "points to the Landsat Data Policy. Licence decision only: the download stays "
+            "not planned until the Catalogue and KappaSet both have an evaluation report; "
+            "SPARCS comes before Biome",
         ),
         files=_usgs_files(
             BIOME_ARCHIVES,
@@ -295,7 +300,11 @@ DATASETS: dict[str, Dataset] = {
     "landsat8_sparcs": Dataset(
         name="landsat8_sparcs",
         sensor=LANDSAT8,
-        version="USGS data release 2016, doi:10.5066/F7FB5146; 80 subsets of 1000 x 1000 "
+        # TODO(verify): the DOI of SPARCS. The page cites 10.5066/F7FB5146, which DataCite
+        # titles "L8 SPARCS Cloud Validation Masks" but which resolves to the Biome page;
+        # the release metadata cites 10.5066/F7FQ9TQN, which resolves to a retired host
+        # (HTTP 503), both checked 16 October 2026. Resolves when one leads to SPARCS.
+        version="USGS data release 2016, DOI not verified; 80 subsets of 1000 x 1000 "
         "pixels of pre-collection scenes",
         url="https://www.usgs.gov/landsat-missions/"
         "spatial-procedures-automated-removal-cloud-and-shadow-sparcs-validation-data",
@@ -321,11 +330,13 @@ DATASETS: dict[str, Dataset] = {
         has_shadow=True,
         operational_mask="reference_landsat_qa",
         strata_fields=(),
-        decision=decided_15_october_2026(
-            "candidate, no decision yet",
-            None,
-            "the licence is not stated on the page; treated as not used until a decision "
-            "is recorded here",
+        decision=decided_16_october_2026(
+            "used",
+            "U.S. Government data; not stated on the page",
+            'U.S. Government data; the release metadata states use constraints "none" and '
+            "points to the Landsat Data Policy. Licence decision only: the download stays "
+            "not planned until the Catalogue and KappaSet both have an evaluation report; "
+            "SPARCS comes before Biome",
         ),
         # The SPARCS page links one archive, "Download SPARCS Validation Data (1.4 GB)";
         # the size is the Content-Length of a HEAD request, 16 October 2026.
@@ -612,11 +623,11 @@ DATASETS.update(
             "is labelled cloud, other thin cloud clear; the masks are 10980 x 10980 tiles "
             "without georeferencing, on the 10 m grid of their product",
             bands=L1C_BAND_NAMES,
-            decision=decided_15_october_2026(
-                "candidate, no decision yet",
+            decision=decided_16_october_2026(
+                "not used",
                 "CC BY 4.0 on Zenodo; the GitHub repository states none",
-                "the maintainer has not decided it; treated as not used until a decision "
-                "is recorded here",
+                "scope, not licence: cloud class only, one region; the Catalogue and KappaSet "
+                "are the Sentinel-2 independent tests",
             ),
         ),
     }

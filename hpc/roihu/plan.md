@@ -61,7 +61,7 @@ The targets come first in this order, in case the budget runs out: `FRM-01`, sta
 | 0 | setup on both architectures and the smoke job, from zero ([README.md](README.md), steps 1, 2 and 4) | `setup.sh`, `setup_gpu.sbatch`, `smoke.sbatch` | `small`, `gputest` | 100 | estimate pending a Project Schatten timing run | not run |
 | 0a | source check (CPU): can every source still allowed or undecided be obtained; HEAD requests only ([section 3.6](#36-source-check-and-downloads)) | `check_sources.sbatch` | `small` | 0 (CPU BU) | 0 | not run |
 | 1 | survey and CloudSEN12+ caches (CPU), from zero ([README.md](README.md), step 3) | `cloudsen12-l1c-high` and `cloudsen12-l1c-all`, every split | `small` | 0 (CPU BU) | 0 | not run |
-| 1a | independent dataset caches (CPU) | none for now: no download is planned in this row; which of the datasets that the licence decisions allow are downloaded is decided in a later revision of this plan ([docs/DATASETS.md](../../docs/DATASETS.md), section 1.1) | `small` | 0 (CPU BU) | 0 | not planned |
+| 1a | independent dataset caches (CPU): the Sentinel-2 Cloud Mask Catalogue and KappaSet ([section 3.6](#36-source-check-and-downloads)); L8 SPARCS and then L8 Biome only after both have an evaluation report | `independent.sbatch s2_cloud_catalogue`, `independent.sbatch kappaset` | `small` | 0 (CPU BU) | 0 | not run |
 | 1b | reference masks of the extra table (CPU) | `cloudsen12-l1c-all` val and test, after `REFERENCE_*` are set from the survey | `small` | 0 (CPU BU) | 0 | not run |
 | 1c | extra training patches (CPU) | `train_extra` of `cloudsen12-l1c-all`, after `LOCATION_FIELD` and `SCRIBBLE_UNLABELLED_CODE` | `small` | 0 (CPU BU) | 0 | not run |
 | 3a | timing of every new training config | 12 configs below and `cloudscout_reimpl_step1_th30` | `gputest` | 650 | estimate pending a Project Schatten timing run | not run |
@@ -99,10 +99,12 @@ bash hpc/roihu/submit.sh hpc/roihu/survey.sbatch
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch all
 ```
 
-Steps 1b and 1c, further CPU jobs (no GPU BU):
+Steps 1a, 1b and 1c, further CPU jobs (no GPU BU):
 
 ```bash
-# no independent dataset download is planned (step 1a)
+# step 1a: the Catalogue and KappaSet, after step 1 (their builds drop the products CloudSEN12+ uses)
+bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue
+bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch val --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch test --name cloudsen12-l1c-all --references
 bash hpc/roihu/submit.sh hpc/roihu/data.sbatch train_extra --name cloudsen12-l1c-all --bands all
@@ -177,20 +179,21 @@ bash hpc/roihu/submit.sh hpc/roihu/check_sources.sbatch
 cat /scratch/<project>/tiefer-lab/reports/data/sources.json
 ```
 
-One row per download. Sizes are the recorded sizes of `files` in `src/tiefer_lab/data/source.py` and `src/tiefer_lab/data/independent.py`. The duration is the size divided by the rate cap of `independent.sbatch` (`TIEFER_DOWNLOAD_RATE`, default 20 MiB per second), a lower bound; unpacking and caching come on top. No row adds a download to step 1a: which ones are made is the maintainer's decision, recorded in a later revision of this plan.
+One row per download. Sizes are the recorded sizes of `files` in `src/tiefer_lab/data/source.py` and `src/tiefer_lab/data/independent.py`. The duration is the size divided by the rate cap of `independent.sbatch` (`TIEFER_DOWNLOAD_RATE`, default 20 MiB per second), a lower bound; unpacking and caching come on top. Step 1a plans the Catalogue and KappaSet (decision of 16 October 2026). L8 Biome and L8 SPARCS are used, but their downloads stay not planned until the Catalogue and KappaSet both have an evaluation report; then SPARCS comes before Biome, downloaded by hand into `$TIEFER_DATA_DIR/downloads/<dataset>/` as [README.md](README.md) says, since `independent.sbatch` downloads Zenodo records only.
 
 | Download | Decision | Size | Storage BU | Duration at the cap | Command | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | CloudSEN12+ parts (Hugging Face) | used | 136,865,704,637 bytes in 8 parts; never downloaded whole, the cache build of step 1 reads byte ranges | pending maintainer input | not derived from the facts; the build log of step 1 gives it | step 1 | not run |
-| Sentinel-2 Cloud Mask Catalogue (Zenodo 4172871) | used | 15,206,407,392 bytes in 4 files | pending maintainer input | at least 12 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue` | not planned |
-| KappaSet (Zenodo 7100327) | used | 56,186,540,640 bytes in 2 files | pending maintainer input | at least 45 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset` | not planned |
-| Landsat 8 Biome (USGS) | candidate, no decision yet | 94,130,145,717 bytes in 96 archives | pending maintainer input | at least 75 minutes | none: not downloaded until the maintainer decides it | not planned |
-| Landsat 8 SPARCS (USGS) | candidate, no decision yet | 1,555,733,976 bytes in 1 archive | pending maintainer input | at least 2 minutes | none: not downloaded until the maintainer decides it | not planned |
+| Sentinel-2 Cloud Mask Catalogue (Zenodo 4172871) | used | 15,206,407,392 bytes in 4 files | pending maintainer input | at least 12 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue` | planned in step 1a, not run |
+| KappaSet (Zenodo 7100327) | used | 56,186,540,640 bytes in 2 files | pending maintainer input | at least 45 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset` | planned in step 1a, not run |
+| Landsat 8 SPARCS (USGS) | used | 1,555,733,976 bytes in 1 archive | pending maintainer input | at least 2 minutes | by hand, first of the two, after the Catalogue and KappaSet both have an evaluation report | not planned |
+| Landsat 8 Biome (USGS) | used | 94,130,145,717 bytes in 96 archives | pending maintainer input | at least 75 minutes | by hand, after L8 SPARCS | not planned |
 
 ---
 
 ## Changelog
 
+- 16 October 2026: step 1a plans the Catalogue and KappaSet downloads; L8 SPARCS and then L8 Biome stay not planned until both have an evaluation report (decisions of 16 October 2026); drafted with an AI-assisted system.
 - 16 October 2026: step 0a, the source check, and section 3.6, one row per download with its size and the duration at the rate cap; storage billing units pending maintainer input; drafted with an AI-assisted system.
 - 15 October 2026: config names follow the scheme of docs/SPEC.md, section 8 (Sieb, Wandler, Lupe, the CloudScout re-implementation); drafted with an AI-assisted system.
 - 15 October 2026: the stop line is pending maintainer input; the selection rule is marked as a draft, not frozen; drafted with an AI-assisted system.

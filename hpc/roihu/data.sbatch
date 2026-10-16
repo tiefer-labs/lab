@@ -12,8 +12,9 @@
 # error. Login nodes are for light work only, so the cache is never built there
 # (https://docs.csc.fi/computing/usage-policy/). Compute nodes reach
 # huggingface.co (observed before Project Schatten; to be confirmed by the
-# setup step of hpc/roihu/plan.md). Set HF_TOKEN in the
-# submitting shell to avoid HTTP 429 (hpc/roihu/README.md, step 3).
+# setup step of hpc/roihu/plan.md). It needs no token; an optional read-only
+# HF_TOKEN in the submitting shell only raises the rate limit and is never
+# written to any file, log or report (hpc/roihu/README.md, step 3).
 #
 # CPU partition 'small': up to 72 hours on one node.
 # Source: https://docs.csc.fi/computing/running/batch-job-partitions/

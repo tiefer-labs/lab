@@ -44,11 +44,11 @@ Which datasets the maintainer's licence decisions allow; only a dataset recorded
 
 | Dataset | Status |
 | :--- | :---: |
-| L8 Biome | candidate, no decision yet; treated as not used |
-| L8 SPARCS | candidate, no decision yet; treated as not used |
+| L8 Biome | used, licence decision of 16 October 2026; download not planned yet |
+| L8 SPARCS | used, licence decision of 16 October 2026; download not planned yet, planned before L8 Biome |
 | Sentinel-2 Cloud Mask Catalogue | used |
 | KappaSet | used |
-| WHUS2-CD+ | candidate, no decision yet; treated as not used |
+| WHUS2-CD+ | not used, decision of 16 October 2026 (scope, not licence) |
 | 38-Cloud | not used, licence decision of 15 October 2026 |
 | 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
 | S2-Hollstein | not used, licence decision of 15 October 2026 |
@@ -117,10 +117,9 @@ Checked on 16 October 2026 from the primary pages (section 9); what can be downl
 | CloudSEN12+ field with the Sentinel-2 product ID | the survey report (`reports/data/survey.json`) | `CLOUDSEN12_PRODUCT_FIELD` |
 | KappaSet band scale, product ID of a sub-tile, NetCDF read with the locked GDAL | one KappaSet file read on CSC Roihu | `read_kappaset` |
 | Sen2Cor SCL codes | the Sen2Cor product documentation, with Table 5 of [1] | `COMPARISON_CODES["reference_sen2cor"]` |
-| Licence of L8 Biome and L8 SPARCS | their pages state none; the metadata file of each release gives access and use constraints "none" and points to the Landsat Data Distribution Policy [22], [23]; the USGS policy page says USGS-authored or produced data are in the U.S. Public Domain [9]; the maintainer confirms that it covers these releases | `DATASETS[...].licence` |
 | Input bands of each algorithm of the paper's Table 6 | its primary source | `ALGORITHMS` in `src/tiefer_lab/paper_models.py` |
 | Storage billing units of every download | pending maintainer input | [hpc/roihu/plan.md](../hpc/roihu/plan.md) |
-| DOI of the Landsat releases: the pages cite 10.5066/F7251GDH (Biome) and 10.5066/F7FB5146 (SPARCS), their metadata files 10.5066/F79Z930Q and 10.5066/F7FQ9TQN | the DOI resolver, read by the maintainer | [DATASETS.md](DATASETS.md), section 1 |
+| DOI of L8 SPARCS: the page cites 10.5066/F7FB5146, which DataCite titles "L8 SPARCS Cloud Validation Masks" but which resolves to the L8 Biome page; the release metadata cites 10.5066/F7FQ9TQN, which resolves to a retired host (HTTP 503); checked through doi.org and the DataCite API on 16 October 2026 [24] | a DOI that resolves to the SPARCS release | `DATASETS["landsat8_sparcs"].version` |
 
 ---
 
@@ -128,8 +127,8 @@ Checked on 16 October 2026 from the primary pages (section 9); what can be downl
 
 | Dataset | Licence | Download | Size as the source states it | Source |
 | :--- | :---: | :---: | :---: | :---: |
-| L8 Biome | U.S. Public Domain under the USGS policy, to be confirmed (section 6) | one `.tar.gz` per scene on the access page, no login | not stated on the page; the 96 archives answer 94,130,145,717 bytes in all (HEAD, 16 October 2026); no checksums published | [21], [9] |
-| L8 SPARCS | as L8 Biome | `l8cloudmasks.zip` on the USGS page, no login | 1.4 GB on the page; 1,555,733,976 bytes (HEAD, 16 October 2026); no checksum published | [3], [9] |
+| L8 Biome | U.S. Government data; the release metadata states use constraints "none" and points to the Landsat Data Distribution Policy [22]; used since 16 October 2026 | one `.tar.gz` per scene on the access page, no login | not stated on the page; the 96 archives answer 94,130,145,717 bytes in all (HEAD, 16 October 2026); no checksums published | [21], [9] |
+| L8 SPARCS | as L8 Biome [23] | `l8cloudmasks.zip` on the USGS page, no login | 1.4 GB on the page; 1,555,733,976 bytes (HEAD, 16 October 2026); no checksum published | [3], [9] |
 | Catalogue | CC BY 4.0 | Zenodo record 4172871, no login | `subscenes.zip` 15,197,196,473 bytes, `masks.zip` 7,241,097 bytes, with `classification_tags.csv` and `README.pdf`; MD5 of each on the record | [4] |
 | KappaSet | CC BY 4.0 | Zenodo record 7100327, no login | `kappaset.zip` 56,186,308,652 bytes and `README.pdf`; MD5 of each on the record | [6] |
 | WHUS2-CD+ | CC BY 4.0 on Zenodo; the GitHub repository states none | Zenodo record 5511793 | 36 product zips of 0.6 to 0.92 GB, `ReferenceMask.zip` 20,946,052 bytes | [11] |
@@ -186,11 +185,13 @@ The file names, sizes and checksums the code compares are `files` of each datase
 21. Landsat 8 Cloud Cover Assessment Validation Data, access page of the pre-collection release, USGS, https://landsat.usgs.gov/landsat-8-cloud-cover-assessment-validation-data, accessed 16 October 2026.
 22. L8 Biome Cloud Validation Masks, metadata file, USGS, https://landsat.usgs.gov/cloud-validation/cca_l8/L8_Biome_Cloud_Validation_Masks.xml, accessed 16 October 2026.
 23. L8 SPARCS Cloud Validation Masks, metadata file, USGS, https://landsat.usgs.gov/cloud-validation/sparcs/L8_SPARCS_Cloud_Validation_Masks.xml, accessed 16 October 2026.
+24. DataCite REST API, https://api.datacite.org/dois/10.5066/F7251GDH, .../F79Z930Q, .../F7FB5146 and .../F7FQ9TQN, and their resolution through https://doi.org, accessed 16 October 2026. 10.5066/F7251GDH resolves to the L8 Biome page; the older 10.5066/F79Z930Q of the Biome metadata resolves to a retired page (HTTP 404).
 
 ---
 
 ## Changelog
 
+- 16 October 2026: L8 Biome and L8 SPARCS used and WHUS2-CD+ not used, decisions of 16 October 2026; the DOIs of both Landsat releases checked through the DOI resolver and DataCite: Biome's resolves, SPARCS stays an open fact; drafted with an AI-assisted system.
 - 16 October 2026: L8 Biome classes read from its access page; section 5.1, what limits measurement; distribution facts and sizes of the four datasets checked by `check_sources`; drafted with an AI-assisted system.
 - 15 October 2026: section 2.1, the Catalogue and KappaSet are used, L8 Biome and L8 SPARCS are candidates without a decision; section 7 points to the attribution in NOTICE.md; drafted with an AI-assisted system.
 - 15 October 2026: WHUS2-CD+ is a candidate without a licence decision, treated as not used; the coverage page names the datasets it leaves out; drafted with an AI-assisted system.

@@ -46,7 +46,10 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 | :--- | :---: |
 | dtacs4bands | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
 | masks of the CloudSEN12 release of 2022 (`add_release_2022.py`) | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
-| UNetMobV2, s2cloudless, KappaMask L1C and L2A, CD-FCNN-RGBI and RGBISWIR, Fmask 4 | no decision recorded; each stops until its licences are read and a decision is recorded |
+| s2cloudless | used, 16 October 2026 ([comment on issue 7](https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401)); run only from its installed package under `references/`, never copied into this repository; stops until its runner is added |
+| CD-FCNN-RGBI and RGBISWIR | used, 16 October 2026 ([comment on issue 7](https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401)): the repository-wide MIT LICENSE covers every file in that repository, weights included, as no other licence is stated; stops until its runner is added |
+| KappaMask L1C and L2A, Fmask | stay stopped, 16 October 2026: no licence is stated for the weights |
+| UNetMobV2 | no decision recorded; its masks are in the CloudSEN12+ extra table |
 
 ## Licences and whether each model can be obtained
 
@@ -57,7 +60,7 @@ Read on 16 October 2026 from each model's primary source (`source` in `src/tiefe
 | UNetMobV2 | not read | not read | not checked | not checked | its masks are already in the CloudSEN12+ extra table (`cloudmask_unetmobv2_v1` and `cloudmask_unetmobv2_v2`) |
 | s2cloudless 1.7.3 | CC BY-SA 4.0 | CC BY-SA 4.0; the model file ships in the package | `pip install s2cloudless==1.7.3` from PyPI; wheel of 4,768,896 bytes with its SHA-256 on PyPI | yes | runs from its installed package under `references/` and is never copied into this repository; reads 10 bands, so only 13-band caches feed it |
 | KappaMask L1C and L2A | Apache 2.0 | not stated | the weights are not in the repository; the public Docker image `kappazeta/kappamask:v2.4` carries them | licence not stated | needs whole Level-1C or Level-2A products, not 509 x 509 patches |
-| CD-FCNN-RGBI and RGBISWIR | MIT | MIT, the LICENSE file of the repository that holds the weights; no separate statement for the weights | raw files of the repository, 1,418,400 and 1,418,160 bytes; no checksum published | yes | trained on L8 Biome, so a result on L8 Biome is not independent |
+| CD-FCNN-RGBI and RGBISWIR | MIT | MIT: the repository-wide MIT LICENSE covers every file of that repository, weights included, as no other licence is stated (the maintainer's reading of 16 October 2026) | raw files of the repository, 1,418,400 and 1,418,160 bytes; no checksum published | yes | trained on L8 Biome, so a result on L8 Biome is not independent |
 | Fmask 5 | MIT | not stated | the repository holds the code only; the complete package (about 3 GB) is on a university SharePoint that redirected to a login | licence not stated | the package also needs credentials; needs whole products with their metadata; the MATLAB Fmask 4 of the CloudSEN12 paper is not checked |
 
 ---
@@ -86,6 +89,7 @@ Read on 16 October 2026 from each model's primary source (`source` in `src/tiefe
 
 ## Changelog
 
+- 16 October 2026: licence decisions of 16 October 2026 (comment on issue 7): L8 Biome, L8 SPARCS, s2cloudless and CD-FCNN used; WHUS2-CD+ not used, for scope; KappaMask and Fmask stay stopped; drafted with an AI-assisted system.
 - 16 October 2026: the record of every model moves to src/tiefer_lab/reference_models.py; licences of code and weights and whether each model can be obtained; a model whose weights have no stated licence stops; drafted with an AI-assisted system.
 - 15 October 2026: licence decisions: dtacs4bands and the 2022 release masks are declined, pending legal review; a decision is a typed record next to each reference; drafted with an AI-assisted system.
 - 14 October 2026: first version: reference models stop until their licence is cleared; masks are added next to those of the dataset; UNetMobV2, s2cloudless and the 2022 release masks; drafted with an AI-assisted system.

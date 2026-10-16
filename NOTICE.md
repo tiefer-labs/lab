@@ -33,6 +33,16 @@ The independent test datasets recorded as used ([docs/DATASETS.md](docs/DATASETS
 
 Both contain Copernicus Sentinel-2 data, so a result on them carries the Copernicus notice below.
 
+Two U.S. Government datasets are recorded as used since 16 October 2026; they are not included in this repository, and USGS asks for credit:
+
+- U.S. Geological Survey, 2016, L8 Biome Cloud Validation Masks, U.S. Geological Survey data release, [10.5066/F7251GDH](https://doi.org/10.5066/F7251GDH). Source: the data citation of the release page, read 16 October 2026.
+- U.S. Geological Survey, 2016, L8 SPARCS Cloud Validation Masks, U.S. Geological Survey data release; its DOI is not verified yet ([docs/INDEPENDENT.md](docs/INDEPENDENT.md), section 6). Source: the data citation of the release page, read 16 October 2026.
+
+Two third-party reference models are recorded as used since 16 October 2026. They run from their own packages outside this repository's code and are never copied into it:
+
+- s2cloudless 1.7.3, sentinel-hub, [github.com/sentinel-hub/sentinel2-cloud-detector](https://github.com/sentinel-hub/sentinel2-cloud-detector), licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+- CD-FCNN RGBI and RGBISWIR, Copyright (c) 2021 Image Processing Group Image Processing Lab Universidad de Valencia, [github.com/IPL-UV/DL-L8S2-UV](https://github.com/IPL-UV/DL-L8S2-UV), licensed under the MIT License.
+
 Third-party datasets and models that the maintainer's licence decisions refuse ([docs/DATASETS.md](docs/DATASETS.md), section 1.1) are not used, so this file carries no attribution for them. Attributions are added here only for material actually used.
 
 The patches are Copernicus Sentinel-2 data. The legal notice on the use of Copernicus Sentinel data asks that adapted or modified data communicated to the public carries the notice "Contains modified Copernicus Sentinel data [Year]" ([legal notice](https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice), accessed 7 October 2026). For the values derived from CloudSEN12+ in this repository:
@@ -59,6 +69,7 @@ On Linux, `torch` from PyPI also installs the NVIDIA CUDA runtime packages (`nvi
 
 ## Changelog
 
+- 16 October 2026: attributions of L8 Biome, L8 SPARCS, s2cloudless and CD-FCNN, recorded as used by the licence decisions of 16 October 2026; drafted with an AI-assisted system.
 - 15 October 2026: the creators, versions and dates of the Sentinel-2 Cloud Mask Catalogue and KappaSet, read from their Zenodo records; drafted with an AI-assisted system.
 - 15 October 2026: attribution of the Sentinel-2 Cloud Mask Catalogue and KappaSet, the independent test datasets recorded as used; drafted with an AI-assisted system.
 - 15 October 2026: attributions only for material actually used; the sources refused by the licence decisions of 15 October 2026 carry none; drafted with an AI-assisted system.

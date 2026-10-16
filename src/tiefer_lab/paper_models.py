@@ -318,7 +318,7 @@ def render(reports: Reports, date: dt.date, own: Sequence[str] = OWN_MODELS) -> 
     ]
     if left_out:
         blocks.append(
-            "\nLeft out by licence decision, so without a column: "
+            "\nLeft out by licence or scope decision, so without a column: "
             f"{'; '.join(left_out)}. The decisions are in "
             "[docs/DATASETS.md](../docs/DATASETS.md), section 1.1.\n"
         )

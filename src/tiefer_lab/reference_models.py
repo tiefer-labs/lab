@@ -23,9 +23,17 @@ from tiefer_lab.data.source import (
     LicenceDecision,
     RemoteFile,
     decided_15_october_2026,
+    decided_16_october_2026,
 )
 
 Runner = Callable[[cache.SplitData], NDArray[np.uint8]]
+
+CD_FCNN_DECISION = decided_16_october_2026(
+    "used",
+    "MIT",
+    "the repository-wide MIT LICENSE covers every file in that repository, weights "
+    "included, as no other licence is stated",
+)
 
 
 @dataclass(frozen=True)
@@ -79,6 +87,12 @@ REFERENCES: dict[str, Reference] = {
         "Commons Attribution-ShareAlike 4.0 International License'; the model file "
         "s2cloudless/models/pixel_s2_cloud_detector_lightGBM_v0.1.txt ships in the package",
         obtain="pip install s2cloudless==1.7.3 from PyPI; no login, token or licence acceptance",
+        decision=decided_16_october_2026(
+            "used",
+            "CC BY-SA 4.0",
+            "run only from its installed package under references/, never copied into this "
+            "repository",
+        ),
         files=(
             RemoteFile(
                 "s2cloudless-1.7.3-py3-none-any.whl",
@@ -130,8 +144,10 @@ REFERENCES: dict[str, Reference] = {
         "cloud",
         note="the weights were trained on L8 Biome (file name landsatbiomeRGBI6), so a "
         "result of this model on L8 Biome is not independent",
-        weights_licence="MIT, the LICENSE file of the repository that holds the weights; no "
-        "separate statement for the weights",
+        weights_licence="MIT: the repository-wide MIT LICENSE covers every file in the "
+        "repository that holds the weights, weights included, as no other licence is stated "
+        "(the maintainer's reading of 16 October 2026)",
+        decision=CD_FCNN_DECISION,
         obtain="git clone or the raw files of the repository; no login",
         files=(
             RemoteFile(
@@ -150,8 +166,10 @@ REFERENCES: dict[str, Reference] = {
         "MIT",
         "cloud",
         note="as cd_fcnn_rgbi; weights landsatbiomeRGBISWIR7, trained on L8 Biome",
-        weights_licence="MIT, the LICENSE file of the repository that holds the weights; no "
-        "separate statement for the weights",
+        weights_licence="MIT: the repository-wide MIT LICENSE covers every file in the "
+        "repository that holds the weights, weights included, as no other licence is stated "
+        "(the maintainer's reading of 16 October 2026)",
+        decision=CD_FCNN_DECISION,
         obtain="as cd_fcnn_rgbi",
         files=(
             RemoteFile(

@@ -418,7 +418,8 @@ def _patch_name(table: Any, position: int) -> str:
 def _gave_up(what: str, attempts: int, error: BaseException) -> cache.CacheError:
     return cache.CacheError(
         f"{what} could not be read after {attempts} attempts "
-        f"({type(error).__name__}: {error}). The build is resumable: submit the same "
+        f"({type(error).__name__}: {http.redact(str(error))}). The build is resumable: submit "
+        "the same "
         "data job again, and lower --max-rate or run fewer data jobs at the same time"
     )
 
