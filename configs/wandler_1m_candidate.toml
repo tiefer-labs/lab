@@ -3,9 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # Candidate reference of L2, a draft: wandler_1m with random rescaling 0.5 to 2 (CMP-05),
-# gradient norm clipping at 1.0 and the skip of non-finite steps (stability, ACC-09). The
-# winners of the one-change variants are added by the selection rule of hpc/roihu/plan.md,
-# section 3, before its three seeds run; docs/ASSUMPTIONS.md, section 6, row wandler_1m_candidate.
+# gradient norm clipping at 1.0 and the skip of non-finite steps (stability, ACC-09). Not
+# in the plan of 16 October 2026: its frozen selection rule picks the family candidate among
+# wandler_1m, the stability change and the one-change variants (hpc/roihu/plan.md,
+# section 3.2, rule 5); docs/ASSUMPTIONS.md, section 6, row wandler_1m_candidate.
 name = "wandler_1m_candidate"
 
 [data]
