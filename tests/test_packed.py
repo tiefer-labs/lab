@@ -111,8 +111,8 @@ def test_packing_report_chooses_by_epochs_per_gpu_hour_within_the_slowdown(
     assert rows["4"]["slowdown"] == 2.5  # beyond MAX_SLOWDOWN, so not eligible
     assert report["chosen_runs_per_gpu"] == 3
     assert rows["2"]["data_wait_share_max"] == 0.1
-    # Time limit: 100 epochs x 150 s x 1.25 + 30 s load + 600 s start, rounded up to minutes.
-    assert packed.time_limit(report, 3, 100) == "05:23:00"
+    # Time limit: 100 epochs x 150 s x 1.5 + 30 s load + 600 s start, rounded up to minutes.
+    assert packed.time_limit(report, 3, 100) == "06:26:00"
     with pytest.raises(packed.PackingError):
         packed.time_limit(report, 3, None)
     missing = packed.packing_report("configs/wandler_1m.toml", "7", None, runs)
@@ -132,7 +132,7 @@ def test_report_and_time_limit_commands(
     report = json.loads(out.read_text())
     assert report["chosen_runs_per_gpu"] == 1
     assert packed.main(["time-limit", "--report", str(out), "--runs", "1", "--epochs", "10"]) == 0
-    assert capsys.readouterr().out.strip().endswith("00:23:00")
+    assert capsys.readouterr().out.strip().endswith("00:26:00")
 
 
 def test_signals_reach_every_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

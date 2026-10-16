@@ -58,8 +58,10 @@ from tiefer_lab.utils import paths
 TIMING_STEPS = 50
 # The slowest of the packed runs may take at most this many times its time alone.
 MAX_SLOWDOWN = 2.0
-# Margin on the time limit of a packed training job, over the timing report.
-TIME_MARGIN = 0.25
+# Margin on the time limit of a packed training job, over the timing report. GPU time is
+# billed on the runtime, so the margin costs nothing, while a run stopped at its limit
+# loses the epoch it was in and needs another job (maintainer decision of 16 October 2026).
+TIME_MARGIN = 0.5
 # Module setup, cache staging and the first checkpoint, on top of the measured data load.
 STARTUP_SECONDS = 600
 PACKINGS = (1, 2, 3, 4)

@@ -247,3 +247,37 @@ def test_a_checkpoint_of_the_earlier_schedule_is_not_resumed(
         train.train(
             config_from_dict(TINY), run, device_name="cpu", allow_synthetic=True, resume=True
         )
+
+
+def test_a_run_killed_without_warning_resumes_from_its_last_checkpoint(
+    synthetic_cache: None, tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A job killed at its time limit before it could save (no SIGUSR1) loses at most
+    the epoch it was in: last.pt of the epoch before is complete, and the resumed run
+    ends with the weights of a run that was never stopped."""
+    config = config_from_dict(TINY)
+    runs = tiefer_env["TIEFER_RUNS_DIR"]
+    assert train.train(config, runs / "full", device_name="cpu", allow_synthetic=True)
+
+    original = DeviceTrainBatches.epoch
+
+    def killed(self: DeviceTrainBatches, epoch: int):  # type: ignore[no-untyped-def]
+        if epoch == 2:
+            raise SystemExit("killed by the time limit")
+        yield from original(self, epoch)
+
+    monkeypatch.setattr(DeviceTrainBatches, "epoch", killed)
+    run = runs / "killed"
+    with pytest.raises(SystemExit):
+        train.train(config, run, device_name="cpu", allow_synthetic=True)
+    assert checkpoint.load_checkpoint(run / checkpoint.LAST)["epochs_done"] == 2
+    assert json.loads((run / train.METADATA_NAME).read_text())["status"] == "running"
+    assert not list(run.glob("*.tmp"))
+    monkeypatch.setattr(DeviceTrainBatches, "epoch", original)
+
+    assert train.main(["--resume", str(run), "--device", "cpu", "--allow-synthetic"]) == 0
+    assert json.loads((run / train.METADATA_NAME).read_text())["status"] == "completed"
+    full = checkpoint.load_checkpoint(runs / "full" / checkpoint.LAST)["model"]
+    resumed = checkpoint.load_checkpoint(run / checkpoint.LAST)["model"]
+    for key in full:
+        torch.testing.assert_close(resumed[key], full[key])
