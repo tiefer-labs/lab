@@ -49,7 +49,7 @@ How published third-party cloud masking models are run on the same patches as Ti
    uv run python references/run_reference.py --model <name> --cache cloudsen12-l1c-all --split test --final --reason "<why>"
    ```
 
-6. Evaluate a run with `--baselines` (with `--data` for an independent dataset): every reference mask of the split is scored next to the model.
+6. Evaluate a run with `--baselines` (with `--data` for an independent dataset): every reference mask of the split is scored next to the model. CD-FCNN adds two masks: `<name>`, at the published 30 m, its primary result, and `<name>_10m`, at the caches' 10 m, reported under that label.
 
 Which algorithm is measured on which dataset, and how, is `reports/coverage.md` (`python -m tiefer_lab.paper_models`).
 
@@ -60,7 +60,7 @@ Which algorithm is measured on which dataset, and how, is `reports/coverage.md` 
 | dtacs4bands | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
 | masks of the CloudSEN12 release of 2022 (`add_release_2022.py`) | declined, pending legal review, 15 October 2026 ([docs/DATASETS.md](../docs/DATASETS.md), section 1.1) |
 | s2cloudless | used, 16 October 2026 ([comment on issue 7](https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401)); run only from its installed package under `references/`, never copied into this repository; runner added 17 October 2026: the package's own cloud mask at its class defaults ([docs/ASSUMPTIONS.md](../docs/ASSUMPTIONS.md), `A-6.15`) |
-| CD-FCNN-RGBI and RGBISWIR | used, 16 October 2026 ([comment on issue 7](https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401)): the repository-wide MIT LICENSE covers every file in that repository, weights included, as no other licence is stated; runner added 17 October 2026: the published network rebuilt in PyTorch with the published weights, checked against TensorFlow (`A-6.14`) |
+| CD-FCNN-RGBI and RGBISWIR | used, 16 October 2026 ([comment on issue 7](https://github.com/tiefer-labs/lab/issues/7#issuecomment-6208121401)): the repository-wide MIT LICENSE covers every file in that repository, weights included, as no other licence is stated; runner added 17 October 2026: the published network rebuilt in PyTorch with the published weights, checked against TensorFlow; its primary mask is the run at the published 30 m, and the run at the caches' 10 m is stored as `<name>_10m` and reported separately, neither chosen by its result (17 October 2026, `A-6.16`) |
 | KappaMask L1C and L2A, Fmask | stay stopped, 16 October 2026: no licence is stated for the weights |
 | UNetMobV2 | no decision recorded; its masks are in the CloudSEN12+ extra table |
 
@@ -108,6 +108,7 @@ Read on 16 October 2026 from each model's primary source (`source` in `src/tiefe
 
 ## Changelog
 
+- 17 October 2026: CD-FCNN's primary mask at the published 30 m and its 10 m mask labelled `<name>_10m` (maintainer's decision); drafted with an AI-assisted system.
 - 17 October 2026: runners of s2cloudless and both CD-FCNN models, their pinned packages under `references/.packages`, and the logged path for independent dataset caches (`--data` with `--reason`); drafted with an AI-assisted system.
 - 16 October 2026: licence decisions of 16 October 2026 (comment on issue 7): L8 Biome, L8 SPARCS, s2cloudless and CD-FCNN used; WHUS2-CD+ not used, for scope; KappaMask and Fmask stay stopped; drafted with an AI-assisted system.
 - 16 October 2026: the record of every model moves to src/tiefer_lab/reference_models.py; licences of code and weights and whether each model can be obtained; a model whose weights have no stated licence stops; drafted with an AI-assisted system.

@@ -110,9 +110,9 @@ def run(
         commit = metadata.git_commit()["commit"]
         log_test_evaluation(f"reference-{name}", commit, reason or "", "published weights")
     data = cache.load_split(directory, split, bands=runner.bands)
-    masks = runner.run(data)
-    cache.add_reference_masks(directory, split, {name: masks}, {name: reference.kind})
-    return [name]
+    masks = runner.masks(name, data)
+    cache.add_reference_masks(directory, split, masks, dict.fromkeys(masks, reference.kind))
+    return list(masks)
 
 
 def run_independent(name: str, data_cache: str, reason: str | None) -> list[str]:
@@ -138,11 +138,11 @@ def run_independent(name: str, data_cache: str, reason: str | None) -> list[str]
         f"reference-{name}", commit, f"independent dataset {source}: {reason}", "published weights"
     )
     data = cache.load_independent(directory, runner.bands)
-    masks = runner.run(data)
+    masks = runner.masks(name, data)
     cache.add_reference_masks(
-        directory, cache.INDEPENDENT_SPLIT, {name: masks}, {name: reference.kind}
+        directory, cache.INDEPENDENT_SPLIT, masks, dict.fromkeys(masks, reference.kind)
     )
-    return [name]
+    return list(masks)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

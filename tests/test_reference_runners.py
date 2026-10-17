@@ -102,6 +102,35 @@ def test_cd_fcnn_pads_like_the_published_tool_and_uses_every_weight(repo_root: P
     assert cd_fcnn.BANDS["cd_fcnn_rgbiswir"] == ("B02", "B03", "B04", "B08", "B11", "B12")
 
 
+def test_cd_fcnn_runs_at_the_published_30m_and_returns_the_10m_grid(
+    repo_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cd_fcnn = _module(repo_root, "cd_fcnn")
+    # A constant band stays constant through the cubic spline; 37 x 40 is
+    # padded to 39 x 42 and becomes 13 x 14 at 30 m.
+    numbers = np.full((2, 37, 40), 1234, np.uint16)
+    coarse = cd_fcnn.resample_30m(numbers)
+    assert coarse.shape == (2, 13, 14) and coarse.dtype == np.uint16
+    assert (coarse == 1234).all()
+    seen: list[tuple[int, ...]] = []
+
+    def probability(_model: object, reflectance: np.ndarray) -> np.ndarray:
+        seen.append(reflectance.shape)
+        out = np.zeros(reflectance.shape[1:], np.float32)
+        out[0, 0] = 0.5  # cloud at the threshold
+        return out
+
+    monkeypatch.setattr(cd_fcnn, "probability", probability)
+    at_30m = cd_fcnn.cloud_mask(None, numbers)
+    assert seen[-1] == (2, 13, 14) and at_30m.shape == (37, 40)
+    # The one cloudy 30 m pixel covers 3 x 3 pixels of the 10 m grid.
+    assert at_30m[:3, :3].all() and at_30m.sum() == 9
+    at_10m = cd_fcnn.cloud_mask(None, numbers, 10)
+    assert seen[-1] == (2, 37, 40) and at_10m.sum() == 1
+    with pytest.raises(ValueError, match="10 or 30"):
+        cd_fcnn.cloud_mask(None, numbers, 20)
+
+
 def test_s2cloudless_reads_reflectance_in_its_layout(
     repo_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -191,3 +220,23 @@ def test_a_cloudsen12_cache_is_never_read_as_independent(
     # Its test split stays behind --final, as before.
     assert ref.main(["--model", "s2cloudless", "--cache", "synthetic", "--split", "test"]) == 2
     assert not (tiefer_env["TIEFER_REPORTS_DIR"] / "test_log.md").exists()
+
+
+def test_the_10m_run_is_stored_under_its_own_label(
+    repo_root: Path, tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ref = _module(repo_root, "run_reference")
+    _independent_cache("kappaset")
+    stub = ref.Runner(
+        ("B02",),
+        lambda data: np.ones(data.labels.shape, np.uint8),
+        {"10m": lambda data: np.zeros(data.labels.shape, np.uint8)},
+    )
+    monkeypatch.setattr(ref, "runners", lambda: {"cd_fcnn_rgbi": stub})
+    added = ref.run_independent("cd_fcnn_rgbi", "synthetic", "clean")
+    assert added == ["cd_fcnn_rgbi", "cd_fcnn_rgbi_10m"]
+    data = cache.load_independent(cache.cache_dir("synthetic"), ["B02"])
+    assert data.reference_kinds == {"cd_fcnn_rgbi": "cloud", "cd_fcnn_rgbi_10m": "cloud"}
+    assert data.reference["cd_fcnn_rgbi"].all() and not data.reference["cd_fcnn_rgbi_10m"].any()
+    runners = _module(repo_root, "runners")
+    assert set(runners.cd_fcnn_runner("cd_fcnn_rgbiswir").labelled) == {"10m"}

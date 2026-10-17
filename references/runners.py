@@ -16,17 +16,20 @@ and never used to choose anything of Tiefer's own models.
   its README states (PyPI page of 1.7.3, read 17 October 2026);
 - `cd_fcnn_rgbi` and `cd_fcnn_rgbiswir` (MIT) run the network of cd_fcnn.py
   with the published weights, downloaded from their recorded URL into
-  references/.weights and checked against the recorded size before use.
+  references/.weights and checked against the recorded size before use. The
+  mask under the model's own name is the run at the published 30 m; the run
+  at the caches' 10 m is stored next to it as `<name>_10m` and reported
+  separately. Neither is chosen by its result.
 
-The class mapping of each output is docs/ASSUMPTIONS.md, `A-6.14` and `A-6.15`.
+The class mapping of each output is docs/ASSUMPTIONS.md, `A-6.15` to `A-6.17`.
 """
 
 from __future__ import annotations
 
 import sys
 import urllib.request
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -52,6 +55,15 @@ class Runner:
 
     bands: tuple[str, ...]
     run: Callable[[cache.SplitData], NDArray[np.uint8]]
+    # Further runs of the same model, stored as `<name>_<label>` and reported
+    # on their own; the mask under the model's own name is the primary one.
+    labelled: Mapping[str, Callable[[cache.SplitData], NDArray[np.uint8]]] = field(
+        default_factory=dict
+    )
+
+    def masks(self, name: str, data: cache.SplitData) -> dict[str, NDArray[np.uint8]]:
+        """Every mask of one split: the primary under `name`, the others labelled."""
+        return {name: self.run(data), **{f"{name}_{k}": f(data) for k, f in self.labelled.items()}}
 
 
 def _with_packages() -> None:
@@ -101,15 +113,23 @@ def cd_fcnn_runner(name: str) -> Runner:
 
     bands = cd_fcnn.BANDS[name]
 
-    def run(data: cache.SplitData) -> NDArray[np.uint8]:
-        _with_packages()
-        model = cd_fcnn.load(cd_fcnn.CDFCNN(len(bands)), cd_fcnn.keras_weights(weights_file(name)))
-        out = np.zeros(data.labels.shape, dtype=np.uint8)
-        for i in range(len(data)):
-            out[i] = cd_fcnn.cloud_mask(model, np.asarray(data.images[i]))
-        return out
+    def at(resolution: int) -> Callable[[cache.SplitData], NDArray[np.uint8]]:
+        def run(data: cache.SplitData) -> NDArray[np.uint8]:
+            _with_packages()
+            weights = cd_fcnn.keras_weights(weights_file(name))
+            model = cd_fcnn.load(cd_fcnn.CDFCNN(len(bands)), weights)
+            out = np.zeros(data.labels.shape, dtype=np.uint8)
+            for i in range(len(data)):
+                out[i] = cd_fcnn.cloud_mask(model, np.asarray(data.images[i]), resolution)
+            return out
 
-    return Runner(bands, run)
+        return run
+
+    return Runner(
+        bands,
+        at(cd_fcnn.PUBLISHED_RESOLUTION),
+        {f"{cd_fcnn.CACHE_RESOLUTION}m": at(cd_fcnn.CACHE_RESOLUTION)},
+    )
 
 
 def runners() -> dict[str, Runner]:
