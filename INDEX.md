@@ -59,7 +59,7 @@ For anyone looking for a document by name or by state. This document owns the li
 | [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 17 October 2026 |
 | [hpc/roihu/plan.md](hpc/roihu/plan.md) | the run plan of Project Schatten: budget, stop line and steps | maintainers, evaluators | run plan, compute budget | in development | 17 October 2026 |
 | [jetson/README.md](jetson/README.md) | how to run the benchmark on a Jetson Orin | hardware testers | Jetson steps | in development | 14 October 2026 |
-| [references/README.md](references/README.md) | how published third-party models are run on the same patches | maintainers, evaluators | reference model runs | in development | 16 October 2026 |
+| [references/README.md](references/README.md) | how published third-party models are run on the same patches | maintainers, evaluators | reference model runs | in development | 17 October 2026 |
 | **Models** | | | | | |
 | [models/cloud-filter/README.md](models/cloud-filter/README.md) | what a release folder contains | users | release folders | in development | 15 October 2026 |
 | [models/cloud-filter/MODEL_CARD_TEMPLATE.md](models/cloud-filter/MODEL_CARD_TEMPLATE.md) | template for a model card | maintainers | model card fields | in use | 7 October 2026 |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 17 October 2026: last-changed date of references/README.md, changed by the reference model runners; drafted with an AI-assisted system.
 - 17 October 2026: last-changed dates of the documents changed by the optional queue, quantisation-aware fine-tuning, Azersky and the runbook sequence; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of docs/LANDSCAPE.md and docs/RESULTS.md, changed by the label of the CloudScout re-implementation; drafted with an AI-assisted system.
 - 16 October 2026: last-changed date of AI_ASSISTANCE.md, changed by the CSC Roihu usage policy; drafted with an AI-assisted system.

@@ -8,6 +8,11 @@
 *.npy
 *.tar.gz
 
+# Reference models: packages and published weights, never committed (references/README.md)
+references/.packages/
+references/.weights/
+*.hdf5
+
 # Environment
 .venv/
 .env

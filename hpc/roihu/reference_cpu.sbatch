@@ -3,15 +3,21 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
-# Run a cleared reference model (references/run_reference.py) on one split of a
-# cache, on the CPU, and add its masks to the cache:
+# Run a cleared reference model (references/run_reference.py) on the CPU and add
+# its masks to the cache it reads:
 #
-#   bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch <model> <cache> val
+#   bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch <model> --cache <cache> --split val
+#   bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch <model> --data <independent cache> \
+#     --reason "<why>"
 #
-# Item 1 of the optional queue (hpc/roihu/plan.md, section 3.9). A model stops
-# until its licence decision is "used" and its runner is added, each in its own
-# pull request (references/README.md); nothing is downloaded by this job. The
-# test split needs --final and --reason and is logged; only the maintainer runs it.
+# Item 1 of the optional queue (hpc/roihu/plan.md, section 3.9). --data reads an
+# independent dataset cache only, logs the use in reports/test_log.md and never
+# selects or trains anything; the CloudSEN12+ test split needs --final and
+# --reason and is logged, and only the maintainer runs it. The first job installs
+# the pinned packages of references/requirements.txt into references/.packages
+# (--no-deps, last on the import path); a CD-FCNN model downloads its published
+# weights from their recorded URL into references/.weights, checked against the
+# recorded size. Neither is ever committed.
 #
 # CPU partition 'small', billed at the larger of 0.75 BU per core-hour and
 # 0.375 BU per GiB-hour of memory, on the runtime:
@@ -31,9 +37,18 @@ if [[ "$(uname -m)" != "x86_64" ]]; then
   exit 1
 fi
 
-model="${1:?usage: reference_cpu.sbatch <model> <cache> <split> [--final --reason <why>]}"
-cache_name="${2:?usage: reference_cpu.sbatch <model> <cache> <split>}"
-split="${3:?usage: reference_cpu.sbatch <model> <cache> <split>}"
+usage="usage: reference_cpu.sbatch <model> --cache <cache> --split val | <model> --data <independent cache> --reason <why>"
+model="${1:?${usage}}"
+shift
+cache_name=""
+args=("$@")
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --cache | --data) cache_name="${2:-}"; shift ;;
+  esac
+  shift
+done
+[[ -n "${cache_name}" ]] || { echo "error: ${usage}" >&2; exit 2; }
 
 # shellcheck source=hpc/roihu/job_prelude.sh
 source hpc/roihu/job_prelude.sh
@@ -42,6 +57,11 @@ source hpc/roihu/env.sh
 tiefer_require_venv
 # shellcheck source=hpc/roihu/model_jobs.sh
 source hpc/roihu/model_jobs.sh
+tiefer_require_torch
 tiefer_cpu_threads
+if [[ ! -f references/.packages/.installed ]]; then
+  python3 -m pip install --no-deps --target references/.packages -r references/requirements.txt
+  touch references/.packages/.installed
+fi
 tiefer_stage_cache "${cache_name}"
-python3 references/run_reference.py --model "${model}" --cache "${cache_name}" --split "${split}" "${@:4}"
+python3 references/run_reference.py --model "${model}" "${args[@]}"
