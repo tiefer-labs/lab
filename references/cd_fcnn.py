@@ -21,9 +21,15 @@ B08, B11, B12 (RGBISWIR) as top-of-atmosphere reflectance, the digital
 numbers divided by 10,000; the image padded by reflection to a multiple of 8
 in each direction and cropped back after the network; cloud where the
 probability is at least 0.5. The published tool resamples Sentinel-2 to 30 m
-by default and offers 10, 20 and 60 m too; this runner reads the caches at
-their 10 m (docs/ASSUMPTIONS.md, `A-6.14`). `tests/test_reference_runners.py`
-checks the rebuild against TensorFlow's output for the same weights.
+by default (`S2Image(size_def="30")`), each band with rasterio's
+`Resampling.cubic_spline` in the band's own data type, and offers 10, 20 and
+60 m too. The primary run here is at that 30 m (`resample_30m`): the cached
+10 m bands, padded by reflection at the bottom and right to a multiple of 3,
+are resampled the same way, and the 30 m mask is brought back to 10 m by
+nearest neighbour and cropped to the patch. The run at the caches' own 10 m is
+kept as well, under its own label; neither is chosen by its result
+(docs/ASSUMPTIONS.md, `A-6.16` and `A-6.17`). `tests/test_reference_runners.py` checks the
+rebuild against TensorFlow's output for the same weights.
 """
 
 from __future__ import annotations
@@ -44,6 +50,10 @@ REFLECTANCE_SCALE = 10000.0
 THRESHOLD = 0.5
 PAD_DIVISOR = 8
 BN_EPSILON = 1e-3
+# Ground sampling distance of the caches and of the published default, metres.
+CACHE_RESOLUTION = 10
+PUBLISHED_RESOLUTION = 30
+FACTOR = PUBLISHED_RESOLUTION // CACHE_RESOLUTION
 
 
 class SeparableConv(nn.Module):
@@ -180,7 +190,54 @@ def probability(model: CDFCNN, reflectance: NDArray[np.float32]) -> NDArray[np.f
     return out[top : top + height, left : left + width]
 
 
-def cloud_mask(model: CDFCNN, digital_numbers: NDArray[np.uint16]) -> NDArray[np.uint8]:
-    """1 where cloudy (probability at least 0.5), 0 elsewhere, from the cached numbers."""
-    reflectance = digital_numbers.astype(np.float32) / REFLECTANCE_SCALE
-    return (probability(model, reflectance) >= THRESHOLD).astype(np.uint8)
+def resample_30m(digital_numbers: NDArray[np.uint16]) -> NDArray[np.uint16]:
+    """The 10 m bands at 30 m, as the published tool resamples them.
+
+    The patch is padded by reflection at the bottom and right to a multiple of
+    3, then each band is resampled with rasterio's cubic spline in its own data
+    type. Source and target share one grid origin and a placeholder projected
+    CRS, so nothing but the pixel size changes.
+    """
+    from rasterio.crs import CRS
+    from rasterio.transform import Affine
+    from rasterio.warp import Resampling, reproject
+
+    bands, height, width = digital_numbers.shape
+    pad_h, pad_w = -height % FACTOR, -width % FACTOR
+    padded = np.pad(digital_numbers, ((0, 0), (0, pad_h), (0, pad_w)), mode="reflect")
+    out = np.zeros(
+        (bands, padded.shape[1] // FACTOR, padded.shape[2] // FACTOR), dtype=digital_numbers.dtype
+    )
+    crs = CRS.from_epsg(32633)
+    src = Affine(CACHE_RESOLUTION, 0, 0, 0, -CACHE_RESOLUTION, 0)
+    dst = Affine(PUBLISHED_RESOLUTION, 0, 0, 0, -PUBLISHED_RESOLUTION, 0)
+    for b in range(bands):
+        reproject(
+            padded[b],
+            out[b],
+            src_transform=src,
+            src_crs=crs,
+            dst_transform=dst,
+            dst_crs=crs,
+            resampling=Resampling.cubic_spline,
+        )
+    return out
+
+
+def cloud_mask(
+    model: CDFCNN, digital_numbers: NDArray[np.uint16], resolution: int = PUBLISHED_RESOLUTION
+) -> NDArray[np.uint8]:
+    """1 where cloudy (probability at least 0.5), 0 elsewhere, at the cache's 10 m.
+
+    `resolution` is where the network runs: 30 m, the published default, or
+    10 m, the caches' own; the mask is always returned on the 10 m grid.
+    """
+    if resolution not in (CACHE_RESOLUTION, PUBLISHED_RESOLUTION):
+        raise ValueError(f"resolution must be {CACHE_RESOLUTION} or {PUBLISHED_RESOLUTION} m")
+    _, height, width = digital_numbers.shape
+    numbers = digital_numbers if resolution == CACHE_RESOLUTION else resample_30m(digital_numbers)
+    reflectance = numbers.astype(np.float32) / REFLECTANCE_SCALE
+    mask = (probability(model, reflectance) >= THRESHOLD).astype(np.uint8)
+    if resolution == PUBLISHED_RESOLUTION:
+        mask = mask.repeat(FACTOR, axis=0).repeat(FACTOR, axis=1)[:height, :width]
+    return mask
