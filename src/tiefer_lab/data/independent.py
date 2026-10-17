@@ -722,6 +722,12 @@ def dataset(name: str) -> Dataset:
 
 def require_dataset_allowed(name: str) -> None:
     """Stop with the recorded licence decision of a dataset, or of its imagery."""
+    if name == "azersky":
+        # A candidate with no data, kept out of DATASETS so that the source check never
+        # contacts it; its record is src/tiefer_lab/data/azersky.py.
+        from tiefer_lab.data import azersky
+
+        require_allowed(name, azersky.DECISION)
     require_allowed(name, dataset(name).decision)
     if name in IMAGES_FROM_PRODUCT:
         require_allowed(f"the imagery of {name}", PRODUCT_IMAGERY)

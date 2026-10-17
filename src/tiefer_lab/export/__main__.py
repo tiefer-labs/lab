@@ -35,7 +35,7 @@ from tiefer_lab.config import load_config
 from tiefer_lab.data import cache, padding
 from tiefer_lab.evaluate import TestGuardError, check_test_guard, load_model, log_test_evaluation
 from tiefer_lab.export import onnx_export, quantise, verify
-from tiefer_lab.models import flexible
+from tiefer_lab.models import flexible, qat
 from tiefer_lab.models.cloud_filter import count_macs, count_parameters, fold_cloud_bias
 from tiefer_lab.reports import add_model_label
 from tiefer_lab.train import (
@@ -99,6 +99,14 @@ def export_run(
     size = config.export.input_size
     cpu = torch.device("cpu")
     loaded = load_model(run_dir, config, which, cpu)
+    qat_model: torch.nn.Module | None = None
+    if config.train.qat:
+        if cloud_bias is not None or config.export.input_clip_percentile > 0:
+            raise TrainingError("a qat run is exported without cloud bias or input clip")
+        # FP32 and FP16 from the fine-tuned weights without quantisation; INT8 from
+        # the quantised model itself instead of post-training quantisation.
+        qat_model = loaded
+        loaded = qat.float_copy(loaded)
     model: torch.nn.Module
     if isinstance(loaded, flexible.FlexibleModel):
         if not band_set:
@@ -195,15 +203,19 @@ def export_run(
             config.export.calibration_patches,
             stratified=config.export.calibration_stratified,
         )
-        quantise.quantise_int8(
-            files["fp32"],
-            files["int8"],
-            reader,
-            method=config.export.calibrate_method,
-            keep_fp_first_last=config.export.keep_fp_first_last,
-        )
+        if qat_model is not None:
+            onnx_export.export_fp32(qat.frozen(qat_model), files["int8"], size, config.export.opset)
+            report["calibration"] = {"split": "train", "method": "quantisation-aware fine-tuning"}
+        else:
+            quantise.quantise_int8(
+                files["fp32"],
+                files["int8"],
+                reader,
+                method=config.export.calibrate_method,
+                keep_fp_first_last=config.export.keep_fp_first_last,
+            )
+            report["calibration"] = {"split": "train", "patches": len(reader.positions)}
         report["operators"]["int8"] = onnx_export.operator_types(files["int8"])
-        report["calibration"] = {"split": "train", "patches": len(reader.positions)}
         if (
             config.export.calibrate_method != "minmax"
             or config.export.calibration_stratified

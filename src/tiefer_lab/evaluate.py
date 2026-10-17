@@ -38,7 +38,7 @@ from tiefer_lab.data import cache, independent, padding, sensor
 from tiefer_lab.data.dataset import EvalPatches
 from tiefer_lab.data.source import CLEAR, IGNORE_INDEX, THICK_CLOUD, USED_BANDS, DataSourceError
 from tiefer_lab.data.transforms import to_reflectance
-from tiefer_lab.models import flexible
+from tiefer_lab.models import flexible, qat
 from tiefer_lab.models.cloud_filter import (
     CloudBias,
     predict_masks_with_confidence,
@@ -370,7 +370,10 @@ def check_test_guard(split: str, final: bool, reason: str | None) -> None:
 def load_model(run_dir: Path, config: Config, which: str, device: torch.device) -> flexible.Model:
     name = checkpoint.BEST if which == "best" else checkpoint.LAST
     state = checkpoint.load_checkpoint(run_dir / name, map_location=device)
-    model = flexible.build(config.model, config.data.bands).to(device)
+    model = flexible.build(config.model, config.data.bands)
+    if config.train.qat:
+        model = qat.prepare(model)
+    model = model.to(device)
     model.load_state_dict(state["model"])
     model.eval()
     if device.type == "cuda":

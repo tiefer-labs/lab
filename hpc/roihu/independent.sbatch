@@ -7,10 +7,12 @@
 #
 #   bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch <dataset> [extra build_cache arguments]
 #
-# <dataset>: s2_cloud_catalogue or kappaset,
-# the datasets of src/tiefer_lab/data/independent.py that the maintainer's licence
-# decisions record as used (docs/DATASETS.md); any other dataset stops with its decision
-# before anything is downloaded. The Zenodo files are downloaded into
+# <dataset>: s2_cloud_catalogue or kappaset (downloaded here), or landsat8_sparcs or
+# landsat8_biome (downloaded by hand into $TIEFER_DATA_DIR/downloads/<dataset>/ first,
+# hpc/roihu/plan.md, section 3.9), the datasets of src/tiefer_lab/data/independent.py
+# that the maintainer's licence decisions record as used (docs/DATASETS.md); any other
+# dataset, azersky included, stops with its decision before anything is downloaded. The
+# Zenodo files are downloaded into
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
 # unpacked once, and deleted once the cache is complete (TIEFER_KEEP_DOWNLOADS=1 keeps them).
@@ -47,6 +49,11 @@ case "${dataset}" in
   kappaset)
     record="7100327"
     files=(kappaset.zip README.pdf)
+    ;;
+  landsat8_sparcs | landsat8_biome)
+    # Downloaded by hand; the build reads the files already there.
+    record=""
+    files=()
     ;;
   *)
     record=""

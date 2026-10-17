@@ -226,8 +226,13 @@ def test_candidate_references_are_drafts_with_the_stated_changes(repo_root: Path
     }
     assert _changed(load("sieb_candidate"), load("sieb")) == stated
     assert _changed(load("wandler_1m_candidate"), load("wandler_1m")) == stated
+    # The quantisation-aware fine-tune is a stage of the Sieb candidate (optional queue, item 20).
+    assert _changed(load("sieb_qat"), load("sieb")) == {
+        "train": {"qat", "init_checkpoint", "epochs", "learning_rate", "patience", "warmup_epochs"}
+    }
     assumptions = (repo_root / "docs" / "ASSUMPTIONS.md").read_text(encoding="utf-8")
     for name in (
+        "sieb_qat",
         "sieb_candidate",
         "wandler_1m_candidate",
         "wandler_1m_candidate_finetune",

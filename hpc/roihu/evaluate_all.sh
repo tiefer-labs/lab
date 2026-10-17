@@ -5,8 +5,9 @@
 #
 # Evaluate one run on every independent dataset of the CloudSEN12 paper's
 # Table 1 that the maintainer's licence decisions allow (docs/DATASETS.md),
-# one evaluate.sbatch job per dataset, with the baselines and the reference
-# masks each dataset holds.
+# one evaluate_cpu.sbatch job per dataset (every evaluation runs on the CPU,
+# hpc/roihu/plan.md, section 3.1), with the baselines and the reference masks
+# each dataset holds.
 #
 #   REASON="<why>" bash hpc/roihu/evaluate_all.sh [--test-only] <run-id>
 #
@@ -40,7 +41,7 @@ for dataset in "${datasets[@]}"; do
     continue
   fi
   DATA="${dataset}" FULL_METRICS=1 bash "${here}/submit.sh" "${options[@]}" \
-    hpc/roihu/evaluate.sbatch "${run_id}"
+    hpc/roihu/evaluate_cpu.sbatch "${run_id}"
 done
 if [[ ${#missing[@]} -gt 0 ]]; then
   for dataset in "${missing[@]}"; do

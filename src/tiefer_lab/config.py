@@ -135,6 +135,10 @@ class TrainConfig:
     # or by a prefix that names exactly one run, for example "cloudscout_reimpl_step1_th30-seed0".
     # Random initialisation stays the rule; this loads only Tiefer's own weights.
     init_checkpoint: str | None = None
+    # Quantisation-aware fine-tuning from init_checkpoint (tiefer_lab.models.qat):
+    # batch norm folded, every convolution quantised to INT8 on the fly; the export
+    # writes the INT8 file from it instead of post-training quantisation. Off: as before.
+    qat: bool = False
     # Clip the global norm of the gradient to this value; 0 is off.
     grad_clip_norm: float = 0.0
     # Skip an optimizer step whose loss or gradient is not finite, and count it.
@@ -261,6 +265,12 @@ class Config:
             self.model.architecture != "cloudscout" or self.model.input == "fixed",
             "the cloudscout architecture takes fixed bands",
         )
+        if self.train.qat:
+            _check(
+                self.model.architecture == "separable_unet" and self.model.input == "fixed",
+                "qat needs the separable_unet architecture with fixed bands",
+            )
+            _check(self.train.init_checkpoint is not None, "qat fine-tunes: set init_checkpoint")
 
 
 SECTIONS: dict[str, type[Any]] = {

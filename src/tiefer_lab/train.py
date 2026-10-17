@@ -40,7 +40,7 @@ from tiefer_lab.data import cache, padding, sensor
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches
 from tiefer_lab.data.source import L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
-from tiefer_lab.models import flexible
+from tiefer_lab.models import flexible, qat
 from tiefer_lab.models.cloud_filter import (
     count_macs,
     count_parameters,
@@ -110,11 +110,17 @@ def resolve_run_reference(reference: str) -> Path:
     return matches[0].resolve()
 
 
+def build_for_run(config: Config) -> torch.nn.Module:
+    """The model of a run's config, in the form its checkpoints were saved in."""
+    model = flexible.build(config.model, config.data.bands)
+    return qat.prepare(model) if config.train.qat else model
+
+
 def load_run_model(reference: str, device: torch.device) -> tuple[torch.nn.Module, Config]:
     """The best.pt model of another run of this repository, in eval mode."""
     run_dir = resolve_run_reference(reference)
     config = load_config(run_dir / CONFIG_NAME)
-    model = flexible.build(config.model, config.data.bands)
+    model = build_for_run(config)
     state = checkpoint.load_checkpoint(run_dir / checkpoint.BEST, map_location=device)
     model.load_state_dict(state["model"])
     return model.to(device).eval(), config
@@ -498,6 +504,12 @@ def train(
         model.load_state_dict(state0["model"])
         meta["init_checkpoint"] = source_dir.name
         print(f"initialised from {source_dir.name}/{checkpoint.BEST}", flush=True)
+    if config.train.qat:
+        # Before the optimizer and the resume, so both see the quantised model.
+        model = qat.prepare(model).to(device)
+        if device.type == "cuda":
+            model = model.to(memory_format=torch.channels_last)
+        print("quantisation-aware fine-tuning: batch norm folded, INT8 on the fly", flush=True)
     if config.train.train_only == "decision":
         if not isinstance(model, CloudScoutNet):
             raise TrainingError("train_only = decision needs the cloudscout architecture")

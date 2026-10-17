@@ -606,7 +606,8 @@ def test_evaluate_all_lists_missing_caches_and_fails(
     assert result.returncode != 0
     assert "not evaluated: no cache: kappaset" in result.stderr
     assert "s2_cloud_catalogue" not in result.stderr
-    assert (tmp_path / "sbatch.log").is_file()
+    # Every evaluation runs on the CPU (hpc/roihu/plan.md, section 3.1).
+    assert "evaluate_cpu.sbatch" in (tmp_path / "sbatch.log").read_text()
 
 
 CPU_JOBS = {
@@ -683,6 +684,7 @@ def test_worst_case_cost_of_each_kind_of_job() -> None:
     assert _budget("train_packed.sbatch", "--time", "1-00:00:00") == "gpu 4800.0"
     # small: max(0.75 x cores, 0.375 x GiB) per hour.
     assert _budget("evaluate_cpu.sbatch") == "cpu 96.0"
+    assert _budget("reference_cpu.sbatch") == "cpu 96.0"
     assert _budget("data.sbatch") == "cpu 288.0"
     assert _budget("check_sources.sbatch") == "cpu 0.8"
     # medium: 288 BU per node-hour.

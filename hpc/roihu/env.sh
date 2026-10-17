@@ -27,7 +27,7 @@ if [[ -z "${TIEFER_CSC_PROJECT:-}" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 if [[ ! "${TIEFER_CSC_PROJECT}" =~ ^[A-Za-z0-9_]+$ ]]; then
-  echo "error: TIEFER_CSC_PROJECT='${TIEFER_CSC_PROJECT}' is not a CSC project name (letters, digits, _); if ~/.bashrc holds the literal placeholder, remove that line (hpc/roihu/README.md, step 1)" >&2
+  echo "error: TIEFER_CSC_PROJECT='${TIEFER_CSC_PROJECT}' is not a CSC project name (letters, digits, _); if ~/.bashrc holds the literal placeholder, remove that line (hpc/roihu/README.md, step 0 runbook, item 3)" >&2
   return 1 2>/dev/null || exit 1
 fi
 
@@ -108,7 +108,7 @@ fi
 # Stop with a clear message when setup.sh has not been run for this architecture.
 tiefer_require_venv() {
   if [[ ! -f "${TIEFER_VENV}/bin/activate" ]]; then
-    echo "error: no virtual environment ${TIEFER_VENV}; run 'bash hpc/roihu/setup.sh' on a ${TIEFER_ARCH} node first (hpc/roihu/README.md, step 2)" >&2
+    echo "error: no virtual environment ${TIEFER_VENV}; submit the setup job of ${TIEFER_ARCH} first: setup_cpu.sbatch or setup_gpu.sbatch (hpc/roihu/README.md, step 0 runbook, items 5 and 6)" >&2
     return 1
   fi
 }
