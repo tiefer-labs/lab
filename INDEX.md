@@ -27,15 +27,15 @@ For anyone looking for a document by name or by state. This document owns the li
 | [BENCHMARK-AUTHORITY.md](BENCHMARK-AUTHORITY.md) | which result answers which question, supersession, citation | evaluators | current results, citation form | in use | 15 October 2026 |
 | [CLAIMS.md](CLAIMS.md) | status and evidence of every public capability statement | evaluators, partners, the founder | public claims | in use | 15 October 2026 |
 | [POLICY.md](POLICY.md) | the gates for numbers, test-split access, model cards, comparisons, data and compute | maintainers, contributors | measurement and release gates | in use | 15 October 2026 |
-| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 16 October 2026 |
+| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements and acceptance targets with their verification | evaluators | requirements, acceptance targets | in development | 17 October 2026 |
 | [docs/LANDSCAPE.md](docs/LANDSCAPE.md) | published values of related systems and what decides each comparison | evaluators | related systems | in development | 16 October 2026 |
 | **Data** | | | | | |
 | [docs/DATA.md](docs/DATA.md) | data card for CloudSEN12+ | researchers | dataset facts, caches | in development | 15 October 2026 |
-| [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 16 October 2026 |
-| [docs/INDEPENDENT.md](docs/INDEPENDENT.md) | data card for the four independent test datasets | researchers, evaluators | independent dataset facts | in development | 16 October 2026 |
+| [docs/DATASETS.md](docs/DATASETS.md) | catalogue of every dataset, roles per split, metric comparison | researchers | dataset catalogue | in development | 17 October 2026 |
+| [docs/INDEPENDENT.md](docs/INDEPENDENT.md) | data card for the four independent test datasets | researchers, evaluators | independent dataset facts | in development | 17 October 2026 |
 | **Specification and standards** | | | | | |
-| [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 16 October 2026 |
-| [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 16 October 2026 |
+| [docs/SPEC.md](docs/SPEC.md) | specification of milestones L1 and L2 | contributors | specification | in development | 17 October 2026 |
+| [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | assumptions with evidence, status and triggers | researchers, evaluators | assumptions | in development | 17 October 2026 |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | standards, handbooks and formats, clauses read and status | evaluators | standards matrix | in development | 7 October 2026 |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | every dependency, its version and licence | users, evaluators | dependencies | in use | 16 October 2026 |
 | [docs/STYLE.md](docs/STYLE.md) | the documentation standard | contributors | writing rules, document types | in use | 8 October 2026 |
@@ -56,8 +56,8 @@ For anyone looking for a document by name or by state. This document owns the li
 | `.github/ISSUE_TEMPLATE/` | 19 issue forms, one per kind of issue, and the chooser configuration | everyone who opens an issue | issue forms | in use | 7 October 2026 |
 | `.github/pull_request_template.md` and `.github/PULL_REQUEST_TEMPLATE/` | the default pull request template and nine templates by kind of change | contributors | pull request templates | in use | 7 October 2026 |
 | **Folder guides** | | | | | |
-| [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 16 October 2026 |
-| [hpc/roihu/plan.md](hpc/roihu/plan.md) | the run plan of Project Schatten: budget, stop line and steps | maintainers, evaluators | run plan, compute budget | in development | 16 October 2026 |
+| [hpc/roihu/README.md](hpc/roihu/README.md) | guide for training on CSC Roihu | maintainers | CSC Roihu steps and facts | in development | 17 October 2026 |
+| [hpc/roihu/plan.md](hpc/roihu/plan.md) | the run plan of Project Schatten: budget, stop line and steps | maintainers, evaluators | run plan, compute budget | in development | 17 October 2026 |
 | [jetson/README.md](jetson/README.md) | how to run the benchmark on a Jetson Orin | hardware testers | Jetson steps | in development | 14 October 2026 |
 | [references/README.md](references/README.md) | how published third-party models are run on the same patches | maintainers, evaluators | reference model runs | in development | 16 October 2026 |
 | **Models** | | | | | |
@@ -85,6 +85,7 @@ The status words are defined in [docs/STYLE.md](docs/STYLE.md), section 4.
 
 ## Changelog
 
+- 17 October 2026: last-changed dates of the documents changed by the optional queue, quantisation-aware fine-tuning, Azersky and the runbook sequence; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of docs/LANDSCAPE.md and docs/RESULTS.md, changed by the label of the CloudScout re-implementation; drafted with an AI-assisted system.
 - 16 October 2026: last-changed date of AI_ASSISTANCE.md, changed by the CSC Roihu usage policy; drafted with an AI-assisted system.
 - 16 October 2026: last-changed dates of the documents changed by the CPU jobs; drafted with an AI-assisted system.

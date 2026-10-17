@@ -14,7 +14,7 @@
 # huggingface.co (observed before Project Schatten; to be confirmed by the
 # setup step of hpc/roihu/plan.md). It needs no token; an optional read-only
 # HF_TOKEN in the submitting shell only raises the rate limit and is never
-# written to any file, log or report (hpc/roihu/README.md, step 3).
+# written to any file, log or report (hpc/roihu/README.md, plan steps 1 and 1a).
 #
 # CPU partition 'small': up to 72 hours on one node.
 # Source: https://docs.csc.fi/computing/running/batch-job-partitions/

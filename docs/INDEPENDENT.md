@@ -44,8 +44,8 @@ Which datasets the maintainer's licence decisions allow; only a dataset recorded
 
 | Dataset | Status |
 | :--- | :---: |
-| L8 Biome | used, licence decision of 16 October 2026; download not planned yet |
-| L8 SPARCS | used, licence decision of 16 October 2026; download not planned yet, planned before L8 Biome |
+| L8 Biome | used, licence decision of 16 October 2026; download in item 1 of the optional queue ([hpc/roihu/plan.md](../hpc/roihu/plan.md), section 3.9), after L8 SPARCS |
+| L8 SPARCS | used, licence decision of 16 October 2026; download in item 1 of the optional queue, before L8 Biome |
 | Sentinel-2 Cloud Mask Catalogue | used |
 | KappaSet | used |
 | WHUS2-CD+ | not used, decision of 16 October 2026 (scope, not licence) |
@@ -53,6 +53,7 @@ Which datasets the maintainer's licence decisions allow; only a dataset recorded
 | 95-Cloud | not used while it needs credentials, licence decision of 15 October 2026 |
 | S2-Hollstein | not used, licence decision of 15 October 2026 |
 | S2-CESBIO | not used, licence decision of 15 October 2026 (its imagery is not downloaded) |
+| Azersky (SPOT 7) | candidate, no data, no licence decision; its reader (`src/tiefer_lab/data/azersky.py`) stops on the decision and on every open fact: product format, bands and their order, scaling to top-of-atmosphere reflectance, ground sampling and labels |
 
 ---
 
@@ -191,6 +192,7 @@ The file names, sizes and checksums the code compares are `files` of each datase
 
 ## Changelog
 
+- 17 October 2026: Azersky in the status table; L8 SPARCS and L8 Biome are item 1 of the optional queue; drafted with an AI-assisted system.
 - 16 October 2026: L8 SPARCS cited as the publisher gives it, with the state of its DOI; drafted with an AI-assisted system.
 - 16 October 2026: L8 Biome and L8 SPARCS used and WHUS2-CD+ not used, decisions of 16 October 2026; the DOIs of both Landsat releases checked through the DOI resolver and DataCite: Biome's resolves, SPARCS stays an open fact; drafted with an AI-assisted system.
 - 16 October 2026: L8 Biome classes read from its access page; section 5.1, what limits measurement; distribution facts and sizes of the four datasets checked by `check_sources`; drafted with an AI-assisted system.

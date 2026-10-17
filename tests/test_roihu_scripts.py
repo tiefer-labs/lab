@@ -57,6 +57,9 @@ def roihu_env(tmp_path: Path) -> dict[str, str]:
             "TIEFER_GPU_BU_LEFT": "10000",
             "TIEFER_CPU_BU_LEFT": "60000",
             "TIEFER_STORAGE_BU_LEFT": "30000",
+            # The free /scratch quota from csc-workspaces (test values).
+            "TIEFER_SCRATCH_FREE_GIB": "500",
+            "TIEFER_SCRATCH_FREE_FILES": "1000000",
             # No CSC initialisation file unless a test writes one.
             "TIEFER_CSC_ENV_INIT": str(tmp_path / "zz-csc-env.sh"),
         }
@@ -606,7 +609,8 @@ def test_evaluate_all_lists_missing_caches_and_fails(
     assert result.returncode != 0
     assert "not evaluated: no cache: kappaset" in result.stderr
     assert "s2_cloud_catalogue" not in result.stderr
-    assert (tmp_path / "sbatch.log").is_file()
+    # Every evaluation runs on the CPU (hpc/roihu/plan.md, section 3.1).
+    assert "evaluate_cpu.sbatch" in (tmp_path / "sbatch.log").read_text()
 
 
 CPU_JOBS = {
@@ -683,6 +687,7 @@ def test_worst_case_cost_of_each_kind_of_job() -> None:
     assert _budget("train_packed.sbatch", "--time", "1-00:00:00") == "gpu 4800.0"
     # small: max(0.75 x cores, 0.375 x GiB) per hour.
     assert _budget("evaluate_cpu.sbatch") == "cpu 96.0"
+    assert _budget("reference_cpu.sbatch") == "cpu 96.0"
     assert _budget("data.sbatch") == "cpu 288.0"
     assert _budget("check_sources.sbatch") == "cpu 0.8"
     # medium: 288 BU per node-hour.
@@ -778,3 +783,66 @@ def test_timing_stopped_by_its_time_limit_still_writes_its_report(
     assert sum("packed run" in c for c in calls) == 1, "no packing starts after the signal"
     assert calls[-1].endswith("--time-limit-reached") and "packed report" in calls[-1]
     assert "the time limit stopped the timing at 1 runs per GPU" in out
+
+
+def _scratch(*args: str) -> str:
+    command = f"source {ROIHU / 'budget.sh'}; tiefer_scratch_need " + " ".join(args)
+    result = subprocess.run(["bash", "-c", command], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
+def test_expected_scratch_growth_of_each_data_job() -> None:
+    four, thirteen = 4 * 509 * 509 * 2 + 509 * 509, 13 * 509 * 509 * 2 + 509 * 509
+    assert _scratch("data.sbatch", "all") == f"{10000 * four} 20"
+    shard = "train --name cloudsen12-l1c-all --bands all --shard 0/4 --max-rate 120"
+    assert _scratch("data.sbatch", *shard.split()) == f"{2123 * thirteen} 20"
+    merge = "train --name cloudsen12-l1c-all --bands all --merge 4"
+    assert _scratch("data.sbatch", *merge.split()) == f"{2123 * thirteen} 20"
+    assert _scratch("data.sbatch", "val", "--bands", "all") == f"{535 * thirteen} 20"
+    references = "test --name cloudsen12-l1c-all --references"
+    assert _scratch("data.sbatch", *references.split()) == f"{8 * 975 * 509 * 509} 20"
+    catalogue = 15206407392 + 29470247388 + 513 * 16 * thirteen
+    assert _scratch("independent.sbatch", "s2_cloud_catalogue") == f"{catalogue} 1560"
+    kappaset = 56186540640 + 62686780681 + 9251 * thirteen
+    assert _scratch("independent.sbatch", "kappaset") == f"{kappaset} 18520"
+    assert _scratch("independent.sbatch", "landsat8_biome").startswith("unknown")
+    assert _scratch("data.sbatch", "train_extra").startswith("unknown")
+    assert _scratch("train_packed.sbatch", "configs/sieb.toml@0") == "0 0"
+
+
+def test_a_data_job_is_refused_when_the_scratch_quota_does_not_fit(
+    roihu_env: dict[str, str],
+) -> None:
+    job = ["hpc/roihu/independent.sbatch", "kappaset"]
+    ok = _run("submit.sh", job, roihu_env)
+    assert ok.returncode == 0, ok.stderr
+    assert "scratch: about 171.0 GiB and 18520 files" in ok.stdout
+    # 200 GiB free minus the reserve of 50 leaves too little for KappaSet.
+    tight = _run("submit.sh", job, {**roihu_env, "TIEFER_SCRATCH_FREE_GIB": "200"})
+    assert tight.returncode == 2 and "needs about 171.0 GiB of /scratch" in tight.stderr
+    few = _run("submit.sh", job, {**roihu_env, "TIEFER_SCRATCH_FREE_FILES": "1000"})
+    assert few.returncode == 2 and "adds about 18520 files" in few.stderr
+    unset = {k: v for k, v in roihu_env.items() if k != "TIEFER_SCRATCH_FREE_GIB"}
+    assert "set TIEFER_SCRATCH_FREE_GIB" in _run("submit.sh", job, unset).stderr
+    biome = ["hpc/roihu/independent.sbatch", "landsat8_biome"]
+    blocked = _run("submit.sh", biome, roihu_env)
+    assert blocked.returncode == 2 and "TIEFER_SCRATCH_NEED_GIB" in blocked.stderr
+    typed = _run("submit.sh", biome, {**roihu_env, "TIEFER_SCRATCH_NEED_GIB": "120"})
+    assert typed.returncode == 0, typed.stderr
+    # --test-only spends nothing and is not checked.
+    assert _run("submit.sh", ["--test-only", *job], unset).returncode == 0
+
+
+def test_setup_prints_the_size_and_files_of_its_environment() -> None:
+    text = (ROIHU / "setup.sh").read_text()
+    assert 'du -s --block-size=1M "${TIEFER_VENV}"' in text
+    assert 'du -s --inodes "${TIEFER_VENV}"' in text
+    assert text.index("environment size:") < text.index('echo "setup complete:')
+
+
+def test_independent_never_holds_two_datasets_downloads() -> None:
+    text = (ROIHU / "independent.sbatch").read_text()
+    guard = text.index('for other in "${TIEFER_DATA_DIR}/downloads"/*/; do')
+    assert guard < text.index("curl --fail")
+    assert "are still in" in text

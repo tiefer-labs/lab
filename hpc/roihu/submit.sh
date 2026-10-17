@@ -67,6 +67,14 @@ done
 if [[ "${test_only}" == "0" && "${TIEFER_BUDGET_CHECKED:-0}" != "1" ]]; then
   tiefer_budget_check 1 "${script}" "${options[@]}" || exit 2
 fi
+# A data job also needs room in the /scratch quota you copied from csc-workspaces.
+case "$(basename "${script}")" in
+  data.sbatch | independent.sbatch)
+    if [[ "${test_only}" == "0" ]]; then
+      tiefer_scratch_check "${script}" "$@" || exit 2
+    fi
+    ;;
+esac
 
 host_arch="$(uname -m)"
 gpu_job=0

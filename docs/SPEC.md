@@ -245,7 +245,7 @@ The inputs the filter is designed for (`tiefer_lab.onboard.Domain`). A frame out
 - ONNX FP32 with a pinned opset (17) and a fixed input shape: 1 x 4 x 512 x 512 for the L1 models and the four-band specialists, 1 x N x 512 x 512 per band set of the band-flexible model (plus a dynamic batch variant if trivial). Batch norm folded.
 - Verify ONNX Runtime against PyTorch: maximum absolute logit difference, and identical argmax on at least 99.9 percent of validation pixels. Fail loudly otherwise.
 - FP16 variant.
-- INT8: static post-training quantisation with ONNX Runtime, calibration on a few hundred patches from the **training** split. Measure the change in mean IoU and false discard rate on validation (and on test only with `--final`, logged). If mean IoU drops by more than one point, say so and propose quantisation-aware training as future work.
+- INT8: static post-training quantisation with ONNX Runtime, calibration on a few hundred patches from the **training** split. Measure the change in mean IoU and false discard rate on validation (and on test only with `--final`, logged). If mean IoU drops by more than one point, say so. Quantisation-aware fine-tuning (`train.qat`, `src/tiefer_lab/models/qat.py`, off by default) starts from a trained run, folds batch norm and quantises every convolution to symmetric INT8 on the fly (weights per output channel, inputs per tensor, zero points 0); the export then writes the INT8 file from that model as QDQ, with the scales frozen into constants, instead of post-training quantisation. It runs only as item 20 of the optional queue of `hpc/roihu/plan.md`.
 - Export options: `--cloud-bias <value>|auto` folds the cloud logit bias into the bias of the last convolution (no new operator); `--settings-from configs/<name>.toml` takes the `[export]` settings of a committed config: `calibrate_method` (`minmax`, `percentile`, `entropy`), `calibration_stratified`, `keep_fp_first_last` and `input_clip_percentile` (a Clip node in front of the network). The defaults give the files of earlier versions.
 - Release folder `models/cloud-filter/<version>/`: `MODEL_CARD.md`, `SHA256SUMS`, `config.toml` committed. **Trained models are never published from this repository**: checkpoints and `.onnx` files are gitignored, are not attached to GitHub Releases, and stay with Tiefer. The checksums let Tiefer prove which model produced which result.
 
@@ -319,7 +319,8 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
 | `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing; a shorter `--time` is allowed, and two minutes before the limit (`--signal=B:USR1@120`) it stops the running packing and still writes the report, marked `time_limit_reached` |
 | `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
-| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve |
+| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve; for a data job also its expected growth of `/scratch` against the free quota typed in from `csc-workspaces` minus 50 GiB |
+| `reference_cpu.sbatch` | CPU job, `small`, 32 cores and 64 GiB, 4 hours: a cleared reference model on one split of a cache (`references/run_reference.py`), item 1 of the optional queue |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
@@ -335,12 +336,12 @@ The guide follows docs/STYLE.md, section 12.14, and its steps are:
 
 1. Requirements: a CSC project with Roihu GPU access and GPU billing units; SSH access to `roihu-cpu.csc.fi` with a MyCSC-signed certificate; the CSC terms of use. Free CSC computing is for research and education by people affiliated with Finnish research organisations, and may not serve an organisation's own service production; commercial work needs a paid project. Confirm with the project PI or CSC Service Desk before the first job. This is the founder's decision.
 2. Before you start: the remaining GPU billing units; `bash hpc/roihu/submit.sh --test-only <job>` to check a request; where each job runs and which environment it gets; login nodes are for light work only, so the cache is never built there.
-3. Step 1, clone and set the project: `git clone https://github.com/tiefer-labs/lab.git` into `/projappl/<project>/tiefer-lab/src` and `export TIEFER_CSC_PROJECT=<project>` in `~/.bashrc`, with a warning never to paste the literal `<project>`.
-4. Step 2, set up both architectures from `roihu-cpu.csc.fi` as batch jobs: `setup_cpu.sbatch` (`venv-x86_64`) and `setup_gpu.sbatch` on a GPU node (`venv-aarch64`), with what their logs must show.
-5. Step 3, survey the dataset with `survey.sbatch`, then build the data cache with `data.sbatch`.
-6. Step 4, the smoke job on `gputest`, submitted from `roihu-cpu.csc.fi` like every GPU job, and how to check the environment lines of a GPU job log; when the train and val splits of the full cache are not complete, it builds a tiny cache in its own folder and never touches the full cache.
-7. Step 5, train on `gpumedium`, one GPU per job, seeds as separate jobs with `SEED`; `timing.sbatch` and `sweep.sh` for the cost of a config and for several configs.
-8. Step 6, evaluate, export, the final test with `FINAL=1` and `REASON`, `usage.sh` per job, and `bash hpc/roihu/collect.sh <run-id>`; copy the archive to the founder's computer and unpack it into the repository.
+3. The step 0 runbook, item by item, from a fresh account to a finished smoke job, device check and source check: who runs what (the maintainer types every command; no credentials and no service for an AI-assisted system), login node or batch job, where files go; log in, read the balance with `csc-projects` and type it in for the budget guard, set the project in `~/.bashrc` with a warning never to paste the literal `<project>`, clone into `/projappl/<project>/tiefer-lab/src`, `setup_cpu.sbatch` and `setup_gpu.sbatch` with what their logs must show, the smoke job with the device check and the environment lines of a GPU job log, the source check, `usage.sh`, and what to send back.
+4. Plan steps 1 and 1a, as batch jobs: the survey (`survey.sbatch`), the four-band cache and the 13-band cache in shards (`data.sbatch`), the optional read-only Hugging Face token, the padding check on the login node, and the independent caches (`independent.sbatch`).
+5. Plan step 2: the timing step, its reports copied back, and the gate.
+6. Plan steps 3 to 7b: packed training on `gpumedium` (`train_packed.sbatch`) with the time limit from the packing report and `resume:<run-id>` after a stop.
+7. Plan steps 3a to 9: evaluation, diagnosis, calibration and export on the CPU, with the protocol options of the jobs.
+8. Plan step 10: the final test with `FINAL=1` and `REASON`, by the maintainer only; then, after every job, `usage.sh` and `bash hpc/roihu/collect.sh <run-id>`, the archive copied to the founder's computer and unpacked into the repository; then the optional queue of `plan.md`, section 3.9.
 
 ---
 
@@ -384,6 +385,7 @@ lab/
     sieb.toml                           sieb_base to the end of its schedule, with warm-up and moving average
     sieb_<change>.toml                  one-change variants of sieb; sieb_int8_<change> change the INT8 export only
     sieb_candidate.toml                 candidate reference of Sieb, a draft
+    sieb_qat.toml                       quantisation-aware fine-tune of Sieb from sieb-seed0 (optional queue)
     wandler_1m.toml                     Wandler, about 1 M parameters: reference run of the family
     wandler_500k.toml                   size ladder, about 0.5 M parameters
     wandler_4m.toml                     size ladder, about 4 M parameters
@@ -433,6 +435,7 @@ lab/
       timing.sbatch               one cut epoch on gputest: the real cost of a config
       timing_packed.sbatch        timing step: 1 to 4 runs per GPU, utilisation, memory, data wait
       timing_cpu.sbatch           one cut epoch on a full CPU node, against the GPU in BU
+      reference_cpu.sbatch        a cleared reference model on one split, CPU
       train_packed.sbatch         several runs on one reserved GPU, time limit from the timing report
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
@@ -504,6 +507,7 @@ lab/
         __init__.py
         source.py                 CloudSEN12+ access with tacoreader
         independent.py            independent test datasets: facts, readers, reflectance, tiles
+        azersky.py                Azersky (SPOT 7): no data, a reader that stops on open facts
         check_sources.py          python -m tiefer_lab.data.check_sources: reports/data/sources.json
         cloudsen12_2022.py        masks of the 2022 release, linked to CloudSEN12+, licence first
         build_cache.py            python -m tiefer_lab.data.build_cache
@@ -520,6 +524,7 @@ lab/
         cloud_filter.py           the compact network
         convnext_unet.py          U-Net with ConvNeXt-style encoder blocks, for the largest size
         cloudscout.py             CloudScout re-implementation, not the flown model
+        qat.py                    quantisation-aware fine-tuning, off by default
         flexible.py               band-flexible input: 13 bands, availability flags, two designs
         losses.py                 cross-entropy plus Dice
       export/
@@ -592,6 +597,9 @@ lab/
     test_packed.py                runs launched together, packing report, time limit, signals
     test_hpc_policy.py            hpc/ follows the CSC usage policy: no service, own jobs only
     test_model_label.py           the CloudScout re-implementation is labelled everywhere
+    test_qat.py                   quantisation-aware fine-tuning: off by default, QDQ export
+    test_azersky.py               Azersky: no data, the reader stops on every open fact
+    test_plan_queue.py            the optional queue is frozen and its commands are real
     test_check_sources.py         the source check on recorded responses, no network
     test_training_options.py      training options and the frame classifier
     test_frame_options.py         cloud bias, soft fraction and INT8 export options
@@ -690,6 +698,8 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 17 October 2026: `budget.sh` checks the `/scratch` quota before a data job; drafted with an AI-assisted system.
+- 17 October 2026: quantisation-aware fine-tuning (`qat.py`, `sieb_qat.toml`), the Azersky reader skeleton (`azersky.py`), `reference_cpu.sbatch`, their tests, and section 12 follows the one sequence of `hpc/roihu/README.md`; drafted with an AI-assisted system.
 - 16 October 2026: `timing_packed.sbatch` stops at its time limit and still writes the report; drafted with an AI-assisted system.
 - 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; reports of it carry `model_label`; drafted with an AI-assisted system.
 - 16 October 2026: the setup as batch jobs (`setup_cpu.sbatch`), the worst-case cost check (`budget.sh`), the CPU timing (`timing_cpu.sbatch`) and the usage policy test (`test_hpc_policy.py`); drafted with an AI-assisted system.

@@ -147,7 +147,8 @@ def fold_batch_norm[M: nn.Module](model: M) -> M:
     """A copy in eval mode with every batch norm folded into its convolution."""
     folded = copy.deepcopy(model).eval()
     for module in folded.modules():
-        if isinstance(module, ConvBNAct):
+        # A block folded before (quantisation-aware fine-tuning) has no batch norm left.
+        if isinstance(module, ConvBNAct) and isinstance(module[1], nn.BatchNorm2d):
             conv, bn = module[0], module[1]
             assert isinstance(conv, nn.Conv2d) and isinstance(bn, nn.BatchNorm2d)
             module[0] = fuse_conv_bn_eval(conv, bn)

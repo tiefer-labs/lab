@@ -141,3 +141,128 @@ tiefer_budget_check() {
   awk -v n="${jobs}" -v c="${cost}" -v l="${left}" -v r="${reserve}" -v k="${name}" \
     'BEGIN { printf "worst case %.1f %s BU (%d job(s) of %.1f); %.1f left after it, above the reserve of %.1f\n", n * c, k, n, c, l - n * c, r }'
 }
+
+# The /scratch quota ------------------------------------------------------------
+#
+# Before a data job (data.sbatch, independent.sbatch), its expected growth of
+# /scratch is compared with the free quota you read in your own csc-workspaces
+# output and type in: TIEFER_SCRATCH_FREE_GIB and TIEFER_SCRATCH_FREE_FILES. The
+# reserve TIEFER_SCRATCH_RESERVE_GIB (default 50) keeps the peak under 450 GiB of
+# the 500 GiB quota (maintainer input of 17 October 2026; hpc/roihu/plan.md,
+# section 3.8). Sizes come from recorded facts only:
+#
+#   - patches per split: the metadata table of tacofoundation:cloudsen12-l1c
+#     (label_type high, real_proj_shape 509), read with tacoreader on
+#     17 October 2026: train 8,490, validation 535, test 975;
+#   - one cached patch: bands x 509 x 509 x 2 + 509 x 509 bytes, a reference mask
+#     509 x 509 bytes (build_cache.bytes_per_patch, cache.add_reference_masks);
+#   - the Catalogue and KappaSet: the recorded sizes of their files and the
+#     uncompressed sizes of their zip archives, read from the archives' central
+#     directories on 17 October 2026, plus a cache of at most 16 tiles per
+#     Catalogue scene (1022 pixels at 20 m, 2044 at 10 m) and one per KappaSet
+#     sub-tile (512 x 512 at 10 m), with 13 bands;
+#   - L8 SPARCS: a cache of at most 25 tiles per subset (1000 pixels at 30 m,
+#     3000 at 10 m) and 8 bands; its unpacked size is not known.
+#
+# A job whose size is not known (the unpacked size of a hand download, L8 Biome,
+# train_extra, Azersky) is refused until you type its expected size in GiB into
+# TIEFER_SCRATCH_NEED_GIB, read from the archive's own listing.
+
+TIEFER_PATCHES_TRAIN=8490
+TIEFER_PATCHES_VAL=535
+TIEFER_PATCHES_TEST=975
+TIEFER_REFERENCE_MASKS=8
+
+# Bytes of one cached 509 x 509 patch with <bands> bands.
+tiefer_patch_bytes() {
+  echo $(( $1 * 509 * 509 * 2 + 509 * 509 ))
+}
+
+# Prints "<bytes> <files>" of a data job's growth of /scratch, or
+# "unknown <reason>".
+tiefer_scratch_need() {
+  local job
+  job="$(basename "$1")"
+  shift
+  case "${job}" in
+    data.sbatch)
+      local split="${1:-all}" bands=4 shard="" merge="" references=0 patches
+      shift || true
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --bands) [[ "${2:-}" == all ]] && bands=13; shift ;;
+          --bands=all) bands=13 ;;
+          --shard) shard="${2:-}"; shift ;;
+          --merge) merge="${2:-}"; shift ;;
+          --references) references=1 ;;
+        esac
+        shift
+      done
+      case "${split}" in
+        all) patches=$(( TIEFER_PATCHES_TRAIN + TIEFER_PATCHES_VAL + TIEFER_PATCHES_TEST )) ;;
+        train) patches="${TIEFER_PATCHES_TRAIN}" ;;
+        val) patches="${TIEFER_PATCHES_VAL}" ;;
+        test) patches="${TIEFER_PATCHES_TEST}" ;;
+        *) echo "unknown the size of split ${split} is not recorded"; return 0 ;;
+      esac
+      local parts="${shard#*/}"
+      [[ -n "${merge}" ]] && parts="${merge}"
+      if [[ -n "${shard}" || -n "${merge}" ]]; then
+        # One shard, or the one shard more that the merge needs at its peak.
+        patches=$(( (patches + parts - 1) / parts ))
+      fi
+      if [[ "${references}" == 1 ]]; then
+        echo "$(( TIEFER_REFERENCE_MASKS * patches * 509 * 509 )) 20"
+      else
+        echo "$(( patches * $(tiefer_patch_bytes "${bands}") )) 20"
+      fi
+      ;;
+    independent.sbatch)
+      case "${1:-}" in
+        s2_cloud_catalogue)
+          # Downloads 15,206,407,392, unpacked 29,470,247,388, cache 513 x 16 tiles.
+          echo "$(( 15206407392 + 29470247388 + 513 * 16 * $(tiefer_patch_bytes 13) )) 1560"
+          ;;
+        kappaset)
+          # Downloads 56,186,540,640, unpacked 62,686,780,681, cache 9,251 tiles.
+          echo "$(( 56186540640 + 62686780681 + 9251 * $(tiefer_patch_bytes 13) )) 18520"
+          ;;
+        *) echo "unknown the unpacked size of ${1:-this dataset} is not known" ;;
+      esac
+      ;;
+    *) echo "0 0" ;;
+  esac
+}
+
+# Refuse a data job whose expected growth does not fit in the free quota.
+tiefer_scratch_check() {
+  local need files reason
+  read -r need files < <(tiefer_scratch_need "$@")
+  if [[ "${need}" == unknown ]]; then
+    reason="$(tiefer_scratch_need "$@" | cut -d' ' -f2-)"
+    if [[ ! "${TIEFER_SCRATCH_NEED_GIB:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+      echo "error: ${reason}; type its expected size in GiB, read from the archive's own listing, into TIEFER_SCRATCH_NEED_GIB" >&2
+      return 2
+    fi
+    need="$(awk -v g="${TIEFER_SCRATCH_NEED_GIB}" 'BEGIN { printf "%.0f", g * 1073741824 }')"
+    files=0
+  fi
+  [[ "${need}" == 0 ]] && return 0
+  local free="${TIEFER_SCRATCH_FREE_GIB:-}" free_files="${TIEFER_SCRATCH_FREE_FILES:-}"
+  local reserve="${TIEFER_SCRATCH_RESERVE_GIB:-50}"
+  if [[ ! "${free}" =~ ^[0-9]+([.][0-9]+)?$ || ! "${free_files}" =~ ^[0-9]+$ ]]; then
+    echo "error: set TIEFER_SCRATCH_FREE_GIB and TIEFER_SCRATCH_FREE_FILES to the free /scratch quota in your csc-workspaces output" >&2
+    return 2
+  fi
+  if ! awk -v n="${need}" -v f="${free}" -v r="${reserve}" 'BEGIN { exit !(n / 1073741824 <= f - r) }'; then
+    awk -v n="${need}" -v f="${free}" -v r="${reserve}" \
+      'BEGIN { printf "error: this data job needs about %.1f GiB of /scratch, more than the %.1f GiB free minus the reserve of %.1f GiB\n", n / 1073741824, f, r }' >&2
+    return 2
+  fi
+  if (( files > free_files )); then
+    echo "error: this data job adds about ${files} files, more than the ${free_files} free in the /scratch quota" >&2
+    return 2
+  fi
+  awk -v n="${need}" -v f="${free}" -v r="${reserve}" -v k="${files}" \
+    'BEGIN { printf "scratch: about %.1f GiB and %d files; %.1f GiB free after it, above the reserve of %.1f GiB\n", n / 1073741824, k, f - n / 1073741824, r }'
+}
