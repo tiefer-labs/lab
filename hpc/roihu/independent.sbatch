@@ -16,6 +16,8 @@
 # $TIEFER_DATA_DIR/downloads/<dataset>/ with a capped rate (TIEFER_DOWNLOAD_RATE,
 # default 20M per second) and resumed where a download stopped; an archive is
 # unpacked once, and deleted once the cache is complete (TIEFER_KEEP_DOWNLOADS=1 keeps them).
+# It stops while another dataset's downloads are still there, so two large archives
+# are never held at once.
 # The build stops on every fact that is not verified (docs/INDEPENDENT.md,
 # section 6) and resumes at the next scene when submitted again. Sentinel-2
 # datasets drop the products used by CloudSEN12+ first, so the CloudSEN12+
@@ -77,6 +79,15 @@ fi
 python3 hpc/roihu/check_env.py --data-only
 
 root="${TIEFER_DATA_DIR}/downloads/${dataset}"
+# Never two large archives at once (hpc/roihu/plan.md, section 3.8): another
+# dataset's downloads must be gone, deleted once its cache was built and checked.
+for other in "${TIEFER_DATA_DIR}/downloads"/*/; do
+  [[ -d "${other}" && "$(basename "${other}")" != "${dataset}" ]] || continue
+  if [[ -n "$(ls -A "${other}")" ]]; then
+    echo "error: the downloads of $(basename "${other}") are still in ${other}; finish its cache first, so that its archives are deleted" >&2
+    exit 2
+  fi
+done
 mkdir -p "${root}"
 rate="${TIEFER_DOWNLOAD_RATE:-20M}"
 for name in "${files[@]}"; do

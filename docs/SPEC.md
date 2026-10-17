@@ -319,7 +319,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `train_packed.sbatch` | `gpumedium`, 1 GPU: several runs at once as separate processes (`python -m tiefer_lab.packed run`), each with its own seed, folder and log; the time limit is passed with `--time` from the packing report |
 | `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing; a shorter `--time` is allowed, and two minutes before the limit (`--signal=B:USR1@120`) it stops the running packing and still writes the report, marked `time_limit_reached` |
 | `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
-| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve |
+| `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve; for a data job also its expected growth of `/scratch` against the free quota typed in from `csc-workspaces` minus 50 GiB |
 | `reference_cpu.sbatch` | CPU job, `small`, 32 cores and 64 GiB, 4 hours: a cleared reference model on one split of a cache (`references/run_reference.py`), item 1 of the optional queue |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
@@ -698,6 +698,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 17 October 2026: `budget.sh` checks the `/scratch` quota before a data job; drafted with an AI-assisted system.
 - 17 October 2026: quantisation-aware fine-tuning (`qat.py`, `sieb_qat.toml`), the Azersky reader skeleton (`azersky.py`), `reference_cpu.sbatch`, their tests, and section 12 follows the one sequence of `hpc/roihu/README.md`; drafted with an AI-assisted system.
 - 16 October 2026: `timing_packed.sbatch` stops at its time limit and still writes the report; drafted with an AI-assisted system.
 - 16 October 2026: the CloudScout re-implementation is labelled "re-implementation trained by Tiefer Lab, not the flown model" wherever it is described; reports of it carry `model_label`; drafted with an AI-assisted system.

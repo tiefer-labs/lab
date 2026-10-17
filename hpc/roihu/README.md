@@ -79,7 +79,10 @@ Step 0 of [plan.md](plan.md), command by command, in the order to type them on R
    source ~/.bashrc
    echo "${TIEFER_CSC_PROJECT}"
    export TIEFER_GPU_BU_LEFT=<GPU BU left> TIEFER_CPU_BU_LEFT=<CPU BU left> TIEFER_STORAGE_BU_LEFT=<storage BU left>
+   export TIEFER_SCRATCH_FREE_GIB=<free GiB of /scratch> TIEFER_SCRATCH_FREE_FILES=<free files of /scratch>
    ```
+
+   The last line is the free `/scratch` quota of your `csc-workspaces` output (quota minus used, in GiB and in files): before a data job, `submit.sh` compares the job's expected size with it, minus a reserve of 50 GiB, and refuses a job that does not fit ([plan.md](plan.md), section 3.8). Type it again before each data job, as it shrinks.
 
    Prints your project name, never the text `<project>`.
 
@@ -116,7 +119,7 @@ Step 0 of [plan.md](plan.md), command by command, in the order to type them on R
    sacct -u "$USER" -j <job-id> --format=JobID,State,ExitCode,Elapsed
    ```
 
-   The log shows `architecture: x86_64`, the pip installs, then from `check_env.py`: `torch 2.10.0+cpu`, `onnxruntime ...`, `CUDA available: False`, `environment ready`, then `installed packages: ...`, `import torch and tiefer_lab: ... s` and last `setup complete: /projappl/<project>/tiefer-lab/venv-x86_64`. The state is `COMPLETED` and the exit code `0:0`. If the PyTorch CPU index cannot be reached, the log ends with a pip error.
+   The log shows `architecture: x86_64`, the pip installs, then from `check_env.py`: `torch 2.10.0+cpu`, `onnxruntime ...`, `CUDA available: False`, `environment ready`, then `installed packages: ...`, `import torch and tiefer_lab: ... s`, `environment size: ... MiB, files: ...` and last `setup complete: /projappl/<project>/tiefer-lab/venv-x86_64`. The state is `COMPLETED` and the exit code `0:0`. If the PyTorch CPU index cannot be reached, the log ends with a pip error.
 
 6. As a batch job: set up the GPU side with a `gputest` job (at most 15 minutes, at most 50 GPU BU).
 
@@ -132,7 +135,7 @@ Step 0 of [plan.md](plan.md), command by command, in the order to type them on R
    sacct -u "$USER" -j <job-id> --format=JobID,State,ExitCode,Elapsed
    ```
 
-   The log must show, in this order: `job environment: node ... (aarch64), submitted on x86_64, module environment built on this node`; `environment: aarch64, module python-pytorch/2.10, python3 ...`; `architecture: aarch64`; the package versions of `check_env.py`; `CUDA available: True`; `GPU: NVIDIA GH200 ...`; `bf16 supported: True`; `environment ready`; `import torch and tiefer_lab: ... s`; and `setup complete: .../venv-aarch64`. The state is `COMPLETED`, the exit code `0:0`. `setup_gpu.sbatch` fails when no GPU is visible. After a change to `hpc/roihu/requirements.txt`, submit both setup jobs again.
+   The log must show, in this order: `job environment: node ... (aarch64), submitted on x86_64, module environment built on this node`; `environment: aarch64, module python-pytorch/2.10, python3 ...`; `architecture: aarch64`; the package versions of `check_env.py`; `CUDA available: True`; `GPU: NVIDIA GH200 ...`; `bf16 supported: True`; `environment ready`; `import torch and tiefer_lab: ... s`; `environment size: ... MiB, files: ...`; and `setup complete: .../venv-aarch64`. The state is `COMPLETED`, the exit code `0:0`. `setup_gpu.sbatch` fails when no GPU is visible. After a change to `hpc/roihu/requirements.txt`, submit both setup jobs again.
 
 7. As a batch job: the smoke job (at most 15 minutes, at most 50 GPU BU). It trains `configs/smoke.toml` for a few steps on a tiny cache, evaluates it, and runs the device check: evaluation on the CPU against evaluation on the GH200, on a fixed input (`tiefer_lab.device_check`).
 
@@ -182,7 +185,7 @@ Step 0 of [plan.md](plan.md), command by command, in the order to type them on R
 
 - the commit of item 4;
 - the four job IDs, each with its `State` and `ExitCode` from `sacct`;
-- our own logs: the last 25 lines of the setup logs of steps 5 and 6, and the last 40 lines of the smoke log of step 7 (with its `device_check` block);
+- our own logs: the last 25 lines of the setup logs of steps 5 and 6 (with the `environment size: ... MiB, files: ...` line of each environment, which the `/projappl` table of [plan.md](plan.md), section 3.8, waits for), and the last 40 lines of the smoke log of step 7 (with its `device_check` block);
 - our own reports: the source check log of step 8 with `$TIEFER_REPORTS_DIR/data/sources.json`, and the four `reports/compute/<job-id>.json` of step 9.
 
 With these, the `TODO(verify)` facts of step 0 are resolved (the CPU build of torch and its import time, the device check on GH200), and the plan's revision for the timing step (step 2) can start. The `/projappl` sizes for the storage table come from your own `csc-workspaces` at that revision.
@@ -244,7 +247,7 @@ python3 -m tiefer_lab.data.cache padding cloudsen12-l1c-all --split test --patch
 
 Each command ends with `zero sides found: ...` and exits with 1 when those sides differ from `PADDING_SIDES` in `src/tiefer_lab/data/padding.py`. Copy the output into the issue or the pull request that records it.
 
-**Independent caches, as batch jobs.** The Sentinel-2 Cloud Mask Catalogue and KappaSet (`independent.sbatch s2_cloud_catalogue` and `independent.sbatch kappaset`, [plan.md](plan.md), section 3.4) need the complete 13-band cache for their independence check. Each job downloads its Zenodo files at a capped rate, builds the cache and deletes the downloads once the cache is complete.
+**Independent caches, as batch jobs.** The Sentinel-2 Cloud Mask Catalogue and KappaSet (`independent.sbatch s2_cloud_catalogue` and `independent.sbatch kappaset`, [plan.md](plan.md), section 3.4) need the complete 13-band cache for their independence check. Each job downloads its Zenodo files at a capped rate, builds the cache and deletes the downloads once the cache is complete. Submit KappaSet only after the Catalogue's job has finished: `independent.sbatch` stops while another dataset's downloads are still on `/scratch`, so two large archives are never held at once, and the peak stays under 450 GiB ([plan.md](plan.md), section 3.8). Type the free `/scratch` quota of your `csc-workspaces` output again before each data job.
 
 ### Plan step 2: the timing step and the gate
 
@@ -362,6 +365,10 @@ Every job script starts with `#!/bin/bash --login`, a login shell given by full 
 | `no virtual environment .../venv-x86_64` | `setup.sh` has not been run on the CPU side | submit `setup_cpu.sbatch` (step 0 runbook, item 5) |
 | `run the setup as a job, not on a login node` | `setup.sh` was started on a login node | submit `setup_cpu.sbatch` or `setup_gpu.sbatch` |
 | `set TIEFER_GPU_BU_LEFT` (or `CPU`, `STORAGE`) | the balance is not set in this shell | type the numbers of your `csc-projects` output (step 0 runbook, item 3) |
+| `set TIEFER_SCRATCH_FREE_GIB and TIEFER_SCRATCH_FREE_FILES` | a data job needs the free `/scratch` quota | type the free GiB and files of your `csc-workspaces` output (step 0 runbook, item 3) |
+| `this data job needs about ... GiB of /scratch` | the job does not fit in the free quota minus the reserve of 50 GiB | finish and clean up the step before it ([plan.md](plan.md), section 3.8), or bring the case to the plan's revision |
+| `type its expected size in GiB ... into TIEFER_SCRATCH_NEED_GIB` | the unpacked size of a hand download (L8 SPARCS, L8 Biome) is not known | read it from the archive's listing (`python3 -m zipfile -l <archive>`, or the plan's revision for L8 Biome) and type it in |
+| `the downloads of ... are still in ...` | another dataset's downloads are still on `/scratch` | let that dataset's `independent.sbatch` finish its cache, which deletes them |
 | `worst case ... exceeds the ... left minus the reserve` | the job's time limit times its resources does not fit in what is left | shorten `--time`, or ask the maintainer to revise the plan |
 | `missing modules` in `check_env.py` | the venv was built with another module or is incomplete | submit the setup job of that architecture again |
 | `cannot load python-pytorch/2.10` | the module was removed or renamed | find it with `module avail python-pytorch`, add `export TIEFER_PYTORCH_MODULE=<name>` to `~/.bashrc`, submit `setup_gpu.sbatch` again; `submit.sh` passes it to jobs |
@@ -398,6 +405,9 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 | A GPU job may be submitted from the x86 login node with care: limit `--export` (`HOME` and what the job needs), start the job as a login shell by full path (`/bin/bash --login`), set `CSC_ENV_INIT_NON_INTERACTIVE=yes` so that `/etc/profile.d/zz-csc-env.sh` initialises the CSC environment in a batch job, and set `SLURM_EXPORT_ENV=ALL` inside the script for `srun`. The page adds that CPU jobs are normally submitted from `roihu-cpu.csc.fi` and GPU jobs from `roihu-gpu.csc.fi` | `submit.sh`, `job_prelude.sh`, every job script | [submitting jobs across architectures](https://docs.csc.fi/computing/running/submitting-jobs-across-architectures/), 27 August 2026 |
 | The Roihu FAQ says that CPU and GPU jobs "can only be submitted from the x86 and ARM login nodes, respectively"; the page above, which describes how to cross, is followed here | this guide | [Roihu FAQ](https://docs.csc.fi/support/faq/roihu/), 9 September 2026 |
 | Login nodes are for light work only: "one-core jobs that finish in minutes and require less than 1 GiB of memory" | `data.sbatch`, this guide | [usage policy](https://docs.csc.fi/computing/usage-policy/) |
+| **Quotas** | | |
+| `/scratch`: 500 GiB and 1,000,000 files; `/projappl`: 50 GiB and 200,000 files, after an approved increase | `budget.sh` (`TIEFER_SCRATCH_RESERVE_GIB`, 50 GiB under the quota), [plan.md](plan.md), section 3.8 | maintainer input from MyCSC, 17 October 2026 |
+| Storage is billed on the space used, not on the quota: `/scratch` 6 and `/projappl` and home 10 storage BU per TiB-hour | [plan.md](plan.md), section 3.8 | [billing](https://docs.csc.fi/computing/hpc-billing/), page of 15 October 2026, read 16 October 2026 |
 | **Slurm** | | |
 | `gputest` 15 minutes; `gpumedium` 36 hours, up to 4 GPUs on one node; `gpularge` 36 hours, several nodes; `gpuinteractive` 12 hours | GPU job scripts | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
 | CPU partition `small`: 72 hours, 1 node | `data.sbatch` | [partitions](https://docs.csc.fi/computing/running/batch-job-partitions/) |
@@ -423,6 +433,7 @@ Facts from the CSC documentation were checked on 1 October 2026, or on 8 October
 
 ## Changelog
 
+- 17 October 2026: the quotas of `/scratch` and `/projappl` in the facts table (maintainer input); the free `/scratch` quota is typed in for the check of data jobs; the setup logs show the size and file count of each environment, which are sent back; KappaSet only after the Catalogue's job has finished; drafted with an AI-assisted system.
 - 17 October 2026: section 3 is one sequence: the step 0 runbook, then the steps of plan.md, section 3, in its order (data, timing and the gate, packed training, evaluation, diagnosis, calibration and export on the CPU, the final test by the maintainer, usage and collect, the optional queue); what the runbook does is no longer repeated, every later step uses the CPU jobs and the budget guard and runs as a batch job, and the setup, smoke and project warnings moved into the runbook; drafted with an AI-assisted system.
 - 16 October 2026: the step 0 runbook follows the CSC usage policy: the maintainer runs every command, no credentials and no service for an AI-assisted system, only your own jobs, the setup as batch jobs (`setup_cpu.sbatch`), the balance typed in for the cost check of `submit.sh`, and a send-back list of job IDs, exit codes and our own logs and reports; drafted with an AI-assisted system.
 - 16 October 2026: the step 0 runbook, command by command, from a fresh account to a finished smoke job, device check and source check, with what each command prints and what to send back; every cache stays out of home; drafted with an AI-assisted system.

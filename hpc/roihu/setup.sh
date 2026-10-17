@@ -24,6 +24,9 @@
 # in home or scratch. The x86 venv holds the CPU build of torch, the largest part;
 # the time to import torch is printed below and recorded by step 0 of
 # hpc/roihu/plan.md, which moves that venv into a Tykky container if it is slow.
+# Its size and file count are printed too: if both venvs together exceed 35 GiB
+# or 150,000 files of the /projappl quota (50 GiB, 200,000 files), they move to
+# Tykky containers (hpc/roihu/plan.md, section 3.8).
 set -euo pipefail
 if [[ -z "${SLURM_JOB_ID:-}" ]]; then
   echo "error: run the setup as a job, not on a login node: bash hpc/roihu/submit.sh hpc/roihu/setup_cpu.sbatch (x86) or setup_gpu.sbatch (GH200)" >&2
@@ -65,4 +68,6 @@ python3 "${repo}/hpc/roihu/check_env.py"
 # from /projappl, which decides whether a Tykky container is needed.
 echo "installed packages: $(python3 -m pip list --format=freeze 2>/dev/null | wc -l)"
 python3 -c 'import time; t = time.monotonic(); import torch, tiefer_lab; print(f"import torch and tiefer_lab: {time.monotonic() - t:.1f} s")'
+# One du pass over this venv only, inside the job: never a search of Lustre.
+echo "environment size: $(du -s --block-size=1M "${TIEFER_VENV}" | cut -f1) MiB, files: $(du -s --inodes "${TIEFER_VENV}" | cut -f1)"
 echo "setup complete: ${TIEFER_VENV}"

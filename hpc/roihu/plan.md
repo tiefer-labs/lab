@@ -24,7 +24,8 @@ The allocation is fixed: maintainer input of 16 October 2026; no further allocat
 | CPU billing units | 60,000 | every job that does not train |
 | Storage billing units | 30,000 | `/scratch` and `/projappl` |
 | Cloud billing units | 30,000 | not used |
-| Disk quota on `/scratch` and `/projappl` | pending maintainer input | the sizes of section 3.8 |
+| Disk quota on `/scratch` | 500 GiB, 1,000,000 files (maintainer input from MyCSC, 17 October 2026, after an approved increase) | caches, downloads, runs and reports; the plan keeps its peak under 450 GiB (section 3.8) |
+| Disk quota on `/projappl` | 50 GiB, 200,000 files (same input) | the Python environments, the source and the candidates' run folders (section 3.8) |
 
 Billing, from [docs.csc.fi/computing/hpc-billing](https://docs.csc.fi/computing/hpc-billing/) (page of 15 October 2026, read 16 October 2026):
 
@@ -130,7 +131,7 @@ bash hpc/roihu/submit.sh hpc/roihu/setup_gpu.sbatch
 bash hpc/roihu/submit.sh hpc/roihu/smoke.sbatch
 ```
 
-Steps 0a, 1 and 1a: the source check, the survey and the CloudSEN12+ caches as [README.md](README.md), plan steps 1 and 1a, describes them (the 13-band cache with its shards and rate limits as written there), the reference masks once `REFERENCE_*` are set from the survey, then the two independent caches of step 1a, which need the complete CloudSEN12+ cache for their independence check:
+Steps 0a, 1 and 1a: the source check, the survey and the CloudSEN12+ caches as [README.md](README.md), plan steps 1 and 1a, describes them (the 13-band cache with its shards and rate limits as written there), the reference masks once `REFERENCE_*` are set from the survey, then the two independent caches of step 1a, which need the complete CloudSEN12+ cache for their independence check; KappaSet is submitted only after the Catalogue's job has built its cache and deleted its downloads (section 3.8), and every data job needs the free `/scratch` quota typed in (`TIEFER_SCRATCH_FREE_GIB`, `TIEFER_SCRATCH_FREE_FILES`):
 
 ```bash
 bash hpc/roihu/submit.sh hpc/roihu/check_sources.sbatch
@@ -274,11 +275,11 @@ One row per download. Sizes are the recorded sizes of `files` in `src/tiefer_lab
 
 | Download | Decision | Size | Storage BU | Duration at the cap | Command | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| CloudSEN12+ parts (Hugging Face) | used | 136,865,704,637 bytes in 8 parts; never downloaded whole, the cache build of step 1 reads byte ranges | pending maintainer input | not derived from the facts; the build log of step 1 gives it | step 1 | not run |
-| Sentinel-2 Cloud Mask Catalogue (Zenodo 4172871) | used | 15,206,407,392 bytes in 4 files | pending maintainer input | at least 12 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue` | planned in step 1a, not run |
-| KappaSet (Zenodo 7100327) | used | 56,186,540,640 bytes in 2 files | pending maintainer input | at least 45 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset` | planned in step 1a, not run |
-| Landsat 8 SPARCS (USGS) | used | 1,555,733,976 bytes in 1 archive | pending maintainer input | at least 2 minutes | by hand, first of the two, after the Catalogue and KappaSet both have an evaluation report (section 3.9, item 1) | optional queue, item 1 |
-| Landsat 8 Biome (USGS) | used | 94,130,145,717 bytes in 96 archives | pending maintainer input | at least 75 minutes | by hand, after L8 SPARCS (section 3.9, item 1) | optional queue, item 1 |
+| CloudSEN12+ parts (Hugging Face) | used | 136,865,704,637 bytes in 8 parts; never downloaded whole, the cache build of step 1 reads byte ranges | none: nothing is stored but the caches of section 3.8 | not derived from the facts; the build log of step 1 gives it | step 1 | not run |
+| Sentinel-2 Cloud Mask Catalogue (Zenodo 4172871) | used | 15,206,407,392 bytes in 4 files | 5.85 storage BU per day held, with its unpacked files (section 3.8) | at least 12 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch s2_cloud_catalogue` | planned in step 1a, not run |
+| KappaSet (Zenodo 7100327) | used | 56,186,540,640 bytes in 2 files | 15.57 storage BU per day held, with its unpacked files | at least 45 minutes | `bash hpc/roihu/submit.sh hpc/roihu/independent.sbatch kappaset` | planned in step 1a, not run |
+| Landsat 8 SPARCS (USGS) | used | 1,555,733,976 bytes in 1 archive | 0.20 storage BU per day held, plus its unpacked files (not known) | at least 2 minutes | by hand, first of the two, after the Catalogue and KappaSet both have an evaluation report (section 3.9, item 1) | optional queue, item 1 |
+| Landsat 8 Biome (USGS) | used | 94,130,145,717 bytes in 96 archives | 12.33 storage BU per day held, plus its unpacked files (not known) | at least 75 minutes | by hand, after L8 SPARCS (section 3.9, item 1) | optional queue, item 1 |
 
 ### 3.7 What measures each acceptance target
 
@@ -398,19 +399,48 @@ With every conditional step running, the 45 training runs share 8,700 GPU BU, 43
 
 The room that the core plan leaves for the queue under the stop line is known only at the gate, from the packing reports; the maintainer sets the cut-off there (rule 10).
 
-**Storage.** From the recorded sizes. `/scratch` holds the caches and the runs during the campaign; the downloads of the independent datasets are deleted once their caches are built and checked (`independent.sbatch`); the persistent files of the candidates go to `/projappl` (section 3.4).
+**Storage.** Billed on the space used, not on the quota: `/scratch` 6 and `/projappl` 10 storage BU per TiB-hour (section 2). The quotas are maintainer input from MyCSC of 17 October 2026: `/scratch` 500 GiB and 1,000,000 files, `/projappl` 50 GiB and 200,000 files. Every size below comes from a recorded fact, named next to it; "not known" is written where none exists.
 
-| What | Where | Size, upper bound | Source of the size |
+- **CloudSEN12+ patches:** train 8,490, validation 535, test 975 high quality 509 x 509 patches, read from the metadata table of `tacofoundation:cloudsen12-l1c` with `tacoreader` on 17 October 2026. A cached patch takes bands x 509 x 509 x 2 + 509 x 509 bytes (`build_cache.bytes_per_patch`): 2,331,729 bytes with 4 bands, 6,995,187 with 13, 4,404,377 with the 8 bands of Landsat 8; a reference mask 509 x 509 bytes, 8 of them (`REFERENCE_MASK_NAMES`).
+- **Independent datasets:** the recorded file sizes of `src/tiefer_lab/data/independent.py`; the unpacked sizes of the Catalogue's and KappaSet's zip archives, read from their central directories on 17 October 2026 (`subscenes.zip` 27,862,720,848 bytes in 513 files, `masks.zip` 1,607,526,540 bytes in 513 files, `kappaset.zip` 62,686,780,681 bytes in 9,251 files); caches of at most 16 tiles per Catalogue scene (1022 pixels at 20 m, 2044 at 10 m), one per KappaSet sub-tile (512 x 512 at 10 m) and 25 per L8 SPARCS subset (1000 pixels at 30 m, 3000 at 10 m). The USGS server answered no range request for the end of an archive, so the unpacked sizes of L8 SPARCS and L8 Biome are not known, and nor is the shape of a Biome scene (`scene_layout`, an open fact).
+- **Runs:** at most 15 GB for every run of the core plan and the queue together: about 0.1 GB per 1 M or smaller run (checkpoints with the optimizer state and the moving average, ONNX files of every band set, logs), 0.5 GB per `wandler_4m` run and 1 GB per run of tier D, from the parameter counts.
+- **Step 0:** at most 2.0 GB: the pip cache (at most the 1.70 GB of the two environments measured below) and the tiny smoke cache (48 patches with 13 bands).
+
+Peak use of `/scratch` in the order of section 3, with the staging rules below; each download is deleted as soon as its cache is built and checked, and no two datasets' downloads are ever held at once:
+
+| Step | What grows | Peak during the step | Held after it |
 | :--- | :---: | :---: | :---: |
-| CloudSEN12+ caches, high quality 509 x 509 patches, 4 and 13 bands | `/scratch` | 248 GB, the whole dataset | [docs/DATA.md](../../docs/DATA.md), the Hugging Face page; 6.67 MiB per patch with 13 bands and 2.22 MiB with four |
-| downloads of the Catalogue and KappaSet, until their caches are complete | `/scratch` | 71.4 GB (15,206,407,392 and 56,186,540,640 bytes) | `files` of `src/tiefer_lab/data/independent.py` |
-| caches of the Catalogue and KappaSet | `/scratch` | 71.4 GB, their downloads | as above |
-| runs, ONNX files and reports | `/scratch` | small: a 1 M model is about 4 MB per checkpoint | `OBD-03` |
-| virtual environments, source and the candidates' run folders | `/projappl` | pending the setup step | step 0 |
+| 0 | pip cache and the tiny smoke cache | 2.04 GB, 1.90 GiB | 2.04 GB, 1.90 GiB |
+| 1 | 4-band cache, all splits | 25.35 GB, 23.61 GiB | 25.35 GB, 23.61 GiB |
+| 1 | 13-band cache: validation, test, four train shards and their merge (one shard more at its peak) | 110.16 GB, 102.59 GiB | 95.30 GB, 88.76 GiB |
+| 1 | reference masks of validation and test | 98.43 GB, 91.67 GiB | 98.43 GB, 91.67 GiB |
+| 1a | Catalogue: downloads, unpacked files, cache | 200.53 GB, 186.76 GiB | 155.85 GB, 145.15 GiB |
+| 1a | KappaSet, only after the Catalogue's downloads are deleted: download, unpacked files, cache | 339.44 GB, 316.13 GiB | 220.56 GB, 205.42 GiB |
+| 2 to 10 | run folders, exports, reports and logs | 235.56 GB, 219.39 GiB | 235.56 GB, 219.39 GiB |
+| queue, item 1 | L8 SPARCS, after KappaSet's downloads are deleted: archive and cache; its unpacked files not known | 245.93 GB, 229.04 GiB, plus the unpacked files | 244.37 GB, 227.59 GiB |
+| queue, item 1 | L8 Biome, after the SPARCS archive is deleted | not known | not known |
 
-At the upper bound, `/scratch` holds 391 GB, 0.36 TiB: 6 x 0.36 x 24 = 51 storage BU per day, 1,536 per 30 days. So storage does not limit the plan (the projection below).
+The highest known peak is 316.13 GiB, while KappaSet's archive, its unpacked files and its cache are on disk together: 133.87 GiB under 450 GiB. No step of the core plan exceeds 450 GiB. **L8 Biome is the one step that could:** at that point 227.59 GiB are held, so its archives, unpacked files and cache together must stay within 222.41 GiB. Its 96 archives alone are 94,130,145,717 bytes (87.67 GiB), which leaves 134.74 GiB for its unpacked files and cache if all are downloaded at once; with one archive at a time, its cache may reach at most about 54,200 tiles of 509 x 509 at 10 m with 8 bands, about 565 per scene. The Biome scenes' shape is not recorded, so whether it fits is not known: its build waits for its reader's pull request, which records the scene layout, and the plan's revision then computes its size and chooses between the native 30 m resolution (`--resolution native`, about a ninth of the tiles), groups of scenes built, evaluated and deleted in turn, or a smaller set of scenes. Until then `submit.sh` refuses it unless its expected size is typed in.
 
-**Storage projection.** At that upper bound from 16 October 2026, with `/projappl` not yet measured, the 30,000 storage BU would run out after about 585 days, on 23 May 2028; the real date moves later, because the caches are built step by step and the downloads are deleted once their caches are complete, and earlier by the `/projappl` use, which the revision after step 0 adds. If the storage BUs ran out, no job could be submitted and access to `/scratch` and `/projappl` would end 30 days later ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)). Scratch files not accessed for 180 days are deleted (projects with less than 5 TiB of scratch quota; `csc-workspaces` shows the cycle), so the candidates' run folders are copied to `/projappl` (section 3.4), and a cache older than that is rebuilt by its data job.
+Staging rules, enforced by the scripts:
+
+- `submit.sh` compares the expected growth of every data job (`data.sbatch`, `independent.sbatch`) with the free quota you read in your own `csc-workspaces` output and type in (`TIEFER_SCRATCH_FREE_GIB`, `TIEFER_SCRATCH_FREE_FILES`), minus a reserve of 50 GiB (`TIEFER_SCRATCH_RESERVE_GIB`) that keeps the peak under 450 GiB, and refuses a job that does not fit; a job whose size is not known (the unpacked files of a hand download, L8 Biome, `train_extra`, Azersky) is refused until you type its size in GiB, read from the archive's own listing, into `TIEFER_SCRATCH_NEED_GIB` (`hpc/roihu/budget.sh`);
+- `independent.sbatch` deletes a dataset's downloads once its cache is built and checked, and stops while another dataset's downloads are still on `/scratch`, so two large archives are never held at once: the Catalogue, then KappaSet, then L8 SPARCS, then L8 Biome, each downloaded only after the one before has its cache;
+- files: the largest job, KappaSet, adds about 18,520 files (its 9,251 unpacked files, the same number of tiles while it builds, and the cache), far below the 1,000,000 of the quota.
+
+**`/projappl`.** Measured on 17 October 2026 in this repository's development container (x86, Python 3.12, `uv pip install` of `hpc/roihu/requirements.txt` and the package, without bytecode); the setup jobs of step 0 print the real size and file count of each environment on Roihu (`environment size: ... MiB, files: ...`), which replace these values in the revision after step 0:
+
+| What | Size | Files | Source |
+| :--- | :---: | :---: | :---: |
+| x86 CPU environment `venv-x86_64`, with the CPU build of torch 2.10.0 | 1.22 GB measured; at most 1.4 GB with the bytecode pip writes | 20,426 measured; at most 30,000 with bytecode (8,035 Python files) | measured |
+| GH200 GPU environment `venv-aarch64`, torch from the `python-pytorch` module | 0.48 GB measured for the same packages on x86; at most 0.6 GB | 5,679 measured; at most 10,000 | measured on x86 as a stand-in for the ARM wheels |
+| source (a clone with its history) | about 12 MB | about 400 | `git count-objects`, `git ls-files` |
+| the candidates' run folders (2 candidates x 3 seeds) | at most 0.6 GB | a few hundred | 0.1 GB per run, as above |
+| total | at most 2.6 GB of 50 GiB | at most about 41,000 of 200,000 | sum of the rows |
+
+Both environments together stay far below 35 GiB and 150,000 files, so they stay plain venvs in `/projappl` and no Tykky container is needed (the threshold is the maintainer's of 17 October 2026). If the sizes printed at step 0 cross either threshold, the revision after step 0 moves them to Tykky containers.
+
+**Storage projection.** Billed on the space used. At the use held after the core plan, 235.56 GB on `/scratch` (0.2142 TiB) and at most 2.6 GB on `/projappl` (0.0024 TiB), the project uses 6 x 0.2142 x 24 + 10 x 0.0024 x 24 = 31.42 storage BU per day: the 30,000 storage BU last about 955 days from 17 October 2026, until 28 May 2029. In the worst case, with `/scratch` held at the 450 GiB cap and `/projappl` at its full 50 GiB from 17 October 2026, the use is 75.00 BU per day and they last 400 days, until 21 November 2027. The caches are built step by step and the downloads are deleted once their caches are complete, so the real date lies between the two. If the storage BUs ran out, no job could be submitted and access to `/scratch` and `/projappl` would end 30 days later ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)). Scratch files not accessed for 180 days are deleted (projects with less than 5 TiB of scratch quota; `csc-workspaces` shows the cycle), so the candidates' run folders are copied to `/projappl` (section 3.4), and a cache older than that is rebuilt by its data job.
 
 ### 3.9 Optional queue
 
@@ -457,7 +487,7 @@ bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbi cloudsen12-
 bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbiswir cloudsen12-l1c-all val
 ```
 
-Item 1, L8 SPARCS and then L8 Biome: downloaded by hand on `roihu-cpu.csc.fi` (moving data, which the login nodes allow), cached and evaluated in CPU jobs:
+Item 1, L8 SPARCS and then L8 Biome: downloaded by hand on `roihu-cpu.csc.fi` (moving data, which the login nodes allow), cached and evaluated in CPU jobs. L8 SPARCS is downloaded only after KappaSet's downloads are deleted, and L8 Biome only after the SPARCS archive is deleted and the revision of section 3.8 has computed Biome's size; that revision may change the Biome commands below (native resolution or groups of scenes). Each `independent.sbatch` of a hand download needs `TIEFER_SCRATCH_NEED_GIB`, read from the archive's own listing (section 3.8):
 
 ```bash
 source hpc/roihu/env.sh
@@ -545,6 +575,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
+- 17 October 2026: the quotas of `/scratch` (500 GiB, 1,000,000 files) and `/projappl` (50 GiB, 200,000 files), maintainer input; section 3.8: the peak use of `/scratch` in plan order from recorded facts (at most 316.13 GiB, while KappaSet unpacks), the staging rules and the quota check of `submit.sh`, L8 Biome as the one step that could exceed 450 GiB, the measured Python environments (no Tykky needed), and the storage projection with the quotas and the planned use; section 3.6, the storage BU per day of each download; drafted with an AI-assisted system.
 - 17 October 2026: the optional queue of section 3.9, frozen before any Project Schatten run exists, after item k of the gate: 21 items in five tiers and an Azersky row, each with its condition, exact command and cost pending the timing report; section 3.2, rules 10 and 11 (the maintainer sets only how far down the queue to go; a one-seed optional variant is exploratory and never wins selection) and `sieb_qat` as an export setting of rule 7; section 3.7, what each item would measure; section 3.8, one line per tier; the "Not in this plan" sentence points to the queue; drafted with an AI-assisted system.
 - 16 October 2026: the GPU timing of the CloudScout re-implementation is capped at 15 minutes (50 GPU BU), so the fixed GPU BU are 800 and a run gets 0.97 GPU-hours on average; when no packing reaches 50 percent GPU utilisation, the highest measured one is chosen and flagged for the gate; drafted with an AI-assisted system.
 - 16 October 2026: two model groups: `lupe_1m`, three seeds, for `CMP-04` (step 3a), and the CloudScout re-implementation trained by Tiefer Lab, not the flown model, the paper's two steps on the CPU or the GPU as the timing shows (step 3b); the new order of priority of the gate; the budget tables with 45 training runs and 950 fixed GPU BU; drafted with an AI-assisted system.
