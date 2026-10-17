@@ -320,7 +320,7 @@ The facts the scripts depend on, each with its source, are in the table of [hpc/
 | `timing_packed.sbatch` | `gpumedium`, 1 GPU, 1 hour at most: a config with 1, 2, 3 and 4 runs per GPU, one cut epoch each, while `nvidia-smi` samples the GPU; writes `reports/timing/packing_<config>.json` with the GPU utilisation of each packing; a shorter `--time` is allowed, and two minutes before the limit (`--signal=B:USR1@120`) it stops the running packing and still writes the report, marked `time_limit_reached` |
 | `timing_cpu.sbatch` | `medium`, one full node, 1 hour: one cut epoch of a config on the CPU, against the chosen GPU packing in BU per epoch; writes `reports/timing/cpu_<config>.json` |
 | `budget.sh` | Sourced by `submit.sh` and `sweep.sh`: the worst-case cost of a job, refused when it does not fit in the balance typed in from `csc-projects` minus the reserve; for a data job also its expected growth of `/scratch` against the free quota typed in from `csc-workspaces` minus 50 GiB |
-| `reference_cpu.sbatch` | CPU job, `small`, 32 cores and 64 GiB, 4 hours: a cleared reference model on one split of a cache (`references/run_reference.py`), item 1 of the optional queue |
+| `reference_cpu.sbatch` | CPU job, `small`, 32 cores and 64 GiB, 4 hours: a cleared reference model on CloudSEN12+ validation (`--cache <cache> --split val`) or on an independent dataset cache with a logged reason (`--data <cache> --reason <why>`) (`references/run_reference.py`); installs the pinned packages of `references/requirements.txt` once; item 1 of the optional queue |
 | `evaluate_cpu.sbatch`, `calibrate_cpu.sbatch`, `export_cpu.sbatch` | CPU jobs, `small`, 32 cores and 64 GiB: evaluation, calibration and export of a run on the CPU, the default of the plan; the body is shared with the GPU job of the same name without `_cpu` (`model_jobs.sh`) |
 | `diagnose_gpu.sbatch` | `gpumedium`, 1 hour: INT8 sensitivity per Conv node, validation and training only |
 | `sweep.sh` | Submits configs and seeds as separate one-GPU jobs |
@@ -435,7 +435,7 @@ lab/
       timing.sbatch               one cut epoch on gputest: the real cost of a config
       timing_packed.sbatch        timing step: 1 to 4 runs per GPU, utilisation, memory, data wait
       timing_cpu.sbatch           one cut epoch on a full CPU node, against the GPU in BU
-      reference_cpu.sbatch        a cleared reference model on one split, CPU
+      reference_cpu.sbatch        a cleared reference model on validation or an independent cache, CPU
       train_packed.sbatch         several runs on one reserved GPU, time limit from the timing report
       calibrate.sbatch            cloud logit bias and temperature, validation only
       independent.sbatch          independent dataset download and cache, CPU
@@ -462,6 +462,9 @@ lab/
   references/
     README.md                     how published third-party models are run on the same patches
     run_reference.py              reference models, licence first; masks added to a cache
+    runners.py                    runners of the cleared reference models
+    cd_fcnn.py                    CD-FCNN in PyTorch with its published Keras weights
+    requirements.txt              pinned packages of the reference models
     add_release_2022.py           2022 release masks added to a cache, licence first
   models/
     cloud-filter/
@@ -545,6 +548,8 @@ lab/
   tests/
     __init__.py
     conftest.py                   synthetic fixtures, temporary TIEFER_* paths
+    fixtures/
+      cd_fcnn_keras_output.npz    TensorFlow output of CD-FCNN for seeded weights
     test_text_rules.py
     test_public_hygiene.py
     test_paths.py
@@ -592,6 +597,7 @@ lab/
     test_independent.py           independent datasets: reflectance, labels, tiles, stops
     test_cloudsen12_2022.py       2022 release masks wait for the licence
     test_reference_scripts.py     reference models stop until their licence is cleared
+    test_reference_runners.py     reference runners, CD-FCNN against TensorFlow, independent path
     test_device_check.py          evaluation on the CPU gives the argmax of the training device
     test_data_feeding.py          placement, packing and workers draw the same batches
     test_packed.py                runs launched together, packing report, time limit, signals
@@ -698,6 +704,7 @@ Never committed: local working notes, editor and tool settings folders, `data/`,
 
 ## Changelog
 
+- 17 October 2026: `runners.py`, `cd_fcnn.py`, `requirements.txt`, `test_reference_runners.py` and its fixture in the tree; `reference_cpu.sbatch` runs on independent dataset caches too; drafted with an AI-assisted system.
 - 17 October 2026: `budget.sh` checks the `/scratch` quota before a data job; drafted with an AI-assisted system.
 - 17 October 2026: quantisation-aware fine-tuning (`qat.py`, `sieb_qat.toml`), the Azersky reader skeleton (`azersky.py`), `reference_cpu.sbatch`, their tests, and section 12 follows the one sequence of `hpc/roihu/README.md`; drafted with an AI-assisted system.
 - 16 October 2026: `timing_packed.sbatch` stops at its time limit and still writes the report; drafted with an AI-assisted system.

@@ -246,8 +246,9 @@ def test_run_reference_cannot_read_it(
         licence="test",
         weights_licence="test",
         decision=LicenceDecision("used", "test"),
-        runner=lambda data: np.zeros(data.labels.shape, np.uint8),
     )
     monkeypatch.setitem(ref.REFERENCES, "fmask4", cleared)
+    stub = ref.Runner(("B02",), lambda data: np.zeros(data.labels.shape, np.uint8))
+    monkeypatch.setattr(ref, "runners", lambda: {"fmask4": stub})
     with pytest.raises(LicenceRefusedError):
-        ref.run("fmask4", "synthetic", "val")
+        ref.run_independent("fmask4", "synthetic", "a clean check")

@@ -290,7 +290,7 @@ Per model, which step measures each target of `src/tiefer_lab/acceptance.py`, or
 | `ACC-01` | steps 4 and 10, evaluation | steps 4 and 10, evaluation, band set B02 B03 B04 B08 |
 | `ACC-02` | not applicable: four bands only | not measured in the core plan: `wandler_22m` and `wandler_convnext_21m` are items 16 and 18 of the optional queue (section 3.9) |
 | `ACC-03` | steps 4 and 10 | steps 4 and 10 |
-| `ACC-04` | step 10, against the reference masks of the extra table (step 1); s2cloudless and CD-FCNN have no runner yet (optional queue, item 1) | as `sieb` |
+| `ACC-04` | step 10, against the reference masks of the extra table (step 1); s2cloudless and CD-FCNN from their runners (optional queue, item 1) | as `sieb` |
 | `ACC-05` | steps 4 and 10 | steps 4 and 10 |
 | `ACC-06` | steps 4 and 10, full metrics with the reference masks | as `sieb` |
 | `ACC-07` | steps 4 and 10 | steps 4 and 10 |
@@ -318,7 +318,7 @@ What each item of the optional queue (section 3.9) would measure, if the maintai
 
 | Item | What it would measure |
 | :--- | :---: |
-| 1, s2cloudless and CD-FCNN | `ACC-04`: two more reference algorithms on the same CloudSEN12+ validation pixels; their rows on the Catalogue and KappaSet in the comparison report (`IND-02` context, not a target value) |
+| 1, s2cloudless and CD-FCNN | `ACC-04`: two more reference algorithms on the same CloudSEN12+ validation pixels; scored next to the candidates on the Catalogue and KappaSet by the evaluations with `--baselines` (`IND-02` context, not a target value); CD-FCNN was trained on L8 Biome, so its rows on L8 Biome are not independent |
 | 1, L8 SPARCS, then L8 Biome | `IND-01` (third and fourth datasets, second sensor), `IND-03` (other-sensor cloud BOA), `CMP-06` (other sensor against Sentinel-2); L8 Biome also `IND-04` by biome |
 | 2, `sieb_grad_clip` | `ACC-09` of Sieb, if the three Sieb seeds miss it or record a non-finite step |
 | 3, `wandler_1m_no_self_distill` | the band-set targets without self-distillation: `ACC-01` on B02 B03 B04 B08, `CMP-07` |
@@ -436,11 +436,12 @@ Staging rules, enforced by the scripts:
 | GH200 GPU environment `venv-aarch64`, torch from the `python-pytorch` module | 0.48 GB measured for the same packages on x86; at most 0.6 GB | 5,679 measured; at most 10,000 | measured on x86 as a stand-in for the ARM wheels |
 | source (a clone with its history) | about 12 MB | about 400 | `git count-objects`, `git ls-files` |
 | the candidates' run folders (2 candidates x 3 seeds) | at most 0.6 GB | a few hundred | 0.1 GB per run, as above |
-| total | at most 2.6 GB of 50 GiB | at most about 41,000 of 200,000 | sum of the rows |
+| the packages of the reference models (`references/.packages`, `references/requirements.txt`) and the CD-FCNN weights (2.8 MB) | 0.39 GB measured | 2,866 measured; at most 4,600 with bytecode | measured in the same container, 17 October 2026 |
+| total | at most 3.0 GB of 50 GiB | at most about 46,000 of 200,000 | sum of the rows |
 
 Both environments together stay far below 35 GiB and 150,000 files, so they stay plain venvs in `/projappl` and no Tykky container is needed (the threshold is the maintainer's of 17 October 2026). If the sizes printed at step 0 cross either threshold, the revision after step 0 moves them to Tykky containers.
 
-**Storage projection.** Billed on the space used. At the use held after the core plan, 235.56 GB on `/scratch` (0.2142 TiB) and at most 2.6 GB on `/projappl` (0.0024 TiB), the project uses 6 x 0.2142 x 24 + 10 x 0.0024 x 24 = 31.42 storage BU per day: the 30,000 storage BU last about 955 days from 17 October 2026, until 28 May 2029. In the worst case, with `/scratch` held at the 450 GiB cap and `/projappl` at its full 50 GiB from 17 October 2026, the use is 75.00 BU per day and they last 400 days, until 21 November 2027. The caches are built step by step and the downloads are deleted once their caches are complete, so the real date lies between the two. If the storage BUs ran out, no job could be submitted and access to `/scratch` and `/projappl` would end 30 days later ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)). Scratch files not accessed for 180 days are deleted (projects with less than 5 TiB of scratch quota; `csc-workspaces` shows the cycle), so the candidates' run folders are copied to `/projappl` (section 3.4), and a cache older than that is rebuilt by its data job.
+**Storage projection.** Billed on the space used. At the use held after the core plan, 235.56 GB on `/scratch` (0.2142 TiB) and at most 3.0 GB on `/projappl` (0.0027 TiB), the project uses 6 x 0.2142 x 24 + 10 x 0.0027 x 24 = 31.51 storage BU per day: the 30,000 storage BU last about 952 days from 17 October 2026, until 26 May 2029. In the worst case, with `/scratch` held at the 450 GiB cap and `/projappl` at its full 50 GiB from 17 October 2026, the use is 75.00 BU per day and they last 400 days, until 21 November 2027. The caches are built step by step and the downloads are deleted once their caches are complete, so the real date lies between the two. If the storage BUs ran out, no job could be submitted and access to `/scratch` and `/projappl` would end 30 days later ([usage policy](https://docs.csc.fi/computing/usage-policy/) (page of 15 October 2026, read 16 October 2026)). Scratch files not accessed for 180 days are deleted (projects with less than 5 TiB of scratch quota; `csc-workspaces` shows the cycle), so the candidates' run folders are copied to `/projappl` (section 3.4), and a cache older than that is rebuilt by its data job.
 
 ### 3.9 Optional queue
 
@@ -450,7 +451,7 @@ The queue starts after item k of section 2. At each gate the maintainer decides 
 
 | Item | Tier | What | Configs and seeds | Condition | Partition | Cost (section 3.8) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | A | runners of s2cloudless and CD-FCNN under `references/`, scored on CloudSEN12+ validation, the Catalogue and KappaSet; L8 SPARCS download, cache and evaluation (`IND-03`, `CMP-06`), then L8 Biome after it | references `s2cloudless`, `cd_fcnn_rgbi`, `cd_fcnn_rgbiswir`; the candidates of rule 6 | whenever its inputs exist: a runner after its own pull request ([references/README.md](../../references/README.md)); the two Landsat 8 datasets after the Catalogue and KappaSet both have an evaluation report (section 3.6) and once their readers' open facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | CPU only, no GPU BU | blocked: no runner yet; readers stop on open facts |
+| 1 | A | runners of s2cloudless and CD-FCNN under `references/`, scored on CloudSEN12+ validation, the Catalogue and KappaSet; L8 SPARCS download, cache and evaluation (`IND-03`, `CMP-06`), then L8 Biome after it | references `s2cloudless`, `cd_fcnn_rgbi`, `cd_fcnn_rgbiswir`; the candidates of rule 6 | whenever its inputs exist: the reference models once the cache they read is complete (their runners and the logged path for independent caches are in `references/`, [references/README.md](../../references/README.md)); the two Landsat 8 datasets after the Catalogue and KappaSet both have an evaluation report (section 3.6) and once their readers' open facts are verified ([docs/INDEPENDENT.md](../../docs/INDEPENDENT.md), section 6) | `small` | CPU only, no GPU BU | reference models ready to run; the Landsat 8 readers stop on open facts |
 | 2 | A | `sieb_grad_clip`; it then enters the core plan between items d and e of section 2 | `sieb_grad_clip`, seeds of rule 1 | only if the three Sieb seeds miss `ACC-09` or record a non-finite step (`diagnose seeds`, step 4) | `gpumedium`, `small` | pending the timing report | conditional |
 | 3 | B | ablation: no self-distillation | `wandler_1m_no_self_distill`, one or three seeds (rule 11) | none | `gpumedium`, `small` | pending the timing report | not run |
 | 4 | B | zero design for missing bands | `wandler_1m_zero_design`, one or three seeds | none | `gpumedium`, `small` | pending the timing report | not run |
@@ -479,12 +480,18 @@ Commands, in queue order. `<limit>` is the time limit from `python3 -m tiefer_la
 bash hpc/roihu/submit.sh hpc/roihu/evaluate_cpu.sbatch <run-id>
 ```
 
-Item 1, the reference models, once each runner is added; on the Catalogue and KappaSet the next package after this plan (maintainer decision of 17 October 2026) adds a logged path for an independent cache like `evaluate --data`, which reads an independent cache only, logs the use, never selects or trains, refuses CloudSEN12+ test data as today and scores s2cloudless and CD-FCNN there, because `run_reference.py` reads only the validation and test splits of a CloudSEN12+ cache today, and that row stays blocked until then:
+Item 1, the reference models, on the CPU (`reference_cpu.sbatch`; the first job installs the pinned packages of `references/requirements.txt` into `references/.packages`). On CloudSEN12+ validation once the 13-band cache is complete, and on the Catalogue and KappaSet once their caches are complete, through the logged path for an independent cache (`--data` with `--reason`, like `evaluate --data`: it reads that cache only, logs the use in `reports/test_log.md`, never selects or trains, and refuses a CloudSEN12+ cache, whose test split stays behind `--final`). The masks are added to each cache, where the evaluations with `--baselines` score them: the validation evaluations of step 4 and the independent evaluations of step 9, which are run again for a candidate whose evaluation came before the masks:
 
 ```bash
-bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch s2cloudless cloudsen12-l1c-all val
-bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbi cloudsen12-l1c-all val
-bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbiswir cloudsen12-l1c-all val
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch s2cloudless --cache cloudsen12-l1c-all --split val
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbi --cache cloudsen12-l1c-all --split val
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbiswir --cache cloudsen12-l1c-all --split val
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch s2cloudless --data s2_cloud_catalogue --reason "reference s2cloudless on the Catalogue, hpc/roihu/plan.md section 3.9, item 1"
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbi --data s2_cloud_catalogue --reason "reference CD-FCNN RGBI on the Catalogue, hpc/roihu/plan.md section 3.9, item 1"
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbiswir --data s2_cloud_catalogue --reason "reference CD-FCNN RGBISWIR on the Catalogue, hpc/roihu/plan.md section 3.9, item 1"
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch s2cloudless --data kappaset --reason "reference s2cloudless on KappaSet, hpc/roihu/plan.md section 3.9, item 1"
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbi --data kappaset --reason "reference CD-FCNN RGBI on KappaSet, hpc/roihu/plan.md section 3.9, item 1"
+bash hpc/roihu/submit.sh hpc/roihu/reference_cpu.sbatch cd_fcnn_rgbiswir --data kappaset --reason "reference CD-FCNN RGBISWIR on KappaSet, hpc/roihu/plan.md section 3.9, item 1"
 ```
 
 Item 1, L8 SPARCS and then L8 Biome: downloaded by hand on `roihu-cpu.csc.fi` (moving data, which the login nodes allow), cached and evaluated in CPU jobs. L8 SPARCS is downloaded only after KappaSet's downloads are deleted, and L8 Biome only after the SPARCS archive is deleted and the revision of section 3.8 has computed Biome's size; that revision may change the Biome commands below (native resolution or groups of scenes). Each `independent.sbatch` of a hand download needs `TIEFER_SCRATCH_NEED_GIB`, read from the archive's own listing (section 3.8):
@@ -575,6 +582,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
+- 17 October 2026: item 1 of the optional queue is unblocked: the runners of s2cloudless and CD-FCNN and the logged path of `run_reference.py` for independent caches, with their commands on CloudSEN12+ validation, the Catalogue and KappaSet; `/projappl` adds the packages of the reference models; drafted with an AI-assisted system.
 - 17 October 2026: `sieb_frame_loss` is a conditional Sieb variant of step 7 (rule 4, cut order e) when `sieb` still misses `FRM-01` after the calibration of step 5, or after step 4 without issue 21; `sieb_qat` is compared only with the post-training INT8 exports of `sieb-seed0`, never across seeds (rule 7, `CMP-03`); the reference models on the independent caches are the next package; up to 48 training runs; drafted with an AI-assisted system.
 - 17 October 2026: the quotas of `/scratch` (500 GiB, 1,000,000 files) and `/projappl` (50 GiB, 200,000 files), maintainer input; section 3.8: the peak use of `/scratch` in plan order from recorded facts (at most 316.13 GiB, while KappaSet unpacks), the staging rules and the quota check of `submit.sh`, L8 Biome as the one step that could exceed 450 GiB, the measured Python environments (no Tykky needed), and the storage projection with the quotas and the planned use; section 3.6, the storage BU per day of each download; drafted with an AI-assisted system.
 - 17 October 2026: the optional queue of section 3.9, frozen before any Project Schatten run exists, after item k of the gate: 21 items in five tiers and an Azersky row, each with its condition, exact command and cost pending the timing report; section 3.2, rules 10 and 11 (the maintainer sets only how far down the queue to go; a one-seed optional variant is exploratory and never wins selection) and `sieb_qat` as an export setting of rule 7; section 3.7, what each item would measure; section 3.8, one line per tier; the "Not in this plan" sentence points to the queue; drafted with an AI-assisted system.

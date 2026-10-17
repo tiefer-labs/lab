@@ -91,6 +91,7 @@ Further evidence: `REQ-TRN-07`: the metadata test passes; no run of Project Scha
 | `REQ-EVL-12` | The cloud logit bias and the temperature are chosen on validation; without the options nothing changes | met | `tests/test_frame_options.py::test_bias_rule_by_hand`, `tests/test_frame_options.py::test_temperature_by_hand`, `tests/test_frame_options.py::test_options_change_nothing_unless_asked` |
 | `REQ-EVL-13` | Diagnostics read validation reports and the validation and training splits only | met | `tests/test_diagnose.py::test_false_discards_by_hand`, `tests/test_diagnose.py::test_seeds_frames_and_int8_on_synthetic` |
 | `REQ-EVL-14` | Every job that does not train has a CPU job, the default of the plan; evaluation on the CPU gives the argmax of the training device on a fixed input within the tolerance of `tiefer_lab.device_check` (checked on the GPU by the smoke job); INT8 values from ONNX Runtime on the CPU are marked as a proxy for `CMP-03`; every evaluation report records its device, and acceptance and compare refuse a table that mixes devices | met | `tests/test_reports.py::test_one_table_never_mixes_evaluation_devices`, `tests/test_device_check.py::test_cpu_against_cpu_is_identical`, `tests/test_device_check.py::test_cpu_against_the_training_gpu_within_the_tolerance`, `tests/test_roihu_scripts.py::test_cpu_jobs_share_the_gpu_job_body_and_use_no_gpu`, `tests/test_roihu_scripts.py::test_cpu_jobs_stop_on_a_gpu_node`, `tests/test_acceptance.py::test_int8_is_marked_as_a_proxy` |
+| `REQ-EVL-15` | A cleared reference model runs on CloudSEN12+ validation, or with `--data` on an independent dataset cache only, with a reason logged before its tiles are read; it never selects, tunes or trains anything, a CloudSEN12+ cache is refused as independent, and the CD-FCNN rebuild gives TensorFlow's output for the same weights | met | `tests/test_reference_runners.py::test_cd_fcnn_matches_tensorflow_for_the_same_weights`, `tests/test_reference_runners.py::test_cd_fcnn_pads_like_the_published_tool_and_uses_every_weight`, `tests/test_reference_runners.py::test_s2cloudless_reads_reflectance_in_its_layout`, `tests/test_reference_runners.py::test_weights_are_checked_against_their_record`, `tests/test_reference_runners.py::test_an_independent_cache_is_run_and_logged`, `tests/test_reference_runners.py::test_a_cloudsen12_cache_is_never_read_as_independent` |
 
 Further evidence:
 
@@ -204,6 +205,7 @@ Notes:
 
 ## Changelog
 
+- 17 October 2026: `REQ-EVL-15`, the runners of the cleared reference models and their logged path on independent dataset caches; drafted with an AI-assisted system.
 - 17 October 2026: `REQ-DAT-21`, the `/scratch` quota check of data jobs, one dataset's downloads at a time, and the environment sizes of the setup; drafted with an AI-assisted system.
 - 17 October 2026: `REQ-DAT-20` (Azersky), `REQ-EXP-05` (quantisation-aware fine-tuning) and `REQ-REP-12` (the frozen optional queue); drafted with an AI-assisted system.
 - 16 October 2026: `REQ-TRN-15` adds the utilisation fallback for the gate and the timing report written at the time limit; drafted with an AI-assisted system.

@@ -29,7 +29,7 @@ def _module(repo_root: Path) -> ModuleType:
 
 def test_every_reference_stops_before_its_licence_is_cleared(repo_root: Path) -> None:
     ref = _module(repo_root)
-    for name in ref.REFERENCES:
+    for name in set(ref.REFERENCES) - set(ref.runners()):
         with pytest.raises(ref.ReferenceError):
             ref.run(name, "any", "val")
     dtacs = ref.REFERENCES["dtacs4bands"]
@@ -52,12 +52,12 @@ def test_a_model_whose_weights_have_no_stated_licence_stops(repo_root: Path) -> 
     kappamask = dataclasses.replace(
         ref.REFERENCES["kappamask_l1c"],
         decision=LicenceDecision("used", "test"),
-        runner=lambda data: np.zeros(data.labels.shape, np.uint8),
     )
     assert kappamask.licence == "Apache-2.0" and kappamask.weights_licence is None
     with pytest.raises(ref.ReferenceError, match="no licence is stated for its weights"):
         ref.ready(kappamask)
-    assert ref.ready(dataclasses.replace(kappamask, weights_licence="test")) is kappamask.runner
+    with pytest.raises(ref.ReferenceError, match="no runner yet"):
+        ref.ready(dataclasses.replace(kappamask, weights_licence="test"))
 
 
 def test_the_decisions_of_16_october_2026_are_recorded(repo_root: Path) -> None:
@@ -67,9 +67,21 @@ def test_the_decisions_of_16_october_2026_are_recorded(repo_root: Path) -> None:
         assert reference.decision.status == "used"
         assert reference.decision.date == "16 October 2026"
         assert "issuecomment" in (reference.decision.issue or "")
-        # Cleared, so only the missing runner stops it now.
-        with pytest.raises(ref.ReferenceError, match="no runner yet"):
-            ref.run(name, "any", "val")
+        # Cleared, and their runners are added (references/runners.py).
+        assert ref.ready(reference).bands
+    s2cloudless = ref.ready(ref.REFERENCES["s2cloudless"])
+    assert s2cloudless.bands == (
+        "B01",
+        "B02",
+        "B04",
+        "B05",
+        "B08",
+        "B8A",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+    )
     assert "repository-wide MIT LICENSE" in ref.REFERENCES["cd_fcnn_rgbi"].weights_licence
     assert "never copied" in ref.REFERENCES["s2cloudless"].decision.reason
     for name in ("kappamask_l1c", "kappamask_l2a", "fmask4"):

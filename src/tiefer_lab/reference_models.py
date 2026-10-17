@@ -11,13 +11,8 @@ check reads it too. No weights are stored here or anywhere in `src/`.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 
-import numpy as np
-from numpy.typing import NDArray
-
-from tiefer_lab.data import cache
 from tiefer_lab.data.source import (
     NO_DECISION,
     LicenceDecision,
@@ -25,8 +20,6 @@ from tiefer_lab.data.source import (
     decided_15_october_2026,
     decided_16_october_2026,
 )
-
-Runner = Callable[[cache.SplitData], NDArray[np.uint8]]
 
 CD_FCNN_DECISION = decided_16_october_2026(
     "used",
@@ -44,7 +37,6 @@ class Reference:
     source: str
     licence: str | None  # licence of the code, as read on the primary source; None: TODO(verify)
     kind: str  # "four_class", "cloud" or "probability", the output as stored
-    runner: Runner | None = None
     note: str = ""
     # The maintainer's licence decision for this use (data/source.py, LicenceDecision).
     decision: LicenceDecision = NO_DECISION
@@ -78,11 +70,13 @@ REFERENCES: dict[str, Reference] = {
         "s2cloudless",
         "https://github.com/sentinel-hub/sentinel2-cloud-detector, PyPI s2cloudless 1.7.3",
         "CC-BY-SA-4.0",
-        "probability",
-        note="CloudSEN12+ ships its probability; this runner is for the independent datasets. "
-        "CC BY-SA 4.0: it runs from its installed package under references/ and is never "
-        "copied into this repository. It reads 10 bands (B01, B02, B04, B05, B08, B8A, B09, "
-        "B10, B11, B12) as reflectance, so only the 13-band caches can feed it",
+        "cloud",
+        note="CloudSEN12+ ships its probability; this runner is for the independent datasets, "
+        "where no validation split tunes a threshold, so it stores the package's own cloud "
+        "mask at its class defaults (docs/ASSUMPTIONS.md, A-6.15). CC BY-SA 4.0: it runs "
+        "from its installed package under references/ and is never copied into this "
+        "repository. It reads 10 bands (B01, B02, B04, B05, B08, B8A, B09, B10, B11, B12) "
+        "as reflectance, so only the 13-band caches can feed it",
         weights_licence="CC-BY-SA-4.0: the README says 'This work is licensed under a Creative "
         "Commons Attribution-ShareAlike 4.0 International License'; the model file "
         "s2cloudless/models/pixel_s2_cloud_detector_lightGBM_v0.1.txt ships in the package",
