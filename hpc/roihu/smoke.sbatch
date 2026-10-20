@@ -34,6 +34,7 @@ source hpc/roihu/job_prelude.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
 python3 hpc/roihu/check_env.py
+python3 -m tiefer_lab.device_check --device auto
 
 # The full cache is only read, and only when its train and val splits are
 # complete and not being built (data.sbatch may be running). Otherwise a tiny
