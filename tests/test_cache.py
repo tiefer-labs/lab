@@ -529,7 +529,9 @@ def test_finishing_one_split_keeps_the_splits_other_jobs_wrote(tmp_path: Path) -
     assert splits["val"]["complete"] and splits["test"]["complete"]
 
 
-def test_cgroup_memory_is_the_tightest_limit_left(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cgroup_memory_is_the_tightest_limit_left(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Slurm's --mem is a cgroup limit; /proc/meminfo shows the whole node.
     root = tmp_path / "cg"
     job = root / "system.slice" / "job_1"
@@ -541,5 +543,9 @@ def test_cgroup_memory_is_the_tightest_limit_left(tmp_path: Path, monkeypatch: p
     proc = tmp_path / "cgroup"
     proc.write_text("0::/system.slice/job_1\n")
     real = Path.read_text
-    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: real(proc if str(self) == "/proc/self/cgroup" else self, *a, **k))
+
+    def read_text(self: Path, *args: Any, **kwargs: Any) -> str:
+        return real(proc if str(self) == "/proc/self/cgroup" else self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
     assert cache.cgroup_memory_bytes(root) == 150 * 2**30

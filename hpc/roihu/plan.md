@@ -60,7 +60,7 @@ A cut starts at the end of the list, with k, and moves up one item at a time unt
 Real costs from the packing reports of step 2 on CSC Roihu (jobs 2377437, 2389156, 2388676, 2388677, 2388558 and 2389157; `reports/timing/`). GPU BU of a training step: runs x epochs x full epoch seconds of the slowest run at the chosen packing / packing / 3600 x 200. Used so far by steps 0, 2 and the timing job of step 3a: about 101 GPU BU and 243 CPU BU, from the runtimes in `sacct`.
 
 | Config | Chosen packing | Full epoch, slowest run | GPU utilisation | GPU BU per run | Note |
-| :--- | :---: | :---: | :---: | :---: | :--- |
+| :--- | :---: | :---: | :---: | :---: | :---: |
 | `sieb` | 3 | 89.06 s | 67.1 % | 247 (150 epochs) | 4 runs per GPU were OOM-killed in host memory |
 | `wandler_1m` | 1 | 117.88 s | 30.2 % | 982 (150 epochs) | below the 50 percent rule; 2 to 4 runs per GPU OOM-killed: `load_mode = "memory"` pins the 13-band split (about 60 GB, twice that while it is copied) in each run |
 | `lupe_1m` | 3 at `sieb`'s slowdown (1.905), not measured packed | 84.59 s alone | n/a | 448 (150 epochs) | 15-minute timing job, one run |
@@ -71,7 +71,7 @@ The CPU timing of `sieb` gives 79.36 CPU BU per epoch on a `medium` node against
 The order of priority of section 2 with these costs, cumulative from the 101 GPU BU used:
 
 | Item | What | GPU BU | Cumulative |
-| :--- | :--- | :---: | :---: |
+| :--- | :---: | :---: | :---: |
 | a | remaining 15-minute timing jobs of step 7 (up to 4, measured at 3 to 22 GPU BU each) | at most 90 | 191 |
 | b | `sieb`, 3 seeds | 742 | 933 |
 | c | `wandler_1m`, 3 seeds, one per GPU | 2,947 | 3,880 |
@@ -79,7 +79,7 @@ The order of priority of section 2 with these costs, cumulative from the 101 GPU
 | e | Sieb variants, up to 3 configs x 3 seeds at `sieb`'s cost | at most 2,226 | 6,106 |
 | f | `sieb_candidate`, 3 seeds | 742 | 6,848 |
 | g | `lupe_1m`, 3 seeds | 1,343 | 8,191 |
-| h | CloudScout re-implementation, 3 runs | 175 | 8,366 |
+| h | the CloudScout re-implementation trained by Tiefer Lab, not the flown model, 3 runs | 175 | 8,366 |
 | i | Wandler stability, 9 runs (conditional) | 8,838 | over |
 | j | Wandler variants, up to 12 runs | up to 11,784 | over |
 | k | `wandler_1m_candidate`, 3 seeds | 2,947 | over |

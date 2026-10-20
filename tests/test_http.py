@@ -148,7 +148,9 @@ def _raised_from(cause: BaseException) -> FileNotFoundError:
         try:
             raise cause
         except Exception as exc:
-            raise FileNotFoundError("https://huggingface.co/datasets/x/resolve/main/y.taco") from exc
+            raise FileNotFoundError(
+                "https://huggingface.co/datasets/x/resolve/main/y.taco"
+            ) from exc
     except FileNotFoundError as err:
         return err
 
