@@ -111,6 +111,25 @@ def write_index(directory: Path, index: dict[str, Any]) -> None:
     os.replace(tmp, directory / INDEX_NAME)
 
 
+def cgroup_memory_bytes(root: Path = Path("/sys/fs/cgroup")) -> int | None:
+    """Memory left under this process's cgroup v2 limits (Slurm's --mem), or None."""
+    try:
+        line = Path("/proc/self/cgroup").read_text().splitlines()[0]
+    except (OSError, IndexError):
+        return None
+    folder, left = root / line.split("::", 1)[-1].lstrip("/"), None
+    while folder != root.parent and root in (folder, *folder.parents):
+        try:
+            limit = (folder / "memory.max").read_text().strip()
+            used = int((folder / "memory.current").read_text())
+        except (OSError, ValueError):
+            limit = "max"
+        if limit != "max":
+            left = int(limit) - used if left is None else min(left, int(limit) - used)
+        folder = folder.parent
+    return left
+
+
 def available_memory_bytes() -> int | None:
     """Memory available to new allocations, from /proc/meminfo or sysconf."""
     meminfo = Path("/proc/meminfo")
@@ -248,7 +267,11 @@ def load_split(
     if mode == "auto":
         image_bytes = files[0].stat().st_size * len(positions) / len(index["bands"])
         size = image_bytes + sum(f.stat().st_size for f in files[1:])
-        available = available_memory_bytes()
+        slurm = os.environ.get("SLURM_MEM_PER_NODE", "")
+        job = int(slurm) * 2**20 if slurm.isdigit() else None
+        limits = (available_memory_bytes(), cgroup_memory_bytes(), job)
+        free = [m for m in limits if m is not None]
+        available = min(free) if free else None
         in_memory = available is not None and size <= MEMORY_SHARE * available / runs_per_gpu()
     else:
         in_memory = mode == "memory"
