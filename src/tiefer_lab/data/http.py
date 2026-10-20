@@ -62,12 +62,40 @@ def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"} if token else {}
 
 
-def is_rate_limited(error: BaseException) -> bool:
-    """True for HTTP 429, from urllib or from a GDAL error message."""
+def _chain(error: BaseException) -> list[BaseException]:
+    """The error and the errors it was raised from (__cause__, else __context__).
+
+    fsspec turns an HTTP 429 of its size request into FileNotFoundError(url),
+    raised from the aiohttp ClientResponseError that carries the status; only
+    the chain shows that the read was rate limited.
+    """
+    out: list[BaseException] = []
+    current: BaseException | None = error
+    while current is not None and all(current is not e for e in out):
+        out.append(current)
+        current = current.__cause__ or current.__context__
+    return out
+
+
+def _status(error: BaseException) -> int | None:
+    """The HTTP status an error carries: urllib's `code`, aiohttp's `status`."""
     if isinstance(error, urllib.error.HTTPError):
-        return error.code == 429
+        return error.code
+    status = getattr(error, "status", None)
+    return status if isinstance(status, int) else None
+
+
+def _rate_limited_one(error: BaseException) -> bool:
+    status = _status(error)
+    if status is not None:
+        return status == 429
     text = str(error)
     return "429" in text or "Too Many Requests" in text
+
+
+def is_rate_limited(error: BaseException) -> bool:
+    """True for HTTP 429, from urllib, aiohttp or a GDAL error message, anywhere in the chain."""
+    return any(_rate_limited_one(e) for e in _chain(error))
 
 
 TRANSIENT_HTTP_CODES = frozenset({429, 500, 502, 503, 504})
@@ -81,11 +109,19 @@ def _is_rasterio_io_error(error: BaseException) -> bool:
     )
 
 
+def _transient_one(error: BaseException) -> bool:
+    status = _status(error)
+    if status is not None:
+        return status in TRANSIENT_HTTP_CODES
+    return _rate_limited_one(error) or _is_rasterio_io_error(error)
+
+
 def is_transient(error: BaseException) -> bool:
-    """True when the same read may succeed later: rate limit, server error, GDAL I/O error."""
-    if isinstance(error, urllib.error.HTTPError):
-        return error.code in TRANSIENT_HTTP_CODES
-    return is_rate_limited(error) or _is_rasterio_io_error(error)
+    """True when the same read may succeed later: rate limit, server error, GDAL I/O error.
+
+    The whole chain counts, so a FileNotFoundError raised from an HTTP 429 is transient.
+    """
+    return any(_transient_one(e) for e in _chain(error))
 
 
 def retry_after_seconds(error: BaseException) -> float | None:

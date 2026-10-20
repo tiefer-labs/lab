@@ -49,4 +49,4 @@ run_id="timing-cpu-${name}-${SLURM_JOB_ID:-local}"
 python3 -m tiefer_lab.train --config "${config}" --run-id "${run_id}" --device cpu \
   --epochs 1 --max-steps-per-epoch 50
 python3 -m tiefer_lab.packed cpu-compare --config "${config}" --cpu-run "${run_id}" \
-  --gpu-report "reports/timing/packing_${name}.json"
+  --gpu-report "${TIEFER_REPORTS_DIR}/timing/packing_${name}.json"

@@ -133,3 +133,40 @@ def test_token_goes_to_gdal_and_is_never_printed(
 
     monkeypatch.delenv(http.TOKEN_ENV)
     assert not http.configure_token() and http.auth_headers() == {}
+
+
+class _ClientResponseError(Exception):
+    """Stands in for aiohttp.ClientResponseError, which carries `status`."""
+
+    def __init__(self, status: int) -> None:
+        super().__init__(f"{status}, message='Too Many Requests'")
+        self.status = status
+
+
+def _raised_from(cause: BaseException) -> FileNotFoundError:
+    try:
+        try:
+            raise cause
+        except Exception as exc:
+            raise FileNotFoundError(
+                "https://huggingface.co/datasets/x/resolve/main/y.taco"
+            ) from exc
+    except FileNotFoundError as err:
+        return err
+
+
+def test_file_not_found_from_a_429_is_rate_limited_and_transient() -> None:
+    # fsspec raises FileNotFoundError(url) from aiohttp's 429 when it asks for the size.
+    error = _raised_from(_ClientResponseError(429))
+    assert http.is_rate_limited(error)
+    assert http.is_transient(error)
+
+
+def test_file_not_found_from_a_404_is_not_transient() -> None:
+    error = _raised_from(_ClientResponseError(404))
+    assert not http.is_rate_limited(error)
+    assert not http.is_transient(error)
+
+
+def test_plain_file_not_found_is_not_transient() -> None:
+    assert not http.is_transient(FileNotFoundError("/scratch/missing.npy"))

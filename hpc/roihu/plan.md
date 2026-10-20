@@ -55,6 +55,42 @@ A cut starts at the end of the list, with k, and moves up one item at a time unt
 
 ---
 
+### 2.1 Gate revision of 20 October 2026 (draft for the maintainer)
+
+Real costs from the packing reports of step 2 on CSC Roihu (jobs 2377437, 2389156, 2388676, 2388677, 2388558 and 2389157; `reports/timing/`). GPU BU of a training step: runs x epochs x full epoch seconds of the slowest run at the chosen packing / packing / 3600 x 200. Used so far by steps 0, 2 and the timing job of step 3a: about 101 GPU BU and 243 CPU BU, from the runtimes in `sacct`.
+
+| Config | Chosen packing | Full epoch, slowest run | GPU utilisation | GPU BU per run | Note |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `sieb` | 3 | 89.06 s | 67.1 % | 247 (150 epochs) | 4 runs per GPU were OOM-killed in host memory |
+| `wandler_1m` | 1 | 117.88 s | 30.2 % | 982 (150 epochs) | below the 50 percent rule; 2 to 4 runs per GPU OOM-killed: `load_mode = "memory"` pins the 13-band split (about 60 GB, twice that while it is copied) in each run |
+| `lupe_1m` | 3 at `sieb`'s slowdown (1.905), not measured packed | 84.59 s alone | n/a | 448 (150 epochs) | 15-minute timing job, one run |
+| `cloudscout_reimpl_step1_th30` | 1 for step 1, 2 for the second step | 56.31 s alone, 43.83 s at 2 | 7.2 % alone, 24.5 % at 2 | step 1: 125; second step together: 49 | below the 50 percent rule; the CPU costs 55.37 CPU BU per epoch against 0.98 GPU BU, so the GPU |
+
+The CPU timing of `sieb` gives 79.36 CPU BU per epoch on a `medium` node against 1.65 GPU BU on the GPU: every training run stays on the GPU.
+
+The order of priority of section 2 with these costs, cumulative from the 101 GPU BU used:
+
+| Item | What | GPU BU | Cumulative |
+| :--- | :---: | :---: | :---: |
+| a | remaining 15-minute timing jobs of step 7 (up to 4, measured at 3 to 22 GPU BU each) | at most 90 | 191 |
+| b | `sieb`, 3 seeds | 742 | 933 |
+| c | `wandler_1m`, 3 seeds, one per GPU | 2,947 | 3,880 |
+| d | calibration (CPU) | 0 | 3,880 |
+| e | Sieb variants, up to 3 configs x 3 seeds at `sieb`'s cost | at most 2,226 | 6,106 |
+| f | `sieb_candidate`, 3 seeds | 742 | 6,848 |
+| g | `lupe_1m`, 3 seeds | 1,343 | 8,191 |
+| h | the CloudScout re-implementation trained by Tiefer Lab, not the flown model, 3 runs | 175 | 8,366 |
+| i | Wandler stability, 9 runs (conditional) | 8,838 | over |
+| j | Wandler variants, up to 12 runs | up to 11,784 | over |
+| k | `wandler_1m_candidate`, 3 seeds | 2,947 | over |
+
+Items a to h fit under the stop line of 9,500 GPU BU with about 1,130 GPU BU left; i, j and k do not fit at one Wandler run per GPU, and are cut by the rule of section 2 unless the maintainer decides otherwise. Two decisions are the maintainer's before step 3:
+
+1. **Wandler packing.** At one run per GPU the GPU is used at 30 percent. `load_mode = "auto"` (or `"mmap"`) in the Wandler configs would let packed runs share the split through the page cache; `DeviceTrainBatches` draws the same batches wherever the data is held (`data/dataset.py`), so the change keeps the runs comparable, but it touches every Wandler config and needs one more Wandler timing job (at most 200 GPU BU, measured at 22). If it reached `sieb`'s packing of 3 at the same slowdown, a Wandler run would cost about 624 GPU BU instead of 982, item c 1,872, and item k would fit; i and j still would not.
+2. **Clean commit.** Every run starts from one tagged, clean commit (section 1). The fixes made on Roihu during steps 0 to 2 (`train.py`, `smoke.sbatch`, `data/http.py`, `data/build_cache.py`, `data/cache.py`, `data/padding.py`, `timing_cpu.sbatch`) are merged and tagged, and Roihu pulls that tag, before step 3 is submitted.
+
+The time limit of each training job comes from `python3 -m tiefer_lab.packed time-limit` with the report, the packing and the epochs, as section 3.4 shows.
+
 ## 3. Steps
 
 ### 3.1 State
@@ -582,6 +618,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
+- 20 October 2026: section 2.1, the gate revision drafted from the packing reports of step 2 on CSC Roihu: real costs per run, the order of priority with cumulative GPU BU (items a to h fit, i to k do not at one Wandler run per GPU), and the two maintainer decisions before step 3 (Wandler packing, the tagged clean commit); drafted with an AI-assisted system.
 - 17 October 2026: item 1: each CD-FCNN job adds its primary mask at 30 m and a labelled 10 m mask; drafted with an AI-assisted system.
 - 17 October 2026: item 1 of the optional queue is unblocked: the runners of s2cloudless and CD-FCNN and the logged path of `run_reference.py` for independent caches, with their commands on CloudSEN12+ validation, the Catalogue and KappaSet; `/projappl` adds the packages of the reference models; drafted with an AI-assisted system.
 - 17 October 2026: `sieb_frame_loss` is a conditional Sieb variant of step 7 (rule 4, cut order e) when `sieb` still misses `FRM-01` after the calibration of step 5, or after step 4 without issue 21; `sieb_qat` is compared only with the post-training INT8 exports of `sieb-seed0`, never across seeds (rule 7, `CMP-03`); the reference models on the independent caches are the next package; up to 48 training runs; drafted with an AI-assisted system.

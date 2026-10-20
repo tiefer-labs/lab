@@ -4,11 +4,12 @@
 """Where the dataset padded each cached patch, and how the padding is masked.
 
 The CloudSEN12+ card says that the 509 x 509 patches are padded to 512 x 512
-with zeros on the left and bottom sides (docs/DATA.md, section 4). The cache
-keeps the arrays as they are stored, so the padded pixels are in every cached
-patch. The width of the padding is not taken from the card: it is the
-stored size minus the original size, `real_proj_shape`, of each patch. Only
-the sides come from the card, in PADDING_SIDES.
+with zeros on the left and bottom sides (docs/DATA.md, section 4); the cached
+patches hold the zeros on the bottom and right sides instead, as measured on
+CSC Roihu (PADDING_SIDES). The cache keeps the arrays as they are stored, so
+the padded pixels are in every cached patch. The width of the padding is not
+taken from the card: it is the stored size minus the original size,
+`real_proj_shape`, of each patch.
 
 `python -m tiefer_lab.data.cache padding <cache-name>` reads a sample of
 patches of a real cache and reports what the strips on each side hold; it
@@ -31,10 +32,12 @@ from numpy.typing import NDArray
 
 from tiefer_lab.data.source import IGNORE_INDEX, SHAPE_FIELD
 
-# The sides of each patch that hold the padding. From the dataset card;
-# TODO(verify) with `python -m tiefer_lab.data.cache padding` on the caches on
-# CSC Roihu (docs/DATA.md, section 13). One side per axis.
-PADDING_SIDES: tuple[str, ...] = ("left", "bottom")
+# The sides of each patch that hold the padding. The dataset card says left and
+# bottom; `python -m tiefer_lab.data.cache padding` on CSC Roihu on 20 October
+# 2026 found every band zero on the bottom and right strips of 50 of 50 sampled
+# validation and test patches, and on the left strip of none, so the measured
+# sides are used (docs/DATA.md, section 13). One side per axis.
+PADDING_SIDES: tuple[str, ...] = ("bottom", "right")
 # Width of the padding on each padded side by the card: 512 - 509. Used by the
 # check only when a patch has no `real_proj_shape`.
 CARD_WIDTH = 3

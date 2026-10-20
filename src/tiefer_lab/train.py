@@ -38,7 +38,7 @@ from tiefer_lab import decisions, metrics
 from tiefer_lab.config import Config, dump_toml, load_config
 from tiefer_lab.data import cache, padding, sensor
 from tiefer_lab.data.dataset import DeviceTrainBatches, EvalPatches
-from tiefer_lab.data.source import L1C_BAND_NAMES
+from tiefer_lab.data.source import IGNORE_INDEX, L1C_BAND_NAMES
 from tiefer_lab.data.transforms import Photometric
 from tiefer_lab.models import flexible, qat
 from tiefer_lab.models.cloud_filter import (
@@ -262,7 +262,9 @@ def validate(
 ) -> dict[str, Any]:
     cm = np.zeros((4, 4), dtype=np.int64)
     for _, pred, label in predict_masks(model, loader, device, precision):
-        cm += metrics.confusion_matrix(pred, label)
+        # Padding and unlabelled pixels are IGNORE_INDEX; they are left out, as in evaluate.py.
+        valid = label != IGNORE_INDEX
+        cm += metrics.confusion_matrix(pred[valid], label[valid])
     return metrics.pixel_metrics(cm)
 
 
@@ -866,9 +868,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             timing = args.epochs is not None or args.max_steps_per_epoch is not None
             if timing:
+                epochs = args.epochs or config.train.epochs
                 train_cfg = dataclasses.replace(
                     config.train,
-                    epochs=args.epochs or config.train.epochs,
+                    epochs=epochs,
+                    # A timing run is cut to fewer epochs than the warm-up; the warm-up
+                    # only scales the learning rate, so shortening it leaves the time per
+                    # step unchanged.
+                    warmup_epochs=min(config.train.warmup_epochs, epochs - 1),
                     max_steps_per_epoch=args.max_steps_per_epoch
                     or config.train.max_steps_per_epoch,
                 )
