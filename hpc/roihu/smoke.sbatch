@@ -34,7 +34,6 @@ source hpc/roihu/job_prelude.sh
 source hpc/roihu/env.sh
 tiefer_require_venv
 python3 hpc/roihu/check_env.py
-python3 -m tiefer_lab.device_check --device auto
 
 # The full cache is only read, and only when its train and val splits are
 # complete and not being built (data.sbatch may be running). Otherwise a tiny
@@ -59,6 +58,7 @@ else
   tiny_cache=1
 fi
 
+python3 -m tiefer_lab.device_check --device auto
 run_id="smoke-${SLURM_JOB_ID}"
 python3 -m tiefer_lab.train --config configs/smoke.toml --run-id "${run_id}"
 python3 -m tiefer_lab.evaluate --run "${run_id}" --split val --baselines

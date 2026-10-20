@@ -17,7 +17,7 @@ REAL = 61  # 3 padded rows and columns, as 509 in a 512 x 512 patch
 PATCHES = 6
 
 
-def padded_cache(sides: tuple[str, str] = ("left", "bottom"), label: int = 0) -> Path:
+def padded_cache(sides: tuple[str, str] = ("bottom", "right"), label: int = 0) -> Path:
     """A synthetic val split whose patches are padded by 3 pixels on `sides`.
 
     The padded image pixels are zero in every band and the padded label
@@ -46,13 +46,13 @@ def padded_cache(sides: tuple[str, str] = ("left", "bottom"), label: int = 0) ->
 
 
 def test_padding_follows_the_metadata_and_the_sides() -> None:
-    assert padding.padding_of((512, 512), (509, 509)) == padding.Padding(bottom=3, left=3)
+    assert padding.padding_of((512, 512), (509, 509)) == padding.Padding(bottom=3, right=3)
     assert padding.padding_of((512, 512), (509, 509), ("top", "right")) == padding.Padding(
         top=3, right=3
     )
     assert not padding.padding_of((512, 512), None)
     assert not padding.padding_of((509, 509), (509, 509))
-    assert padding.Padding(bottom=3, left=3).pixels(512, 512) == 3_063
+    assert padding.Padding(bottom=3, right=3).pixels(512, 512) == 3_063
     with pytest.raises(ValueError, match="smaller"):
         padding.padding_of((500, 500), (509, 509))
     with pytest.raises(ValueError, match="no side"):
@@ -76,10 +76,10 @@ def test_check_finds_the_padded_sides(
     assert shapes in out
     assert f"real_proj_shape: {REAL} x {REAL}: {PATCHES}" in out
     strip_pixels = PATCHES * 3 * SIZE
-    assert f"| left | 3 | 0: {strip_pixels:,} | {PATCHES} of {PATCHES} |" in out
+    assert f"| right | 3 | 0: {strip_pixels:,} | {PATCHES} of {PATCHES} |" in out
     assert f"| bottom | 3 | 0: {strip_pixels:,} | {PATCHES} of {PATCHES} |" in out
     assert "| right | 3 |" in out and "| top | 3 |" in out
-    assert "zero sides found: left, bottom; this agrees with PADDING_SIDES" in out
+    assert "zero sides found: bottom, right; this agrees with PADDING_SIDES" in out
 
 
 def test_check_reports_padding_on_other_sides(
@@ -121,9 +121,9 @@ def test_sample_positions_spread_over_the_split() -> None:
 
 
 def _hand_example() -> tuple[np.ndarray, np.ndarray, padding.Padding]:
-    """A 4 x 4 patch of a 3 x 3 image, padded by one column on the left and one row at the bottom.
+    """A 4 x 4 patch of a 3 x 3 image, padded by one column on the right and one row at the bottom.
 
-    Real area (rows 0 to 2, columns 1 to 3), label and prediction:
+    Real area (rows 0 to 2, columns 0 to 2), label and prediction:
 
         label   1 1 1     prediction  1 1 1
                 1 1 0                 1 0 0
@@ -132,11 +132,11 @@ def _hand_example() -> tuple[np.ndarray, np.ndarray, padding.Padding]:
     The 7 padded pixels hold label 0 (clear) and are predicted clear.
     """
     pad = padding.padding_of((4, 4), (3, 3))
-    assert pad == padding.Padding(bottom=1, left=1)
+    assert pad == padding.Padding(bottom=1, right=1)
     label = np.zeros((4, 4), dtype=np.uint8)
-    label[0:3, 1:4] = [[1, 1, 1], [1, 1, 0], [0, 0, 0]]
+    label[0:3, 0:3] = [[1, 1, 1], [1, 1, 0], [0, 0, 0]]
     prediction = np.zeros((4, 4), dtype=np.uint8)
-    prediction[0:3, 1:4] = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
+    prediction[0:3, 0:3] = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
     return label, prediction, pad
 
 
@@ -180,7 +180,7 @@ def test_reference_and_predicted_fractions_use_the_same_pixels() -> None:
     masked = padding.mask_label(label.copy(), pad)
     # Cloud on every real pixel, clear on the padding.
     prediction = np.zeros((4, 4), dtype=np.uint8)
-    prediction[0:3, 1:4] = 1
+    prediction[0:3, 0:3] = 1
     fractions = decisions.frame_fractions(prediction, masked)
     assert fractions.pixels == 9 == int((masked != 255).sum())
     assert fractions.true_cloud == pytest.approx(5 / 9)
@@ -204,18 +204,20 @@ def test_load_split_masks_the_padding_and_the_confusion_matrix_counts_labelled_p
     stored_labels = np.load(cache.labels_path(directory, "val"))
     data = cache.load_split(directory, "val", mode=mode)  # type: ignore[arg-type]
     assert data.in_memory == (mode == "memory")
-    assert data.padding == [padding.Padding(bottom=3, left=3)] * PATCHES
+    assert data.padding == [padding.Padding(bottom=3, right=3)] * PATCHES
     padded = PATCHES * (SIZE * SIZE - REAL * REAL)
     assert data.padded_pixels() == padded
     labels = np.asarray(data.labels)
-    assert (labels[:, :, :3] == 255).all() and (labels[:, SIZE - 3 :, :] == 255).all()
-    np.testing.assert_array_equal(labels[:, : SIZE - 3, 3:], stored_labels[:, : SIZE - 3, 3:])
+    assert (labels[:, :, SIZE - 3 :] == 255).all() and (labels[:, SIZE - 3 :, :] == 255).all()
+    np.testing.assert_array_equal(
+        labels[:, : SIZE - 3, : SIZE - 3], stored_labels[:, : SIZE - 3, : SIZE - 3]
+    )
     np.testing.assert_array_equal(np.asarray(data.labels[2]), labels[2])
     np.testing.assert_array_equal(np.asarray(data.labels[1:3]), labels[1:3])
     np.testing.assert_array_equal(data.labels[[0, 4], 0], labels[[0, 4], 0])
     # The file on disk and the images are not changed.
     np.testing.assert_array_equal(np.load(cache.labels_path(directory, "val")), stored_labels)
-    assert not np.asarray(data.images)[:, :, :, :3].any()
+    assert not np.asarray(data.images)[:, :, :, SIZE - 3 :].any()
     assert data.valid_area(0).sum() == REAL * REAL
 
     scores = Scores()
