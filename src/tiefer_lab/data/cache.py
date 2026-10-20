@@ -106,7 +106,7 @@ def read_index(directory: Path) -> dict[str, Any]:
 def write_index(directory: Path, index: dict[str, Any]) -> None:
     """Write the index atomically."""
     directory.mkdir(parents=True, exist_ok=True)
-    tmp = directory / (INDEX_NAME + ".tmp")
+    tmp = directory / f"{INDEX_NAME}.{os.getpid()}.tmp"
     tmp.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     os.replace(tmp, directory / INDEX_NAME)
 

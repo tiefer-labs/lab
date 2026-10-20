@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fcntl
 import hashlib
 import json
 import os
@@ -156,10 +157,26 @@ def _finish_split(
         "reference_masks": list(reference_names),
         "class_pixels": class_pixels(labels),
     }
-    if split == "train":
-        _update_normalisation(directory, index)
-    cache.write_index(directory, index)
+    _write_index_keeping_others(directory, index, split)
     print(f"{split}: {len(patch_ids)} patches verified and indexed", flush=True)
+
+
+def _write_index_keeping_others(directory: Path, index: dict[str, Any], split: str) -> None:
+    """Write this split to the index without dropping splits other jobs wrote since."""
+    with (directory / f"{cache.INDEX_NAME}.lock").open("a") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        current = index
+        if (directory / cache.INDEX_NAME).is_file():
+            current = cache.read_index(directory)
+            for key, value in index.items():
+                if key not in ("splits", "normalisation"):
+                    current[key] = value
+            current.setdefault("splits", {})[split] = index["splits"][split]
+        if split == "train":
+            _update_normalisation(directory, current)
+        cache.write_index(directory, current)
+        fcntl.flock(handle, fcntl.LOCK_UN)
+    index.update(current)
 
 
 # Real data -----------------------------------------------------------------

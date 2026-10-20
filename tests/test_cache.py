@@ -510,3 +510,20 @@ def test_no_report_or_log_of_a_build_contains_the_token(
     # Without a token every message stays as it is.
     monkeypatch.delenv(http.TOKEN_ENV)
     assert http.redact("unchanged") == "unchanged"
+
+
+def test_finishing_one_split_keeps_the_splits_other_jobs_wrote(tmp_path: Path) -> None:
+    # Validation and test built side by side each read the index when they
+    # start; the one that finishes last must not drop the other's split.
+    directory = tmp_path / "c"
+    directory.mkdir()
+    for split in ("val", "test"):
+        np.save(cache.images_path(directory, split), np.ones((2, 4, 8, 8), dtype=np.uint16))
+        np.save(cache.labels_path(directory, split), np.zeros((2, 8, 8), dtype=np.uint8))
+    started = {"format": cache.CACHE_FORMAT, "bands": ["B02", "B03", "B04", "B08"], "splits": {}}
+    val_view = json.loads(json.dumps(started))
+    test_view = json.loads(json.dumps(started))
+    build_cache._finish_split(directory, val_view, "val", ["a", "b"], [{}, {}], None, [])
+    build_cache._finish_split(directory, test_view, "test", ["c", "d"], [{}, {}], None, [])
+    splits = cache.read_index(directory)["splits"]
+    assert splits["val"]["complete"] and splits["test"]["complete"]
