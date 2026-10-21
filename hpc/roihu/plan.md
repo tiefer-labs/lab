@@ -239,10 +239,11 @@ bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch frames /scratch/<project>/tie
 bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch int8 <run-id>
 ```
 
-A band-flexible run (`wandler_1m`) is diagnosed per band set: one INT8 job per band set of its config, with `--band-set` (without it the job stops with "a band-flexible run is diagnosed per band set"):
+A band-flexible run (`wandler_1m`) is evaluated per band set and writes one report per band set, `<run-id>_val_<bands>.json` with the bands joined by `+`; its frames diagnosis takes each of those reports, and its INT8 diagnosis runs once per band set with `--band-set` (without it the job stops with "a band-flexible run is diagnosed per band set"):
 
 ```bash
 for b in B02,B03,B04 B02,B03,B04,B08 B02,B03,B04,B08,B11,B12 B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B10,B11,B12; do
+  bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch frames "/scratch/<project>/tiefer-lab/reports/evaluation/<run-id>_val_${b//,/+}.json" --cache cloudsen12-l1c-all
   bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch int8 <run-id> --band-set "$b"
 done
 ```
@@ -638,7 +639,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
-- 21 October 2026: section 2.1 adds the measured cost of step 3 (a third of the packing-report estimate); step 4 diagnoses a band-flexible run per band set with `--band-set`; drafted with an AI-assisted system.
+- 21 October 2026: section 2.1 adds the measured cost of step 3 (a third of the packing-report estimate); step 4 diagnoses a band-flexible run per band set (its frames diagnosis per band-set report, its INT8 diagnosis with `--band-set`); drafted with an AI-assisted system.
 - 20 October 2026: section 2.1, the gate revision drafted from the packing reports of step 2 on CSC Roihu: real costs per run, the order of priority with cumulative GPU BU (items a to h fit, i to k do not at one Wandler run per GPU), and the two maintainer decisions before step 3 (Wandler packing, the tagged clean commit); drafted with an AI-assisted system.
 - 17 October 2026: item 1: each CD-FCNN job adds its primary mask at 30 m and a labelled 10 m mask; drafted with an AI-assisted system.
 - 17 October 2026: item 1 of the optional queue is unblocked: the runners of s2cloudless and CD-FCNN and the logged path of `run_reference.py` for independent caches, with their commands on CloudSEN12+ validation, the Catalogue and KappaSet; `/projappl` adds the packages of the reference models; drafted with an AI-assisted system.
