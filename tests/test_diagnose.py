@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -72,3 +73,44 @@ def test_seeds_frames_and_int8_on_synthetic(tiefer_env: dict[str, Path]) -> None
     )
     assert int8["nodes"] and "cloud_boa_loss" in int8["nodes"][0]
     assert int8["normalised_input_percentiles"]["0"] <= int8["normalised_input_percentiles"]["100"]
+
+
+def test_int8_diagnosis_calibrates_once(
+    tiefer_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # One calibration pass serves every Conv node; each node used to calibrate again.
+    from tiefer_lab.export import quantise
+
+    build_cache.main(["--split", "all", "--synthetic", "--limit", "6", "--patch-size", "64"])
+    raw = {
+        "name": "tiny",
+        "data": {
+            "cache_name": "synthetic",
+            "crop_size": 32,
+            "batch_size": 4,
+            "eval_batch_size": 2,
+            "num_workers": 0,
+        },
+        "model": {"widths": [8, 16]},
+        "train": {"epochs": 2, "max_steps_per_epoch": 1, "log_every": 1},
+        "evaluation": {"bootstrap_resamples": 100},
+        "export": {"input_size": 64, "calibration_patches": 3},
+    }
+    run = tiefer_env["TIEFER_RUNS_DIR"] / "tiny-seed0-once"
+    train.train(config_from_dict(raw), run, device_name="cpu", allow_synthetic=True)
+    reads = []
+    original = quantise.CalibrationReader.get_next
+
+    def counting(self: quantise.CalibrationReader) -> Any:
+        batch = original(self)
+        if batch is not None:
+            reads.append(1)
+        return batch
+
+    monkeypatch.setattr(quantise.CalibrationReader, "get_next", counting)
+    assert diagnose.main(["int8", "--run", str(run), "--patches", "2"]) == 0
+    report = json.loads(
+        next((tiefer_env["TIEFER_REPORTS_DIR"] / "diagnosis").glob("int8_*")).read_text()
+    )
+    assert len(report["nodes"]) > 1
+    assert len(reads) == 3
