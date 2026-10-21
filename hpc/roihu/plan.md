@@ -84,6 +84,18 @@ The order of priority of section 2 with these costs, cumulative from the 101 GPU
 | j | Wandler variants, up to 12 runs | up to 11,784 | over |
 | k | `wandler_1m_candidate`, 3 seeds | 2,947 | over |
 
+**Measured cost of step 3 (21 October 2026).** The runs of step 3, 3a and 3b took a third of the estimate above: one training job of the timing step's cut epoch (50 steps, with start-up and validation) overstates the time of a full epoch. Every run reached its configured epochs with status `completed` (`metrics.jsonl`, `metadata.json`). From the runtimes in `sacct` (jobs 2404148 to 2404154, all from commit `11dc602`):
+
+| Job | Runs | Runtime | GPU BU | GPU BU per run |
+| :--- | :---: | :---: | :---: | :---: |
+| `sieb`, 3 per GPU | 3 | 1.01 h | 202.7 | 68 |
+| `wandler_1m`, one job per seed | 3 | 1.62, 2.17 and 1.85 h | 1,129.2 | 376 |
+| `lupe_1m`, 3 per GPU | 3 | 1.77 h | 354.8 | 118 |
+| the CloudScout re-implementation trained by Tiefer Lab, not the flown model, step 1 then step 2 | 3 | 0.13 and 0.07 h | 40.2 | 13 |
+| total | 12 | n/a | 1,726.9 | n/a |
+
+GPU BU used by Project Schatten after step 3: 1,828 (`csc-projects`, 21 October 2026); 7,672 left under the stop line. At these measured costs the remaining items of the order of priority would cost about: e, 600; f, 200; i, 3,400 (conditional); j, 4,500; k, 1,130. Items e, f and k fit; i and j together do not at one Wandler run per GPU, and each runs only if its rule calls for it.
+
 Items a to h fit under the stop line of 9,500 GPU BU with about 1,130 GPU BU left; i, j and k do not fit at one Wandler run per GPU, and are cut by the rule of section 2 unless the maintainer decides otherwise. Two decisions are the maintainer's before step 3:
 
 1. **Wandler packing.** At one run per GPU the GPU is used at 30 percent. `load_mode = "auto"` (or `"mmap"`) in the Wandler configs would let packed runs share the split through the page cache; `DeviceTrainBatches` draws the same batches wherever the data is held (`data/dataset.py`), so the change keeps the runs comparable, but it touches every Wandler config and needs one more Wandler timing job (at most 200 GPU BU, measured at 22). If it reached `sieb`'s packing of 3 at the same slowdown, a Wandler run would cost about 624 GPU BU instead of 982, item c 1,872, and item k would fit; i and j still would not.
@@ -225,6 +237,14 @@ Step 4, per run of step 3, on the CPU (`<run-id>` is the run ID its log prints, 
 FULL_METRICS=1 ROBUSTNESS=1 PERTURBATIONS="rescale=0.5 rescale=2" bash hpc/roihu/submit.sh hpc/roihu/evaluate_cpu.sbatch <run-id>
 bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch frames /scratch/<project>/tiefer-lab/reports/evaluation/<run-id>_val.json --cache <cache>
 bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch int8 <run-id>
+```
+
+A band-flexible run (`wandler_1m`) is diagnosed per band set: one INT8 job per band set of its config, with `--band-set` (without it the job stops with "a band-flexible run is diagnosed per band set"):
+
+```bash
+for b in B02,B03,B04 B02,B03,B04,B08 B02,B03,B04,B08,B11,B12 B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B10,B11,B12; do
+  bash hpc/roihu/submit.sh hpc/roihu/diagnose.sbatch int8 <run-id> --band-set "$b"
+done
 ```
 
 and once per family, over its three seeds:
@@ -618,6 +638,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
+- 21 October 2026: section 2.1 adds the measured cost of step 3 (a third of the packing-report estimate); step 4 diagnoses a band-flexible run per band set with `--band-set`; drafted with an AI-assisted system.
 - 20 October 2026: section 2.1, the gate revision drafted from the packing reports of step 2 on CSC Roihu: real costs per run, the order of priority with cumulative GPU BU (items a to h fit, i to k do not at one Wandler run per GPU), and the two maintainer decisions before step 3 (Wandler packing, the tagged clean commit); drafted with an AI-assisted system.
 - 17 October 2026: item 1: each CD-FCNN job adds its primary mask at 30 m and a labelled 10 m mask; drafted with an AI-assisted system.
 - 17 October 2026: item 1 of the optional queue is unblocked: the runners of s2cloudless and CD-FCNN and the logged path of `run_reference.py` for independent caches, with their commands on CloudSEN12+ validation, the Catalogue and KappaSet; `/projappl` adds the packages of the reference models; drafted with an AI-assisted system.
