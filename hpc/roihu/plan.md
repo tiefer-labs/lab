@@ -96,6 +96,17 @@ The order of priority of section 2 with these costs, cumulative from the 101 GPU
 
 GPU BU used by Project Schatten after step 3: 1,828 (`csc-projects`, 21 October 2026); 7,672 left under the stop line. At these measured costs the remaining items of the order of priority would cost about: e, 600; f, 200; i, 3,400 (conditional); j, 4,500; k, 1,130. Items e, f and k fit; i and j together do not at one Wandler run per GPU, and each runs only if its rule calls for it.
 
+**Step 4 on validation and what the rules call for (21 October 2026).** From `reports/evaluation/*_val*.json` of the step 3 runs, CPU, fp32; the Wandler values are those of its four-band set B02 B03 B04 B08.
+
+| Family | Cloud BOA, mean of 3 seeds | Seed spread of cloud BOA (`ACC-09`) | Mean IoU, mean (`ACC-05`) | False discard rate at 0.5, mean (`FRM-01`) | Larger cloud BOA loss of `rescale=0.5` and `rescale=2`, worst seed (`CMP-05`) | Non-finite steps |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `sieb` | 0.9043 | 0.0034 | 0.6995 | 0.0600 | 0.1044 | none |
+| `wandler_1m` | 0.9017 | 0.0102 | 0.6613 | 0.0274 | 0.1165 | none |
+
+- Rule 3: `wandler_1m` meets the `ACC-09` minimum (0.02) and records no non-finite step, so step 6 does not run; there is no stability change and `wandler_1m` stays the Wandler reference.
+- Rule 1: the `sieb` spread is below the `ACC-09` target (0.01), so Sieb variants run on seed 0 only.
+- Rule 4: both families miss the `ACC-05` target (0.75) and the `CMP-05` target (0.02): `sieb_lovasz`, `sieb_rescale_2x`, `wandler_1m_lovasz`, `wandler_1m_crop384`, `wandler_1m_rescale_2x` and `wandler_1m_rescale_3x` run. `sieb` misses `FRM-01`; issues 21 and 22 are closed as completed, so step 5 runs first and `sieb_frame_loss` runs only if `sieb` still misses `FRM-01` after it.
+
 Items a to h fit under the stop line of 9,500 GPU BU with about 1,130 GPU BU left; i, j and k do not fit at one Wandler run per GPU, and are cut by the rule of section 2 unless the maintainer decides otherwise. Two decisions are the maintainer's before step 3:
 
 1. **Wandler packing.** At one run per GPU the GPU is used at 30 percent. `load_mode = "auto"` (or `"mmap"`) in the Wandler configs would let packed runs share the split through the page cache; `DeviceTrainBatches` draws the same batches wherever the data is held (`data/dataset.py`), so the change keeps the runs comparable, but it touches every Wandler config and needs one more Wandler timing job (at most 200 GPU BU, measured at 22). If it reached `sieb`'s packing of 3 at the same slowdown, a Wandler run would cost about 624 GPU BU instead of 982, item c 1,872, and item k would fit; i and j still would not.
@@ -639,6 +650,7 @@ DATA=azersky REASON="independent evaluation of <run-id> on Azersky, hpc/roihu/pl
 
 ## Changelog
 
+- 21 October 2026: section 2.1 records the step 4 validation values and what rules 1, 3 and 4 call for: no step 6, Sieb variants on seed 0, the Lovasz and rescaling variants of both families and the Wandler crop variant; drafted with an AI-assisted system.
 - 21 October 2026: section 2.1 adds the measured cost of step 3 (a third of the packing-report estimate); step 4 diagnoses a band-flexible run per band set (its frames diagnosis per band-set report, its INT8 diagnosis with `--band-set`); drafted with an AI-assisted system.
 - 20 October 2026: section 2.1, the gate revision drafted from the packing reports of step 2 on CSC Roihu: real costs per run, the order of priority with cumulative GPU BU (items a to h fit, i to k do not at one Wandler run per GPU), and the two maintainer decisions before step 3 (Wandler packing, the tagged clean commit); drafted with an AI-assisted system.
 - 17 October 2026: item 1: each CD-FCNN job adds its primary mask at 30 m and a labelled 10 m mask; drafted with an AI-assisted system.
