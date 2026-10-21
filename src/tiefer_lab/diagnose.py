@@ -28,6 +28,7 @@ A report of a split other than validation is refused.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import math
 import sys
@@ -197,6 +198,13 @@ def int8_sensitivity(run_dir: Path, band_set: Sequence[str] | None, patches: int
         base = quantise.score_onnx(fp32, val, mean, std, size, config.evaluation)
         base_boa = base["binary"]["cloud"]["median_boa"]
         convs = [n.name for n in onnx.load(str(fp32)).graph.node if n.op_type == "Conv"]
+        # The calibrator collects the ranges of every Conv, whichever node is quantised,
+        # so one calibration serves all nodes; ONNX Runtime keeps it in a cache file
+        # (calibration_cache_path, ONNX Runtime 1.30). Without it each node calibrates
+        # again on every calibration patch, which took over 6 hours on CSC Roihu.
+        cached: dict[str, Any] = {}
+        if "calibration_cache_path" in inspect.signature(ortq.quantize_static).parameters:
+            cached["calibration_cache_path"] = Path(tmp) / "calibration.json"
         rows = []
         for name in convs:
             out = Path(tmp) / "one.onnx"
@@ -212,6 +220,7 @@ def int8_sensitivity(run_dir: Path, band_set: Sequence[str] | None, patches: int
                 calibrate_method=ortq.CalibrationMethod.MinMax,
                 nodes_to_quantize=[name],
                 extra_options={"ActivationSymmetric": True, "WeightSymmetric": True},
+                **cached,
             )
             scored = quantise.score_onnx(out, val, mean, std, size, config.evaluation)
             boa = scored["binary"]["cloud"]["median_boa"]
